@@ -68,7 +68,7 @@ class HttpTestHarness : public IntegrationBase {
 
   void runAssertions() override {
     using org::apache::nifi::minifi::utils::verifyLogLinePresenceInPollTime;
-    assert(verifyLogLinePresenceInPollTime(std::chrono::milliseconds(wait_time_),
+    assert(verifyLogLinePresenceInPollTime(std::chrono::milliseconds(1.5 * wait_time_),
       "curl performed",
       "Size:1024 Offset:0"));
     assert(false == verifyLogLinePresenceInPollTime(std::chrono::milliseconds(200), "Size:0 Offset:0"));
