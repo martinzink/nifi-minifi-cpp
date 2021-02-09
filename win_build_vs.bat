@@ -65,7 +65,7 @@ if [%cpack%] EQU [ON] (
     IF !ERRORLEVEL! NEQ 0 ( popd & exit /b !ERRORLEVEL! )
 )
 if [%skiptests%] NEQ [ON] (
-    ctest --timeout 300 --parallel 8 -C %cmake_build_type% --output-on-failure
+    ctest -R ThreadPoolAdjust --repeat-until-fail 200 -C %cmake_build_type% --output-on-failure
     IF !ERRORLEVEL! NEQ 0 ( popd & exit /b !ERRORLEVEL! )
 )
 popd
