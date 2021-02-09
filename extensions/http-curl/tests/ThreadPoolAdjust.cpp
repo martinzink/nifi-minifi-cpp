@@ -33,7 +33,7 @@
 
 class HttpTestHarness : public IntegrationBase {
  public:
-  HttpTestHarness() {
+  HttpTestHarness() : IntegrationBase(4500)  {
     char format[] = "/tmp/ssth.XXXXXX";
     dir = testController.createTempDirectory(format);
   }
@@ -68,7 +68,7 @@ class HttpTestHarness : public IntegrationBase {
 
   void runAssertions() override {
     using org::apache::nifi::minifi::utils::verifyLogLinePresenceInPollTime;
-    assert(verifyLogLinePresenceInPollTime(std::chrono::milliseconds(4500),
+    assert(verifyLogLinePresenceInPollTime(std::chrono::milliseconds(wait_time_),
       "curl performed",
       "Size:1024 Offset:0"));
     assert(false == verifyLogLinePresenceInPollTime(std::chrono::milliseconds(200), "Size:0 Offset:0"));
