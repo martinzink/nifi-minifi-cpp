@@ -254,6 +254,8 @@ TEST_CASE("Test manipulation of attributes", "[testAttributes]") {
 
   free_flow(test_flow);
   free_nanofi_instance(instance);
+
+  free(attr_set.attributes);
 }
 
 TEST_CASE("Test error handling callback", "[errorHandling]") {
@@ -346,6 +348,7 @@ TEST_CASE("Test standalone processors", "[testStandalone]") {
 
   free_flowfile(ffr2);
   free_standalone_processor(getfile_proc);
+  free_standalone_processor(extract_test);
 }
 
 TEST_CASE("Test interaction of flow and standlone processors", "[testStandaloneWithFlow]") {
@@ -449,6 +452,12 @@ TEST_CASE("Test custom processor", "[TestCutomProcessor]") {
   REQUIRE(custom_onschedule_count > 0);
 
   REQUIRE(record != nullptr);
+
+  free_nanofi_instance(instance);
+
+  free_flow (test_flow);
+
+  free_flowfile (record);
 }
 
 TEST_CASE("C API robustness test", "[TestRobustness]") {
@@ -537,4 +546,6 @@ TEST_CASE("C API robustness test", "[TestRobustness]") {
   free_flow(test_flow);
 
   free_nanofi_instance(instance);
+
+  free_flowfile(ffr);
 }
