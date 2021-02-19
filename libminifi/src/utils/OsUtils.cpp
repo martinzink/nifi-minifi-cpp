@@ -256,7 +256,7 @@ uint64_t OsUtils::getSystemVirtualMemoryUsage() {
   if(sysctlbyname("vm.swapusage", &vmusage, &size, NULL, 0) != 0) {
     throw std::runtime_error("Could not get memory info for system");
   }
-  return vmusage;
+  return vmusage.xsu_used + getSystemPhysicalMemoryUsage();
 #endif
 
 #ifdef _WIN32
