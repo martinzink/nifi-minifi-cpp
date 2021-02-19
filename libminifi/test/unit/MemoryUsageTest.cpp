@@ -20,9 +20,24 @@
 #include "utils/OsUtils.h"
 #include "../TestBase.h"
 
-TEST_CASE("Test memory usage", "[testmemoryusage]") {
+TEST_CASE("Test virtual memory usage", "[testmemoryusage]") {
   std::vector<char> v(30000000);
-  const auto memoryUsage = utils::OsUtils::getMemoryUsage();
-  REQUIRE(memoryUsage > v.size());
-  REQUIRE(memoryUsage < 2 * v.size());
+  const auto vMemUsagebyProcess = utils::OsUtils::getCurrentProcessVirtualMemoryUsage();
+  const auto vMemUsagebySystem = utils::OsUtils::getSystemVirtualMemoryUsage();
+  const auto vMemTotal = utils::OsUtils::getSystemTotalVirtualMemory();
+  REQUIRE(vMemUsagebyProcess > v.size());
+  REQUIRE(vMemUsagebyProcess < 2 * v.size());
+  REQUIRE(vMemUsagebySystem > vMemUsagebyProcess);
+  REQUIRE(vMemTotal >= vMemUsagebySystem);
+}
+
+TEST_CASE("Test physical memory usage", "[testmemoryusage]") {
+  std::vector<char> v(30000000);
+  const auto RAMUsagebyProcess = utils::OsUtils::getCurrentProcessPhysicalMemoryUsage();
+  const auto RAMUsagebySystem = utils::OsUtils::getSystemPhysicalMemoryUsage();
+  const auto RAMTotal = utils::OsUtils::getSystemTotalPhysicalMemory();
+  REQUIRE(RAMUsagebyProcess > v.size());
+  REQUIRE(RAMUsagebyProcess < 2 * v.size());
+  REQUIRE(RAMUsagebySystem > RAMUsagebyProcess);
+  REQUIRE(RAMTotal >= RAMUsagebySystem);
 }

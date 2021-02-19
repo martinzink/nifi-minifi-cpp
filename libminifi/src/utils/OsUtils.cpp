@@ -25,6 +25,8 @@
 
 #ifdef __linux__
 #include <sstream>
+#include "sys/types.h"
+#include "sys/sysinfo.h"
 #endif
 
 #ifdef _WIN32
@@ -164,7 +166,44 @@ std::string OsUtils::userIdToUsername(const std::string &uid) {
   return name;
 }
 
-uint64_t OsUtils::getMemoryUsage() {
+uint64_t OsUtils::getCurrentProcessVirtualMemoryUsage() {
+#ifdef __linux__
+  static const std::string linePrefix = "VmSize:";
+  std::ifstream statusFile("/proc/self/status");
+  std::string line;
+
+  while (std::getline(statusFile, line)) {
+    // if line begins with "VmSize:"
+    if (line.rfind(linePrefix, 0) == 0) {
+      std::istringstream valuableLine(line.substr(linePrefix.length()));
+      uint64_t kByteValue;
+      valuableLine >> kByteValue;
+      return kByteValue * 1024;
+    }
+  }
+
+  throw std::runtime_error("Could not get memory info for current process");
+#endif
+
+#ifdef __APPLE__
+  task_basic_info tInfo;
+  mach_msg_type_number_t tInfoCount = TASK_BASIC_INFO_COUNT;
+  if (KERN_SUCCESS != task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&tInfo, &tInfoCount))
+    throw std::runtime_error("Could not get memory info for current process");
+  return tInfo.virtual_size;
+#endif
+
+#ifdef _WIN32
+  PROCESS_MEMORY_COUNTERS pmc;
+  if (!GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
+    throw std::runtime_error("Could not get memory info for current process");
+  return pmc.PrivateUsage;
+#endif
+
+  throw std::runtime_error("getCurrentProcessVirtualMemoryUsage() is not implemented for this platform");
+}
+
+uint64_t OsUtils::getCurrentProcessPhysicalMemoryUsage() {
 #ifdef __linux__
   static const std::string linePrefix = "VmRSS:";
   std::ifstream statusFile("/proc/self/status");
@@ -197,9 +236,137 @@ uint64_t OsUtils::getMemoryUsage() {
     throw std::runtime_error("Could not get memory info for current process");
   return pmc.WorkingSetSize;
 #endif
-
-  throw std::runtime_error("getMemoryUsage() is not implemented for this platform");
+  throw std::runtime_error("getCurrentProcessPhysicalMemoryUsage() is not implemented for this platform");
 }
+
+uint64_t OsUtils::getSystemVirtualMemoryUsage() {
+#ifdef __linux__
+  struct sysinfo memInfo;
+
+  sysinfo (&memInfo);
+  long long virtualMemUsed = memInfo.totalram - memInfo.freeram;
+  virtualMemUsed += memInfo.totalswap - memInfo.freeswap;
+  virtualMemUsed *= memInfo.mem_unit;
+  return virtualMemUsed;
+#endif
+
+#ifdef __APPLE__
+  xsw_usage vmusage = {0};
+  size_t size = sizeof(vmusage);
+  if(sysctlbyname("vm.swapusage", &vmusage, &size, NULL, 0) != 0) {
+    throw std::runtime_error("Could not get memory info for system");
+  }
+  return vmusage;
+#endif
+
+#ifdef _WIN32
+  MEMORYSTATUSEX memInfo;
+  memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+  GlobalMemoryStatusEx(&memInfo)
+  DWORDLONG virtualMemUsed = memInfo.ullTotalPageFile - memInfo.ullAvailPageFile;
+  return virtualMemUsed;
+#endif
+  throw std::runtime_error("getSystemVirtualMemoryUsage() is not implemented for this platform");
+}
+
+uint64_t OsUtils::getSystemPhysicalMemoryUsage() {
+#ifdef __linux__
+  struct sysinfo memInfo;
+
+  sysinfo(&memInfo);
+  long long physMemUsed = memInfo.totalram - memInfo.freeram;
+  physMemUsed *= memInfo.mem_unit;
+  return physMemUsed;
+#endif
+
+#ifdef __APPLE__
+  vm_size_t page_size;
+  mach_port_t mach_port;
+  mach_msg_type_number_t count;
+  vm_statistics64_data_t vm_stats;
+  mach_port = mach_host_self();
+  count = sizeof(vm_stats) / sizeof(natural_t);
+  if (KERN_SUCCESS == host_page_size(mach_port, &page_size) &&
+      KERN_SUCCESS == host_statistics64(mach_port, HOST_VM_INFO,
+                                      (host_info64_t)&vm_stats, &count))
+  {
+      long long physMemUsed = ((int64_t)vm_stats.active_count +
+                               (int64_t)vm_stats.inactive_count +
+                               (int64_t)vm_stats.wire_count) *  (int64_t)page_size;
+      return physMemUsed;
+  }
+  throw std::runtime_error("Could not get memory info");
+#endif
+
+#ifdef _WIN32
+  MEMORYSTATUSEX memInfo;
+  memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+  GlobalMemoryStatusEx(&memInfo);
+  DWORDLONG physMemUsed = memInfo.ullTotalPhys - memInfo.ullAvailPhys;
+  return physMemUsed;
+#endif
+  throw std::runtime_error("getSystemPhysicalMemoryUsage() is not implemented for this platform");
+}
+
+uint64_t OsUtils::getSystemTotalVirtualMemory() {
+#ifdef __linux__
+  struct sysinfo memInfo;
+
+  sysinfo (&memInfo);
+  long long totalVirtualMem = memInfo.totalram;
+  totalVirtualMem += memInfo.totalswap;
+  totalVirtualMem *= memInfo.mem_unit;
+  return totalVirtualMem;
+#endif
+
+#ifdef __APPLE__
+  struct statfs stats;
+  if (0 == statfs("/", &stats)) {
+    uint64_t myFreeSwap = (uint64_t)stats.f_bsize * stats.f_bfree;
+    return myFreeSwap + getSystemTotalPhysicalMemory();
+  }
+#endif
+
+#ifdef _WIN32
+  MEMORYSTATUSEX memInfo;
+  memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+  GlobalMemoryStatusEx(&memInfo)
+  DWORDLONG totalVirtualMem = memInfo.ullTotalPageFile;
+  return totalVirtualMem;
+#endif
+  throw std::runtime_error("getSystemTotalVirtualMemory() is not implemented for this platform");
+}
+
+uint64_t OsUtils::getSystemTotalPhysicalMemory() {
+#ifdef __linux__
+  struct sysinfo memInfo;
+
+  sysinfo (&memInfo);
+  long long totalPhysMem = memInfo.totalram;
+  totalPhysMem *= memInfo.mem_unit;
+  return totalPhysMem;
+#endif
+
+#ifdef __APPLE__
+  int mib[2];
+  int64_t totalPhysMem;
+  mib[0] = CTL_HW;
+  mib[1] = HW_MEMSIZE;
+  length = sizeof(int64_t);
+  sysctl(mib, 2, &physical_memory, &length, NULL, 0);
+  return totalPhysMem;
+#endif
+
+#ifdef _WIN32
+  MEMORYSTATUSEX memInfo;
+  memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+  GlobalMemoryStatusEx(&memInfo)
+  DWORDLONG totalPhysMem = memInfo.ullTotalPhys;
+  return totalPhysMem;
+#endif
+  throw std::runtime_error("getSystemTotalPhysicalMemory() is not implemented for this platform");
+}
+
 
 }  // namespace utils
 }  // namespace minifi
