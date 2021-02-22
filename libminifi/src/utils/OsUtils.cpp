@@ -49,6 +49,7 @@
 
 #ifdef __APPLE__
 #include <mach/mach.h>
+#include <sys/sysctl.h>
 #endif
 
 namespace org {
@@ -356,7 +357,7 @@ uint64_t OsUtils::getSystemTotalPhysicalMemory() {
   mib[0] = CTL_HW;
   mib[1] = HW_MEMSIZE;
   size_t length = sizeof(int64_t);
-  sysctl(mib, 2, &physical_memory, &length, NULL, 0);
+  sysctl(mib, 2, &totalPhysMem, &length, NULL, 0);
   return totalPhysMem;
 #endif
 
