@@ -26,7 +26,6 @@ TEST_CASE("Test virtual memory usage", "[testmemoryusage]") {
   const auto vMemUsagebySystem = utils::OsUtils::getSystemVirtualMemoryUsage();
   const auto vMemTotal = utils::OsUtils::getSystemTotalVirtualMemory();
   REQUIRE(vMemUsagebyProcess > v.size());
-  REQUIRE(vMemUsagebyProcess < 2 * v.size());
   REQUIRE(vMemUsagebySystem > vMemUsagebyProcess);
   REQUIRE(vMemTotal >= vMemUsagebySystem);
 }
