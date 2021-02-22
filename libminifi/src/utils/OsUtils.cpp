@@ -194,8 +194,8 @@ uint64_t OsUtils::getCurrentProcessVirtualMemoryUsage() {
 #endif
 
 #ifdef _WIN32
-  PROCESS_MEMORY_COUNTERS pmc;
-  if (!GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
+  PROCESS_MEMORY_COUNTERS_EX pmc;
+  if (!GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc)))
     throw std::runtime_error("Could not get memory info for current process");
   return pmc.PrivateUsage;
 #endif
@@ -251,12 +251,13 @@ uint64_t OsUtils::getSystemVirtualMemoryUsage() {
 #endif
 
 #ifdef __APPLE__
-  xsw_usage vmusage = {0};
-  size_t size = sizeof(vmusage);
-  if(sysctlbyname("vm.swapusage", &vmusage, &size, NULL, 0) != 0) {
-    throw std::runtime_error("Could not get memory info for system");
-  }
-  return vmusage.xsu_used + getSystemPhysicalMemoryUsage();
+  int mib[2];
+  struct xsw_usage swap;
+  mib[0] = CTL_HW;
+  mib[1] = VM_SWAPUSAGE;
+  size_t length = sizeof(int64_t);
+  sysctl(mib, 2, &swap, &length, NULL, 0);
+  return swap.xsu_used + getSystemPhysicalMemoryUsage();
 #endif
 
 #ifdef _WIN32
@@ -320,11 +321,13 @@ uint64_t OsUtils::getSystemTotalVirtualMemory() {
 #endif
 
 #ifdef __APPLE__
-  struct statfs stats;
-  if (0 == statfs("/", &stats)) {
-    uint64_t myFreeSwap = (uint64_t)stats.f_bsize * stats.f_bfree;
-    return myFreeSwap + getSystemTotalPhysicalMemory();
-  }
+  int mib[2];
+  struct xsw_usage swap;
+  mib[0] = CTL_HW;
+  mib[1] = VM_SWAPUSAGE;
+  size_t length = sizeof(int64_t);
+  sysctl(mib, 2, &swap, &length, NULL, 0);
+  return swap.xsu_total + getSystemTotalPhysicalMemory();
 #endif
 
 #ifdef _WIN32
@@ -352,7 +355,7 @@ uint64_t OsUtils::getSystemTotalPhysicalMemory() {
   int64_t totalPhysMem;
   mib[0] = CTL_HW;
   mib[1] = HW_MEMSIZE;
-  length = sizeof(int64_t);
+  size_t length = sizeof(int64_t);
   sysctl(mib, 2, &physical_memory, &length, NULL, 0);
   return totalPhysMem;
 #endif
