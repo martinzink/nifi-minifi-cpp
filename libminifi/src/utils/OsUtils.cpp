@@ -25,7 +25,6 @@
 
 #ifdef __linux__
 #include <sstream>
-#include "sys/types.h"
 #include "sys/sysinfo.h"
 #endif
 
@@ -196,7 +195,7 @@ uint64_t OsUtils::getCurrentProcessVirtualMemoryUsage() {
 
 #ifdef _WIN32
   PROCESS_MEMORY_COUNTERS_EX pmc;
-  if (!GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc)))
+  if (!GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&pmc), sizeof(pmc)))
     throw std::runtime_error("Could not get memory info for current process");
   return pmc.PrivateUsage;
 #endif
@@ -244,8 +243,8 @@ uint64_t OsUtils::getSystemVirtualMemoryUsage() {
 #ifdef __linux__
   struct sysinfo memInfo;
 
-  sysinfo (&memInfo);
-  long long virtualMemUsed = memInfo.totalram - memInfo.freeram;
+  sysinfo(&memInfo);
+  uint64_t virtualMemUsed = memInfo.totalram - memInfo.freeram;
   virtualMemUsed += memInfo.totalswap - memInfo.freeswap;
   virtualMemUsed *= memInfo.mem_unit;
   return virtualMemUsed;
@@ -276,7 +275,7 @@ uint64_t OsUtils::getSystemPhysicalMemoryUsage() {
   struct sysinfo memInfo;
 
   sysinfo(&memInfo);
-  long long physMemUsed = memInfo.totalram - memInfo.freeram;
+  uint64_t physMemUsed = memInfo.totalram - memInfo.freeram;
   physMemUsed *= memInfo.mem_unit;
   return physMemUsed;
 #endif
@@ -290,9 +289,8 @@ uint64_t OsUtils::getSystemPhysicalMemoryUsage() {
   count = sizeof(vm_stats) / sizeof(natural_t);
   if (KERN_SUCCESS == host_page_size(mach_port, &page_size) &&
       KERN_SUCCESS == host_statistics64(mach_port, HOST_VM_INFO,
-                                      (host_info64_t)&vm_stats, &count))
-  {
-      long long physMemUsed = ((int64_t)vm_stats.active_count +
+                                      (host_info64_t)&vm_stats, &count)) {
+      uint64_t physMemUsed = ((int64_t)vm_stats.active_count +
                                (int64_t)vm_stats.inactive_count +
                                (int64_t)vm_stats.wire_count) *  (int64_t)page_size;
       return physMemUsed;
@@ -314,8 +312,8 @@ uint64_t OsUtils::getSystemTotalVirtualMemory() {
 #ifdef __linux__
   struct sysinfo memInfo;
 
-  sysinfo (&memInfo);
-  long long totalVirtualMem = memInfo.totalram;
+  sysinfo(&memInfo);
+  uint64_t totalVirtualMem = memInfo.totalram;
   totalVirtualMem += memInfo.totalswap;
   totalVirtualMem *= memInfo.mem_unit;
   return totalVirtualMem;
@@ -345,8 +343,8 @@ uint64_t OsUtils::getSystemTotalPhysicalMemory() {
 #ifdef __linux__
   struct sysinfo memInfo;
 
-  sysinfo (&memInfo);
-  long long totalPhysMem = memInfo.totalram;
+  sysinfo(&memInfo);
+  uint64_t totalPhysMem = memInfo.totalram;
   totalPhysMem *= memInfo.mem_unit;
   return totalPhysMem;
 #endif

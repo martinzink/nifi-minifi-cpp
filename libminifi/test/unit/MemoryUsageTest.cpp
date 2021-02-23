@@ -40,3 +40,13 @@ TEST_CASE("Test physical memory usage", "[testmemoryusage]") {
   REQUIRE(RAMUsagebySystem > RAMUsagebyProcess);
   REQUIRE(RAMTotal >= RAMUsagebySystem);
 }
+
+#ifndef WIN32
+size_t GetTotalMemoryLegacy() {
+  size_t mema = (size_t) sysconf(_SC_PHYS_PAGES) * (size_t) sysconf(_SC_PAGESIZE);
+}
+
+TEST_CASE("Test new and legacy total system memory query equivalency") {
+  REQUIRE(GetTotalMemoryLegacy() == utils::OsUtils::getSystemTotalPhysicalMemory());
+}
+#endif
