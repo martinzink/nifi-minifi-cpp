@@ -1,5 +1,4 @@
 /**
- *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,16 +14,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef LIBMINIFI_INCLUDE_UTILS_PROCESSCPUUTILIZATIONTRACKER_H_
+#define LIBMINIFI_INCLUDE_UTILS_PROCESSCPUUTILIZATIONTRACKER_H_
+
+#include <time.h>
 
 namespace org {
 namespace apache {
 namespace nifi {
 namespace minifi {
 namespace utils {
+class ProcessCPUUtilizationTracker {
+ public:
+  ProcessCPUUtilizationTracker() : cpu_times_(0), sys_cpu_times_(0), user_cpu_times_(0) {
+    queryCPUTimes();
+  }
+  void queryCPUTimes();
+  bool isCurrentScanOlderThanPrevious();
+  bool isCurrentScanSameAsPrevious();
+  double getProcessUtilizationSinceLastScan();
+ private:
+  clock_t cpu_times_;
+  clock_t sys_cpu_times_;
+  clock_t user_cpu_times_;
 
+  clock_t previous_cpu_times_;
+  clock_t previous_sys_cpu_times_;
+  clock_t previous_user_cpu_times_;
+};
 
-}  // namespace utils
-}  // namespace minifi
-}  // namespace nifi
-}  // namespace apache
-}  // namespace org
+} /* namespace utils */
+} /* namespace minifi */
+} /* namespace nifi */
+} /* namespace apache */
+} /* namespace org */
+
+#endif  // LIBMINIFI_INCLUDE_UTILS_PROCESSCPUUTILIZATIONTRACKER_H_

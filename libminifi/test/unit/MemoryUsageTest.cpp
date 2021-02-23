@@ -20,30 +20,25 @@
 #include "utils/OsUtils.h"
 #include "../TestBase.h"
 
-TEST_CASE("Test virtual memory usage", "[testmemoryusage]") {
+TEST_CASE("Test memory usage", "[testmemoryusage]") {
   std::vector<char> v(30000000);
   const auto vMemUsagebyProcess = utils::OsUtils::getCurrentProcessVirtualMemoryUsage();
   const auto vMemUsagebySystem = utils::OsUtils::getSystemVirtualMemoryUsage();
   const auto vMemTotal = utils::OsUtils::getSystemTotalVirtualMemory();
-  REQUIRE(vMemUsagebyProcess > v.size());
-  REQUIRE(vMemUsagebySystem > vMemUsagebyProcess);
-  REQUIRE(vMemTotal >= vMemUsagebySystem);
-}
-
-TEST_CASE("Test physical memory usage", "[testmemoryusage]") {
-  std::vector<char> v(30000000);
   const auto RAMUsagebyProcess = utils::OsUtils::getCurrentProcessPhysicalMemoryUsage();
   const auto RAMUsagebySystem = utils::OsUtils::getSystemPhysicalMemoryUsage();
   const auto RAMTotal = utils::OsUtils::getSystemTotalPhysicalMemory();
-  REQUIRE(RAMUsagebyProcess > v.size());
-  REQUIRE(RAMUsagebyProcess < 2 * v.size());
-  REQUIRE(RAMUsagebySystem > RAMUsagebyProcess);
-  REQUIRE(RAMTotal >= RAMUsagebySystem);
+  REQUIRE(vMemUsagebyProcess > v.size());
+  REQUIRE(vMemUsagebySystem > vMemUsagebyProcess);
+  REQUIRE(vMemTotal >= vMemUsagebySystem);
+  REQUIRE(vMemUsagebyProcess >= RAMUsagebyProcess);
+  REQUIRE(vMemUsagebySystem > RAMUsagebySystem);
+  REQUIRE(vMemTotal >= RAMTotal);
 }
 
 #ifndef WIN32
 size_t GetTotalMemoryLegacy() {
-  size_t mema = (size_t) sysconf(_SC_PHYS_PAGES) * (size_t) sysconf(_SC_PAGESIZE);
+  return (size_t) sysconf(_SC_PHYS_PAGES) * (size_t) sysconf(_SC_PAGESIZE);
 }
 
 TEST_CASE("Test new and legacy total system memory query equivalency") {
