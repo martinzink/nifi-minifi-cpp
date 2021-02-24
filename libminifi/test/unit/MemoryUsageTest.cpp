@@ -32,7 +32,7 @@ TEST_CASE("Test memory usage", "[testmemoryusage]") {
   REQUIRE(vMemUsagebySystem > vMemUsagebyProcess);
   REQUIRE(vMemTotal >= vMemUsagebySystem);
   REQUIRE(vMemUsagebyProcess >= RAMUsagebyProcess);
-  REQUIRE(vMemUsagebySystem > RAMUsagebySystem);
+  REQUIRE(vMemUsagebySystem >= RAMUsagebySystem);
   REQUIRE(vMemTotal >= RAMTotal);
 }
 
