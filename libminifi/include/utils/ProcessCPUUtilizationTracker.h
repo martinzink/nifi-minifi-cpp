@@ -24,15 +24,36 @@ namespace apache {
 namespace nifi {
 namespace minifi {
 namespace utils {
-class ProcessCPUUtilizationTracker {
+
+class ProcessCPUUtilizationTrackerBase {
+ public:
+  ProcessCPUUtilizationTrackerBase() = default;
+  virtual ~ProcessCPUUtilizationTrackerBase() = default;
+  virtual double getCollectedCPUUtilizationAndRestartCollection() = 0;
+};
+
+#if defined(__linux__) || defined(__APPLE__)
+class ProcessCPUUtilizationTracker : ProcessCPUUtilizationTrackerBase {
  public:
   ProcessCPUUtilizationTracker() : cpu_times_(0), sys_cpu_times_(0), user_cpu_times_(0) {
     queryCPUTimes();
   }
+  ~ProcessCPUUtilizationTracker() = default;
+  double getCollectedCPUUtilizationAndRestartCollection() override {
+    queryCPUTimes();
+    if (isCurrentScanOlderThanPrevious() || isCurrentScanSameAsPrevious()) {
+      return -1.0;
+    } else {
+      return getProcessUtilizationSinceLastScan();
+    }
+  }
+
+ protected:
   void queryCPUTimes();
   bool isCurrentScanOlderThanPrevious();
   bool isCurrentScanSameAsPrevious();
   double getProcessUtilizationSinceLastScan();
+
  private:
   clock_t cpu_times_;
   clock_t sys_cpu_times_;
@@ -42,6 +63,11 @@ class ProcessCPUUtilizationTracker {
   clock_t previous_sys_cpu_times_;
   clock_t previous_user_cpu_times_;
 };
+#endif  // linux, macOS
+
+#if defined(WIN32)
+
+#endif  // Windows
 
 } /* namespace utils */
 } /* namespace minifi */

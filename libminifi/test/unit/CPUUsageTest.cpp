@@ -42,16 +42,12 @@ TEST_CASE("Test System CPU Utilization Tracker", "[testcpuusage]") {
   int vCores = std::thread::hardware_concurrency();
 
   idleSleep(100);
-  tracker.scanProcStatFile();
-  double systemUtilizationDuringIdleSleep = tracker.getSystemUtilizationSinceLastScan();
-  REQUIRE(!tracker.isCurrentScanSameAsPrevious());
+  double systemUtilizationDuringIdleSleep = tracker.getCollectedCPUUtilizationAndRestartCollection();
   REQUIRE(systemUtilizationDuringIdleSleep > 0);
 
   busySleep(100);
-  tracker.scanProcStatFile();
-  double systemUtilizationDuringBusySleep = tracker.getSystemUtilizationSinceLastScan();
-  REQUIRE(!tracker.isCurrentScanSameAsPrevious());
-  REQUIRE(systemUtilizationDuringBusySleep > (0.9/vCores));
+  double systemUtilizationDuringBusySleep = tracker.getCollectedCPUUtilizationAndRestartCollection();
+  REQUIRE(systemUtilizationDuringBusySleep > (0.8/vCores));
 }
 
 TEST_CASE("Test Process CPU Utilization Tracker", "[testcpuusage]") {
@@ -59,14 +55,10 @@ TEST_CASE("Test Process CPU Utilization Tracker", "[testcpuusage]") {
   int vCores = std::thread::hardware_concurrency();
 
   idleSleep(100);
-  tracker.queryCPUTimes();
-  double processCPUUtilizationDuringIdleSleep = tracker.getProcessUtilizationSinceLastScan();
-  REQUIRE(!tracker.isCurrentScanSameAsPrevious());
+  double processCPUUtilizationDuringIdleSleep = tracker.getCollectedCPUUtilizationAndRestartCollection();
   REQUIRE(processCPUUtilizationDuringIdleSleep < 0.1);
 
   busySleep(100);
-  tracker.queryCPUTimes();
-  double processCPUUtilizationDuringBusySleep = tracker.getProcessUtilizationSinceLastScan();
-  REQUIRE(!tracker.isCurrentScanSameAsPrevious());
-  REQUIRE(processCPUUtilizationDuringBusySleep > (0.9/vCores));
+  double processCPUUtilizationDuringBusySleep = tracker.getCollectedCPUUtilizationAndRestartCollection();
+  REQUIRE(processCPUUtilizationDuringBusySleep > (0.8/vCores));
 }
