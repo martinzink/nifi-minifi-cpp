@@ -101,8 +101,7 @@ double ProcessCPUUtilizationTracker::getProcessUtilizationSinceLastScan() {
 
     if (isCurrentScanOlderThanPrevious() || isCurrentScanSameAsPrevious()) {
         percent = -1.0;
-    }
-    else {
+    } else {
         uint64_t cpu_times_diff = cpu_times_ - previous_cpu_times_;
         uint64_t sys_cpu_times_diff = sys_cpu_times_ - previous_sys_cpu_times_;
         uint64_t user_cpu_times_diff = user_cpu_times_ - previous_user_cpu_times_;

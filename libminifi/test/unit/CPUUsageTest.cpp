@@ -42,15 +42,17 @@ TEST_CASE("Test System CPU Utilization Tracker", "[testcpuusage]") {
   int vCores = std::thread::hardware_concurrency();
 
   for (int i = 0; i < 10; ++i) {
-      idleSleep(100);
-      double systemUtilizationDuringIdleSleep = tracker.getCollectedCPUUtilizationAndRestartCollection();
-      CHECK(systemUtilizationDuringIdleSleep > 0);
-      std::cout << "systemUtilizationDuringIdleSleep: " << systemUtilizationDuringIdleSleep << std::endl;
+    idleSleep(100);
+    double systemUtilizationDuringIdleSleep = tracker.getCollectedCPUUtilizationAndRestartCollection();
+    REQUIRE(systemUtilizationDuringIdleSleep >= 0);
+    REQUIRE(systemUtilizationDuringIdleSleep <= 1);
+    std::cout << "systemUtilizationDuringIdleSleep: " << systemUtilizationDuringIdleSleep << std::endl;
 
-      busySleep(100);
-      double systemUtilizationDuringBusySleep = tracker.getCollectedCPUUtilizationAndRestartCollection();
-      CHECK(systemUtilizationDuringBusySleep > (0.8 / vCores));
-      std::cout << "systemUtilizationDuringBusySleep: " << systemUtilizationDuringBusySleep << std::endl;
+    busySleep(100);
+    double systemUtilizationDuringBusySleep = tracker.getCollectedCPUUtilizationAndRestartCollection();
+    REQUIRE(systemUtilizationDuringBusySleep > (0.8 / vCores));
+    REQUIRE(systemUtilizationDuringBusySleep <= 1);
+    std::cout << "systemUtilizationDuringBusySleep: " << systemUtilizationDuringBusySleep << std::endl;
   }
 }
 
@@ -58,15 +60,16 @@ TEST_CASE("Test Process CPU Utilization Tracker", "[testcpuusage]") {
   org::apache::nifi::minifi::utils::ProcessCPUUtilizationTracker tracker;
   int vCores = std::thread::hardware_concurrency();
   for (int i = 0; i < 10; ++i) {
-      idleSleep(100);
-      double processCPUUtilizationDuringIdleSleep = tracker.getCollectedCPUUtilizationAndRestartCollection();
-      CHECK(processCPUUtilizationDuringIdleSleep < 0.1);
-      CHECK(processCPUUtilizationDuringIdleSleep >= 0);
-      std::cout << "processCPUUtilizationDuringIdleSleep: " << processCPUUtilizationDuringIdleSleep << std::endl;
+    idleSleep(100);
+    double processCPUUtilizationDuringIdleSleep = tracker.getCollectedCPUUtilizationAndRestartCollection();
+    REQUIRE(processCPUUtilizationDuringIdleSleep < 0.1);
+    REQUIRE(processCPUUtilizationDuringIdleSleep >= 0);
+    std::cout << "processCPUUtilizationDuringIdleSleep: " << processCPUUtilizationDuringIdleSleep << std::endl;
 
-      busySleep(100);
-      double processCPUUtilizationDuringBusySleep = tracker.getCollectedCPUUtilizationAndRestartCollection();
-      CHECK(processCPUUtilizationDuringBusySleep > (0.8 / vCores));
-      std::cout << "processCPUUtilizationDuringBusySleep: " << processCPUUtilizationDuringBusySleep << std::endl;
+    busySleep(100);
+    double processCPUUtilizationDuringBusySleep = tracker.getCollectedCPUUtilizationAndRestartCollection();
+    REQUIRE(processCPUUtilizationDuringBusySleep > (0.8 / vCores));
+    REQUIRE(processCPUUtilizationDuringBusySleep <= 1);
+    std::cout << "processCPUUtilizationDuringBusySleep: " << processCPUUtilizationDuringBusySleep << std::endl;
   }
 }
