@@ -28,6 +28,12 @@ TEST_CASE("Test memory usage", "[testmemoryusage]") {
   const auto RAMUsagebyProcess = utils::OsUtils::getCurrentProcessPhysicalMemoryUsage();
   const auto RAMUsagebySystem = utils::OsUtils::getSystemPhysicalMemoryUsage();
   const auto RAMTotal = utils::OsUtils::getSystemTotalPhysicalMemory();
+  std::cout << "vMemUsagebyProcess " << vMemUsagebyProcess << std::endl;
+  std::cout << "vMemUsagebySystem " << vMemUsagebySystem << std::endl;
+  std::cout << "vMemTotal " << vMemTotal << std::endl;
+  std::cout << "RAMUsagebyProcess " << RAMUsagebyProcess << std::endl;
+  std::cout << "RAMUsagebySystem " << RAMUsagebySystem << std::endl;
+  std::cout << "RAMTotal " << RAMTotal << std::endl;
   REQUIRE(vMemUsagebyProcess > v.size());
   REQUIRE(vMemUsagebySystem > vMemUsagebyProcess);
   REQUIRE(vMemTotal >= vMemUsagebySystem);

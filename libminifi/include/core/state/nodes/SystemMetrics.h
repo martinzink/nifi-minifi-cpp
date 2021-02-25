@@ -74,8 +74,9 @@ class SystemInformation : public DeviceInformation {
     systemInfo.children.push_back(serializeVCoreInformation());
     systemInfo.children.push_back(serializeTotalPhysicalMemoryInformation());
     systemInfo.children.push_back(serializeTotalPhysicalMemoryUsageInformation());
+#ifndef WIN32
     systemInfo.children.push_back(serializeArchitectureInformation());
-
+#endif
     serialized.push_back(systemInfo);
     serialized.push_back(identifier);
 
@@ -105,7 +106,7 @@ class SystemInformation : public DeviceInformation {
     used_physical_memory.value = (uint64_t)utils::OsUtils::getSystemPhysicalMemoryUsage();
     return used_physical_memory;
   }
-
+#ifndef WIN32
   SerializedResponseNode serializeArchitectureInformation() {
     SerializedResponseNode arch;
     arch.name = "machinearch";
@@ -119,6 +120,7 @@ class SystemInformation : public DeviceInformation {
     }
     return arch;
   }
+#endif
 };
 
 REGISTER_RESOURCE(SystemInformation, "Node part of an AST that defines the System information and metrics subtree");

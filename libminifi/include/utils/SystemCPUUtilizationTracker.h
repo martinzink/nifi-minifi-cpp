@@ -91,40 +91,49 @@ class SystemCPUUtilizationTracker : public SystemCPUUtilizationTrackerBase {
 
 #ifdef WIN32
 class SystemCPUUtilizationTracker : public SystemCPUUtilizationTrackerBase {
+ public:
   SystemCPUUtilizationTracker() : is_query_open_(false) {
     openQuery();
   }
 
+  ~SystemCPUUtilizationTracker() {
+    PdhCloseQuery(cpu_query_);
+  }
+  double getCollectedCPUUtilizationAndRestartCollection() {
+      double value = getValueFromOpenQuery();
+      return value;
+  }
+ protected:
   void openQuery() {
     if (!is_query_open_) {
       if (ERROR_SUCCESS != PdhOpenQuery(NULL, NULL, &cpu_query_))
         return;
-      if (ERROR_SUCCESS != PdhAddEnglishCounter(cpu_query_, L"\\Processor(_Total)\\% Processor Time", NULL, &cpu_total_)) {
-        stopQuery();
+      if (ERROR_SUCCESS != PdhAddEnglishCounter(cpu_query_, "\\Processor(_Total)\\% Processor Time", NULL, &cpu_total_)) {
+        closeQuery();
         return;
       }
-      if (ERROR_SUCCESS != PdhCollectQueryData(cpuQuery)) {
-        stopQuery();
+      if (ERROR_SUCCESS != PdhCollectQueryData(cpu_query_)) {
+        closeQuery();
         return;
       }
-      is_query_open = true;
+      is_query_open_ = true;
     }
   }
 
-  void stopQuery() {
+  void closeQuery() {
     PdhCloseQuery(cpu_query_);
   }
   double getValueFromOpenQuery() {
-    if (!is_query_open)
+    if (!is_query_open_)
       return -1.0;
 
     PDH_FMT_COUNTERVALUE counterVal;
-    if (ERROR_SUCCESS != PdhCollectQueryData(cpuQuery))
+    if (ERROR_SUCCESS != PdhCollectQueryData(cpu_query_))
       return -1.0;
-    if (ERROR_SUCCESS != PdhGetFormattedCounterValue(cpuTotal, PDH_FMT_DOUBLE, NULL, &counterVal))
+    if (ERROR_SUCCESS != PdhGetFormattedCounterValue(cpu_total_, PDH_FMT_DOUBLE, NULL, &counterVal))
       return -1.0;
 
-    return counterVal.doubleValue;
+    return counterVal.doubleValue / 100;
   }
 
  private:
