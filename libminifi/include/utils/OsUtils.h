@@ -29,20 +29,11 @@ namespace OsUtils {
 /// Resolves a user ID to a username
 extern std::string userIdToUsername(const std::string &uid);
 
-/// Returns virtual memory usage by the current process in bytes
-uint64_t getCurrentProcessVirtualMemoryUsage();
-
 /// Returns physical memory usage by the current process in bytes
 uint64_t getCurrentProcessPhysicalMemoryUsage();
 
-/// Returns virtual memory usage by the system in bytes
-uint64_t getSystemVirtualMemoryUsage();
-
 /// Returns physical memory usage by the system in bytes
 uint64_t getSystemPhysicalMemoryUsage();
-
-/// Returns the total virtual memory in the system
-uint64_t getSystemTotalVirtualMemory();
 
 /// Returns the total physical memory in the system
 uint64_t getSystemTotalPhysicalMemory();
