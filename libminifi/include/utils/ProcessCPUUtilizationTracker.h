@@ -17,8 +17,14 @@
 #ifndef LIBMINIFI_INCLUDE_UTILS_PROCESSCPUUTILIZATIONTRACKER_H_
 #define LIBMINIFI_INCLUDE_UTILS_PROCESSCPUUTILIZATIONTRACKER_H_
 
+#if defined(__linux__) || defined(__APPLE__)
 #include <time.h>
+#endif
 
+#ifdef WIN32
+#include "windows.h"
+#include <cstdint>
+#endif
 namespace org {
 namespace apache {
 namespace nifi {
@@ -66,7 +72,34 @@ class ProcessCPUUtilizationTracker : ProcessCPUUtilizationTrackerBase {
 #endif  // linux, macOS
 
 #if defined(WIN32)
+class ProcessCPUUtilizationTracker : ProcessCPUUtilizationTrackerBase {
+ public:
+  ProcessCPUUtilizationTracker() {
+    self_ = GetCurrentProcess();
+    queryCPUTimes();
+  }
+  ~ProcessCPUUtilizationTracker() = default;
+  double getCollectedCPUUtilizationAndRestartCollection() override {
+    queryCPUTimes();
+    return getProcessUtilizationSinceLastScan();
+  }
 
+ protected:
+  void queryCPUTimes();
+  bool isCurrentScanOlderThanPrevious();
+  bool isCurrentScanSameAsPrevious();
+  double getProcessUtilizationSinceLastScan();
+
+ private:
+  HANDLE self_;
+  uint64_t cpu_times_;
+  uint64_t sys_cpu_times_;
+  uint64_t user_cpu_times_;
+
+  uint64_t previous_cpu_times_;
+  uint64_t previous_sys_cpu_times_;
+  uint64_t previous_user_cpu_times_;
+};
 #endif  // Windows
 
 } /* namespace utils */

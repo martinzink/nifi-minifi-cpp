@@ -263,7 +263,7 @@ uint64_t OsUtils::getSystemVirtualMemoryUsage() {
 #ifdef _WIN32
   MEMORYSTATUSEX memInfo;
   memInfo.dwLength = sizeof(MEMORYSTATUSEX);
-  GlobalMemoryStatusEx(&memInfo)
+  GlobalMemoryStatusEx(&memInfo);
   DWORDLONG virtualMemUsed = memInfo.ullTotalPageFile - memInfo.ullAvailPageFile;
   return virtualMemUsed;
 #endif
@@ -332,7 +332,7 @@ uint64_t OsUtils::getSystemTotalVirtualMemory() {
 #ifdef _WIN32
   MEMORYSTATUSEX memInfo;
   memInfo.dwLength = sizeof(MEMORYSTATUSEX);
-  GlobalMemoryStatusEx(&memInfo)
+  GlobalMemoryStatusEx(&memInfo);
   DWORDLONG totalVirtualMem = memInfo.ullTotalPageFile;
   return totalVirtualMem;
 #endif
@@ -362,7 +362,7 @@ uint64_t OsUtils::getSystemTotalPhysicalMemory() {
 #ifdef _WIN32
   MEMORYSTATUSEX memInfo;
   memInfo.dwLength = sizeof(MEMORYSTATUSEX);
-  GlobalMemoryStatusEx(&memInfo)
+  GlobalMemoryStatusEx(&memInfo);
   DWORDLONG totalPhysMem = memInfo.ullTotalPhys;
   return totalPhysMem;
 #endif
