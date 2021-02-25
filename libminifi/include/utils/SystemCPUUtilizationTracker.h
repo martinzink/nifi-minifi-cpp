@@ -148,7 +148,7 @@ class SystemCPUUtilizationTracker : public SystemCPUUtilizationTrackerBase {
 class SystemCPUUtilizationTracker : public SystemCPUUtilizationTrackerBase {
  public:
   SystemCPUUtilizationTracker() : total_ticks_(0), idle_ticks_(0), previous_total_ticks_(0), previous_idle_ticks_(0) {
-    scanProcStatFile();
+    queryHostCPULoad();
   }
   ~SystemCPUUtilizationTracker() = default;
 
