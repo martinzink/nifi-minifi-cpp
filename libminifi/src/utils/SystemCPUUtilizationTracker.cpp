@@ -67,9 +67,11 @@ void SystemCPUUtilizationTracker::queryHostCPULoad() {
   host_cpu_load_info_data_t cpuinfo;
   mach_msg_type_number_t count = HOST_CPU_LOAD_INFO_COUNT;
   if (host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, (host_info_t)&cpuinfo, &count) == KERN_SUCCESS) {
+    previous_total_ticks_ = total_ticks_;
+    previous_idle_ticks_ = idle_ticks_;
     total_ticks_ = 0;
     for (int i = 0; i < CPU_STATE_MAX; i++) {
-      totalTicks += cpuinfo.cpu_ticks[i];
+      total_ticks_ += cpuinfo.cpu_ticks[i];
     }
     idle_ticks_ = cpuinfo.cpu_ticks[CPU_STATE_IDLE];
   }
