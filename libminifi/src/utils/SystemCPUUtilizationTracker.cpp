@@ -16,6 +16,7 @@
  */
 
 #include "utils/SystemCPUUtilizationTracker.h"
+#include <iostream>
 
 namespace org {
 namespace apache {
@@ -66,7 +67,9 @@ double SystemCPUUtilizationTracker::getSystemUtilizationBetweenLastTwoScans() {
 void SystemCPUUtilizationTracker::queryHostCPULoad() {
   host_cpu_load_info_data_t cpuinfo;
   mach_msg_type_number_t count = HOST_CPU_LOAD_INFO_COUNT;
-  if (host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, (host_info_t)&cpuinfo, &count) == KERN_SUCCESS) {
+  auto query_result = host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, (host_info_t)&cpuinfo, &count);
+  std::cout << query_result; 
+  if (query_result == KERN_SUCCESS) {
     previous_total_ticks_ = total_ticks_;
     previous_idle_ticks_ = idle_ticks_;
     total_ticks_ = 0;
@@ -93,7 +96,7 @@ double SystemCPUUtilizationTracker::getSystemUtilizationBetweenLastTwoQueries() 
   uint64_t total_ticks_since_last_time = total_ticks_-previous_total_ticks_;
   uint64_t idle_ticks_since_last_time  = idle_ticks_-previous_idle_ticks_;
 
-  percent = static_cast<double>(total_ticks_since_last_time)/static_cast<double>(total_ticks_since_last_time+idle_ticks_since_last_time);
+  percent = static_cast<double>(total_ticks_since_last_time-idle_ticks_since_last_time)/static_cast<double>(total_ticks_since_last_time);
 
   return percent;
 }
