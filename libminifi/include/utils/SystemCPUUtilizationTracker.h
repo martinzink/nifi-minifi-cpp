@@ -59,7 +59,7 @@ class SystemCPUUtilizationTracker : public SystemCPUUtilizationTrackerBase {
 
   double getCollectedCPUUtilizationAndRestartCollection() override {
     scanProcStatFile();
-    if (isCurrentScanSameAsPrevious() && isCurrentScanOlderThanPrevious()) {
+    if (isCurrentScanSameAsPrevious() || isCurrentScanOlderThanPrevious()) {
       return -1.0;
     } else {
       return getSystemUtilizationBetweenLastTwoScans();
@@ -154,7 +154,7 @@ class SystemCPUUtilizationTracker : public SystemCPUUtilizationTrackerBase {
 
   double getCollectedCPUUtilizationAndRestartCollection() override {
     queryHostCPULoad();
-    if (isCurrentQueryOlderThanPrevious() && isCurrentQuerySameAsPrevious()) {
+    if (isCurrentQueryOlderThanPrevious() || isCurrentQuerySameAsPrevious()) {
       return -1.0;
     } else {
       return getSystemUtilizationBetweenLastTwoQueries();
