@@ -166,43 +166,6 @@ std::string OsUtils::userIdToUsername(const std::string &uid) {
   return name;
 }
 
-uint64_t OsUtils::getCurrentProcessVirtualMemoryUsage() {
-#ifdef __linux__
-  static const std::string linePrefix = "VmSize:";
-  std::ifstream statusFile("/proc/self/status");
-  std::string line;
-
-  while (std::getline(statusFile, line)) {
-    // if line begins with "VmSize:"
-    if (line.rfind(linePrefix, 0) == 0) {
-      std::istringstream valuableLine(line.substr(linePrefix.length()));
-      uint64_t kByteValue;
-      valuableLine >> kByteValue;
-      return kByteValue * 1024;
-    }
-  }
-
-  throw std::runtime_error("Could not get memory info for current process");
-#endif
-
-#ifdef __APPLE__
-  task_basic_info tInfo;
-  mach_msg_type_number_t tInfoCount = TASK_BASIC_INFO_COUNT;
-  if (KERN_SUCCESS != task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&tInfo, &tInfoCount))
-    throw std::runtime_error("Could not get memory info for current process");
-  return tInfo.virtual_size;
-#endif
-
-#ifdef _WIN32
-  PROCESS_MEMORY_COUNTERS_EX pmc;
-  if (!GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&pmc), sizeof(pmc)))
-    throw std::runtime_error("Could not get memory info for current process");
-  return pmc.PrivateUsage;
-#endif
-
-  throw std::runtime_error("getCurrentProcessVirtualMemoryUsage() is not implemented for this platform");
-}
-
 uint64_t OsUtils::getCurrentProcessPhysicalMemoryUsage() {
 #ifdef __linux__
   static const std::string linePrefix = "VmRSS:";
@@ -237,37 +200,6 @@ uint64_t OsUtils::getCurrentProcessPhysicalMemoryUsage() {
   return pmc.WorkingSetSize;
 #endif
   throw std::runtime_error("getCurrentProcessPhysicalMemoryUsage() is not implemented for this platform");
-}
-
-uint64_t OsUtils::getSystemVirtualMemoryUsage() {
-#ifdef __linux__
-  struct sysinfo memInfo;
-
-  sysinfo(&memInfo);
-  uint64_t virtualMemUsed = memInfo.totalram - memInfo.freeram;
-  virtualMemUsed += memInfo.totalswap - memInfo.freeswap;
-  virtualMemUsed *= memInfo.mem_unit;
-  return virtualMemUsed;
-#endif
-
-#ifdef __APPLE__
-  int mib[2];
-  struct xsw_usage swap;
-  mib[0] = CTL_HW;
-  mib[1] = VM_SWAPUSAGE;
-  size_t length = sizeof(int64_t);
-  sysctl(mib, 2, &swap, &length, NULL, 0);
-  return swap.xsu_used + getSystemPhysicalMemoryUsage();
-#endif
-
-#ifdef _WIN32
-  MEMORYSTATUSEX memInfo;
-  memInfo.dwLength = sizeof(MEMORYSTATUSEX);
-  GlobalMemoryStatusEx(&memInfo);
-  DWORDLONG virtualMemUsed = memInfo.ullTotalPageFile - memInfo.ullAvailPageFile;
-  return virtualMemUsed;
-#endif
-  throw std::runtime_error("getSystemVirtualMemoryUsage() is not implemented for this platform");
 }
 
 uint64_t OsUtils::getSystemPhysicalMemoryUsage() {
@@ -306,37 +238,6 @@ uint64_t OsUtils::getSystemPhysicalMemoryUsage() {
   return physMemUsed;
 #endif
   throw std::runtime_error("getSystemPhysicalMemoryUsage() is not implemented for this platform");
-}
-
-uint64_t OsUtils::getSystemTotalVirtualMemory() {
-#ifdef __linux__
-  struct sysinfo memInfo;
-
-  sysinfo(&memInfo);
-  uint64_t totalVirtualMem = memInfo.totalram;
-  totalVirtualMem += memInfo.totalswap;
-  totalVirtualMem *= memInfo.mem_unit;
-  return totalVirtualMem;
-#endif
-
-#ifdef __APPLE__
-  int mib[2];
-  struct xsw_usage swap;
-  mib[0] = CTL_HW;
-  mib[1] = VM_SWAPUSAGE;
-  size_t length = sizeof(int64_t);
-  sysctl(mib, 2, &swap, &length, NULL, 0);
-  return swap.xsu_total + getSystemTotalPhysicalMemory();
-#endif
-
-#ifdef _WIN32
-  MEMORYSTATUSEX memInfo;
-  memInfo.dwLength = sizeof(MEMORYSTATUSEX);
-  GlobalMemoryStatusEx(&memInfo);
-  DWORDLONG totalVirtualMem = memInfo.ullTotalPageFile;
-  return totalVirtualMem;
-#endif
-  throw std::runtime_error("getSystemTotalVirtualMemory() is not implemented for this platform");
 }
 
 uint64_t OsUtils::getSystemTotalPhysicalMemory() {
