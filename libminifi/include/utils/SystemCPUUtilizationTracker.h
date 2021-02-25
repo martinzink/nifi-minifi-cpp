@@ -103,6 +103,7 @@ class SystemCPUUtilizationTracker : public SystemCPUUtilizationTrackerBase {
       double value = getValueFromOpenQuery();
       return value;
   }
+
  protected:
   void openQuery() {
     if (!is_query_open_) {

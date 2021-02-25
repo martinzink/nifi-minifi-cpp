@@ -22,8 +22,8 @@
 #endif
 
 #ifdef WIN32
-#include "windows.h"
 #include <cstdint>
+#include "windows.h"
 #endif
 namespace org {
 namespace apache {
