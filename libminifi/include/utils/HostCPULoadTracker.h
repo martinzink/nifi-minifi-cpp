@@ -59,9 +59,7 @@ class HostCPULoadTracker : public HostCPULoadTrackerBase {
 
   double getHostCPULoadAndRestartCollection() {
     queryHostCPULoad();
-    if (isCurrentQuerySameAsPrevious()) {
-      return 0.0;
-    } else if (isCurrentQueryOlderThanPrevious()) {
+    if (isCurrentQuerySameAsPrevious() || isCurrentQuerySameAsPrevious()) {
       return -1.0;
     } else {
       return getHostLoadFromBetweenLastTwoQueries();
@@ -98,12 +96,12 @@ class HostCPULoadTracker : public HostCPULoadTrackerBase {
     PdhCloseQuery(cpu_query_);
   }
   double getHostCPULoadAndRestartCollection() override {
-      double value = getValueFromOpenQuery();
-      return value;
+    double value = getValueFromOpenQuery();
+    return value;
   }
 
  protected:
-     void openQuery();
+  void openQuery();
   double getValueFromOpenQuery();
 
  private:
@@ -123,9 +121,7 @@ class HostCPULoadTracker : public HostCPULoadTrackerBase {
 
   double getHostCPULoadAndRestartCollection() {
     queryHostCPULoad();
-    if (isCurrentQuerySameAsPrevious()) {
-      return 0.0;
-    } else if (isCurrentQueryOlderThanPrevious()) {
+    if (isCurrentQuerySameAsPrevious() || isCurrentQuerySameAsPrevious()) {
       return -1.0;
     } else {
       return getHostLoadFromBetweenLastTwoQueries();

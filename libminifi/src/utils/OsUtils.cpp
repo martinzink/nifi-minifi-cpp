@@ -26,6 +26,7 @@
 #ifdef __linux__
 #include <sstream>
 #include "sys/sysinfo.h"
+#include "utils/OptionalUtils.h"
 #endif
 
 #ifdef _WIN32
@@ -169,10 +170,10 @@ std::string OsUtils::userIdToUsername(const std::string &uid) {
 uint64_t OsUtils::getCurrentProcessPhysicalMemoryUsage() {
 #ifdef __linux__
   static const std::string linePrefix = "VmRSS:";
-  std::ifstream statusFile("/proc/self/status");
+  std::ifstream status_file("/proc/self/status");
   std::string line;
 
-  while (std::getline(statusFile, line)) {
+  while (std::getline(status_file, line)) {
     // if line begins with "VmRSS:"
     if (line.rfind(linePrefix, 0) == 0) {
       std::istringstream valuableLine(line.substr(linePrefix.length()));
@@ -204,12 +205,28 @@ uint64_t OsUtils::getCurrentProcessPhysicalMemoryUsage() {
 
 uint64_t OsUtils::getSystemPhysicalMemoryUsage() {
 #ifdef __linux__
-  struct sysinfo memInfo;
+  const std::string available_memory_prefix = "MemAvailable:";
+  const std::string total_memory_prefix = "MemTotal:";
+  std::ifstream meminfo_file("/proc/meminfo");
+  std::string line;
 
-  sysinfo(&memInfo);
-  uint64_t physMemUsed = memInfo.totalram - memInfo.freeram - memInfo.bufferram;
-  physMemUsed *= memInfo.mem_unit;
-  return physMemUsed;
+  minifi::utils::optional<uint64_t> total_memory_kByte;
+  minifi::utils::optional<uint64_t> available_memory_kByte;
+  while (std::getline(meminfo_file, line)) {
+    if (line.rfind(total_memory_prefix, 0) == 0) {
+      std::istringstream total_memory_line(line.substr(total_memory_prefix.length()));
+      total_memory_kByte.emplace(0);
+      total_memory_line >> total_memory_kByte.value();
+    } else if (line.rfind(available_memory_prefix, 0) == 0) {
+      std::istringstream available_memory_line(line.substr(available_memory_prefix.length()));
+      available_memory_kByte.emplace(0);
+      available_memory_line >> available_memory_kByte.value();
+    }
+  }
+  if (total_memory_kByte.has_value() && available_memory_kByte.has_value())
+    return (total_memory_kByte.value() - available_memory_kByte.value()) * 1024;
+
+  throw std::runtime_error("Could not get memory info");
 #endif
 
 #ifdef __APPLE__
@@ -222,10 +239,9 @@ uint64_t OsUtils::getSystemPhysicalMemoryUsage() {
   if (KERN_SUCCESS == host_page_size(mach_port, &page_size) &&
       KERN_SUCCESS == host_statistics64(mach_port, HOST_VM_INFO,
                                       (host_info64_t)&vm_stats, &count)) {
-      uint64_t physMemUsed = ((int64_t)vm_stats.active_count +
-                               (int64_t)vm_stats.inactive_count +
+      uint64_t physical_memory_used = ((int64_t)vm_stats.active_count +
                                (int64_t)vm_stats.wire_count) *  (int64_t)page_size;
-      return physMemUsed;
+      return physical_memory_used;
   }
   throw std::runtime_error("Could not get memory info");
 #endif
@@ -234,8 +250,8 @@ uint64_t OsUtils::getSystemPhysicalMemoryUsage() {
   MEMORYSTATUSEX memInfo;
   memInfo.dwLength = sizeof(MEMORYSTATUSEX);
   GlobalMemoryStatusEx(&memInfo);
-  DWORDLONG physMemUsed = memInfo.ullTotalPhys - memInfo.ullAvailPhys;
-  return physMemUsed;
+  DWORDLONG physical_memory_used = memInfo.ullTotalPhys - memInfo.ullAvailPhys;
+  return physical_memory_used;
 #endif
   throw std::runtime_error("getSystemPhysicalMemoryUsage() is not implemented for this platform");
 }
@@ -243,29 +259,28 @@ uint64_t OsUtils::getSystemPhysicalMemoryUsage() {
 uint64_t OsUtils::getSystemTotalPhysicalMemory() {
 #ifdef __linux__
   struct sysinfo memInfo;
-
   sysinfo(&memInfo);
-  uint64_t totalPhysMem = memInfo.totalram;
-  totalPhysMem *= memInfo.mem_unit;
-  return totalPhysMem;
+  uint64_t total_physical_memory = memInfo.totalram;
+  total_physical_memory *= memInfo.mem_unit;
+  return total_physical_memory;
 #endif
 
 #ifdef __APPLE__
   int mib[2];
-  int64_t totalPhysMem;
+  int64_t total_physical_memory = 0;
   mib[0] = CTL_HW;
   mib[1] = HW_MEMSIZE;
   size_t length = sizeof(int64_t);
-  sysctl(mib, 2, &totalPhysMem, &length, NULL, 0);
-  return totalPhysMem;
+  sysctl(mib, 2, &total_physical_memory, &length, NULL, 0);
+  return total_physical_memory;
 #endif
 
 #ifdef _WIN32
   MEMORYSTATUSEX memInfo;
   memInfo.dwLength = sizeof(MEMORYSTATUSEX);
   GlobalMemoryStatusEx(&memInfo);
-  DWORDLONG totalPhysMem = memInfo.ullTotalPhys;
-  return totalPhysMem;
+  DWORDLONG total_physical_memory = memInfo.ullTotalPhys;
+  return total_physical_memory;
 #endif
   throw std::runtime_error("getSystemTotalPhysicalMemory() is not implemented for this platform");
 }

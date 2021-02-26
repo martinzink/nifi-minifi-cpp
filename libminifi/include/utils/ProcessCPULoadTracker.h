@@ -47,9 +47,7 @@ class ProcessCPULoadTracker : ProcessCPULoadTrackerBase {
   ~ProcessCPULoadTracker() = default;
   double getProcessCPULoadAndRestartCollection() override {
     queryCPUTimes();
-    if (isCurrentQueryOlderThanPrevious()) {
-      return 0.0;
-    } else if (isCurrentQuerySameAsPrevious()) {
+    if (isCurrentQuerySameAsPrevious() || isCurrentQuerySameAsPrevious()) {
       return -1.0;
     } else {
       return getProcessLoadFromBetweenLastTwoQueries();
@@ -83,9 +81,7 @@ class ProcessCPULoadTracker : ProcessCPULoadTrackerBase {
   ~ProcessCPULoadTracker() = default;
   double getProcessCPULoadAndRestartCollection() override {
     queryCPUTimes();
-    if (isCurrentQuerySameAsPrevious()) {
-      return 0.0;
-    } else if (isCurrentQuerySameAsPrevious()) {
+    if (isCurrentQuerySameAsPrevious() || isCurrentQuerySameAsPrevious()) {
       return -1.0;
     } else {
       return getProcessLoadFromBetweenLastTwoQueries();
