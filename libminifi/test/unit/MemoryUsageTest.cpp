@@ -21,14 +21,17 @@
 #include "../TestBase.h"
 
 TEST_CASE("Test memory usage", "[testmemoryusage]") {
+  constexpr bool cout_enabled = true;
   std::vector<char> v(30000000);
   const auto RAMUsagebyProcess = utils::OsUtils::getCurrentProcessPhysicalMemoryUsage();
   const auto RAMUsagebySystem = utils::OsUtils::getSystemPhysicalMemoryUsage();
   const auto RAMTotal = utils::OsUtils::getSystemTotalPhysicalMemory();
 
-  std::cout << "RAMUsagebyProcess " << RAMUsagebyProcess << std::endl;
-  std::cout << "RAMUsagebySystem " << RAMUsagebySystem << std::endl;
-  std::cout << "RAMTotal " << RAMTotal << std::endl;
+  if (cout_enabled) {
+    std::cout << "Physical Memory used by this process: " << RAMUsagebyProcess  << " bytes" << std::endl;
+    std::cout << "Physical Memory used by the system: " << RAMUsagebySystem << " bytes" << std::endl;
+    std::cout << "Total Physical Memory in the system: " << RAMTotal << " bytes" << std::endl;
+  }
   REQUIRE(RAMUsagebyProcess >= v.size());
   REQUIRE(v.size()*2 >= RAMUsagebyProcess);
   REQUIRE(RAMUsagebySystem >= RAMUsagebyProcess);

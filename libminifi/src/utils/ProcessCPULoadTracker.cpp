@@ -17,10 +17,7 @@
 
 #include "utils/ProcessCPULoadTracker.h"
 
-#ifndef WIN32
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#if defined(__linux__) || defined(__APPLE__)
 #include <sys/times.h>
 #endif
 
