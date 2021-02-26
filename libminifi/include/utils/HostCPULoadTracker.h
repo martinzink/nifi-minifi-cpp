@@ -97,13 +97,13 @@ class HostCPULoadTracker : public HostCPULoadTrackerBase {
   ~HostCPULoadTracker() {
     PdhCloseQuery(cpu_query_);
   }
-  double getCollectedCPUUtilizationAndRestartCollection() {
+  double getHostCPULoadAndRestartCollection() override {
       double value = getValueFromOpenQuery();
       return value;
   }
 
  protected:
-  void openQuery()
+     void openQuery();
   double getValueFromOpenQuery();
 
  private:
