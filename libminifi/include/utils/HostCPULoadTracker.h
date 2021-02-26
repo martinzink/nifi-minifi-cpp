@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef LIBMINIFI_INCLUDE_UTILS_SYSTEMCPUUTILIZATIONTRACKER_H_
-#define LIBMINIFI_INCLUDE_UTILS_SYSTEMCPUUTILIZATIONTRACKER_H_
+#ifndef LIBMINIFI_INCLUDE_UTILS_HOSTCPULOADTRACKER_H_
+#define LIBMINIFI_INCLUDE_UTILS_HOSTCPULOADTRACKER_H_
 #ifdef __linux__
 #include <stdlib.h>
 #include <stdio.h>
@@ -41,39 +41,38 @@ namespace nifi {
 namespace minifi {
 namespace utils {
 
-class SystemCPUUtilizationTrackerBase {
+class HostCPULoadTrackerBase {
  public:
-  SystemCPUUtilizationTrackerBase() = default;
-  virtual ~SystemCPUUtilizationTrackerBase() = default;
-  virtual double getCollectedCPUUtilizationAndRestartCollection() = 0;
+  HostCPULoadTrackerBase() = default;
+  virtual ~HostCPULoadTrackerBase() = default;
+  virtual double getHostCPULoadAndRestartCollection() = 0;
 };
 
 #ifdef __linux__
 
-class SystemCPUUtilizationTracker : public SystemCPUUtilizationTrackerBase {
+class HostCPULoadTracker : public HostCPULoadTrackerBase {
  public:
-  SystemCPUUtilizationTracker() : total_user_(0), total_user_low_(0), total_sys_(0), total_idle_(0) {
-    scanProcStatFile();
+  HostCPULoadTracker() : total_user_(0), total_user_low_(0), total_sys_(0), total_idle_(0) {
+    queryHostCPULoad();
   }
-  ~SystemCPUUtilizationTracker() = default;
+  ~HostCPULoadTracker() = default;
 
-  double getCollectedCPUUtilizationAndRestartCollection() override {
-    scanProcStatFile();
-    if (isCurrentScanSameAsPrevious() || isCurrentScanOlderThanPrevious()) {
+  double getHostCPULoadAndRestartCollection() {
+    queryHostCPULoad();
+    if (isCurrentQuerySameAsPrevious()) {
+      return 0.0;
+    } else if (isCurrentQueryOlderThanPrevious()) {
       return -1.0;
     } else {
-      return getSystemUtilizationBetweenLastTwoScans();
+      return getHostLoadFromBetweenLastTwoQueries();
     }
   }
 
  protected:
-  void scanProcStatFile();
-
-  bool isCurrentScanOlderThanPrevious();
-
-  bool isCurrentScanSameAsPrevious();
-
-  double getSystemUtilizationBetweenLastTwoScans();
+  void queryHostCPULoad();
+  bool isCurrentQuerySameAsPrevious();
+  bool isCurrentQueryOlderThanPrevious();
+  double getHostLoadFromBetweenLastTwoQueries();
 
  private:
   uint64_t total_user_;
@@ -90,13 +89,12 @@ class SystemCPUUtilizationTracker : public SystemCPUUtilizationTrackerBase {
 #endif  // linux
 
 #ifdef WIN32
-class SystemCPUUtilizationTracker : public SystemCPUUtilizationTrackerBase {
+class HostCPULoadTracker : public HostCPULoadTrackerBase {
  public:
-  SystemCPUUtilizationTracker() : is_query_open_(false) {
+  HostCPULoadTracker() : is_query_open_(false) {
     openQuery();
   }
-
-  ~SystemCPUUtilizationTracker() {
+  ~HostCPULoadTracker() {
     PdhCloseQuery(cpu_query_);
   }
   double getCollectedCPUUtilizationAndRestartCollection() {
@@ -105,37 +103,8 @@ class SystemCPUUtilizationTracker : public SystemCPUUtilizationTrackerBase {
   }
 
  protected:
-  void openQuery() {
-    if (!is_query_open_) {
-      if (ERROR_SUCCESS != PdhOpenQuery(NULL, NULL, &cpu_query_))
-        return;
-      if (ERROR_SUCCESS != PdhAddEnglishCounter(cpu_query_, "\\Processor(_Total)\\% Processor Time", NULL, &cpu_total_)) {
-        closeQuery();
-        return;
-      }
-      if (ERROR_SUCCESS != PdhCollectQueryData(cpu_query_)) {
-        closeQuery();
-        return;
-      }
-      is_query_open_ = true;
-    }
-  }
-
-  void closeQuery() {
-    PdhCloseQuery(cpu_query_);
-  }
-  double getValueFromOpenQuery() {
-    if (!is_query_open_)
-      return -1.0;
-
-    PDH_FMT_COUNTERVALUE counterVal;
-    if (ERROR_SUCCESS != PdhCollectQueryData(cpu_query_))
-      return -1.0;
-    if (ERROR_SUCCESS != PdhGetFormattedCounterValue(cpu_total_, PDH_FMT_DOUBLE, NULL, &counterVal))
-      return -1.0;
-
-    return counterVal.doubleValue / 100;
-  }
+  void openQuery()
+  double getValueFromOpenQuery();
 
  private:
   PDH_HQUERY cpu_query_;
@@ -145,29 +114,28 @@ class SystemCPUUtilizationTracker : public SystemCPUUtilizationTrackerBase {
 #endif  // windows
 
 #ifdef __APPLE__
-class SystemCPUUtilizationTracker : public SystemCPUUtilizationTrackerBase {
+class HostCPULoadTracker : public HostCPULoadTrackerBase {
  public:
-  SystemCPUUtilizationTracker() : total_ticks_(0), idle_ticks_(0), previous_total_ticks_(0), previous_idle_ticks_(0) {
+  HostCPULoadTracker() : total_ticks_(0), idle_ticks_(0), previous_total_ticks_(0), previous_idle_ticks_(0) {
     queryHostCPULoad();
   }
   ~SystemCPUUtilizationTracker() = default;
 
-  double getCollectedCPUUtilizationAndRestartCollection() override {
+  double getHostCPULoadAndRestartCollection() {
     queryHostCPULoad();
-    if (isCurrentQueryOlderThanPrevious() || isCurrentQuerySameAsPrevious()) {
+    if (isCurrentQuerySameAsPrevious()) {
+      return 0.0;
+    } else if (isCurrentQueryOlderThanPrevious()) {
       return -1.0;
     } else {
-      return getSystemUtilizationBetweenLastTwoQueries();
+      return getHostLoadFromBetweenLastTwoQueries();
     }
   }
 
  protected:
   void queryHostCPULoad();
-
   bool isCurrentQueryOlderThanPrevious();
-
   bool isCurrentQuerySameAsPrevious();
-
   double getSystemUtilizationBetweenLastTwoQueries();
 
  private:
@@ -185,4 +153,4 @@ class SystemCPUUtilizationTracker : public SystemCPUUtilizationTrackerBase {
 } /* namespace apache */
 } /* namespace org */
 
-#endif  // LIBMINIFI_INCLUDE_UTILS_SYSTEMCPUUTILIZATIONTRACKER_H_
+#endif  // LIBMINIFI_INCLUDE_UTILS_HOSTCPULOADTRACKER_H_

@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef LIBMINIFI_INCLUDE_UTILS_PROCESSCPUUTILIZATIONTRACKER_H_
-#define LIBMINIFI_INCLUDE_UTILS_PROCESSCPUUTILIZATIONTRACKER_H_
+#ifndef LIBMINIFI_INCLUDE_UTILS_PROCESSCPULOADTRACKER_H_
+#define LIBMINIFI_INCLUDE_UTILS_PROCESSCPULOADTRACKER_H_
 
 #if defined(__linux__) || defined(__APPLE__)
 #include <time.h>
@@ -35,30 +35,32 @@ class ProcessCPUUtilizationTrackerBase {
  public:
   ProcessCPUUtilizationTrackerBase() = default;
   virtual ~ProcessCPUUtilizationTrackerBase() = default;
-  virtual double getCollectedCPUUtilizationAndRestartCollection() = 0;
+  virtual double getHostCPULoadAndRestartCollection() = 0;
 };
 
 #if defined(__linux__) || defined(__APPLE__)
-class ProcessCPUUtilizationTracker : ProcessCPUUtilizationTrackerBase {
+class ProcessCPULoadTracker : ProcessCPUUtilizationTrackerBase {
  public:
-  ProcessCPUUtilizationTracker() : cpu_times_(0), sys_cpu_times_(0), user_cpu_times_(0) {
+  ProcessCPULoadTracker() : cpu_times_(0), sys_cpu_times_(0), user_cpu_times_(0) {
     queryCPUTimes();
   }
-  ~ProcessCPUUtilizationTracker() = default;
-  double getCollectedCPUUtilizationAndRestartCollection() override {
+  ~ProcessCPULoadTracker() = default;
+  double getHostCPULoadAndRestartCollection() override {
     queryCPUTimes();
-    if (isCurrentScanOlderThanPrevious() || isCurrentScanSameAsPrevious()) {
+    if (isCurrentQueryOlderThanPrevious()) {
+      return 0.0;
+    } else if (isCurrentQuerySameAsPrevious()) {
       return -1.0;
     } else {
-      return getProcessUtilizationSinceLastScan();
+      return getProcessLoadFromBetweenLastTwoQueries();
     }
   }
 
  protected:
   void queryCPUTimes();
-  bool isCurrentScanOlderThanPrevious();
-  bool isCurrentScanSameAsPrevious();
-  double getProcessUtilizationSinceLastScan();
+  bool isCurrentQueryOlderThanPrevious();
+  bool isCurrentQuerySameAsPrevious();
+  double getProcessLoadFromBetweenLastTwoQueries();
 
  private:
   clock_t cpu_times_;
@@ -81,14 +83,20 @@ class ProcessCPUUtilizationTracker : ProcessCPUUtilizationTrackerBase {
   ~ProcessCPUUtilizationTracker() = default;
   double getCollectedCPUUtilizationAndRestartCollection() override {
     queryCPUTimes();
-    return getProcessUtilizationSinceLastScan();
+    if (isCurrentQuerySameAsPrevious()) {
+      return 0.0;
+    } else if (isCurrentQuerySameAsPrevious()) {
+      return -1.0;
+    } else {
+      return getProcessLoadFromBetweenLastTwoQueries();
+    }
   }
 
  protected:
   void queryCPUTimes();
-  bool isCurrentScanOlderThanPrevious();
-  bool isCurrentScanSameAsPrevious();
-  double getProcessUtilizationSinceLastScan();
+  bool isCurrentQuerySameAsPrevious();
+  bool isCurrentQuerySameAsPrevious();
+  double getProcessLoadFromBetweenLastTwoQueries();
 
  private:
   HANDLE self_;
@@ -108,4 +116,4 @@ class ProcessCPUUtilizationTracker : ProcessCPUUtilizationTrackerBase {
 } /* namespace apache */
 } /* namespace org */
 
-#endif  // LIBMINIFI_INCLUDE_UTILS_PROCESSCPUUTILIZATIONTRACKER_H_
+#endif  // LIBMINIFI_INCLUDE_UTILS_PROCESSCPULOADTRACKER_H_

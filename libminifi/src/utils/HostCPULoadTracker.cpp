@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "utils/SystemCPUUtilizationTracker.h"
+#include "utils/HostCPULoadTracker.h"
 #include <iostream>
 
 namespace org {
@@ -24,7 +24,7 @@ namespace nifi {
 namespace minifi {
 namespace utils {
 #ifdef __linux__
-void SystemCPUUtilizationTracker::scanProcStatFile() {
+void HostCPULoadTracker::queryHostCPULoad() {
   previous_total_user_ = total_user_;
   previous_total_user_low_ = total_user_low_;
   previous_total_sys_ = total_sys_;
@@ -35,21 +35,21 @@ void SystemCPUUtilizationTracker::scanProcStatFile() {
   fclose(file);
 }
 
-bool SystemCPUUtilizationTracker::isCurrentScanOlderThanPrevious() {
+bool HostCPULoadTracker::isCurrentQueryOlderThanPrevious() {
   return (total_user_ < previous_total_user_ ||
           total_user_low_ < previous_total_user_low_ ||
           total_sys_ < previous_total_sys_ ||
           total_idle_ < previous_total_idle_);
 }
 
-bool SystemCPUUtilizationTracker::isCurrentScanSameAsPrevious() {
+bool HostCPULoadTracker::isCurrentQuerySameAsPrevious() {
   return (total_user_ == previous_total_user_ &&
           total_user_low_ == previous_total_user_low_ &&
           total_sys_ == previous_total_sys_ &&
           total_idle_ == previous_total_idle_);
 }
 
-double SystemCPUUtilizationTracker::getSystemUtilizationBetweenLastTwoScans() {
+double HostCPULoadTracker::getHostLoadFromBetweenLastTwoQueries() {
   double percent;
 
   uint64_t total_user_diff = total_user_ - previous_total_user_;
@@ -63,12 +63,42 @@ double SystemCPUUtilizationTracker::getSystemUtilizationBetweenLastTwoScans() {
 }
 #endif  // linux
 
+#ifdef WIN32
+void HostCPULoadTracker::openQuery() {
+  if (!is_query_open_) {
+    if (ERROR_SUCCESS != PdhOpenQuery(NULL, NULL, &cpu_query_))
+      return;
+    if (ERROR_SUCCESS != PdhAddEnglishCounter(cpu_query_, "\\Processor(_Total)\\% Processor Time", NULL, &cpu_total_)) {
+      PdhCloseQuery(cpu_query_);
+      return;
+    }
+    if (ERROR_SUCCESS != PdhCollectQueryData(cpu_query_)) {
+      PdhCloseQuery(cpu_query_);
+      return;
+    }
+    is_query_open_ = true;
+  }
+}
+
+double HostCPULoadTracker::getValueFromOpenQuery() {
+  if (!is_query_open_)
+    return -1.0;
+
+  PDH_FMT_COUNTERVALUE counterVal;
+  if (ERROR_SUCCESS != PdhCollectQueryData(cpu_query_))
+    return -1.0;
+  if (ERROR_SUCCESS != PdhGetFormattedCounterValue(cpu_total_, PDH_FMT_DOUBLE, NULL, &counterVal))
+    return -1.0;
+
+  return counterVal.doubleValue / 100;
+}
+#endif  // windows
+
 #ifdef __APPLE__
-void SystemCPUUtilizationTracker::queryHostCPULoad() {
+void HostCPULoadTracker::queryHostCPULoad() {
   host_cpu_load_info_data_t cpuinfo;
   mach_msg_type_number_t count = HOST_CPU_LOAD_INFO_COUNT;
   auto query_result = host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, (host_info_t)&cpuinfo, &count);
-  std::cout << query_result; 
   if (query_result == KERN_SUCCESS) {
     previous_total_ticks_ = total_ticks_;
     previous_idle_ticks_ = idle_ticks_;
@@ -80,17 +110,17 @@ void SystemCPUUtilizationTracker::queryHostCPULoad() {
   }
 }
 
-bool SystemCPUUtilizationTracker::isCurrentQueryOlderThanPrevious() {
+bool HostCPULoadTracker::isCurrentQueryOlderThanPrevious() {
   return (total_ticks_ < previous_total_ticks_ ||
           idle_ticks_ < previous_idle_ticks_);
 }
 
-bool SystemCPUUtilizationTracker::isCurrentQuerySameAsPrevious() {
+bool HostCPULoadTracker::isCurrentQuerySameAsPrevious() {
   return (total_ticks_ == previous_total_ticks_ &&
           idle_ticks_ == previous_idle_ticks_);
 }
 
-double SystemCPUUtilizationTracker::getSystemUtilizationBetweenLastTwoQueries() {
+double HostCPULoadTracker::getHostLoadFromBetweenLastTwoQueries() {
   double percent;
 
   uint64_t total_ticks_since_last_time = total_ticks_-previous_total_ticks_;

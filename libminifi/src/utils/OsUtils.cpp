@@ -207,7 +207,7 @@ uint64_t OsUtils::getSystemPhysicalMemoryUsage() {
   struct sysinfo memInfo;
 
   sysinfo(&memInfo);
-  uint64_t physMemUsed = memInfo.totalram - memInfo.freeram;
+  uint64_t physMemUsed = memInfo.totalram - memInfo.freeram - memInfo.bufferram;
   physMemUsed *= memInfo.mem_unit;
   return physMemUsed;
 #endif
