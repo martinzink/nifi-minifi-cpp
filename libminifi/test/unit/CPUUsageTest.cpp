@@ -48,7 +48,7 @@ TEST_CASE("Test System CPU Utilization Tracker", "[testcpuusage]") {
     REQUIRE(systemUtilizationDuringIdleSleep <= 1);
     std::cout << "systemUtilizationDuringIdleSleep: " << systemUtilizationDuringIdleSleep << std::endl;
 
-    busySleep(200);
+    busySleep(2000);
     double systemUtilizationDuringBusySleep = tracker.getHostCPULoadAndRestartCollection();
     REQUIRE(systemUtilizationDuringBusySleep > (0.8 / vCores));
     REQUIRE(systemUtilizationDuringBusySleep <= 1);

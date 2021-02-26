@@ -119,7 +119,7 @@ class HostCPULoadTracker : public HostCPULoadTrackerBase {
   HostCPULoadTracker() : total_ticks_(0), idle_ticks_(0), previous_total_ticks_(0), previous_idle_ticks_(0) {
     queryHostCPULoad();
   }
-  ~SystemCPUUtilizationTracker() = default;
+  ~HostCPULoadTracker() = default;
 
   double getHostCPULoadAndRestartCollection() {
     queryHostCPULoad();
@@ -136,7 +136,7 @@ class HostCPULoadTracker : public HostCPULoadTrackerBase {
   void queryHostCPULoad();
   bool isCurrentQueryOlderThanPrevious();
   bool isCurrentQuerySameAsPrevious();
-  double getSystemUtilizationBetweenLastTwoQueries();
+  double getHostLoadFromBetweenLastTwoQueries();
 
  private:
   uint64_t total_ticks_;
