@@ -74,7 +74,7 @@ class ProcessCPULoadTracker : ProcessCPULoadTrackerBase {
 #if defined(WIN32)
 class ProcessCPULoadTracker : ProcessCPULoadTrackerBase {
  public:
-   ProcessCPULoadTracker() {
+  ProcessCPULoadTracker() {
     self_ = GetCurrentProcess();
     queryCPUTimes();
   }
