@@ -68,19 +68,19 @@ double ProcessCPULoadTracker::getProcessLoadFromBetweenLastTwoQueries() {
 #endif
 
 #if defined(WIN32)
-bool ProcessCPUUtilizationTracker::isCurrentQueryOlderThanPrevious() {
+bool ProcessCPULoadTracker::isCurrentQueryOlderThanPrevious() {
   return (cpu_times_ < previous_cpu_times_ ||
           sys_cpu_times_ < previous_sys_cpu_times_ ||
           user_cpu_times_ < previous_user_cpu_times_);
 }
 
-bool ProcessCPUUtilizationTracker::isCurrentQuerySameAsPrevious() {
+bool ProcessCPULoadTracker::isCurrentQuerySameAsPrevious() {
   return (cpu_times_ == previous_cpu_times_ &&
           sys_cpu_times_ == previous_sys_cpu_times_ &&
           user_cpu_times_ == previous_user_cpu_times_);
 }
 
-void ProcessCPUUtilizationTracker::queryCPUTimes() {
+void ProcessCPULoadTracker::queryCPUTimes() {
   previous_cpu_times_ = cpu_times_;
   previous_sys_cpu_times_ = sys_cpu_times_;
   previous_user_cpu_times_ = user_cpu_times_;
@@ -95,7 +95,7 @@ void ProcessCPUUtilizationTracker::queryCPUTimes() {
   user_cpu_times_ = ULARGE_INTEGER{ fuser.dwLowDateTime, fuser.dwHighDateTime }.QuadPart;
 }
 
-double ProcessCPUUtilizationTracker::getProcessUtilizationSinceLastScan() {
+double ProcessCPULoadTracker::getProcessLoadFromBetweenLastTwoQueries() {
   double percent;
   uint64_t cpu_times_diff = cpu_times_ - previous_cpu_times_;
   uint64_t sys_cpu_times_diff = sys_cpu_times_ - previous_sys_cpu_times_;

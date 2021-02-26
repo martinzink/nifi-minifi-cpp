@@ -31,21 +31,21 @@ namespace nifi {
 namespace minifi {
 namespace utils {
 
-class ProcessCPUUtilizationTrackerBase {
+class ProcessCPULoadTrackerBase {
  public:
-  ProcessCPUUtilizationTrackerBase() = default;
-  virtual ~ProcessCPUUtilizationTrackerBase() = default;
-  virtual double getHostCPULoadAndRestartCollection() = 0;
+  ProcessCPULoadTrackerBase() = default;
+  virtual ~ProcessCPULoadTrackerBase() = default;
+  virtual double getProcessCPULoadAndRestartCollection() = 0;
 };
 
 #if defined(__linux__) || defined(__APPLE__)
-class ProcessCPULoadTracker : ProcessCPUUtilizationTrackerBase {
+class ProcessCPULoadTracker : ProcessCPULoadTrackerBase {
  public:
   ProcessCPULoadTracker() : cpu_times_(0), sys_cpu_times_(0), user_cpu_times_(0) {
     queryCPUTimes();
   }
   ~ProcessCPULoadTracker() = default;
-  double getHostCPULoadAndRestartCollection() override {
+  double getProcessCPULoadAndRestartCollection() override {
     queryCPUTimes();
     if (isCurrentQueryOlderThanPrevious()) {
       return 0.0;
@@ -74,14 +74,14 @@ class ProcessCPULoadTracker : ProcessCPUUtilizationTrackerBase {
 #endif  // linux, macOS
 
 #if defined(WIN32)
-class ProcessCPUUtilizationTracker : ProcessCPUUtilizationTrackerBase {
+class ProcessCPULoadTracker : ProcessCPULoadTrackerBase {
  public:
-  ProcessCPUUtilizationTracker() {
+   ProcessCPULoadTracker() {
     self_ = GetCurrentProcess();
     queryCPUTimes();
   }
-  ~ProcessCPUUtilizationTracker() = default;
-  double getCollectedCPUUtilizationAndRestartCollection() override {
+  ~ProcessCPULoadTracker() = default;
+  double getProcessCPULoadAndRestartCollection() override {
     queryCPUTimes();
     if (isCurrentQuerySameAsPrevious()) {
       return 0.0;
@@ -95,7 +95,7 @@ class ProcessCPUUtilizationTracker : ProcessCPUUtilizationTrackerBase {
  protected:
   void queryCPUTimes();
   bool isCurrentQuerySameAsPrevious();
-  bool isCurrentQuerySameAsPrevious();
+  bool isCurrentQueryOlderThanPrevious();
   double getProcessLoadFromBetweenLastTwoQueries();
 
  private:
