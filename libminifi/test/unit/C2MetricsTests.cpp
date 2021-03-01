@@ -28,12 +28,33 @@ TEST_CASE("TestProcessMetrics", "[c2m1]") {
   minifi::state::response::ProcessMetrics metrics;
 
   REQUIRE("ProcessMetrics" == metrics.getName());
-#ifndef WIN32
-  REQUIRE(2 == metrics.serialize().size());
+  auto serialized_metrics = metrics.serialize();
+  REQUIRE(2 == serialized_metrics.size());
 
-  REQUIRE("MemoryMetrics" == metrics.serialize().at(0).name);
-  REQUIRE("CpuMetrics" == metrics.serialize().at(1).name);
+  {
+    auto memory_metrics = serialized_metrics.at(0);
+    REQUIRE("MemoryMetrics" == memory_metrics.name);
+    auto used_memory = memory_metrics.children.at(0);
+    REQUIRE("memoryUtilization" == used_memory.name);
+    REQUIRE(org::apache::nifi::minifi::state::response::Value::UINT64_TYPE == used_memory.value.getValue()->getTypeIndex());
+#ifndef WIN32
+    auto max_resident_set_size = memory_metrics.children.at(1);
+    REQUIRE("maxrss" == max_resident_set_size.name);
+    REQUIRE(org::apache::nifi::minifi::state::response::Value::UINT64_TYPE == max_resident_set_size.value.getValue()->getTypeIndex());
 #endif
+  }
+  {
+    auto cpu_metrics = serialized_metrics.at(1);
+    REQUIRE("CpuMetrics" == cpu_metrics.name);
+    auto cpu_usage = cpu_metrics.children.at(0);
+    REQUIRE("cpuUtilization" == cpu_usage.name);
+    REQUIRE(org::apache::nifi::minifi::state::response::Value::DOUBLE_TYPE == cpu_usage.value.getValue()->getTypeIndex());
+#ifndef WIN32
+    auto involuntary_context_switches = cpu_metrics.children.at(1);
+    REQUIRE("involcs" == involuntary_context_switches.name);
+    REQUIRE(org::apache::nifi::minifi::state::response::Value::UINT64_TYPE == involuntary_context_switches.value.getValue()->getTypeIndex());
+#endif
+  }
 }
 
 TEST_CASE("TestSystemMetrics", "[c2m5]") {
@@ -41,9 +62,10 @@ TEST_CASE("TestSystemMetrics", "[c2m5]") {
 
   REQUIRE("systeminfo" == metrics.getName());
 
-  REQUIRE(2 == metrics.serialize().size());
-
   auto serialized_metrics = metrics.serialize();
+
+  REQUIRE(2 == serialized_metrics.size());
+
   auto system_info = serialized_metrics.at(0);
   REQUIRE("systemInfo" == system_info.name);
 
