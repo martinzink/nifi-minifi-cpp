@@ -25,10 +25,6 @@
 
 #include "core/Resource.h"
 
-#ifndef _WIN32
-#include <sys/utsname.h>
-
-#endif
 #include "../nodes/DeviceInformation.h"
 #include "../nodes/MetricsBase.h"
 #include "Connection.h"
@@ -66,25 +62,32 @@ class SystemInformation : public DeviceInformation {
 
   std::vector<SerializedResponseNode> serialize() {
     std::vector<SerializedResponseNode> serialized;
-    SerializedResponseNode identifier;
-    identifier.name = "identifier";
-    identifier.value = "identifier";
+    serialized.push_back(serializeSystemInformation());
+    serialized.push_back(serializeIdentifier());
+    return serialized;
+  }
+
+ protected:
+  SerializedResponseNode serializeSystemInformation() {
     SerializedResponseNode systemInfo;
     systemInfo.name = "systemInfo";
 
     systemInfo.children.push_back(serializeVCoreInformation());
     systemInfo.children.push_back(serializeTotalPhysicalMemoryInformation());
-    systemInfo.children.push_back(serializeTotalPhysicalMemoryUsageInformation());
-#ifndef WIN32
+    systemInfo.children.push_back(serializePhysicalMemoryUsageInformation());
+    systemInfo.children.push_back(serializeSystemCPUUsageInformation());
     systemInfo.children.push_back(serializeArchitectureInformation());
-#endif
-    serialized.push_back(systemInfo);
-    serialized.push_back(identifier);
 
-    return serialized;
+    return systemInfo;
   }
 
- protected:
+  SerializedResponseNode serializeIdentifier() {
+    SerializedResponseNode identifier;
+    identifier.name = "identifier";
+    identifier.value = "identifier";
+    return identifier;
+  }
+
   SerializedResponseNode serializeVCoreInformation() {
     SerializedResponseNode vcores;
     vcores.name = "vCores";
@@ -101,7 +104,7 @@ class SystemInformation : public DeviceInformation {
     return total_physical_memory;
   }
 
-  SerializedResponseNode serializeTotalPhysicalMemoryUsageInformation() {
+  SerializedResponseNode serializePhysicalMemoryUsageInformation() {
     SerializedResponseNode used_physical_memory;
     used_physical_memory.name = "memoryUtilization";
     used_physical_memory.value = (uint64_t)utils::OsUtils::getSystemPhysicalMemoryUsage();
@@ -119,21 +122,13 @@ class SystemInformation : public DeviceInformation {
     cpu_usage.value = system_cpu_usage;
     return cpu_usage;
   }
-#ifndef WIN32
+
   SerializedResponseNode serializeArchitectureInformation() {
     SerializedResponseNode arch;
     arch.name = "machinearch";
-
-    utsname buf;
-
-    if (uname(&buf) == -1) {
-      arch.value = "unknown";
-    } else {
-      arch.value = std::string(buf.machine);
-    }
+    arch.value = utils::OsUtils::getSystemArchitecture();
     return arch;
   }
-#endif
 
  private:
   static utils::HostCPULoadTracker cpu_load_tracker_;
