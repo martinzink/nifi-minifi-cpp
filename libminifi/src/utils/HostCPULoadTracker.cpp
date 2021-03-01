@@ -92,7 +92,7 @@ HostCPULoadTracker::~HostCPULoadTracker() {
   PdhCloseQuery(cpu_query_);
 }
 
-double HostCPULoadTracker::getHostCPULoadAndRestartCollection() override {
+double HostCPULoadTracker::getHostCPULoadAndRestartCollection() {
   double value = getValueFromOpenQuery();
   return value;
 }
