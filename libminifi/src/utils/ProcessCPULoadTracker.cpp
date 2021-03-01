@@ -30,10 +30,25 @@ namespace minifi {
 namespace utils {
 #if defined(__linux__) || defined(__APPLE__)
 
+ProcessCPULoadTracker::ProcessCPULoadTracker() :
+    cpu_times_(0), sys_cpu_times_(0), user_cpu_times_(0) {
+  queryCPUTimes();
+}
+
+double ProcessCPULoadTracker::getProcessCPULoadAndRestartCollection() {
+  queryCPUTimes();
+  if (isCurrentQuerySameAsPrevious() || isCurrentQuerySameAsPrevious()) {
+    return -1.0;
+  } else {
+    return getProcessLoadFromBetweenLastTwoQueries();
+  }
+}
+
 void ProcessCPULoadTracker::queryCPUTimes() {
   previous_cpu_times_ = cpu_times_;
   previous_sys_cpu_times_ = sys_cpu_times_;
   previous_user_cpu_times_ = user_cpu_times_;
+
   struct tms timeSample;
   cpu_times_ = times(&timeSample);
   sys_cpu_times_ = timeSample.tms_stime;
@@ -65,6 +80,23 @@ double ProcessCPULoadTracker::getProcessLoadFromBetweenLastTwoQueries() {
 #endif
 
 #if defined(WIN32)
+ProcessCPULoadTracker::ProcessCPULoadTracker() :
+    cpu_times_(0), previous_cpu_times_(0),
+    sys_cpu_times_(0), previous_sys_cpu_times(0),
+    user_cpu_times_(0), previous_user_cpu_times_(0) {
+  self_ = GetCurrentProcess();
+  queryCPUTimes();
+}
+
+double ProcessCPULoadTracker::getProcessCPULoadAndRestartCollection() {
+  queryCPUTimes();
+  if (isCurrentQuerySameAsPrevious() || isCurrentQuerySameAsPrevious()) {
+    return -1.0;
+  } else {
+    return getProcessLoadFromBetweenLastTwoQueries();
+  }
+}
+
 bool ProcessCPULoadTracker::isCurrentQueryOlderThanPrevious() {
   return (cpu_times_ < previous_cpu_times_ ||
           sys_cpu_times_ < previous_sys_cpu_times_ ||

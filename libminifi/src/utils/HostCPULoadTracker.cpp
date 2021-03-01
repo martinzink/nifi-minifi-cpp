@@ -16,7 +16,6 @@
  */
 
 #include "utils/HostCPULoadTracker.h"
-#include <iostream>
 
 namespace org {
 namespace apache {
@@ -24,6 +23,24 @@ namespace nifi {
 namespace minifi {
 namespace utils {
 #ifdef __linux__
+
+HostCPULoadTracker::HostCPULoadTracker() :
+    total_user_(0), previous_total_user_(0),
+    total_user_low_(0), previous_total_user_low_(0),
+    total_sys_(0), previous_total_sys_(0),
+    total_idle_(0), previous_total_idle_(0) {
+  queryHostCPULoad();
+}
+
+double HostCPULoadTracker::getHostCPULoadAndRestartCollection() {
+  queryHostCPULoad();
+  if (isCurrentQuerySameAsPrevious() || isCurrentQuerySameAsPrevious()) {
+    return -1.0;
+  } else {
+    return getHostLoadFromBetweenLastTwoQueries();
+  }
+}
+
 void HostCPULoadTracker::queryHostCPULoad() {
   previous_total_user_ = total_user_;
   previous_total_user_low_ = total_user_low_;
@@ -64,6 +81,22 @@ double HostCPULoadTracker::getHostLoadFromBetweenLastTwoQueries() {
 #endif  // linux
 
 #ifdef WIN32
+HostCPULoadTracker::HostCPULoadTracker() :
+    is_query_open_(false),
+    cpu_query_(),
+    cpu_total_() {
+  openQuery();
+}
+
+~HostCPULoadTracker::HostCPULoadTracker() {
+  PdhCloseQuery(cpu_query_);
+}
+
+double HostCPULoadTracker::getHostCPULoadAndRestartCollection() override {
+  double value = getValueFromOpenQuery();
+  return value;
+}
+
 void HostCPULoadTracker::openQuery() {
   if (!is_query_open_) {
     if (ERROR_SUCCESS != PdhOpenQuery(NULL, NULL, &cpu_query_))
@@ -95,6 +128,21 @@ double HostCPULoadTracker::getValueFromOpenQuery() {
 #endif  // windows
 
 #ifdef __APPLE__
+HostCPULoadTracker::HostCPULoadTracker() :
+    total_ticks_(0), previous_total_ticks_(0),
+    total_idle_ticks(0), previous_idle_ticks_(0) {
+  queryHostCPULoad();
+}
+
+double HostCPULoadTracker::getHostCPULoadAndRestartCollection() {
+  queryHostCPULoad();
+  if (isCurrentQuerySameAsPrevious() || isCurrentQuerySameAsPrevious()) {
+    return -1.0;
+  } else {
+    return getHostLoadFromBetweenLastTwoQueries();
+  }
+}
+
 void HostCPULoadTracker::queryHostCPULoad() {
   host_cpu_load_info_data_t cpuinfo;
   mach_msg_type_number_t count = HOST_CPU_LOAD_INFO_COUNT;
