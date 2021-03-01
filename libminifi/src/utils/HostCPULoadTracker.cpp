@@ -88,7 +88,7 @@ HostCPULoadTracker::HostCPULoadTracker() :
   openQuery();
 }
 
-~HostCPULoadTracker::HostCPULoadTracker() {
+HostCPULoadTracker::~HostCPULoadTracker() {
   PdhCloseQuery(cpu_query_);
 }
 
@@ -130,7 +130,7 @@ double HostCPULoadTracker::getValueFromOpenQuery() {
 #ifdef __APPLE__
 HostCPULoadTracker::HostCPULoadTracker() :
     total_ticks_(0), previous_total_ticks_(0),
-    total_idle_ticks(0), previous_idle_ticks_(0) {
+    idle_ticks_(0), previous_idle_ticks_(0) {
   queryHostCPULoad();
 }
 
