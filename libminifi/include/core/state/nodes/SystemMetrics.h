@@ -33,6 +33,7 @@
 #include "../nodes/MetricsBase.h"
 #include "Connection.h"
 #include "../../../utils/OsUtils.h"
+#include "../../../utils/HostCPULoadTracker.h"
 
 namespace org {
 namespace apache {
@@ -106,6 +107,18 @@ class SystemInformation : public DeviceInformation {
     used_physical_memory.value = (uint64_t)utils::OsUtils::getSystemPhysicalMemoryUsage();
     return used_physical_memory;
   }
+
+  SerializedResponseNode serializeSystemCPUUsageInformation() {
+    double system_cpu_usage = -1.0;
+    {
+      std::lock_guard<std::mutex> guard(cpu_load_tracker_mutex_);
+      system_cpu_usage = cpu_load_tracker_.getHostCPULoadAndRestartCollection();
+    }
+    SerializedResponseNode cpu_usage;
+    cpu_usage.name = "cpuUtilization";
+    cpu_usage.value = system_cpu_usage;
+    return cpu_usage;
+  }
 #ifndef WIN32
   SerializedResponseNode serializeArchitectureInformation() {
     SerializedResponseNode arch;
@@ -121,6 +134,10 @@ class SystemInformation : public DeviceInformation {
     return arch;
   }
 #endif
+
+ private:
+  static utils::HostCPULoadTracker cpu_load_tracker_;
+  static std::mutex cpu_load_tracker_mutex_;
 };
 
 REGISTER_RESOURCE(SystemInformation, "Node part of an AST that defines the System information and metrics subtree");
