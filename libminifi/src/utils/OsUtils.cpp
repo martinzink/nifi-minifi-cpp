@@ -24,8 +24,8 @@
 #include "utils/gsl.h"
 
 #ifdef __linux__
+#include <sys/sysinfo.h>
 #include <sstream>
-#include "sys/sysinfo.h"
 #include "utils/OptionalUtils.h"
 #endif
 
@@ -40,6 +40,7 @@
 #include <algorithm>
 #pragma comment(lib, "Ws2_32.lib")
 #else
+#include <sys/utsname.h>
 #include <pwd.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -285,7 +286,35 @@ uint64_t OsUtils::getSystemTotalPhysicalMemory() {
   throw std::runtime_error("getSystemTotalPhysicalMemory() is not implemented for this platform");
 }
 
-
+/// Returns the
+std::string OsUtils::getSystemArchitecture() {
+#if defined(__linux__) || defined(__APPLE__)
+  utsname buf;
+  if (uname(&buf) == -1)
+    return "unknown";
+  else
+    return buf.machine;
+#endif
+#if defined(WIN32)
+  SYSTEM_INFO siSysInfo;
+  GetNativeSystemInfo(&siSysInfo);
+  switch (sysInfo.wProcessorArchitecture) {
+    case PROCESSOR_ARCHITECTURE_INTEL:
+      return "x86";
+    case PROCESSOR_ARCHITECTURE_AMD64:
+      return "x64";
+    case PROCESSOR_ARCHITECTURE_ARM:
+      return "ARM";
+    case PROCESSOR_ARCHITECTURE_ARM64:
+      return "ARM64";
+    case PROCESSOR_ARCHITECTURE_IA64:
+      return "IA64"
+    default:
+      return "unknown";
+  }
+#endif
+  throw std::runtime_error("getSystemArchitecture() is not implemented for this platform");
+}
 }  // namespace utils
 }  // namespace minifi
 }  // namespace nifi

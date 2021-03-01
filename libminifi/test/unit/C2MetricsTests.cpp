@@ -22,10 +22,7 @@
 #include "../../include/core/state/nodes/RepositoryMetrics.h"
 #include "../../include/core/state/nodes/SystemMetrics.h"
 #include "../TestBase.h"
-#include "io/ClientSocket.h"
-#include "core/Processor.h"
 #include "core/ClassLoader.h"
-#include "core/yaml/YamlConfiguration.h"
 
 TEST_CASE("TestProcessMetrics", "[c2m1]") {
   minifi::state::response::ProcessMetrics metrics;
@@ -46,8 +43,37 @@ TEST_CASE("TestSystemMetrics", "[c2m5]") {
 
   REQUIRE(2 == metrics.serialize().size());
 
-  REQUIRE("systemInfo" == metrics.serialize().at(0).name);
-  REQUIRE("identifier" == metrics.serialize().at(1).name);
+  auto serialized_metrics = metrics.serialize();
+  auto system_info = serialized_metrics.at(0);
+  REQUIRE("systemInfo" == system_info.name);
+
+  {
+    auto vcores_info = system_info.children.at(0);
+    REQUIRE("vCores" == vcores_info.name);
+    REQUIRE(org::apache::nifi::minifi::state::response::Value::UINT32_TYPE == vcores_info.value.getValue()->getTypeIndex());
+  }
+  {
+    auto ram_info = system_info.children.at(1);
+    REQUIRE("physicalMem" == ram_info.name);
+    REQUIRE(org::apache::nifi::minifi::state::response::Value::UINT64_TYPE == ram_info.value.getValue()->getTypeIndex());
+  }
+  {
+    auto used_ram_info = system_info.children.at(2);
+    REQUIRE("memoryUtilization" == used_ram_info.name);
+    REQUIRE(org::apache::nifi::minifi::state::response::Value::UINT64_TYPE == used_ram_info.value.getValue()->getTypeIndex());
+  }
+  {
+    auto cpu_usage_info = system_info.children.at(3);
+    REQUIRE("cpuUtilization" == cpu_usage_info.name);
+    REQUIRE(org::apache::nifi::minifi::state::response::Value::DOUBLE_TYPE == cpu_usage_info.value.getValue()->getTypeIndex());
+  }
+  {
+    auto system_architecture = system_info.children.at(4);
+    REQUIRE("machinearch" == system_architecture.name);
+    REQUIRE(org::apache::nifi::minifi::state::response::Value::STRING_TYPE == system_architecture.value.getValue()->getTypeIndex());
+  }
+  auto identifier = serialized_metrics.at(1);
+  REQUIRE("identifier" == identifier.name);
 }
 
 TEST_CASE("QueueMetricsTestNoConnections", "[c2m2]") {
