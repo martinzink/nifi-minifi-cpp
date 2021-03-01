@@ -308,7 +308,7 @@ std::string OsUtils::getSystemArchitecture() {
     case PROCESSOR_ARCHITECTURE_ARM64:
       return "ARM64";
     case PROCESSOR_ARCHITECTURE_IA64:
-      return "IA64"
+      return "IA64";
     default:
       return "unknown";
   }
