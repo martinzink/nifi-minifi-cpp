@@ -41,18 +41,9 @@ class ProcessCPULoadTrackerBase {
 #if defined(__linux__) || defined(__APPLE__)
 class ProcessCPULoadTracker : ProcessCPULoadTrackerBase {
  public:
-  ProcessCPULoadTracker() : cpu_times_(0), sys_cpu_times_(0), user_cpu_times_(0) {
-    queryCPUTimes();
-  }
+  ProcessCPULoadTracker();
   ~ProcessCPULoadTracker() = default;
-  double getProcessCPULoadAndRestartCollection() override {
-    queryCPUTimes();
-    if (isCurrentQuerySameAsPrevious() || isCurrentQuerySameAsPrevious()) {
-      return -1.0;
-    } else {
-      return getProcessLoadFromBetweenLastTwoQueries();
-    }
-  }
+  double getProcessCPULoadAndRestartCollection() override;
 
  protected:
   void queryCPUTimes();
@@ -74,19 +65,9 @@ class ProcessCPULoadTracker : ProcessCPULoadTrackerBase {
 #if defined(WIN32)
 class ProcessCPULoadTracker : ProcessCPULoadTrackerBase {
  public:
-  ProcessCPULoadTracker() {
-    self_ = GetCurrentProcess();
-    queryCPUTimes();
-  }
+  ProcessCPULoadTracker();
   ~ProcessCPULoadTracker() = default;
-  double getProcessCPULoadAndRestartCollection() override {
-    queryCPUTimes();
-    if (isCurrentQuerySameAsPrevious() || isCurrentQuerySameAsPrevious()) {
-      return -1.0;
-    } else {
-      return getProcessLoadFromBetweenLastTwoQueries();
-    }
-  }
+  double getProcessCPULoadAndRestartCollection() override;
 
  protected:
   void queryCPUTimes();

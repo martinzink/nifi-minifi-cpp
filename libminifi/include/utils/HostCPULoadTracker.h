@@ -52,19 +52,9 @@ class HostCPULoadTrackerBase {
 
 class HostCPULoadTracker : public HostCPULoadTrackerBase {
  public:
-  HostCPULoadTracker() : total_user_(0), total_user_low_(0), total_sys_(0), total_idle_(0) {
-    queryHostCPULoad();
-  }
+  HostCPULoadTracker();
   ~HostCPULoadTracker() = default;
-
-  double getHostCPULoadAndRestartCollection() {
-    queryHostCPULoad();
-    if (isCurrentQuerySameAsPrevious() || isCurrentQuerySameAsPrevious()) {
-      return -1.0;
-    } else {
-      return getHostLoadFromBetweenLastTwoQueries();
-    }
-  }
+  double getHostCPULoadAndRestartCollection() override;
 
  protected:
   void queryHostCPULoad();
@@ -89,16 +79,9 @@ class HostCPULoadTracker : public HostCPULoadTrackerBase {
 #ifdef WIN32
 class HostCPULoadTracker : public HostCPULoadTrackerBase {
  public:
-  HostCPULoadTracker() : is_query_open_(false) {
-    openQuery();
-  }
-  ~HostCPULoadTracker() {
-    PdhCloseQuery(cpu_query_);
-  }
-  double getHostCPULoadAndRestartCollection() override {
-    double value = getValueFromOpenQuery();
-    return value;
-  }
+  HostCPULoadTracker();
+  ~HostCPULoadTracker();
+  double getHostCPULoadAndRestartCollection() override;
 
  protected:
   void openQuery();
@@ -114,19 +97,9 @@ class HostCPULoadTracker : public HostCPULoadTrackerBase {
 #ifdef __APPLE__
 class HostCPULoadTracker : public HostCPULoadTrackerBase {
  public:
-  HostCPULoadTracker() : total_ticks_(0), idle_ticks_(0), previous_total_ticks_(0), previous_idle_ticks_(0) {
-    queryHostCPULoad();
-  }
+  HostCPULoadTracker();
   ~HostCPULoadTracker() = default;
-
-  double getHostCPULoadAndRestartCollection() {
-    queryHostCPULoad();
-    if (isCurrentQuerySameAsPrevious() || isCurrentQuerySameAsPrevious()) {
-      return -1.0;
-    } else {
-      return getHostLoadFromBetweenLastTwoQueries();
-    }
-  }
+  double getHostCPULoadAndRestartCollection() override;
 
  protected:
   void queryHostCPULoad();
