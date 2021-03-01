@@ -82,7 +82,7 @@ double ProcessCPULoadTracker::getProcessLoadFromBetweenLastTwoQueries() {
 #if defined(WIN32)
 ProcessCPULoadTracker::ProcessCPULoadTracker() :
     cpu_times_(0), previous_cpu_times_(0),
-    sys_cpu_times_(0), previous_sys_cpu_times(0),
+    sys_cpu_times_(0), previous_sys_cpu_times_(0),
     user_cpu_times_(0), previous_user_cpu_times_(0) {
   self_ = GetCurrentProcess();
   queryCPUTimes();

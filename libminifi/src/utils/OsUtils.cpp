@@ -296,9 +296,9 @@ std::string OsUtils::getSystemArchitecture() {
     return buf.machine;
 #endif
 #if defined(WIN32)
-  SYSTEM_INFO siSysInfo;
-  GetNativeSystemInfo(&siSysInfo);
-  switch (sysInfo.wProcessorArchitecture) {
+  SYSTEM_INFO system_information;
+  GetNativeSystemInfo(&system_information);
+  switch (system_information.wProcessorArchitecture) {
     case PROCESSOR_ARCHITECTURE_INTEL:
       return "x86";
     case PROCESSOR_ARCHITECTURE_AMD64:
