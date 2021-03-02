@@ -428,7 +428,7 @@ class DoubleValue : public Value {
   explicit DoubleValue(const std::string &strvalue)
       : Value(strvalue) {
     utils::internal::ValueParser(strvalue).parse(value).parseEnd();
-    setTypeId<int64_t>();
+    setTypeId<double>();
   }
 
   double getValue() {

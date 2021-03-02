@@ -59,7 +59,6 @@ TEST_CASE("Test System CPU Utilization", "[testcpuusage]") {
 
       double system_cpu_load_during_idle_sleep = hostTracker.getHostCPULoadAndRestartCollection();
       double process_cpu_load_during_idle_sleep = processTracker.getProcessCPULoadAndRestartCollection();
-      REQUIRE(system_cpu_load_during_idle_sleep >= process_cpu_load_during_idle_sleep);
       REQUIRE(system_cpu_load_during_idle_sleep >= 0);
       REQUIRE(process_cpu_load_during_idle_sleep >= 0);
       REQUIRE(system_cpu_load_during_idle_sleep <= 1);
