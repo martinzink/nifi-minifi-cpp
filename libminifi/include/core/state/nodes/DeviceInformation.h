@@ -473,7 +473,7 @@ class DeviceInfoNode : public DeviceInformation {
     return "Other";
 #endif
   }
- private:
+
   std::string hostname_;
   std::string ip_;
   std::string device_id_;
