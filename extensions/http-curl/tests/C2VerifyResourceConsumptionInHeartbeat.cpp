@@ -29,8 +29,8 @@
 class ResourceConsumptionInHeartbeatHandler : public HeartbeatHandler {
  public:
   void handleHeartbeat(const rapidjson::Document& root, struct mg_connection *) override {
-    //verifySystemMetrics(root, (calls_ == 0));
-    verifyProcessMetrics(root, (calls_ == 0));
+    verifySystemResourceConsumption(root, (calls_ == 0));
+    verifyProcessResourceConsumption(root, (calls_ == 0));
     ++calls_;
   }
 
@@ -39,9 +39,12 @@ class ResourceConsumptionInHeartbeatHandler : public HeartbeatHandler {
   }
 
  protected:
-  void verifySystemMetrics(const rapidjson::Document& root, bool firstCall) {
-    assert(root.HasMember("systeminfo"));
-    auto& system_info = root["systeminfo"];
+  void verifySystemResourceConsumption(const rapidjson::Document& root, bool firstCall) {
+    assert(root.HasMember("deviceInfo"));
+    auto& device_info = root["deviceInfo"];
+
+    assert(device_info.HasMember("systemInfo"));
+    auto& system_info = device_info["systemInfo"];
 
     assert(system_info.HasMember("vCores"));
     assert(system_info["vCores"].GetUint() > 0);
@@ -58,26 +61,25 @@ class ResourceConsumptionInHeartbeatHandler : public HeartbeatHandler {
       assert(system_info["cpuUtilization"].GetDouble() <= 1.0);
     }
 
-    assert(system_info.HasMember("machineArch"));
-    assert(system_info["machineArch"].GetStringLength() > 0);
+    assert(system_info.HasMember("machinearch"));
+    assert(system_info["machinearch"].GetStringLength() > 0);
   }
 
-  void verifyProcessMetrics(const rapidjson::Document& root, bool firstCall) {
-    assert(root.HasMember("ProcessMetrics"));
-    auto& process_metrics = root["ProcessMetrics"];
+  void verifyProcessResourceConsumption(const rapidjson::Document& root, bool firstCall) {
+    assert(root.HasMember("agentInfo"));
+    auto& agent_info = root["agentInfo"];
 
-    assert(process_metrics.HasMember("MemoryMetrics"));
-    auto& memory_metrics = process_metrics["MemoryMetrics"];
+    assert(agent_info.HasMember("status"));
+    auto& status = agent_info["status"];
 
-    assert(memory_metrics.HasMember("memoryUtilization"));
-    assert(memory_metrics["memoryUtilization"].GetUint64() > 0);
+    assert(status.HasMember("resourceConsumption"));
+    auto& resource_consumption = status["resourceConsumption"];
 
-    assert(process_metrics.HasMember("CpuMetrics"));
-    auto& cpu_metrics = process_metrics["CpuMetrics"];
+    assert(resource_consumption.HasMember("memoryUtilization"));
+    assert(resource_consumption["memoryUtilization"].GetUint64() > 0);
 
-    assert(cpu_metrics.HasMember("cpuUtilization"));
-    auto& cpu_utilization = cpu_metrics["cpuUtilization"];
-    assert(!cpu_utilization.IsString());
+    assert(resource_consumption.HasMember("cpuUtilization"));
+    auto& cpu_utilization = resource_consumption["cpuUtilization"];
     assert(cpu_utilization.IsDouble());
     if (!firstCall) {
       assert(cpu_utilization.GetDouble() >= 0.0);
@@ -96,11 +98,6 @@ class VerifyResourceConsumptionInHeartbeat : public VerifyC2Base {
       event_to_wait_for_(event_to_wait_for), VerifyC2Base() {
   }
 
-  void configureC2() override {
-    VerifyC2Base::configureC2();
-    configuration->set("nifi.c2.root.classes", "DeviceInfoNode,AgentInformation,FlowInformation");
-  }
-
   void testSetup() override {
     LogTestController::getInstance().setTrace<minifi::c2::C2Agent>();
     LogTestController::getInstance().setDebug<minifi::c2::RESTSender>();
@@ -111,7 +108,7 @@ class VerifyResourceConsumptionInHeartbeat : public VerifyC2Base {
 
   void runAssertions() override {
     using org::apache::nifi::minifi::utils::verifyEventHappenedInPollTime;
-    assert(verifyEventHappenedInPollTime(std::chrono::milliseconds(600000),event_to_wait_for_));
+    assert(verifyEventHappenedInPollTime(std::chrono::milliseconds(7000),event_to_wait_for_));
   }
 
   void configureFullHeartbeat() override {

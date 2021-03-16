@@ -300,15 +300,15 @@ std::string OsUtils::getSystemArchitecture() {
   GetNativeSystemInfo(&system_information);
   switch (system_information.wProcessorArchitecture) {
     case PROCESSOR_ARCHITECTURE_INTEL:
-      return "x86";
+      return "x32";
     case PROCESSOR_ARCHITECTURE_AMD64:
       return "x64";
     case PROCESSOR_ARCHITECTURE_ARM:
-      return "ARM";
+      return "arm32";
     case PROCESSOR_ARCHITECTURE_ARM64:
-      return "ARM64";
+      return "arm64";
     case PROCESSOR_ARCHITECTURE_IA64:
-      return "IA64";
+      return "x64";
     default:
       return "unknown";
   }
