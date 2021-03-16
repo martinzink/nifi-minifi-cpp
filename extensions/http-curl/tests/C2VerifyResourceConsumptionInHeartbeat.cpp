@@ -26,7 +26,7 @@
 #include "HTTPHandlers.h"
 #include "utils/IntegrationTestUtils.h"
 
-class SystemAndProcessMetricsInHeartbeatHandler : public HeartbeatHandler {
+class ResourceConsumptionInHeartbeatHandler : public HeartbeatHandler {
  public:
   void handleHeartbeat(const rapidjson::Document& root, struct mg_connection *) override {
     //verifySystemMetrics(root, (calls_ == 0));
@@ -89,16 +89,16 @@ class SystemAndProcessMetricsInHeartbeatHandler : public HeartbeatHandler {
   std::atomic<size_t> calls_{0};
 };
 
-class VerifySystemAndProcessMetricsInHeartbeat : public VerifyC2Base {
+class VerifyResourceConsumptionInHeartbeat : public VerifyC2Base {
  public:
 
-  VerifySystemAndProcessMetricsInHeartbeat(std::function<bool()> event_to_wait_for) :
+  VerifyResourceConsumptionInHeartbeat(std::function<bool()> event_to_wait_for) :
       event_to_wait_for_(event_to_wait_for), VerifyC2Base() {
   }
 
   void configureC2() override {
     VerifyC2Base::configureC2();
-    configuration->set("nifi.c2.root.classes", "DeviceInfoNode,SystemInformation,ProcessMetrics,AgentInformation,FlowInformation");
+    configuration->set("nifi.c2.root.classes", "DeviceInfoNode,AgentInformation,FlowInformation");
   }
 
   void testSetup() override {
@@ -124,11 +124,11 @@ class VerifySystemAndProcessMetricsInHeartbeat : public VerifyC2Base {
 int main(int argc, char **argv) {
   const cmd_args args = parse_cmdline_args(argc, argv, "heartbeat");
 
-  SystemAndProcessMetricsInHeartbeatHandler responder;
+  ResourceConsumptionInHeartbeatHandler responder;
   auto event_to_wait_for = [&responder] {
     return responder.getNumberOfHandledHeartBeats() >= 3;
   };
-  VerifySystemAndProcessMetricsInHeartbeat harness(event_to_wait_for);
+  VerifyResourceConsumptionInHeartbeat harness(event_to_wait_for);
   harness.setUrl(args.url, &responder);
   harness.run(args.test_file);
 
