@@ -25,11 +25,13 @@
 
 #include "core/Resource.h"
 
+#ifndef _WIN32
+#include <sys/utsname.h>
+
+#endif
 #include "../nodes/DeviceInformation.h"
 #include "../nodes/MetricsBase.h"
 #include "Connection.h"
-#include "../../../utils/OsUtils.h"
-#include "../../../utils/HostCPULoadTracker.h"
 
 namespace org {
 namespace apache {
@@ -62,77 +64,50 @@ class SystemInformation : public DeviceInformation {
 
   std::vector<SerializedResponseNode> serialize() {
     std::vector<SerializedResponseNode> serialized;
-    serialized.push_back(serializeSystemInformation());
-    serialized.push_back(serializeIdentifier());
-    return serialized;
-  }
-
- protected:
-  SerializedResponseNode serializeSystemInformation() {
-    SerializedResponseNode systemInfo;
-    systemInfo.name = "systemInfo";
-
-    systemInfo.children.push_back(serializeVCoreInformation());
-    systemInfo.children.push_back(serializeTotalPhysicalMemoryInformation());
-    systemInfo.children.push_back(serializePhysicalMemoryUsageInformation());
-    systemInfo.children.push_back(serializeSystemCPUUsageInformation());
-    systemInfo.children.push_back(serializeArchitectureInformation());
-
-    return systemInfo;
-  }
-
-  SerializedResponseNode serializeIdentifier() {
     SerializedResponseNode identifier;
     identifier.name = "identifier";
     identifier.value = "identifier";
-    return identifier;
-  }
+#ifndef WIN32
+    SerializedResponseNode systemInfo;
+    systemInfo.name = "systemInfo";
 
-  SerializedResponseNode serializeVCoreInformation() {
     SerializedResponseNode vcores;
     vcores.name = "vCores";
     size_t ncpus = std::thread::hardware_concurrency();
 
     vcores.value = (uint32_t)ncpus;
-    return vcores;
-  }
 
-  SerializedResponseNode serializeTotalPhysicalMemoryInformation() {
-    SerializedResponseNode total_physical_memory;
-    total_physical_memory.name = "physicalMem";
-    total_physical_memory.value = (uint64_t)utils::OsUtils::getSystemTotalPhysicalMemory();
-    return total_physical_memory;
-  }
+    systemInfo.children.push_back(vcores);
 
-  SerializedResponseNode serializePhysicalMemoryUsageInformation() {
-    SerializedResponseNode used_physical_memory;
-    used_physical_memory.name = "memoryUtilization";
-    used_physical_memory.value = (uint64_t)utils::OsUtils::getSystemPhysicalMemoryUsage();
-    return used_physical_memory;
-  }
+    SerializedResponseNode mem;
+    mem.name = "physicalMem";
+#if defined(_SC_PHYS_PAGES) && defined(_SC_PAGESIZE)
+    size_t mema = (size_t) sysconf(_SC_PHYS_PAGES) * (size_t) sysconf(_SC_PAGESIZE);
+#endif
+    mem.value = (uint32_t)mema;
 
-  SerializedResponseNode serializeSystemCPUUsageInformation() {
-    double system_cpu_usage = -1.0;
-    {
-      std::lock_guard<std::mutex> guard(cpu_load_tracker_mutex_);
-      system_cpu_usage = cpu_load_tracker_.getHostCPULoadAndRestartCollection();
-    }
-    SerializedResponseNode cpu_usage;
-    cpu_usage.name = "cpuUtilization";
-    cpu_usage.value = system_cpu_usage;
-    return cpu_usage;
-  }
+    systemInfo.children.push_back(mem);
 
-  SerializedResponseNode serializeArchitectureInformation() {
     SerializedResponseNode arch;
     arch.name = "machinearch";
-    arch.value = utils::OsUtils::getSystemArchitecture();
-    return arch;
+
+    utsname buf;
+
+    if (uname(&buf) == -1) {
+      arch.value = "unknown";
+    } else {
+      arch.value = std::string(buf.machine);
+    }
+
+    systemInfo.children.push_back(arch);
+    serialized.push_back(systemInfo);
+#endif
+    serialized.push_back(identifier);
+
+    return serialized;
   }
 
- private:
-  static utils::HostCPULoadTracker cpu_load_tracker_;
-  static std::mutex cpu_load_tracker_mutex_;
+ protected:
 };
 
 REGISTER_RESOURCE(SystemInformation, "Node part of an AST that defines the System information and metrics subtree");

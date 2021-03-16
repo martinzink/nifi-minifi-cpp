@@ -33,8 +33,6 @@
 #include "../nodes/DeviceInformation.h"
 #include "../nodes/MetricsBase.h"
 #include "Connection.h"
-#include "../../../utils/OsUtils.h"
-#include "../../../utils/ProcessCPULoadTracker.h"
 
 namespace org {
 namespace apache {
@@ -44,7 +42,7 @@ namespace state {
 namespace response {
 
 /**
- * Justification and Purpose: Provides process metrics. Provides critical information to the
+ * Justification and Purpose: Provides Connection queue metrics. Provides critical information to the
  * C2 server.
  *
  */
@@ -70,66 +68,33 @@ class ProcessMetrics : public ResponseNode {
 #ifndef WIN32
     struct rusage my_usage;
     getrusage(RUSAGE_SELF, &my_usage);
-#endif
+
     SerializedResponseNode memory;
     memory.name = "MemoryMetrics";
-    memory.children.push_back(serializePhysicalMemoryUsageInformation());
-#ifndef WIN32
-    memory.children.push_back(serializeMaximumResidentSetSize(my_usage));
-#endif
+
+    SerializedResponseNode maxrss;
+    maxrss.name = "maxrss";
+
+    maxrss.value = (uint64_t)my_usage.ru_maxrss;
+
+    memory.children.push_back(maxrss);
     serialized.push_back(memory);
 
     SerializedResponseNode cpu;
     cpu.name = "CpuMetrics";
-    cpu.children.push_back(serializeProcessCPUUsageInformation());
-#ifndef WIN32
-    cpu.children.push_back(serializeInvoluntaryContextSwitches(my_usage));
-#endif
+    SerializedResponseNode ics;
+    ics.name = "involcs";
+
+    ics.value = (uint64_t)my_usage.ru_nivcsw;
+
+    cpu.children.push_back(ics);
     serialized.push_back(cpu);
+
+#endif
     return serialized;
   }
 
  protected:
-#ifndef WIN32
-  SerializedResponseNode serializeInvoluntaryContextSwitches(const struct rusage& my_usage) {
-    SerializedResponseNode ics;
-    ics.name = "involcs";
-    ics.value = (uint64_t)my_usage.ru_nivcsw;
-
-    return ics;
-  }
-
-  SerializedResponseNode serializeMaximumResidentSetSize(const struct rusage& my_usage) {
-    SerializedResponseNode maxrss;
-    maxrss.name = "maxrss";
-    maxrss.value = (uint64_t)my_usage.ru_maxrss;
-
-    return maxrss;
-  }
-#endif
-
-  SerializedResponseNode serializePhysicalMemoryUsageInformation() {
-    SerializedResponseNode used_physical_memory;
-    used_physical_memory.name = "memoryUtilization";
-    used_physical_memory.value = (uint64_t)utils::OsUtils::getCurrentProcessPhysicalMemoryUsage();
-    return used_physical_memory;
-  }
-
-  SerializedResponseNode serializeProcessCPUUsageInformation() {
-    double system_cpu_usage = -1.0;
-    {
-      std::lock_guard<std::mutex> guard(cpu_load_tracker_mutex_);
-      system_cpu_usage = cpu_load_tracker_.getProcessCPULoadAndRestartCollection();
-    }
-    SerializedResponseNode cpu_usage;
-    cpu_usage.name = "cpuUtilization";
-    cpu_usage.value = system_cpu_usage;
-    return cpu_usage;
-  }
-
- private:
-  static utils::ProcessCPULoadTracker cpu_load_tracker_;
-  static std::mutex cpu_load_tracker_mutex_;
 };
 
 REGISTER_RESOURCE(ProcessMetrics, "Node part of an AST that defines the Processor information and metrics subtree");
