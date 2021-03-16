@@ -425,6 +425,23 @@ class AgentStatus : public StateMonitorNode {
     repositories_ = repositories;
   }
 
+  std::vector<SerializedResponseNode> serialize() {
+    std::vector<SerializedResponseNode> serialized;
+    if (!repositories_.empty()) {
+      serialized.push_back(serializeRepositories());
+    }
+    serialized.push_back(serializeUptime());
+
+    if (nullptr != monitor_) {
+      serialized.push_back(serializeComponents());
+    }
+
+    serialized.push_back(serializeResourceConsumption());
+
+    return serialized;
+  }
+
+ protected:
   SerializedResponseNode serializeRepositories() {
     SerializedResponseNode repositories;
 
@@ -521,26 +538,8 @@ class AgentStatus : public StateMonitorNode {
     return resource_consumption;
   }
 
-  std::vector<SerializedResponseNode> serialize() {
-    std::vector<SerializedResponseNode> serialized;
-    if (!repositories_.empty()) {
-      serialized.push_back(serializeRepositories());
-    }
-    serialized.push_back(serializeUptime());
-
-    if (nullptr != monitor_) {
-      serialized.push_back(serializeComponents());
-    }
-
-    serialized.push_back(serializeResourceConsumption());
-
-    return serialized;
-  }
-
- protected:
   std::map<std::string, std::shared_ptr<core::Repository>> repositories_;
 
- private:
   static utils::ProcessCPULoadTracker cpu_load_tracker_;
   static std::mutex cpu_load_tracker_mutex_;
 };

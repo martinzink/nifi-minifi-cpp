@@ -76,7 +76,6 @@ TEST_CASE("Test System CPU Utilization", "[testcpuusage]") {
 
       double system_cpu_load_during_busy_sleep = hostTracker.getHostCPULoadAndRestartCollection();
       double process_cpu_load_during_busy_sleep = processTracker.getProcessCPULoadAndRestartCollection();
-      REQUIRE(system_cpu_load_during_busy_sleep >= process_cpu_load_during_busy_sleep);
       REQUIRE(system_cpu_load_during_busy_sleep > (0.8 / vCores));
       REQUIRE(system_cpu_load_during_busy_sleep <= 1);
       REQUIRE(process_cpu_load_during_busy_sleep >= 0);

@@ -188,7 +188,7 @@ class Device {
      can free list later */
     for (ifa = ifaddr, n = 0; ifa != NULL; ifa = ifa->ifa_next, n++) {
       if (ifa->ifa_addr == NULL)
-      continue;
+        continue;
 
       family = ifa->ifa_addr->sa_family;
 
@@ -352,6 +352,17 @@ class DeviceInfoNode : public DeviceInformation {
     return "deviceInfo";
   }
 
+  std::vector<SerializedResponseNode> serialize() {
+    std::vector<SerializedResponseNode> serialized;
+
+    serialized.push_back(serializeIdentifier());
+    serialized.push_back(serializeSystemInfo());
+    serialized.push_back(serializeNetworkInfo());
+
+    return serialized;
+  }
+
+ protected:
   SerializedResponseNode serializeIdentifier() {
     SerializedResponseNode identifier;
     identifier.name = "identifier";
@@ -442,17 +453,6 @@ class DeviceInfoNode : public DeviceInformation {
     return network_info;
   }
 
-  std::vector<SerializedResponseNode> serialize() {
-    std::vector<SerializedResponseNode> serialized;
-
-    serialized.push_back(serializeIdentifier());
-    serialized.push_back(serializeSystemInfo());
-    serialized.push_back(serializeNetworkInfo());
-
-    return serialized;
-  }
-
- protected:
   /**
    * Have found various ways of identifying different operating system variants
    * so these were either pulled from header files or online.
