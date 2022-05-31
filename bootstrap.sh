@@ -338,6 +338,8 @@ add_disabled_option SPLUNK_ENABLED ${FALSE} "ENABLE_SPLUNK"
 
 add_disabled_option GCP_ENABLED ${FALSE} "ENABLE_GCP"
 
+add_disabled_option ELASTIC_ENABLED ${FALSE} "ENABLE_ELASTICSEARCH"
+
 add_disabled_option PROCFS_ENABLED ${FALSE} "ENABLE_PROCFS"
 
 USE_SHARED_LIBS=${TRUE}

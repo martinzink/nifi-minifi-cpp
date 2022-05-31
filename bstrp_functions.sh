@@ -395,6 +395,7 @@ show_supported_features() {
   echo "AB. Kubernetes Support .........$(print_feature_status KUBERNETES_ENABLED)"
   echo "AC. Google Cloud Support .......$(print_feature_status GCP_ENABLED)"
   echo "AD. ProcFs Support .............$(print_feature_status PROCFS_ENABLED)"
+  echo "AE. Elasticsearch Support ......$(print_feature_status ELASTIC_ENABLED)"
   echo "****************************************"
   echo "            Build Options."
   echo "****************************************"
@@ -453,6 +454,7 @@ read_feature_options(){
     ab) ToggleFeature KUBERNETES_ENABLED ;;
     ac) ToggleFeature GCP_ENABLED ;;
     ad) ToggleFeature PROCFS_ENABLED ;;
+    ae) ToggleFeature ELASTIC_ENABLED ;;
     1) ToggleFeature TESTS_ENABLED ;;
     2) EnableAllFeatures ;;
     3) ToggleFeature JNI_ENABLED;;

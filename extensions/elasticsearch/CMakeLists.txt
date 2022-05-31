@@ -1,3 +1,4 @@
+#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -14,11 +15,22 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+#
 
-include(FetchContent)
+if (NOT (ENABLE_ALL OR ENABLE_ELASTICSEARCH))
+  return()
+endif()
 
-FetchContent_Declare(expected-lite
-        GIT_REPOSITORY https://github.com/martinmoene/expected-lite.git
-        GIT_TAG b78dd92cc92b0cfe4eedad823cfd411c13afeb66
-        )
-FetchContent_MakeAvailable(expected-lite)
+include(${CMAKE_SOURCE_DIR}/extensions/ExtensionHeader.txt)
+
+file(GLOB SOURCES  "*.cpp")
+
+add_library(minifi-elasticsearch SHARED ${SOURCES})
+
+target_include_directories(minifi-elasticsearch PRIVATE BEFORE "${CMAKE_SOURCE_DIR}/extensions/http-curl")
+target_link_libraries(minifi-elasticsearch ${LIBMINIFI})
+target_link_libraries(minifi-elasticsearch minifi-http-curl)
+
+register_extension(minifi-elasticsearch "ELASTICSEARCH EXTENSIONS" ELASTICSEARCH-EXTENSIONS "This enables elasticsearch support" "extensions/elasticsearch/tests")
+
+register_extension_linter(minifi-elasticsearch-extensions-linter)
