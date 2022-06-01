@@ -51,6 +51,14 @@ void PutElasticsearchJson::onSchedule(const std::shared_ptr<core::ProcessContext
   context->getProperty(MaxBatchSize.getName(), max_batch_size_);
 }
 
+namespace {
+class BulkOperation {
+ private:
+
+  PutElasticsearchJson::IndexOperations operation;
+};
+}
+
 void PutElasticsearchJson::onTrigger(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) {
   gsl_Expects(context && session && max_batch_size_ > 0);
   size_t logs_processed = 0;
@@ -64,8 +72,11 @@ void PutElasticsearchJson::onTrigger(const std::shared_ptr<core::ProcessContext>
       session->transfer(flow_file, Failure);
     }
   try {
-    auto index_operation = IndexOperations::parse(*index_operation_str);
-  } catch (std::runtime_error)
+    auto index_operation = IndexOperations::parse(index_operation_str->c_str());
+  } catch (std::runtime_error) {
+
+  }
+  }
 }
 
 }  // org::apache::nifi::minifi::extensions::elasticsearch

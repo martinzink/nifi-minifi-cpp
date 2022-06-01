@@ -20,7 +20,7 @@
 
 namespace org::apache::nifi::minifi::extensions::elasticsearch {
 const core::Property ElasticSearchCredentialsControllerService::Hosts(core::PropertyBuilder::createProperty("Hosts")
-    ->withDescription("A comma-separated list of HTTP hosts that host Elasticsearch query nodes.")
+    ->withDescription("A comma-separated list of HTTP hosts that host Elasticsearch query nodes. Currently only supports a single host.")
     ->supportsExpressionLanguage(true)
     ->build());
 
@@ -33,6 +33,12 @@ const core::Property ElasticSearchCredentialsControllerService::Password(core::P
     ->withDescription("The password to use with XPack security.")
     ->supportsExpressionLanguage(true)
     ->build());
+
+const core::Property ElasticSearchCredentialsControllerService::SSLContext(core::PropertyBuilder::createProperty("SSL Context Service")
+    ->withDescription("The SSL Context Service used to provide client certificate "
+                      "information for TLS/SSL (https) connections.")
+    ->isRequired(false)
+    ->asType<minifi::controllers::SSLContextService>()->build());
 
 const core::Property ElasticSearchCredentialsControllerService::ConnectionTimeout(core::PropertyBuilder::createProperty("Connection timeout")
     ->withDescription("Controls the amount of time, in milliseconds, before a timeout occurs when trying to connect.")
@@ -50,28 +56,17 @@ const core::Property ElasticSearchCredentialsControllerService::RetryTimeout(cor
     ->build());
 
 void ElasticSearchCredentialsControllerService::initialize() {
-  setSupportedProperties({Hosts, Username, Password, ConnectionTimeout, ReadTimeout, RetryTimeout});
+  setSupportedProperties({Hosts, Username, Password, ConnectionTimeout, ReadTimeout, RetryTimeout, SSLContext});
 }
 
 void ElasticSearchCredentialsControllerService::onEnable() {
-  CredentialsLocation credentials_location;
-  if (!getProperty(CredentialsLoc.getName(), credentials_location)) {
-    logger_->log_error("Invalid Credentials Location, defaulting to %s", toString(CredentialsLocation::USE_DEFAULT_CREDENTIALS));
-    credentials_location = CredentialsLocation::USE_DEFAULT_CREDENTIALS;
-  }
-  if (credentials_location == CredentialsLocation::USE_DEFAULT_CREDENTIALS) {
-    credentials_ = createDefaultCredentials();
-  } else if (credentials_location == CredentialsLocation::USE_COMPUTE_ENGINE_CREDENTIALS) {
-    credentials_ = gcs::oauth2::CreateComputeEngineCredentials();
-  } else if (credentials_location == CredentialsLocation::USE_JSON_FILE) {
-    credentials_ = createCredentialsFromJsonPath();
-  } else if (credentials_location == CredentialsLocation::USE_JSON_CONTENTS) {
-    credentials_ = createCredentialsFromJsonContents();
-  } else if (credentials_location == CredentialsLocation::USE_ANONYMOUS_CREDENTIALS) {
-    credentials_ = gcs::oauth2::CreateAnonymousCredentials();
-  }
-  if (!credentials_)
-    logger_->log_error("Couldn't create valid credentials");
+}
+
+\std::shared_ptr<minifi::controllers::SSLContextService> ElasticSearchCredentialsControllerService::getSSLContextService(core::ProcessContext& context) const {
+  std::string context_name;
+  if (context.getProperty(SSLContext.getName(), context_name) && !IsNullOrEmpty(context_name))
+    return std::dynamic_pointer_cast<minifi::controllers::SSLContextService>(context.getControllerService(context_name));
+  return nullptr;
 }
 
 

@@ -21,11 +21,16 @@
 #include "core/controller/ControllerService.h"
 #include "core/logging/Logger.h"
 #include "core/logging/LoggerConfiguration.h"
+#include "controllers/SSLContextService.h"
+#include "client/HTTPClient.h"
+#include "utils/HTTPClient.h"
+#include "ProcessContext.h"
 
 namespace org::apache::nifi::minifi::extensions::elasticsearch {
 
 class ElasticSearchCredentialsControllerService : public core::controller::ControllerService {
  public:
+  EXTENSIONAPI static const core::Property SSLContext;
   EXTENSIONAPI static const core::Property Hosts;
   EXTENSIONAPI static const core::Property Username;
   EXTENSIONAPI static const core::Property Password;
@@ -49,5 +54,14 @@ class ElasticSearchCredentialsControllerService : public core::controller::Contr
   }
 
   void onEnable() override;
+
+  utils::HTTPClient& getClient() { return client_; }
+
+ private:
+  std::shared_ptr<minifi::controllers::SSLContextService> getSSLContextService(core::ProcessContext& context) const;
+
+
+  utils::HTTPClient client_;
+  std::string host_;
 };
 }  // org::apache::nifi::minifi::extensions::elasticsearch
