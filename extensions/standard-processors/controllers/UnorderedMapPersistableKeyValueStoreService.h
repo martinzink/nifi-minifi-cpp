@@ -46,7 +46,7 @@ class UnorderedMapPersistableKeyValueStoreService : public AbstractAutoPersistin
 
   static core::Property File;
 
-  void onEnable() override;
+  void onEnable(core::controller::ControllerServiceProvider*) override;
   void initialize() override;
   void notifyStop() override;
 

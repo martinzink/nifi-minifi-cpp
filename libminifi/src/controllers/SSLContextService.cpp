@@ -437,7 +437,7 @@ const std::string &SSLContextService::getCACertificate() {
   return ca_certificate_;
 }
 
-void SSLContextService::onEnable() {
+void SSLContextService::onEnable(core::controller::ControllerServiceProvider*) {
   valid_ = true;
   std::string default_dir;
 

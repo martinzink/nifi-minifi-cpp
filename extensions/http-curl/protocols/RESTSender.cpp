@@ -79,7 +79,7 @@ void RESTSender::update(const std::shared_ptr<Configure> &) {
 void RESTSender::setSecurityContext(utils::HTTPClient &client, const std::string &type, const std::string &url) {
   // only use the SSL Context if we have a secure URL.
   auto generatedService = std::make_shared<minifi::controllers::SSLContextService>("Service", configuration_);
-  generatedService->onEnable();
+  generatedService->onEnable(nullptr);
   client.initialize(type, url, generatedService);
 }
 

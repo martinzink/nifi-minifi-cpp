@@ -57,7 +57,7 @@ void MQTTControllerService::initialize() {
   initialized_ = true;
 }
 
-void MQTTControllerService::onEnable() {
+void MQTTControllerService::onEnable(core::controller::ControllerServiceProvider*) {
   for (auto &linked_service : linked_services_) {
     std::shared_ptr<controllers::SSLContextService> ssl_service = std::dynamic_pointer_cast<controllers::SSLContextService>(linked_service);
     if (nullptr != ssl_service) {

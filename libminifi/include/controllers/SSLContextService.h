@@ -142,7 +142,7 @@ class SSLContextService : public core::controller::ControllerService {
 #endif  // WIN32
   }
 
-  virtual void initialize();
+  void initialize() override;
 
   std::unique_ptr<SSLContext> createSSLContext();
 
@@ -156,14 +156,14 @@ class SSLContextService : public core::controller::ControllerService {
 
   const std::string &getCACertificate();
 
-  void yield() {
+  void yield() override {
   }
 
-  bool isRunning() {
+  bool isRunning() override {
     return getState() == core::controller::ControllerServiceState::ENABLED;
   }
 
-  bool isWorkAvailable() {
+  bool isWorkAvailable() override {
     return false;
   }
 
@@ -171,7 +171,7 @@ class SSLContextService : public core::controller::ControllerService {
   bool configure_ssl_context(SSL_CTX *ctx);
 #endif
 
-  virtual void onEnable();
+  void onEnable(core::controller::ControllerServiceProvider*) override;
 
   MINIFIAPI static const core::Property ClientCertificate;
   MINIFIAPI static const core::Property PrivateKey;

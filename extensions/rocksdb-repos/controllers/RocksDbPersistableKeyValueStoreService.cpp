@@ -44,13 +44,13 @@ void RocksDbPersistableKeyValueStoreService::initialize() {
   updateSupportedProperties({Directory});
 }
 
-void RocksDbPersistableKeyValueStoreService::onEnable() {
+void RocksDbPersistableKeyValueStoreService::onEnable(core::controller::ControllerServiceProvider* controller_service_provider) {
   if (configuration_ == nullptr) {
     logger_->log_debug("Cannot enable RocksDbPersistableKeyValueStoreService");
     return;
   }
 
-  AbstractAutoPersistingKeyValueStoreService::onEnable();
+  AbstractAutoPersistingKeyValueStoreService::onEnable(controller_service_provider);
 
   if (!getProperty(Directory.getName(), directory_)) {
     logger_->log_error("Invalid or missing property: Directory");

@@ -38,7 +38,7 @@ class KubernetesControllerService : public AttributeProviderService {
   KubernetesControllerService(const std::string& name, const std::shared_ptr<Configure>& configuration);
 
   void initialize() final;
-  void onEnable() override;
+  void onEnable(core::controller::ControllerServiceProvider*) override;
   std::optional<std::vector<AttributeMap>> getAttributes() override;
   std::string_view name() const override { return "kubernetes"; }
 

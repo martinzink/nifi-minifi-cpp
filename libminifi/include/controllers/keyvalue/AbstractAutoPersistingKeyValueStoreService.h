@@ -47,7 +47,7 @@ class AbstractAutoPersistingKeyValueStoreService : virtual public PersistableKey
   MINIFIAPI static core::Property AutoPersistenceInterval;
 
   void initialize() override;
-  void onEnable() override;
+  void onEnable(core::controller::ControllerServiceProvider*) override;
   void notifyStop() override;
 
  protected:

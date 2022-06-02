@@ -107,7 +107,7 @@ void KubernetesControllerService::initialize() {
   initialized_ = true;
 }
 
-void KubernetesControllerService::onEnable() {
+void KubernetesControllerService::onEnable(core::controller::ControllerServiceProvider*) {
   try {
     api_client_ = std::make_unique<APIClient>();
   } catch (const std::runtime_error& ex) {

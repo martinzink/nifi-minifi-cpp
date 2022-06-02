@@ -34,6 +34,7 @@ namespace minifi {
 namespace core {
 namespace controller {
 
+class ControllerServiceProvider;
 enum ControllerServiceState {
   /**
    * Controller Service is disabled and cannot be used.
@@ -88,7 +89,7 @@ class ControllerService : public ConfigurableComponent, public Connectable {
       current_state_ = DISABLED;
     }
 
-  virtual void initialize() {
+  void initialize() override {
     // set base supported properties
     Property property("Linked Services", "Referenced Controller Services");
     std::set<Property> supportedProperties;
@@ -97,7 +98,7 @@ class ControllerService : public ConfigurableComponent, public Connectable {
     current_state_ = ENABLED;
   }
 
-  virtual ~ControllerService() {
+  ~ControllerService() override {
     notifyStop();
   }
 
@@ -115,7 +116,7 @@ class ControllerService : public ConfigurableComponent, public Connectable {
   /**
    * Function is called when Controller Services are enabled and being run
    */
-  virtual void onEnable() {
+  virtual void onEnable(core::controller::ControllerServiceProvider*) {
   }
 
   /**
@@ -131,7 +132,7 @@ class ControllerService : public ConfigurableComponent, public Connectable {
     }
   }
 
-  virtual bool supportsDynamicProperties() {
+  bool supportsDynamicProperties() override {
     return false;
   }
 
@@ -143,7 +144,7 @@ class ControllerService : public ConfigurableComponent, public Connectable {
   std::vector<std::shared_ptr<controller::ControllerService> > linked_services_;
   std::shared_ptr<Configure> configuration_;
   std::atomic<ControllerServiceState> current_state_;
-  virtual bool canEdit() {
+  bool canEdit() override {
     return true;
   }
 };

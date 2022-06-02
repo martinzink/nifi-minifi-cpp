@@ -81,7 +81,7 @@ class JVMCreator : public minifi::core::CoreComponent {
       servicer->setProperty(jni::controllers::JavaControllerService::NarDirectory, nar_dir);
       servicer->setProperty(jni::controllers::JavaControllerService::NarDeploymentDirectory, nar_dep);
       servicer->setProperty(jni::controllers::JavaControllerService::NarDocumentDirectory, nar_docs);
-      servicer->onEnable();
+      servicer->onEnable(nullptr);
       loader_->setBaseServicer(servicer);
     }
   }

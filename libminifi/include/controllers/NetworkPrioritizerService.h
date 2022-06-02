@@ -72,17 +72,17 @@ class NetworkPrioritizerService : public core::controller::ControllerService, pu
   MINIFIAPI static core::Property VerifyInterfaces;
   MINIFIAPI static core::Property DefaultPrioritizer;
 
-  void initialize();
+  void initialize() override;
 
-  void yield();
+  void yield() override;
 
-  bool isRunning();
+  bool isRunning() override;
 
-  bool isWorkAvailable();
+  bool isWorkAvailable() override;
 
-  virtual void onEnable();
+  void onEnable(core::controller::ControllerServiceProvider*) override;
 
-  virtual io::NetworkInterface getInterface(uint32_t size);
+  io::NetworkInterface getInterface(uint32_t size) override;
 
  protected:
   std::string get_nearest_interface(const std::vector<std::string> &ifcs);
@@ -93,7 +93,7 @@ class NetworkPrioritizerService : public core::controller::ControllerService, pu
 
   bool sufficient_tokens(uint32_t size);
 
-  virtual void reduce_tokens(uint32_t size);
+  void reduce_tokens(uint32_t size) override;
 
   bool enabled_;
 

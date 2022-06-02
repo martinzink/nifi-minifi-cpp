@@ -47,7 +47,7 @@ void CoapProtocol::initialize(core::controller::ControllerServiceProvider* contr
   } else {
     logger_->log_info("No CoAP connector configured, so using default service");
     coap_service_ = std::make_shared<coap::controllers::CoapConnectorService>("cs", configure);
-    coap_service_->onEnable();
+    coap_service_->onEnable(controller);
   }
 }
 

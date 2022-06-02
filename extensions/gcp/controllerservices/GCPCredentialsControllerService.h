@@ -57,7 +57,7 @@ class GCPCredentialsControllerService : public core::controller::ControllerServi
     return getState() == core::controller::ControllerServiceState::ENABLED;
   }
 
-  void onEnable() override;
+  void onEnable(core::controller::ControllerServiceProvider*) override;
 
   [[nodiscard]] const auto& getCredentials() const { return credentials_; }
 

@@ -76,7 +76,7 @@ class CoapConnectorService : public core::controller::ControllerService {
     return false;
   }
 
-  void onEnable() override;
+  void onEnable(core::controller::ControllerServiceProvider*) override;
 
   /**
    * Sends the payload to the endpoint, returning the response as we await. Will retry transmission

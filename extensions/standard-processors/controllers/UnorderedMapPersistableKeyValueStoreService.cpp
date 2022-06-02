@@ -136,7 +136,7 @@ void UnorderedMapPersistableKeyValueStoreService::initialize() {
   updateSupportedProperties({File});
 }
 
-void UnorderedMapPersistableKeyValueStoreService::onEnable() {
+void UnorderedMapPersistableKeyValueStoreService::onEnable(core::controller::ControllerServiceProvider* context) {
   if (configuration_ == nullptr) {
     logger_->log_debug("Cannot enable UnorderedMapPersistableKeyValueStoreService");
     return;
@@ -150,7 +150,7 @@ void UnorderedMapPersistableKeyValueStoreService::onEnable() {
   /* We must not start the persistence thread until we attempted to load the state */
   load();
 
-  AbstractAutoPersistingKeyValueStoreService::onEnable();
+  AbstractAutoPersistingKeyValueStoreService::onEnable(context);
 
   logger_->log_trace("Enabled UnorderedMapPersistableKeyValueStoreService");
 }

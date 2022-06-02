@@ -68,7 +68,7 @@ class ExecuteJavaControllerService : public ConfigurationContext, public std::en
   static core::Property NiFiControllerService;
   // Supported Relationships
 
-  void onEnable() override;
+  void onEnable(core::controller::ControllerServiceProvider*) override;
   void initialize() override;
   bool supportsDynamicProperties() override {
     return true;

@@ -66,7 +66,7 @@ class AWSCredentialsService : public core::controller::ControllerService {
     return getState() == core::controller::ControllerServiceState::ENABLED;
   }
 
-  void onEnable() override;
+  void onEnable(core::controller::ControllerServiceProvider*) override;
 
   std::optional<Aws::Auth::AWSCredentials> getAWSCredentials();
 

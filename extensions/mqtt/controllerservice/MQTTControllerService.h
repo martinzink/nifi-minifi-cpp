@@ -101,9 +101,9 @@ class MQTTControllerService : public core::controller::ControllerService {
   static core::Property QOS;
   static core::Property SecurityProtocol;
 
-  virtual void initialize();
+  void initialize() override;
 
-  void yield() {
+  void yield() override {
   }
 
   int send(const std::string &topic, const std::vector<uint8_t> &data) {
@@ -149,15 +149,15 @@ class MQTTControllerService : public core::controller::ControllerService {
     return token;
   }
 
-  bool isRunning() {
+  bool isRunning() override {
     return getState() == core::controller::ControllerServiceState::ENABLED;
   }
 
-  bool isWorkAvailable() {
+  bool isWorkAvailable() override {
     return false;
   }
 
-  virtual void onEnable();
+  void onEnable(core::controller::ControllerServiceProvider*) override;
 
   void subscribeToTopic(const std::string newTopic) {
     std::lock_guard<std::mutex> lock(initialization_mutex_);

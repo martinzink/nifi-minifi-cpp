@@ -47,7 +47,7 @@ class RocksDbPersistableKeyValueStoreService : public AbstractAutoPersistingKeyV
   static core::Property Directory;
 
   void initialize() override;
-  void onEnable() override;
+  void onEnable(core::controller::ControllerServiceProvider*) override;
   void notifyStop() override;
 
   bool set(const std::string& key, const std::string& value) override;

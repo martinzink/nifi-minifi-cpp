@@ -1774,7 +1774,7 @@ namespace {
 class TestAttributeProviderService : public minifi::controllers::AttributeProviderService {
   using AttributeProviderService::AttributeProviderService;
   void initialize() override {};
-  void onEnable() override {};
+  void onEnable(core::controller::ControllerServiceProvider*) override {};
   std::optional<std::vector<AttributeMap>> getAttributes() override {
     return std::vector<AttributeMap>{AttributeMap{{"color", "red"}, {"fruit", "apple"}, {"uid", "001"}, {"animal", "dog"}},
                                      AttributeMap{{"color", "yellow"}, {"fruit", "banana"}, {"uid", "004"}, {"animal", "dolphin"}}};

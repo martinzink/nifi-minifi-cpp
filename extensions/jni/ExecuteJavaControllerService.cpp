@@ -71,7 +71,7 @@ void ExecuteJavaControllerService::initialize() {
 
 ExecuteJavaControllerService::~ExecuteJavaControllerService() = default;
 
-void ExecuteJavaControllerService::onEnable() {
+void ExecuteJavaControllerService::onEnable(core::controller::ControllerServiceProvider*) {
   std::string controller_service_name;
 
   auto serv_cs = JVMLoader::getInstance()->getBaseServicer();

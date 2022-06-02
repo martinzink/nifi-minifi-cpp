@@ -61,7 +61,7 @@ void AbstractAutoPersistingKeyValueStoreService::initialize() {
   updateSupportedProperties({AlwaysPersist, AutoPersistenceInterval});
 }
 
-void AbstractAutoPersistingKeyValueStoreService::onEnable() {
+void AbstractAutoPersistingKeyValueStoreService::onEnable(core::controller::ControllerServiceProvider*) {
   std::unique_lock<std::mutex> lock(persisting_mutex_);
 
   if (configuration_ == nullptr) {

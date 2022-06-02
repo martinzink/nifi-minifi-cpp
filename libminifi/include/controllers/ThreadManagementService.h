@@ -86,22 +86,22 @@ class ThreadManagementService : public core::controller::ControllerService {
    */
   virtual bool canIncrease() = 0;
 
-  virtual void initialize() {
+  void initialize() override {
     ControllerService::initialize();
   }
 
-  void yield() {
+  void yield() override {
   }
 
-  bool isRunning() {
+  bool isRunning() override {
     return getState() == core::controller::ControllerServiceState::ENABLED;
   }
 
-  bool isWorkAvailable() {
+  bool isWorkAvailable() override {
     return false;
   }
 
-  virtual void onEnable() {
+  void onEnable(core::controller::ControllerServiceProvider*) override {
   }
 
  protected:

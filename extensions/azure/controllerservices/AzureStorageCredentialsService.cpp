@@ -57,7 +57,7 @@ void AzureStorageCredentialsService::initialize() {
   setSupportedProperties({StorageAccountName, StorageAccountKey, SASToken, CommonStorageAccountEndpointSuffix, ConnectionString, UseManagedIdentityCredentials});
 }
 
-void AzureStorageCredentialsService::onEnable() {
+void AzureStorageCredentialsService::onEnable(core::controller::ControllerServiceProvider*) {
   std::string value;
   if (getProperty(StorageAccountName.getName(), value)) {
     credentials_.setStorageAccountName(value);

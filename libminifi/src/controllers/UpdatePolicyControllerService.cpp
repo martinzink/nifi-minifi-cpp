@@ -76,7 +76,7 @@ bool UpdatePolicyControllerService::isWorkAvailable() {
   return false;
 }
 
-void UpdatePolicyControllerService::onEnable() {
+void UpdatePolicyControllerService::onEnable(core::controller::ControllerServiceProvider*) {
   std::string enableStr, persistStr;
 
   bool enable_all = false;

@@ -40,9 +40,9 @@ class MockControllerService : public org::apache::nifi::minifi::core::controller
   }
   MockControllerService() = default;
 
-  ~MockControllerService() = default;
+  ~MockControllerService() override = default;
 
-  virtual void initialize() {
+  void initialize() override {
     org::apache::nifi::minifi::core::controller::ControllerService::initialize();
     enable();
   }
@@ -55,14 +55,14 @@ class MockControllerService : public org::apache::nifi::minifi::core::controller
     str = "pushitrealgood";
   }
 
-  void yield() {
+  void yield() override {
   }
 
-  bool isRunning() {
+  bool isRunning() override {
     return true;
   }
 
-  bool isWorkAvailable() {
+  bool isWorkAvailable() override {
     return true;
   }
 
@@ -82,7 +82,7 @@ class MockProcessor : public org::apache::nifi::minifi::core::Processor {
     setTriggerWhenEmpty(true);
   }
 
-  ~MockProcessor() = default;
+  ~MockProcessor() override = default;
 
   void initialize() override {
     org::apache::nifi::minifi::core::Property property("linkedService", "Linked service");

@@ -61,7 +61,7 @@ void CoapConnectorService::initialize() {
   initialized_ = true;
 }
 
-void CoapConnectorService::onEnable() {
+void CoapConnectorService::onEnable(core::controller::ControllerServiceProvider*) {
   std::string port_str;
   if (getProperty(RemoteServer.getName(), host_) && !host_.empty() && getProperty(Port.getName(), port_str) && !port_str.empty()) {
     core::Property::StringToInt(port_str, port_);

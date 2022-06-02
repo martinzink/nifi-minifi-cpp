@@ -73,7 +73,7 @@ class JavaControllerService : public core::controller::ControllerService, public
     return false;
   }
 
-  void onEnable() override;
+  void onEnable(core::controller::ControllerServiceProvider*) override;
 
   std::vector<std::string> getPaths() const {
     return classpaths_;

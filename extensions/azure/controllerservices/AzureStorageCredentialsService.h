@@ -58,7 +58,7 @@ class AzureStorageCredentialsService : public core::controller::ControllerServic
     return getState() == core::controller::ControllerServiceState::ENABLED;
   }
 
-  void onEnable() override;
+  void onEnable(core::controller::ControllerServiceProvider*) override;
 
   storage::AzureStorageCredentials getCredentials() const {
     return credentials_;

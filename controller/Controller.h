@@ -277,7 +277,7 @@ std::shared_ptr<org::apache::nifi::minifi::core::controller::ControllerService> 
   controller->load();
   auto service = controller->getControllerService(service_name);
   if (service)
-    service->onEnable();
+    service->onEnable(controller.get());
   return service;
 }
 

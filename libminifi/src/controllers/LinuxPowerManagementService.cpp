@@ -186,7 +186,7 @@ bool LinuxPowerManagerService::isWorkAvailable() {
   return false;
 }
 
-void LinuxPowerManagerService::onEnable() {
+void LinuxPowerManagerService::onEnable(core::controller::ControllerServiceProvider*) {
   if (nullptr == configuration_) {
     logger_->log_trace("Cannot enable Linux Power Manager");
     return;

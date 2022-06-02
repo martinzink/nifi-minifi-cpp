@@ -76,7 +76,7 @@ void JavaControllerService::initialize() {
   initialized_ = true;
 }
 
-void JavaControllerService::onEnable() {
+void JavaControllerService::onEnable(core::controller::ControllerServiceProvider*) {
   std::vector<std::string> pathOrFiles;
 
   core::Property prop = NarDirectory;

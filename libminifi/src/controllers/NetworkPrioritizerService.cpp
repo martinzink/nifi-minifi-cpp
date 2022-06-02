@@ -189,7 +189,7 @@ bool NetworkPrioritizerService::isWorkAvailable() {
   return false;
 }
 
-void NetworkPrioritizerService::onEnable() {
+void NetworkPrioritizerService::onEnable(core::controller::ControllerServiceProvider*) {
   std::string controllers;
   if (getProperty(NetworkControllers.getName(), controllers) || !linked_services_.empty()) {
     // if this controller service is defined, it will be an intersection of this config with linked services.

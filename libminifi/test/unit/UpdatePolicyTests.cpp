@@ -32,7 +32,7 @@ TEST_CASE("TestEmptyPolicy", "[test1]") {
   auto controller = std::make_shared<minifi::controllers::UpdatePolicyControllerService>("TestService");
   std::shared_ptr<minifi::Configure> configuration = std::make_shared<minifi::Configure>();
   controller->initialize();
-  controller->onEnable();
+  controller->onEnable(nullptr);
   REQUIRE(false == controller->canUpdate("anyproperty"));
 }
 
@@ -41,7 +41,7 @@ TEST_CASE("TestAllowAll", "[test1]") {
   std::shared_ptr<minifi::Configure> configuration = std::make_shared<minifi::Configure>();
   controller->initialize();
   controller->setProperty(minifi::controllers::UpdatePolicyControllerService::AllowAllProperties, "true");
-  controller->onEnable();
+  controller->onEnable(nullptr);
   REQUIRE(true == controller->canUpdate("anyproperty"));
 }
 
@@ -50,7 +50,7 @@ TEST_CASE("TestAllowAllFails", "[test1]") {
   std::shared_ptr<minifi::Configure> configuration = std::make_shared<minifi::Configure>();
   controller->initialize();
   controller->setProperty(minifi::controllers::UpdatePolicyControllerService::AllowAllProperties, "false");
-  controller->onEnable();
+  controller->onEnable(nullptr);
   REQUIRE(false == controller->canUpdate("anyproperty"));
 }
 
@@ -60,7 +60,7 @@ TEST_CASE("TestEnableProperty", "[test1]") {
   controller->initialize();
   controller->setProperty(minifi::controllers::UpdatePolicyControllerService::AllowAllProperties, "false");
   controller->setProperty(minifi::controllers::UpdatePolicyControllerService::AllowedProperties, "anyproperty");
-  controller->onEnable();
+  controller->onEnable(nullptr);
   REQUIRE(true == controller->canUpdate("anyproperty"));
 }
 
@@ -71,7 +71,7 @@ TEST_CASE("TestDisableProperty", "[test1]") {
   controller->setProperty(minifi::controllers::UpdatePolicyControllerService::AllowAllProperties, "true");
   controller->setProperty(minifi::controllers::UpdatePolicyControllerService::DisallowedProperties, "anyproperty");
   controller->updateProperty(minifi::controllers::UpdatePolicyControllerService::DisallowedProperties.getName(), "anyproperty2");
-  controller->onEnable();
+  controller->onEnable(nullptr);
   REQUIRE(false == controller->canUpdate("anyproperty"));
   REQUIRE(false == controller->canUpdate("anyproperty2"));
   REQUIRE(true == controller->canUpdate("anyproperty3"));

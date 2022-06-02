@@ -69,7 +69,7 @@ class DatabaseService : public core::controller::ControllerService {
     return false;
   }
 
-  void onEnable() override;
+  void onEnable(core::controller::ControllerServiceProvider*) override;
 
   virtual std::unique_ptr<sql::Connection> getConnection() const = 0;
 

@@ -69,40 +69,40 @@ class LinuxPowerManagerService : public ThreadManagementService {
    * @param new_tasks tasks to be added.
    * @return true if above max, false otherwise.
    */
-  virtual bool isAboveMax(const int new_tasks);
+  bool isAboveMax(const int new_tasks) override;
 
   /**
    * Returns the max number of threads allowed by all pools
    * @return max threads.
    */
-  virtual uint16_t getMaxThreads();
+  uint16_t getMaxThreads() override;
 
   /**
    * Function based on cooperative multitasking that will tell a caller whether or not the number of threads should be reduced.
    * @return true if threading impacts QOS.
    */
-  virtual bool shouldReduce();
+  bool shouldReduce() override;
 
   /**
    * Function to indicate to this controller service that we've reduced threads in a threadpool
    */
-  virtual void reduce();
+  void reduce() override;
 
   /**
    * Function to help callers identify if they can increase threads.
    * @return true if QOS won't be breached.
    */
-  virtual bool canIncrease();
+  bool canIncrease() override;
 
-  void initialize();
+  void initialize() override;
 
-  void yield();
+  void yield() override;
 
-  bool isRunning();
+  bool isRunning() override;
 
-  bool isWorkAvailable();
+  bool isWorkAvailable() override;
 
-  virtual void onEnable();
+  void onEnable(core::controller::ControllerServiceProvider*) override;
 
  protected:
   std::vector<std::pair<std::string, std::string>> paths_;

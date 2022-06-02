@@ -54,7 +54,7 @@ void DatabaseService::initialize() {
   initialized_ = true;
 }
 
-void DatabaseService::onEnable() {
+void DatabaseService::onEnable(core::controller::ControllerServiceProvider*) {
   getProperty(ConnectionString.getName(), connection_string_);
 }
 

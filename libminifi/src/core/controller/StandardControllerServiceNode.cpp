@@ -19,6 +19,7 @@
 #include "core/controller/StandardControllerServiceNode.h"
 #include <memory>
 #include <mutex>
+#include "utils/gsl.h"
 
 namespace org {
 namespace apache {
@@ -28,6 +29,7 @@ namespace core {
 namespace controller {
 
 bool StandardControllerServiceNode::enable() {
+  gsl_Expects(provider);
   Property property("Linked Services", "Referenced Controller Services");
   controller_service_->setState(ENABLED);
   logger_->log_trace("Enabling CSN %s", getName());
@@ -50,7 +52,7 @@ bool StandardControllerServiceNode::enable() {
       services.push_back(service->getControllerServiceImplementation());
     }
     impl->setLinkedControllerServices(services);
-    impl->onEnable();
+    impl->onEnable(provider.get());
   }
   return true;
 }

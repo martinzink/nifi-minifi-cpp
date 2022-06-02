@@ -59,7 +59,7 @@ void AWSCredentialsService::initialize() {
   setSupportedProperties(supportedProperties);
 }
 
-void AWSCredentialsService::onEnable() {
+void AWSCredentialsService::onEnable(core::controller::ControllerServiceProvider*) {
   std::string value;
   if (getProperty(AccessKey.getName(), value)) {
     aws_credentials_provider_.setAccessKey(value);

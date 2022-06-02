@@ -88,7 +88,7 @@ std::shared_ptr<gcs::oauth2::Credentials> GCPCredentialsControllerService::creat
   return *json_path_credentials;
 }
 
-void GCPCredentialsControllerService::onEnable() {
+void GCPCredentialsControllerService::onEnable(core::controller::ControllerServiceProvider*) {
   CredentialsLocation credentials_location;
   if (!getProperty(CredentialsLoc.getName(), credentials_location)) {
     logger_->log_error("Invalid Credentials Location, defaulting to %s", toString(CredentialsLocation::USE_DEFAULT_CREDENTIALS));

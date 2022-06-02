@@ -43,7 +43,7 @@ TEST_CASE("TestPrioritizerOneInterface", "[test1]") {
   controller->setProperty(minifi::controllers::NetworkPrioritizerService::VerifyInterfaces, "false");
   controller->setProperty(minifi::controllers::NetworkPrioritizerService::MaxThroughput, "10 B");
   controller->setProperty(minifi::controllers::NetworkPrioritizerService::MaxPayload, "10 B");
-  controller->onEnable();
+  controller->onEnable(nullptr);
   REQUIRE("eth0" == controller->getInterface(0).getInterface());
 }
 
@@ -54,7 +54,7 @@ TEST_CASE("TestPrioritizerOneInterfaceMaxPayload", "[test2]") {
   controller->setProperty(minifi::controllers::NetworkPrioritizerService::VerifyInterfaces, "false");
   controller->setProperty(minifi::controllers::NetworkPrioritizerService::MaxThroughput, "1 kB");
   controller->setProperty(minifi::controllers::NetworkPrioritizerService::MaxPayload, "10 B");
-  controller->onEnable();
+  controller->onEnable(nullptr);
 
   REQUIRE("eth0" == controller->getInterface(5).getInterface());
   REQUIRE("" == controller->getInterface(20).getInterface());  // larger than max payload
@@ -68,7 +68,7 @@ TEST_CASE("TestPrioritizerOneInterfaceMaxThroughput", "[test3]") {
   controller->setProperty(minifi::controllers::NetworkPrioritizerService::NetworkControllers, "eth0,eth1");
   controller->setProperty(minifi::controllers::NetworkPrioritizerService::VerifyInterfaces, "false");
   controller->setProperty(minifi::controllers::NetworkPrioritizerService::MaxThroughput, "10 B");
-  controller->onEnable();
+  controller->onEnable(nullptr);
   REQUIRE("eth0" == controller->getInterface(5).getInterface());
   REQUIRE("eth0" == controller->getInterface(5).getInterface());
   REQUIRE("" == controller->getInterface(5).getInterface());  // max throughput reached
@@ -88,20 +88,20 @@ TEST_CASE("TestPriorotizerMultipleInterfaces", "[test4]") {
   controller0->setProperty(minifi::controllers::NetworkPrioritizerService::NetworkControllers, "eth0");
   controller0->setProperty(minifi::controllers::NetworkPrioritizerService::VerifyInterfaces, "false");
   controller0->setProperty(minifi::controllers::NetworkPrioritizerService::MaxThroughput, "10 B");
-  controller0->onEnable();
+  controller0->onEnable(nullptr);
 
   auto controller1 = createNetworkPrioritizerService("TestService_eth1", clock);
   controller1->initialize();
   controller1->setProperty(minifi::controllers::NetworkPrioritizerService::NetworkControllers, "eth1");
   controller1->setProperty(minifi::controllers::NetworkPrioritizerService::VerifyInterfaces, "false");
   controller1->setProperty(minifi::controllers::NetworkPrioritizerService::MaxThroughput, "10 B");
-  controller1->onEnable();
+  controller1->onEnable(nullptr);
 
   std::vector<std::shared_ptr<core::controller::ControllerService> > services;
   services.push_back(controller0);
   services.push_back(controller1);
   parent_controller->setLinkedControllerServices(services);
-  parent_controller->onEnable();
+  parent_controller->onEnable(nullptr);
 
   SECTION("Switch to second interface when the first is saturated") {
     REQUIRE("eth0" == parent_controller->getInterface(5).getInterface());
@@ -130,20 +130,20 @@ TEST_CASE("TestPriorotizerMultipleInterfacesMaxPayload", "[test5]") {
   controller0->setProperty(minifi::controllers::NetworkPrioritizerService::VerifyInterfaces, "false");
   controller0->setProperty(minifi::controllers::NetworkPrioritizerService::MaxThroughput, "1 kB");
   controller0->setProperty(minifi::controllers::NetworkPrioritizerService::MaxPayload, "10 B");
-  controller0->onEnable();
+  controller0->onEnable(nullptr);
 
   auto controller1 = createNetworkPrioritizerService("TestService_eth1");
   controller1->initialize();
   controller1->setProperty(minifi::controllers::NetworkPrioritizerService::NetworkControllers, "eth1");
   controller1->setProperty(minifi::controllers::NetworkPrioritizerService::VerifyInterfaces, "false");
   controller1->setProperty(minifi::controllers::NetworkPrioritizerService::MaxThroughput, "1 kB");
-  controller1->onEnable();
+  controller1->onEnable(nullptr);
 
   std::vector<std::shared_ptr<core::controller::ControllerService> > services;
   services.push_back(controller0);
   services.push_back(controller1);
   parent_controller->setLinkedControllerServices(services);
-  parent_controller->onEnable();
+  parent_controller->onEnable(nullptr);
 
   REQUIRE("eth0" == parent_controller->getInterface(10).getInterface());
   REQUIRE("eth0" == parent_controller->getInterface(10).getInterface());
