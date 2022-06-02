@@ -59,10 +59,10 @@ void ElasticSearchCredentialsControllerService::initialize() {
   setSupportedProperties({Hosts, Username, Password, ConnectionTimeout, ReadTimeout, RetryTimeout, SSLContext});
 }
 
-void ElasticSearchCredentialsControllerService::onEnable() {
+void ElasticSearchCredentialsControllerService::onEnable(core::controller::ControllerServiceProvider*) {
 }
 
-\std::shared_ptr<minifi::controllers::SSLContextService> ElasticSearchCredentialsControllerService::getSSLContextService(core::ProcessContext& context) const {
+std::shared_ptr<minifi::controllers::SSLContextService> ElasticSearchCredentialsControllerService::getSSLContextService(core::ProcessContext& context) const {
   std::string context_name;
   if (context.getProperty(SSLContext.getName(), context_name) && !IsNullOrEmpty(context_name))
     return std::dynamic_pointer_cast<minifi::controllers::SSLContextService>(context.getControllerService(context_name));

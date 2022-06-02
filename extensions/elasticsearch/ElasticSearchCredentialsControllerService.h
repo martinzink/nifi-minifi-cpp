@@ -53,7 +53,7 @@ class ElasticSearchCredentialsControllerService : public core::controller::Contr
     return getState() == core::controller::ControllerServiceState::ENABLED;
   }
 
-  void onEnable() override;
+  void onEnable(core::controller::ControllerServiceProvider*) override;
 
   utils::HTTPClient& getClient() { return client_; }
 
