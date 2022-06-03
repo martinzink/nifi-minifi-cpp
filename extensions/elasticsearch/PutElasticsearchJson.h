@@ -24,10 +24,10 @@
 #include "controllers/SSLContextService.h"
 #include "core/Processor.h"
 #include "utils/Enum.h"
+#include "client/HTTPClient.h"
+#include "utils/HTTPClient.h"
 
 namespace org::apache::nifi::minifi::extensions::elasticsearch {
-
-
 
 class PutElasticsearchJson : public core::Processor {
  public:
@@ -43,7 +43,11 @@ class PutElasticsearchJson : public core::Processor {
 
   EXTENSIONAPI static const core::Property IndexOperation;
   EXTENSIONAPI static const core::Property MaxBatchSize;
-  EXTENSIONAPI static const core::Property ClientService;
+  EXTENSIONAPI static const core::Property ElasticCredentials;
+  EXTENSIONAPI static const core::Property SSLContext;
+  EXTENSIONAPI static const core::Property Hosts;
+  EXTENSIONAPI static const core::Property Index;
+  EXTENSIONAPI static const core::Property Id;
 
   void initialize() override;
   void onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& sessionFactory) override;
@@ -55,7 +59,7 @@ class PutElasticsearchJson : public core::Processor {
 
  private:
   uint64_t max_batch_size_;
-
+  utils::HTTPClient client_;
 };
 
 }  // org::apache::nifi::minifi::extensions::elasticsearch

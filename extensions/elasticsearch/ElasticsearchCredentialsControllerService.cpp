@@ -33,7 +33,11 @@ void ElasticsearchCredentialsControllerService::initialize() {
   setSupportedProperties({Username, Password});
 }
 
-void authenticateClient(utils::HTTPClient& client) {
+void ElasticsearchCredentialsControllerService::onEnable(core::controller::ControllerServiceProvider*) {
+  // TODO
+}
+
+void ElasticsearchCredentialsControllerService::authenticateClient(utils::HTTPClient&) {
   // TODO
 }
 

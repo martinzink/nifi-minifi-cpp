@@ -30,10 +30,10 @@ TEST_CASE("PutElasticsearchJson", "[elastic]") {
 
   std::shared_ptr<PutElasticsearchJson> put_elasticsearch_json = std::make_shared<PutElasticsearchJson>("PutElasticsearchJson");
   minifi::test::SingleProcessorTestController test_controller{put_elasticsearch_json};
-  auto elasticsearch_client_controller_service = test_controller.plan->addController("ElasticsearchClientControllerService", "elasticsearch_client_controller_service");
+  auto elasticsearch_credentials_controller_service = test_controller.plan->addController("ElasticsearchCredentialsControllerService", "elasticsearch_credentials_controller_service");
   test_controller.plan->setProperty(put_elasticsearch_json,
-                                     PutElasticsearchJson::ClientService.getName(),
-                                     "elastic_search_client_controller_service");
+                                     PutElasticsearchJson::ElasticCredentials.getName(),
+                                     "elasticsearch_credentials_controller_service");
 
 }
 
