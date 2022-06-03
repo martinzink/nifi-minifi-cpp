@@ -136,12 +136,17 @@ class OperationRequest {
  private:
   OpType type_;
   std::string index_;
-  std::string id_;
+  std::optional<std::string> id_;
   std::optional<std::unordered_map<std::string, std::string>> fields_;
 };
 
 std::optional<OperationRequest> parseOperationRequest(core::ProcessContext&, core::FlowFile&) {
   return std::nullopt;
+}
+
+std::string buildRequest(std::vector<OperationRequest> requests) {
+
+  return "";
 }
 }
 
@@ -156,6 +161,7 @@ void PutElasticsearchJson::onTrigger(const std::shared_ptr<core::ProcessContext>
     if (!operation_request)
       session->transfer(flow_file, PutElasticsearchJson::Failure);
   }
+
 }
 
 }  // org::apache::nifi::minifi::extensions::elasticsearch
