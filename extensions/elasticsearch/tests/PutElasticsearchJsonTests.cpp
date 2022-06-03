@@ -16,11 +16,24 @@
  */
 
 #include "../PutElasticsearchJson.h"
+#include "MockElastic.h"
+#include "SingleProcessorTestController.h"
 #include "Catch.h"
 
 namespace org::apache::nifi::minifi::extensions::elasticsearch::test {
 
 TEST_CASE("PutElasticsearchJson", "[elastic]") {
+  MockElastic mock_elastic("10433");
+  mock_elastic.setAssertions([](const struct mg_request_info *request_info) {
+    CHECK(request_info->query_string == nullptr);
+  });
+
+  std::shared_ptr<PutElasticsearchJson> put_elasticsearch_json = std::make_shared<PutElasticsearchJson>("PutElasticsearchJson");
+  minifi::test::SingleProcessorTestController test_controller{put_elasticsearch_json};
+  auto elasticsearch_client_controller_service = test_controller.plan->addController("ElasticsearchClientControllerService", "elasticsearch_client_controller_service");
+  test_controller.plan->setProperty(put_elasticsearch_json,
+                                     PutElasticsearchJson::ClientService.getName(),
+                                     "elastic_search_client_controller_service");
 
 }
 

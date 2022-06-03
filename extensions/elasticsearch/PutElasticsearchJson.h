@@ -31,14 +31,6 @@ namespace org::apache::nifi::minifi::extensions::elasticsearch {
 
 class PutElasticsearchJson : public core::Processor {
  public:
-  SMART_ENUM(IndexOperations,
-             (INDEX, "index"),
-             (CREATE, "create"),
-             (DELETE, "delete"),
-             (UPDATE, "update"),
-             (UPSERT, "upsert"))
-
-
   explicit PutElasticsearchJson(const std::string& name, const utils::Identifier& uuid = {})
       : Processor(name, uuid) {
   }
@@ -51,6 +43,7 @@ class PutElasticsearchJson : public core::Processor {
 
   EXTENSIONAPI static const core::Property IndexOperation;
   EXTENSIONAPI static const core::Property MaxBatchSize;
+  EXTENSIONAPI static const core::Property ClientService;
 
   void initialize() override;
   void onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& sessionFactory) override;
@@ -62,6 +55,7 @@ class PutElasticsearchJson : public core::Processor {
 
  private:
   uint64_t max_batch_size_;
+
 };
 
 }  // org::apache::nifi::minifi::extensions::elasticsearch

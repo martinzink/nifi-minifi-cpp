@@ -17,9 +17,11 @@
 
 
 #include "PutElasticsearchJson.h"
+#include "ElasticsearchCredentialsControllerService.h"
 #include "core/ProcessContext.h"
 #include "core/ProcessSession.h"
 #include "core/Resource.h"
+#include "rapidjson/document.h"
 
 namespace org::apache::nifi::minifi::extensions::elasticsearch {
 
@@ -40,9 +42,16 @@ const core::Property PutElasticsearchJson::MaxBatchSize(
         ->withDefaultValue<uint64_t>(100)
         ->build());
 
+const core::Property PutElasticsearchJson::ClientService(
+    core::PropertyBuilder::createProperty("Client Service")
+        ->withDescription("An Elasticsearch client service to use for running queries.")
+        ->isRequired(true)
+        ->asType<ElasticsearchCredentialsControllerService>()
+        ->build());
+
 void PutElasticsearchJson::initialize() {
   setSupportedRelationships({Success, Failure, Retry, Errors});
-  setSupportedProperties({IndexOperation, MaxBatchSize});
+  setSupportedProperties({ClientService, IndexOperation, MaxBatchSize});
 }
 
 void PutElasticsearchJson::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>&) {
@@ -52,16 +61,27 @@ void PutElasticsearchJson::onSchedule(const std::shared_ptr<core::ProcessContext
 }
 
 namespace {
-class BulkOperation {
- private:
+class OperationRequest {
+ public:
+  SMART_ENUM(OpType,
+             (INDEX, "index"),
+             (CREATE, "create"),
+             (DELETE, "delete"),
+             (UPDATE, "update"),
+             (UPSERT, "upsert"))
 
-  PutElasticsearchJson::IndexOperations operation;
+  OperationRequest(OpType type, rapidjson::Value fields)
+      : type_(type) {
+
+  }
+ private:
+  OpType type_;
+  std::optional<std::unordered_map<std::string, std::string>> fields_;
 };
 }
 
 void PutElasticsearchJson::onTrigger(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) {
   gsl_Expects(context && session && max_batch_size_ > 0);
-  size_t logs_processed = 0;
   std::vector<std::string> operations;
   while (operations.size() < max_batch_size_) {
     auto flow_file = session->get();
@@ -71,11 +91,6 @@ void PutElasticsearchJson::onTrigger(const std::shared_ptr<core::ProcessContext>
     if (!index_operation_str) {
       session->transfer(flow_file, Failure);
     }
-  try {
-    auto index_operation = IndexOperations::parse(index_operation_str->c_str());
-  } catch (std::runtime_error) {
-
-  }
   }
 }
 

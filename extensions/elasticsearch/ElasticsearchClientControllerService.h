@@ -28,7 +28,7 @@
 
 namespace org::apache::nifi::minifi::extensions::elasticsearch {
 
-class ElasticSearchCredentialsControllerService : public core::controller::ControllerService {
+class ElasticsearchClientControllerService : public core::controller::ControllerService {
  public:
   EXTENSIONAPI static const core::Property SSLContext;
   EXTENSIONAPI static const core::Property Hosts;
@@ -37,7 +37,6 @@ class ElasticSearchCredentialsControllerService : public core::controller::Contr
 
   EXTENSIONAPI static const core::Property ConnectionTimeout;
   EXTENSIONAPI static const core::Property ReadTimeout;
-  EXTENSIONAPI static const core::Property RetryTimeout;
 
   using ControllerService::ControllerService;
 
@@ -58,10 +57,8 @@ class ElasticSearchCredentialsControllerService : public core::controller::Contr
   utils::HTTPClient& getClient() { return client_; }
 
  private:
-  std::shared_ptr<minifi::controllers::SSLContextService> getSSLContextService(core::ProcessContext& context) const;
-
+  std::shared_ptr<minifi::controllers::SSLContextService> getSSLContextService(core::controller::ControllerServiceProvider& provider) const;
 
   utils::HTTPClient client_;
-  std::string host_;
 };
 }  // org::apache::nifi::minifi::extensions::elasticsearch
