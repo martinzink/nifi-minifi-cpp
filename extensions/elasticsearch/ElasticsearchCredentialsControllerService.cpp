@@ -17,6 +17,7 @@
 
 
 #include "ElasticsearchCredentialsControllerService.h"
+#include "core/Resource.h"
 
 namespace org::apache::nifi::minifi::extensions::elasticsearch {
 const core::Property ElasticsearchCredentialsControllerService::Username(core::PropertyBuilder::createProperty("Username")
@@ -41,4 +42,5 @@ void ElasticsearchCredentialsControllerService::authenticateClient(utils::HTTPCl
   // TODO
 }
 
+REGISTER_RESOURCE(ElasticsearchCredentialsControllerService, "Elasticsearch Credentials Controller Service");
 }  // org::apache::nifi::minifi::extensions::elasticsearch

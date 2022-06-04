@@ -22,13 +22,14 @@
 #include "core/ProcessSession.h"
 #include "core/Resource.h"
 #include "rapidjson/document.h"
+#include "core/Resource.h"
 
 namespace org::apache::nifi::minifi::extensions::elasticsearch {
 
 const core::Relationship PutElasticsearchJson::Success("success", "All flowfiles that succeed in being transferred into Elasticsearch go here. Documents received by the Elasticsearch _bulk API may still result in errors on the Elasticsearch side. The Elasticsearch response will need to be examined to determine whether any Document(s)/Record(s) resulted in errors.");
 const core::Relationship PutElasticsearchJson::Failure("failure", "All flowfiles that fail for reasons unrelated to server availability go to this relationship.");
 const core::Relationship PutElasticsearchJson::Retry("retry", "All flowfiles that fail due to server/cluster availability go to this relationship.");
-const core::Relationship PutElasticsearchJson::Errors("errros", "If a \"Output Error Documents\" is set, any FlowFile(s) corresponding to Elasticsearch document(s) that resulted in an \"error\" (within Elasticsearch) will be routed here.");
+const core::Relationship PutElasticsearchJson::Errors("errros", R"(If a "Output Error Documents" is set, any FlowFile(s) corresponding to Elasticsearch document(s) that resulted in an "error" (within Elasticsearch) will be routed here.)");
 
 const core::Property PutElasticsearchJson::IndexOperation(core::PropertyBuilder::createProperty("Index operation")
     ->withDescription("The type of the operation used to index (create, delete, index, update, upsert)"
@@ -130,9 +131,6 @@ class OperationRequest {
       : type_(type) {
   }
 
-  std::string toString() const {
-    return "";
-  }
  private:
   OpType type_;
   std::string index_;
@@ -140,13 +138,30 @@ class OperationRequest {
   std::optional<std::unordered_map<std::string, std::string>> fields_;
 };
 
-std::optional<OperationRequest> parseOperationRequest(core::ProcessContext&, core::FlowFile&) {
+std::optional<OperationRequest> parseOperationRequest(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file) {
+  auto index = context.getProperty(PutElasticsearchJson::Index, flow_file);
+  if (!index) {
+    return std::nullopt;
+  }
+  auto id = context.getProperty(PutElasticsearchJson::Id, flow_file);
+
   return std::nullopt;
 }
 
 std::string buildRequest(std::vector<OperationRequest> requests) {
 
   return "";
+}
+
+std::optional<OperationRequest::OpType> getOpType(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file) {
+  auto index_op = context.getProperty(PutElasticsearchJson::IndexOperation, flow_file);
+  if (!index_op)
+    return std::nullopt;
+  try {
+    return OperationRequest::OpType::parse(index_op->c_str());
+  } catch (std::runtime_error) {
+    return std::nullopt;
+  }
 }
 }
 
@@ -157,11 +172,28 @@ void PutElasticsearchJson::onTrigger(const std::shared_ptr<core::ProcessContext>
     auto flow_file = session->get();
     if (!flow_file)
       break;
-    auto operation_request = parseOperationRequest(*context, *flow_file);
+    auto index_op = getOpType(*context, flow_file);
+    if (!index_op) {
+      logger_->log_error("Missing index operation");
+      session->transfer(flow_file, Failure);
+    }
+    auto index = context->getProperty(PutElasticsearchJson::Index, flow_file);
+    if (!index) {
+      logger_->log_error("Missing index");
+      session->transfer(flow_file, Failure);
+    }
+    auto id = context->getProperty(PutElasticsearchJson::Id, flow_file);
+    if (!id && (index_op != OperationRequest::OpType::INDEX || index_op != OperationRequest::OpType::CREATE)) {
+      logger_->log_error("Id is required for UPDATE and DELETE operations");
+      session->transfer(flow_file, Failure);
+    }
+
     if (!operation_request)
       session->transfer(flow_file, PutElasticsearchJson::Failure);
   }
 
 }
+
+REGISTER_RESOURCE(PutElasticsearchJson, "An Elasticsearch put processor that uses the official Elastic REST client libraries.");
 
 }  // org::apache::nifi::minifi::extensions::elasticsearch

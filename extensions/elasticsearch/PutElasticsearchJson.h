@@ -60,6 +60,7 @@ class PutElasticsearchJson : public core::Processor {
  private:
   uint64_t max_batch_size_;
   utils::HTTPClient client_;
+  std::shared_ptr<core::logging::Logger> logger_ = core::logging::LoggerFactory<PutGCSObject>::getLogger();
 };
 
 }  // org::apache::nifi::minifi::extensions::elasticsearch

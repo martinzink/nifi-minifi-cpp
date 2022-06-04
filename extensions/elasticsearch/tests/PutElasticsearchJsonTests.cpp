@@ -34,7 +34,12 @@ TEST_CASE("PutElasticsearchJson", "[elastic]") {
   test_controller.plan->setProperty(put_elasticsearch_json,
                                      PutElasticsearchJson::ElasticCredentials.getName(),
                                      "elasticsearch_credentials_controller_service");
+  test_controller.plan->setProperty(put_elasticsearch_json,
+                                    PutElasticsearchJson::Hosts.getName(),
+                                    "localhost:10433");
 
+  auto results = test_controller.trigger("hello world");
+  CHECK(results[PutElasticsearchJson::Success].size() == 1);
 }
 
 }  // namespace org::apache::nifi::minifi::extensions::elasticsearch
