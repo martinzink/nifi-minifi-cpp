@@ -23,6 +23,8 @@
 #include "core/Resource.h"
 #include "rapidjson/document.h"
 #include "core/Resource.h"
+#include "rapidjson/stream.h"
+#include "rapidjson/writer.h"
 
 namespace org::apache::nifi::minifi::extensions::elasticsearch {
 
@@ -114,7 +116,7 @@ void PutElasticsearchJson::onSchedule(const std::shared_ptr<core::ProcessContext
   if (!credentials_service)
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Missing Elasticsearch credentials service");
 
-  client_.initialize("POST", host_url, getSSLContextService(*context));
+  client_.initialize("POST", host_url + "/bulk", getSSLContextService(*context));
   credentials_service->authenticateClient(client_);
 }
 
@@ -163,11 +165,31 @@ std::optional<OperationRequest::OpType> getOpType(core::ProcessContext& context,
     return std::nullopt;
   }
 }
+
+rapidjson::Document buildHeaderJson(const std::string& op_type, const std::string& index, const std::optional<std::string>& id) {
+  rapidjson::Document root = rapidjson::Document(rapidjson::kObjectType);
+  auto operation_index_key = rapidjson::Value(op_type.data(), op_type.size(), root.GetAllocator());
+  root.AddMember(operation_index_key, rapidjson::Value{ rapidjson::kObjectType }, root.GetAllocator());
+  auto& operation_request = root[op_type.c_str()];
+
+  {
+    auto index_json = rapidjson::Value(index.data(), index.size(), root.GetAllocator());
+    operation_request.AddMember("_index", index_json, root.GetAllocator());
+  }
+
+  if (id) {
+    auto id_json = rapidjson::Value(id->data(), id->size(), root.GetAllocator());
+    operation_request.AddMember("_id", id_json, root.GetAllocator());
+  }
+  return root;
+}
 }
 
 void PutElasticsearchJson::onTrigger(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) {
   gsl_Expects(context && session && max_batch_size_ > 0);
   std::vector<OperationRequest> requests;
+  std::stringstream payload;
+  std::vector<std::shared_ptr<core::FlowFile>> flowfiles_in_payload;
   while (requests.size() < max_batch_size_) {
     auto flow_file = session->get();
     if (!flow_file)
@@ -176,22 +198,30 @@ void PutElasticsearchJson::onTrigger(const std::shared_ptr<core::ProcessContext>
     if (!index_op) {
       logger_->log_error("Missing index operation");
       session->transfer(flow_file, Failure);
+      continue;
     }
     auto index = context->getProperty(PutElasticsearchJson::Index, flow_file);
     if (!index) {
       logger_->log_error("Missing index");
       session->transfer(flow_file, Failure);
+      continue;
     }
     auto id = context->getProperty(PutElasticsearchJson::Id, flow_file);
-    if (!id && (index_op != OperationRequest::OpType::INDEX || index_op != OperationRequest::OpType::CREATE)) {
+    if (!id && (index_op != OperationRequest::OpType::INDEX && index_op != OperationRequest::OpType::CREATE)) {
       logger_->log_error("Id is required for UPDATE and DELETE operations");
       session->transfer(flow_file, Failure);
+      continue;
     }
-
-    if (!operation_request)
-      session->transfer(flow_file, PutElasticsearchJson::Failure);
+    auto header_json = buildHeaderJson(index_op->toString(), *index, id);
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    header_json.Accept(writer);
+    payload << buffer.GetString() << '\n';
+    flowfiles_in_payload.push_back(flow_file);
   }
-
+  auto result = client_.submit();
+  for (const auto& flow_file_in_payload : flowfiles_in_payload)
+    session->transfer(flow_file_in_payload, Success);
 }
 
 REGISTER_RESOURCE(PutElasticsearchJson, "An Elasticsearch put processor that uses the official Elastic REST client libraries.");

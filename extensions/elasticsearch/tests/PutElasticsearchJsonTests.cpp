@@ -37,6 +37,9 @@ TEST_CASE("PutElasticsearchJson", "[elastic]") {
   test_controller.plan->setProperty(put_elasticsearch_json,
                                     PutElasticsearchJson::Hosts.getName(),
                                     "localhost:10433");
+  test_controller.plan->setProperty(put_elasticsearch_json,
+                                    PutElasticsearchJson::IndexOperation.getName(),
+                                    "index");
 
   auto results = test_controller.trigger("hello world");
   CHECK(results[PutElasticsearchJson::Success].size() == 1);
