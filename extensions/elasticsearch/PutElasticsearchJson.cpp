@@ -25,6 +25,7 @@
 #include "rapidjson/stream.h"
 #include "rapidjson/writer.h"
 #include "utils/expected.h"
+#include "utils/JsonCallback.h"
 
 namespace org::apache::nifi::minifi::extensions::elasticsearch {
 
@@ -64,7 +65,7 @@ const core::Property PutElasticsearchJson::Hosts(core::PropertyBuilder::createPr
     ->supportsExpressionLanguage(true)
     ->build());
 
-const core::Property PutElasticsearchJson::Index(core::PropertyBuilder::createProperty("Hosts")
+const core::Property PutElasticsearchJson::Index(core::PropertyBuilder::createProperty("Index")
     ->withDescription("The name of the index to use.")
     ->supportsExpressionLanguage(true)
     ->build());
@@ -79,7 +80,7 @@ const core::Property PutElasticsearchJson::Id(core::PropertyBuilder::createPrope
 
 void PutElasticsearchJson::initialize() {
   setSupportedRelationships({Success, Failure, Retry, Errors});
-  setSupportedProperties({ElasticCredentials, IndexOperation, MaxBatchSize, Hosts, SSLContext});
+  setSupportedProperties({ElasticCredentials, IndexOperation, MaxBatchSize, Hosts, Index, SSLContext});
 }
 
 namespace {
@@ -122,75 +123,50 @@ void PutElasticsearchJson::onSchedule(const std::shared_ptr<core::ProcessContext
 }
 
 namespace {
-class OperationRequest {
- public:
-  SMART_ENUM(OpType,
-             (INDEX, "index"),
-             (CREATE, "create"),
-             (DELETE, "delete"),
-             (UPDATE, "update"))
-
-  OperationRequest(OpType type, std::string index, std::optional<std::string> id)
-      : type_(type),
-        index_(std::move(index)),
-        id_(std::move(id)) {
-  }
-
-  std::string buildHeaderJson() const {
-    rapidjson::Document root = rapidjson::Document(rapidjson::kObjectType);
-    std::string op_type = type_.toString();
-    auto operation_index_key = rapidjson::Value(op_type.data(), op_type.size(), root.GetAllocator());
-    root.AddMember(operation_index_key, rapidjson::Value{ rapidjson::kObjectType }, root.GetAllocator());
-    auto& operation_request = root[op_type.c_str()];
-
-    {
-      auto index_json = rapidjson::Value(index_.data(), index_.size(), root.GetAllocator());
-      operation_request.AddMember("_index", index_json, root.GetAllocator());
-    }
-
-    if (id_) {
-      auto id_json = rapidjson::Value(id_->data(), id_->size(), root.GetAllocator());
-      operation_request.AddMember("_id", id_json, root.GetAllocator());
-    }
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    root.Accept(writer);
-
-    return buffer.GetString();
-  }
-
- private:
-  OpType type_;
-  std::string index_;
-  std::optional<std::string> id_;
-  std::optional<std::unordered_map<std::string, std::string>> fields_;
-};
-
-std::optional<OperationRequest::OpType> getOpType(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file) {
+auto parseElasticAction(core::ProcessSession& session, core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file) -> nonstd::expected<std::string, std::string> {
+  rapidjson::Document root = rapidjson::Document(rapidjson::kObjectType);
   auto index_op = context.getProperty(PutElasticsearchJson::IndexOperation, flow_file);
-  if (!index_op)
-    return std::nullopt;
-  try {
-    return OperationRequest::OpType::parse(index_op->c_str());
-  } catch (const std::runtime_error&) {
-    return std::nullopt;
-  }
-}
+  if (!index_op || (index_op != "index" && index_op != "create" && index_op != "delete" && index_op != "update"))
+    return nonstd::make_unexpected("Missing or invalid index operation");
 
-auto parseOperationRequest(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file) -> nonstd::expected<OperationRequest, std::string> {
-  auto index_op = getOpType(context, flow_file);
-  if (!index_op)
-    return nonstd::make_unexpected("Missing index operation");
+  auto operation_index_key = rapidjson::Value(index_op->data(), index_op->size(), root.GetAllocator());
+  root.AddMember(operation_index_key, rapidjson::Value{ rapidjson::kObjectType }, root.GetAllocator());
+  auto& operation_request = root[index_op->c_str()];
 
   auto index = context.getProperty(PutElasticsearchJson::Index, flow_file);
   if (!index)
     return nonstd::make_unexpected("Missing index");
 
-  auto id = context.getProperty(PutElasticsearchJson::Id, flow_file);
-  if (!id && (index_op == OperationRequest::OpType::UPDATE || index_op == OperationRequest::OpType::DELETE))
-    return nonstd::make_unexpected("Id is required for UPDATE and DELETE operations");
+  auto index_json = rapidjson::Value(index->data(), index->size(), root.GetAllocator());
+  operation_request.AddMember("_index", index_json, root.GetAllocator());
 
-  return OperationRequest(*index_op, *index, std::move(id));
+  auto id = context.getProperty(PutElasticsearchJson::Id, flow_file);
+  if (!id && (index_op == "delete" || index_op == "update"))
+    return nonstd::make_unexpected("Id is required for DELETE operations");
+
+  if (id) {
+    auto id_json = rapidjson::Value(id->data(), id->size(), root.GetAllocator());
+    operation_request.AddMember("_id", id_json, root.GetAllocator());
+  }
+
+  rapidjson::StringBuffer buffer;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+  root.Accept(writer);
+
+  std::string result = buffer.GetString();
+
+  if (index_op == "index" || index_op == "create" || index_op == "update") {
+    rapidjson::Document document;
+    utils::JsonInputCallback callback(document);
+    if (session.read(flow_file, std::ref(callback)) < 0) {
+      return nonstd::make_unexpected("invalid flowfile contents");
+    }
+    rapidjson::StringBuffer doc_buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> doc_writer(doc_buffer);
+    document.Accept(doc_writer);
+    result = result + std::string{"\n"} + doc_buffer.GetString();
+  }
+  return result;
 }
 
 auto submitRequest(utils::HTTPClient& client, const size_t expected_items) -> nonstd::expected<rapidjson::Document, std::string> {
@@ -198,8 +174,8 @@ auto submitRequest(utils::HTTPClient& client, const size_t expected_items) -> no
     return nonstd::make_unexpected("Submit failed");
   auto response_code = client.getResponseCode();
   if (response_code != 200)
-    return nonstd::make_unexpected("Error occured: " + response_code);
-  rapidjson::Document response = rapidjson::Document();
+    return nonstd::make_unexpected("Error occured: " + std::to_string(response_code));
+  rapidjson::Document response;
   rapidjson::ParseResult parse_result = response.Parse<rapidjson::kParseStopWhenDoneFlag>(client.getResponseBody().data());
   if (parse_result.IsError())
     return nonstd::make_unexpected("Response is not valid json");
@@ -230,21 +206,20 @@ void addAttributesFromResponse(std::string name, rapidjson::Value::ConstMemberIt
 
 void PutElasticsearchJson::onTrigger(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) {
   gsl_Expects(context && session && max_batch_size_ > 0);
-  std::vector<OperationRequest> requests;
   std::stringstream payload;
   std::vector<std::shared_ptr<core::FlowFile>> flowfiles_in_payload;
-  while (requests.size() < max_batch_size_) {
+  for (size_t flow_files_processed = 0; flow_files_processed < max_batch_size_; ++flow_files_processed) {
     auto flow_file = session->get();
     if (!flow_file)
       break;
-    auto op_request = parseOperationRequest(*context, flow_file);
-    if (!op_request) {
-      logger_->log_error(op_request.error().c_str());
+    auto elastic_action = parseElasticAction(*session, *context, flow_file);
+    if (!elastic_action) {
+      logger_->log_error(elastic_action.error().c_str());
       session->transfer(flow_file, Failure);
       continue;
     }
 
-    payload << op_request->buildHeaderJson() << '\n';
+    payload << *elastic_action << "\n";
     flowfiles_in_payload.push_back(flow_file);
   }
 
@@ -253,6 +228,8 @@ void PutElasticsearchJson::onTrigger(const std::shared_ptr<core::ProcessContext>
     return;
   }
 
+
+  client_.setPostFields(payload.str());
   auto result = submitRequest(client_, flowfiles_in_payload.size());
   if (!result) {
     logger_->log_error(result.error().c_str());

@@ -54,13 +54,15 @@ class BulkElasticHandler : public MockElasticHandler {
     request.reserve(2048);
     mg_read(conn, request.data(), 2048);
 
-    auto lines = utils::StringUtils::split(request, "\n");
+    std::vector<std::string> lines = utils::StringUtils::splitRemovingEmpty(request.data(), "\n");
     rapidjson::Document response{rapidjson::kObjectType};
     response.AddMember("took", 30, response.GetAllocator());
     response.AddMember("errors", false, response.GetAllocator());
     response.AddMember("items", rapidjson::kArrayType, response.GetAllocator());
     auto& items = response["items"];
     for (const auto& line : lines) {
+      if (!line.starts_with("{\"index") && !line.starts_with("{\"create") && !line.starts_with("{\"update") && !line.starts_with("{\"delete"))
+        continue;
       rapidjson::Value item{rapidjson::kObjectType};
       item.AddMember("_index", "test", response.GetAllocator());
       item.AddMember("_id", "1", response.GetAllocator());
