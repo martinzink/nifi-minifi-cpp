@@ -50,11 +50,32 @@ class BulkElasticHandler : public MockElasticHandler {
   explicit BulkElasticHandler(std::function<void(const struct mg_request_info *request_info)>& assertions) : MockElasticHandler(assertions) {}
  protected:
   bool handlePostImpl(struct mg_connection* conn) override {
-    constexpr const char * body = R"({"text":"Success","code":0,"ackId":808})";
+    std::string request;
+    request.reserve(2048);
+    mg_read(conn, request.data(), 2048);
+
+    auto lines = utils::StringUtils::split(request, "\n");
+    rapidjson::Document response{rapidjson::kObjectType};
+    response.AddMember("took", 30, response.GetAllocator());
+    response.AddMember("errors", false, response.GetAllocator());
+    response.AddMember("items", rapidjson::kArrayType, response.GetAllocator());
+    auto& items = response["items"];
+    for (const auto& line : lines) {
+      rapidjson::Value item{rapidjson::kObjectType};
+      item.AddMember("_index", "test", response.GetAllocator());
+      item.AddMember("_id", "1", response.GetAllocator());
+      item.AddMember("result", "created", response.GetAllocator());
+      items.PushBack(item, response.GetAllocator());
+    }
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    response.Accept(writer);
+
     mg_printf(conn, "HTTP/1.1 200 OK\r\n");
-    mg_printf(conn, "Content-length: %lu", strlen(body));
+    mg_printf(conn, "Content-length: %lu", buffer.GetSize());
     mg_printf(conn, "\r\n\r\n");
-    mg_printf(conn, body);
+    mg_printf(conn, buffer.GetString());
     return true;
   }
 };

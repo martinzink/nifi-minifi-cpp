@@ -45,4 +45,30 @@ TEST_CASE("PutElasticsearchJson", "[elastic]") {
   CHECK(results[PutElasticsearchJson::Success].size() == 1);
 }
 
+TEST_CASE("PutElasticsearchJson2", "[elastic]") {
+  std::shared_ptr<PutElasticsearchJson> put_elasticsearch_json = std::make_shared<PutElasticsearchJson>("PutElasticsearchJson");
+  minifi::test::SingleProcessorTestController test_controller{put_elasticsearch_json};
+  auto elasticsearch_credentials_controller_service = test_controller.plan->addController("ElasticsearchCredentialsControllerService", "elasticsearch_credentials_controller_service");
+  auto ssl_context_service = test_controller.plan->addController("SSLContextService", "ssl_context_service");
+
+  test_controller.plan->setProperty(put_elasticsearch_json,
+                                    PutElasticsearchJson::ElasticCredentials.getName(),
+                                    "elasticsearch_credentials_controller_service");
+  test_controller.plan->setProperty(put_elasticsearch_json,
+                                    PutElasticsearchJson::SSLContext.getName(),
+                                    "ssl_context_service");
+  test_controller.plan->setProperty(put_elasticsearch_json,
+                                    PutElasticsearchJson::Hosts.getName(),
+                                    "https://192.168.2.50:9200");
+  test_controller.plan->setProperty(put_elasticsearch_json,
+                                    PutElasticsearchJson::IndexOperation.getName(),
+                                    "index");
+  test_controller.plan->setProperty(ssl_context_service,
+                                    controllers::SSLContextService::CACertificate.getName(),
+                                    "/home/znko/http_ca.crt");
+
+  auto results = test_controller.trigger("hello world");
+  CHECK(results[PutElasticsearchJson::Success].size() == 1);
+}
+
 }  // namespace org::apache::nifi::minifi::extensions::elasticsearch

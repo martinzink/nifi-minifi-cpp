@@ -22,9 +22,9 @@
 #include "core/ProcessSession.h"
 #include "core/Resource.h"
 #include "rapidjson/document.h"
-#include "core/Resource.h"
 #include "rapidjson/stream.h"
 #include "rapidjson/writer.h"
+#include "utils/expected.h"
 
 namespace org::apache::nifi::minifi::extensions::elasticsearch {
 
@@ -103,11 +103,12 @@ void PutElasticsearchJson::onSchedule(const std::shared_ptr<core::ProcessContext
   if (max_batch_size_ < 1)
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Max Batch Size property is invalid");
 
-  std::string host_url;
+  std::string host_url{};
   if (auto hosts_str = context->getProperty(Hosts)) {
     auto hosts = utils::StringUtils::split(*hosts_str, ",");
     if (hosts.size() != 1)
       throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Multiple hosts not yet supported");
+    host_url = hosts[0];
   } else {
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Missing or invalid hosts");
   }
@@ -116,7 +117,7 @@ void PutElasticsearchJson::onSchedule(const std::shared_ptr<core::ProcessContext
   if (!credentials_service)
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Missing Elasticsearch credentials service");
 
-  client_.initialize("POST", host_url + "/bulk", getSSLContextService(*context));
+  client_.initialize("POST", host_url + "/_bulk", getSSLContextService(*context));
   credentials_service->authenticateClient(client_);
 }
 
@@ -129,8 +130,33 @@ class OperationRequest {
              (DELETE, "delete"),
              (UPDATE, "update"))
 
-  OperationRequest(OpType type, rapidjson::Value)
-      : type_(type) {
+  OperationRequest(OpType type, std::string index, std::optional<std::string> id)
+      : type_(type),
+        index_(std::move(index)),
+        id_(std::move(id)) {
+  }
+
+  std::string buildHeaderJson() const {
+    rapidjson::Document root = rapidjson::Document(rapidjson::kObjectType);
+    std::string op_type = type_.toString();
+    auto operation_index_key = rapidjson::Value(op_type.data(), op_type.size(), root.GetAllocator());
+    root.AddMember(operation_index_key, rapidjson::Value{ rapidjson::kObjectType }, root.GetAllocator());
+    auto& operation_request = root[op_type.c_str()];
+
+    {
+      auto index_json = rapidjson::Value(index_.data(), index_.size(), root.GetAllocator());
+      operation_request.AddMember("_index", index_json, root.GetAllocator());
+    }
+
+    if (id_) {
+      auto id_json = rapidjson::Value(id_->data(), id_->size(), root.GetAllocator());
+      operation_request.AddMember("_id", id_json, root.GetAllocator());
+    }
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    root.Accept(writer);
+
+    return buffer.GetString();
   }
 
  private:
@@ -140,48 +166,65 @@ class OperationRequest {
   std::optional<std::unordered_map<std::string, std::string>> fields_;
 };
 
-std::optional<OperationRequest> parseOperationRequest(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file) {
-  auto index = context.getProperty(PutElasticsearchJson::Index, flow_file);
-  if (!index) {
-    return std::nullopt;
-  }
-  auto id = context.getProperty(PutElasticsearchJson::Id, flow_file);
-
-  return std::nullopt;
-}
-
-std::string buildRequest(std::vector<OperationRequest> requests) {
-
-  return "";
-}
-
 std::optional<OperationRequest::OpType> getOpType(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file) {
   auto index_op = context.getProperty(PutElasticsearchJson::IndexOperation, flow_file);
   if (!index_op)
     return std::nullopt;
   try {
     return OperationRequest::OpType::parse(index_op->c_str());
-  } catch (std::runtime_error) {
+  } catch (const std::runtime_error&) {
     return std::nullopt;
   }
 }
 
-rapidjson::Document buildHeaderJson(const std::string& op_type, const std::string& index, const std::optional<std::string>& id) {
-  rapidjson::Document root = rapidjson::Document(rapidjson::kObjectType);
-  auto operation_index_key = rapidjson::Value(op_type.data(), op_type.size(), root.GetAllocator());
-  root.AddMember(operation_index_key, rapidjson::Value{ rapidjson::kObjectType }, root.GetAllocator());
-  auto& operation_request = root[op_type.c_str()];
+auto parseOperationRequest(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file) -> nonstd::expected<OperationRequest, std::string> {
+  auto index_op = getOpType(context, flow_file);
+  if (!index_op)
+    return nonstd::make_unexpected("Missing index operation");
 
-  {
-    auto index_json = rapidjson::Value(index.data(), index.size(), root.GetAllocator());
-    operation_request.AddMember("_index", index_json, root.GetAllocator());
-  }
+  auto index = context.getProperty(PutElasticsearchJson::Index, flow_file);
+  if (!index)
+    return nonstd::make_unexpected("Missing index");
 
-  if (id) {
-    auto id_json = rapidjson::Value(id->data(), id->size(), root.GetAllocator());
-    operation_request.AddMember("_id", id_json, root.GetAllocator());
+  auto id = context.getProperty(PutElasticsearchJson::Id, flow_file);
+  if (!id && (index_op == OperationRequest::OpType::UPDATE || index_op == OperationRequest::OpType::DELETE))
+    return nonstd::make_unexpected("Id is required for UPDATE and DELETE operations");
+
+  return OperationRequest(*index_op, *index, std::move(id));
+}
+
+auto submitRequest(utils::HTTPClient& client, const size_t expected_items) -> nonstd::expected<rapidjson::Document, std::string> {
+  if (!client.submit())
+    return nonstd::make_unexpected("Submit failed");
+  auto response_code = client.getResponseCode();
+  if (response_code != 200)
+    return nonstd::make_unexpected("Error occured: " + response_code);
+  rapidjson::Document response = rapidjson::Document();
+  rapidjson::ParseResult parse_result = response.Parse<rapidjson::kParseStopWhenDoneFlag>(client.getResponseBody().data());
+  if (parse_result.IsError())
+    return nonstd::make_unexpected("Response is not valid json");
+  if (!response.HasMember("items"))
+    return nonstd::make_unexpected("Response is invalid");
+  if (response["items"].Size() != expected_items)
+    return nonstd::make_unexpected("The number of responses doesnt match the number of requests");
+
+  return response;
+}
+
+void addAttributesFromResponse(std::string name, rapidjson::Value::ConstMemberIterator object, core::FlowFile& flow_file) {
+  name = name + "." + object->name.GetString();
+
+  if (object->value.IsObject()) {
+    for (auto it = object->value.MemberBegin(); it != object->value.MemberEnd(); ++it) {
+      addAttributesFromResponse(name, it, flow_file);
+    }
+  } else if (object->value.IsInt64()) {
+    flow_file.addAttribute(name, std::to_string(object->value.GetInt64()));
+  } else if (object->value.IsString()) {
+    flow_file.addAttribute(name, object->value.GetString());
+  } else if (object->value.IsBool()) {
+    flow_file.addAttribute(name, std::to_string(object->value.GetBool()));
   }
-  return root;
 }
 }
 
@@ -194,34 +237,38 @@ void PutElasticsearchJson::onTrigger(const std::shared_ptr<core::ProcessContext>
     auto flow_file = session->get();
     if (!flow_file)
       break;
-    auto index_op = getOpType(*context, flow_file);
-    if (!index_op) {
-      logger_->log_error("Missing index operation");
+    auto op_request = parseOperationRequest(*context, flow_file);
+    if (!op_request) {
+      logger_->log_error(op_request.error().c_str());
       session->transfer(flow_file, Failure);
       continue;
     }
-    auto index = context->getProperty(PutElasticsearchJson::Index, flow_file);
-    if (!index) {
-      logger_->log_error("Missing index");
-      session->transfer(flow_file, Failure);
-      continue;
-    }
-    auto id = context->getProperty(PutElasticsearchJson::Id, flow_file);
-    if (!id && (index_op != OperationRequest::OpType::INDEX && index_op != OperationRequest::OpType::CREATE)) {
-      logger_->log_error("Id is required for UPDATE and DELETE operations");
-      session->transfer(flow_file, Failure);
-      continue;
-    }
-    auto header_json = buildHeaderJson(index_op->toString(), *index, id);
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-    header_json.Accept(writer);
-    payload << buffer.GetString() << '\n';
+
+    payload << op_request->buildHeaderJson() << '\n';
     flowfiles_in_payload.push_back(flow_file);
   }
-  auto result = client_.submit();
-  for (const auto& flow_file_in_payload : flowfiles_in_payload)
-    session->transfer(flow_file_in_payload, Success);
+
+  if (flowfiles_in_payload.empty()) {
+    yield();
+    return;
+  }
+
+  auto result = submitRequest(client_, flowfiles_in_payload.size());
+  if (!result) {
+    logger_->log_error(result.error().c_str());
+    for (const auto& flow_file_in_payload: flowfiles_in_payload)
+      session->transfer(flow_file_in_payload, Failure);
+    return;
+  }
+
+  auto& items = result->operator[]("items");
+  gsl_Expects(items.Size() == flowfiles_in_payload.size());
+  for (size_t i = 0; i < items.Size(); ++i) {
+    for (auto it = items[i].MemberBegin(); it != items[i].MemberEnd(); ++it) {
+      addAttributesFromResponse("elasticsearch", it, *flowfiles_in_payload[i]);
+    }
+    session->transfer(flowfiles_in_payload[i], Success);
+  }
 }
 
 REGISTER_RESOURCE(PutElasticsearchJson, "An Elasticsearch put processor that uses the official Elastic REST client libraries.");

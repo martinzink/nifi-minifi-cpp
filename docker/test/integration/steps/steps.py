@@ -410,6 +410,11 @@ def step_impl(context):
     context.test.acquire_container("fake-gcs-server", "fake-gcs-server")
 
 
+# elasticsearch
+@given("an Elasticsearch server is set up and running")
+def step_impl(context):
+    context.test.start_elasticsearch()
+
 # splunk hec
 @given("a Splunk HEC is set up and running")
 def step_impl(context):

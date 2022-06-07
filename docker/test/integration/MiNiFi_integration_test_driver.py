@@ -77,6 +77,11 @@ class MiNiFi_integration_test:
         assert self.wait_for_container_startup_to_finish('splunk')
         assert self.cluster.enable_splunk_hec_indexer('splunk', 'splunk_hec_token')
 
+    def start_elasticsearch(self):
+        self.cluster.acquire_container('elasticsearch', 'elasticsearch')
+        self.cluster.deploy('elasticsearch')
+        assert self.wait_for_container_startup_to_finish('elasticsearch')
+
     def start(self):
         logging.info("MiNiFi_integration_test start")
         self.cluster.deploy_flow()

@@ -56,6 +56,8 @@ class ImageStore:
             image = self.__build_mqtt_broker_image()
         elif container_engine == "splunk":
             image = self.__build_splunk_image()
+        elif container_engine == "elasticsearch":
+            image = self.__build_elasticsearch_image()
         else:
             raise Exception("There is no associated image for " + container_engine)
 
@@ -164,6 +166,9 @@ class ImageStore:
 
     def __build_splunk_image(self):
         return self.__build_image_by_path(self.test_dir + "/resources/splunk-hec", 'minifi-splunk')
+
+    def __build_elasticsearch_image(self):
+        return self.__build_image_by_path(self.test_dir + "/resources/elasticsearch", 'elasticsearch')
 
     def __build_image(self, dockerfile, context_files=[]):
         conf_dockerfile_buffer = BytesIO()
