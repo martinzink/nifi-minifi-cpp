@@ -139,6 +139,9 @@ class HTTPClient : public BaseHTTPClient, public core::Connectable {
 
   void setDisableHostVerification() override;
 
+  void setBasicAuth(std::string username, std::string password) override;
+  void clearBasicAuth() override;
+
   bool setSpecificSSLVersion(SSLVersion specific_version) override;
 
   bool setMinimumSSLVersion(SSLVersion minimum_version) override;
@@ -297,6 +300,9 @@ class HTTPClient : public BaseHTTPClient, public core::Connectable {
   std::chrono::milliseconds keep_alive_probe_{-1};
 
   std::chrono::milliseconds keep_alive_idle_{-1};
+
+  std::optional<std::string> username_;
+  std::optional<std::string> password_;
 
   std::shared_ptr<core::logging::Logger> logger_{core::logging::LoggerFactory<HTTPClient>::getLogger()};
 };

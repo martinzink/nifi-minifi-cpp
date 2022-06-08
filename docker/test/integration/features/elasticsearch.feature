@@ -21,8 +21,12 @@ Feature: Sending data to Splunk HEC using PutSplunkHTTP
   Scenario: A MiNiFi instance transfers data to a Elasticsearch with SSL enabled
     Given an Elasticsearch server is set up and running
     And a GetFile processor with the "Input Directory" property set to "/tmp/input"
-    And a file with the content "foobar" is present in "/tmp/input"
+    And a file with the content "{ "field1" : "value1" }" is present in "/tmp/input"
     And a PutElasticsearchJson processor
+    And the "Index" property of the PutElasticsearchJson processor is set to "test"
+    And the "Index operation" property of the PutElasticsearchJson processor is set to "index"
+    And a SSL context service is set up for PutElasticsearchJson
+    And an ElasticsearchCredentialsService is set up for PutElasticsearchJson
     And a PutFile processor with the "Directory" property set to "/tmp/output"
     And the "success" relationship of the GetFile processor is connected to the PutElasticsearchJson
     And the "success" relationship of the PutElasticsearchJson processor is connected to the PutFile

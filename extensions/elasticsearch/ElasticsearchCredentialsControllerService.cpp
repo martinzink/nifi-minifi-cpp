@@ -30,16 +30,41 @@ const core::Property ElasticsearchCredentialsControllerService::Password(core::P
     ->supportsExpressionLanguage(true)
     ->build());
 
+const core::Property ElasticsearchCredentialsControllerService::CredentialsType(core::PropertyBuilder::createProperty("Username")
+    ->withDescription("The location of the credentials.")
+    ->withAllowableValues(CredType::values())
+    ->withDefaultValue(toString(CredType::USE_API_KEY))
+    ->isRequired(true)
+    ->build());
+
+const core::Property ElasticsearchCredentialsControllerService::ApiKey(core::PropertyBuilder::createProperty("Password")
+    ->withDescription("The API Key to use")
+    ->build());
+
+
 void ElasticsearchCredentialsControllerService::initialize() {
-  setSupportedProperties({Username, Password});
+  setSupportedProperties({Username, Password, CredentialsType, ApiKey});
 }
 
 void ElasticsearchCredentialsControllerService::onEnable(core::controller::ControllerServiceProvider*) {
-  // TODO
+  getProperty(CredentialsType.getName(), cred_type_);
+
+  if (cred_type_ == CredType::USE_API_KEY) {
+    getProperty(ApiKey.getName(), api_key_);
+  } else if (cred_type_ == CredType::USE_XPACK) {
+    getProperty(Username.getName(), username_);
+    getProperty(Password.getName(), password_);
+  }
 }
 
-void ElasticsearchCredentialsControllerService::authenticateClient(utils::HTTPClient&) {
-  // TODO
+void ElasticsearchCredentialsControllerService::authenticateClient(utils::HTTPClient& client) {
+  if (cred_type_ == CredType::USE_API_KEY) {
+    gsl_Expects(api_key_);
+    client.appendHeader("Authorization", "ApiKey " + *api_key_);
+  } else if (cred_type_ == CredType::USE_XPACK) {
+    gsl_Expects(username_ && password_);
+    client.setBasicAuth(*username_, *password_);
+  }
 }
 
 REGISTER_RESOURCE(ElasticsearchCredentialsControllerService, "Elasticsearch Credentials Controller Service");

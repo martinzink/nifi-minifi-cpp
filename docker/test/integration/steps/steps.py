@@ -415,6 +415,23 @@ def step_impl(context):
 def step_impl(context):
     context.test.start_elasticsearch()
 
+@given(u'a SSL context service is set up for PutElasticsearchJson')
+def step_impl(context):
+    minifi_crt_file = '/tmp/resources/elasticsearch/minifi_cert.pem'
+    minifi_key_file = '/tmp/resources/elasticsearch/minifi_cert.key'
+    root_ca_crt_file = '/tmp/resources/elasticsearch/root_ca.pem'
+    ssl_context_service = SSLContextService(cert=minifi_crt_file, ca_cert=root_ca_crt_file, key=minifi_key_file)
+    put_elasticsearch_json = context.test.get_node_by_name("PutElasticsearchJson")
+    put_elasticsearch_json.controller_services.append(ssl_context_service)
+    put_elasticsearch_json.set_property("SSL Context Service", ssl_context_service.name)
+
+@given(u'an ElasticsearchCredentialsService is set up for PutElasticsearchJson')
+def step_impl(context):
+    ssl_context_service = SSLContextService(cert=minifi_crt_file, ca_cert=root_ca_crt_file, key=minifi_key_file)
+    put_elasticsearch_json = context.test.get_node_by_name("PutElasticsearchJson")
+    put_elasticsearch_json.controller_services.append(ssl_context_service)
+    put_elasticsearch_json.set_property("SSL Context Service", ssl_context_service.name)
+
 # splunk hec
 @given("a Splunk HEC is set up and running")
 def step_impl(context):

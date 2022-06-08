@@ -27,16 +27,14 @@ namespace org::apache::nifi::minifi::extensions::elasticsearch {
 
 class ElasticsearchCredentialsControllerService : public core::controller::ControllerService {
  public:
-  SMART_ENUM(CredentialsType,
+  SMART_ENUM(CredType,
              (USE_XPACK, "Use XPack username and password"),
-             (USE_API_KEY, "Use API Key"),
-             (USE_ACCESS_TOKEN, "Use Access token"));
+             (USE_API_KEY, "Use API Key"));
 
+  EXTENSIONAPI static const core::Property CredentialsType;
   EXTENSIONAPI static const core::Property Username;
   EXTENSIONAPI static const core::Property Password;
-  EXTENSIONAPI static const core::Property AccessToken;
-  EXTENSIONAPI static const core::Property ApiKeyId;
-  EXTENSIONAPI static const core::Property ApiKeySecret;
+  EXTENSIONAPI static const core::Property ApiKey;
 
   using ControllerService::ControllerService;
 
@@ -55,5 +53,10 @@ class ElasticsearchCredentialsControllerService : public core::controller::Contr
   void onEnable(core::controller::ControllerServiceProvider*) override;
 
   void authenticateClient(utils::HTTPClient& client);
+ private:
+  std::optional<std::string> password_;
+  std::optional<std::string> username_;
+  std::optional<std::string> api_key_;
+  CredType cred_type_ = CredType::USE_API_KEY;
 };
 }  // org::apache::nifi::minifi::extensions::elasticsearch
