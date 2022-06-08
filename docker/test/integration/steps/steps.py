@@ -16,7 +16,7 @@
 
 from minifi.core.FileSystemObserver import FileSystemObserver
 from minifi.core.RemoteProcessGroup import RemoteProcessGroup
-from minifi.core.SSL_cert_utils import gen_cert, rsa_gen_key_callback, make_ca, make_cert, dump_certificate, dump_privatekey
+from minifi.core.SSL_cert_utils import gen_cert, rsa_gen_key_callback, make_ca, make_server_cert, make_client_cert, dump_certificate, dump_privatekey
 from minifi.core.Funnel import Funnel
 
 from minifi.controllers.SSLContextService import SSLContextService
@@ -424,8 +424,8 @@ def step_impl(context):
 @given("SSL is enabled for the Splunk HEC and the SSL context service is set up for PutSplunkHTTP and QuerySplunkIndexingStatus")
 def step_impl(context):
     root_ca_cert, root_ca_key = make_ca("root CA")
-    minifi_cert, minifi_key = make_cert("minifi-cpp-flow", root_ca_cert, root_ca_key)
-    splunk_cert, splunk_key = make_cert("splunk", root_ca_cert, root_ca_key)
+    minifi_cert, minifi_key = make_client_cert("minifi-cpp-flow", root_ca_cert, root_ca_key)
+    splunk_cert, splunk_key = make_server_cert("splunk", root_ca_cert, root_ca_key)
     minifi_crt_file = '/tmp/resources/minifi-cpp-flow.pem'
     minifi_key_file = '/tmp/resources/minifi-cpp-flow.key'
     root_ca_crt_file = '/tmp/resources/root_ca.pem'

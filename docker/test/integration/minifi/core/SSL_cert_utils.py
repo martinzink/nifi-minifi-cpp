@@ -110,7 +110,39 @@ def make_ca(common_name):
     return ca_cert, ca_key
 
 
-def make_cert(common_name, ca_cert, ca_key):
+def make_server_cert(common_name, ca_cert, ca_key):
+    key = crypto.PKey()
+    key.generate_key(crypto.TYPE_RSA, 2048)
+
+    cert = crypto.X509()
+    cert.set_version(2)
+    cert.set_serial_number(random.randint(50000000, 100000000))
+
+    client_subj = cert.get_subject()
+    client_subj.commonName = common_name
+
+    cert.add_extensions([
+        crypto.X509Extension(b"basicConstraints", False, b"CA:FALSE"),
+        crypto.X509Extension(b"subjectKeyIdentifier", False, b"hash", subject=cert),
+    ])
+
+    cert.add_extensions([
+        crypto.X509Extension(b"authorityKeyIdentifier", False, b"keyid:always", issuer=ca_cert),
+        crypto.X509Extension(b"extendedKeyUsage", False, b"serverAuth"),
+        crypto.X509Extension(b"keyUsage", False, b"digitalSignature"),
+    ])
+
+    cert.set_issuer(ca_cert.get_subject())
+    cert.set_pubkey(key)
+
+    cert.gmtime_adj_notBefore(0)
+    cert.gmtime_adj_notAfter(10 * 365 * 24 * 60 * 60)
+
+    cert.sign(ca_key, 'sha256')
+
+    return cert, key
+
+def make_client_cert(common_name, ca_cert, ca_key):
     key = crypto.PKey()
     key.generate_key(crypto.TYPE_RSA, 2048)
 
@@ -129,7 +161,37 @@ def make_cert(common_name, ca_cert, ca_key):
     cert.add_extensions([
         crypto.X509Extension(b"authorityKeyIdentifier", False, b"keyid:always", issuer=ca_cert),
         crypto.X509Extension(b"extendedKeyUsage", False, b"clientAuth"),
-        crypto.X509Extension(b"extendedKeyUsage", False, b"serverAuth"),
+        crypto.X509Extension(b"keyUsage", False, b"digitalSignature"),
+    ])
+
+    cert.set_issuer(ca_cert.get_subject())
+    cert.set_pubkey(key)
+
+    cert.gmtime_adj_notBefore(0)
+    cert.gmtime_adj_notAfter(10 * 365 * 24 * 60 * 60)
+
+    cert.sign(ca_key, 'sha256')
+
+    return cert, key
+
+def make_no_role_cert(common_name, ca_cert, ca_key):
+    key = crypto.PKey()
+    key.generate_key(crypto.TYPE_RSA, 2048)
+
+    cert = crypto.X509()
+    cert.set_version(2)
+    cert.set_serial_number(random.randint(50000000, 100000000))
+
+    client_subj = cert.get_subject()
+    client_subj.commonName = common_name
+
+    cert.add_extensions([
+        crypto.X509Extension(b"basicConstraints", False, b"CA:FALSE"),
+        crypto.X509Extension(b"subjectKeyIdentifier", False, b"hash", subject=cert),
+    ])
+
+    cert.add_extensions([
+        crypto.X509Extension(b"authorityKeyIdentifier", False, b"keyid:always", issuer=ca_cert),
         crypto.X509Extension(b"keyUsage", False, b"digitalSignature"),
     ])
 
@@ -144,9 +206,41 @@ def make_cert(common_name, ca_cert, ca_key):
     return cert, key
 
 
+
 def dump_certificate(cert):
     return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 
 
 def dump_privatekey(key):
     return crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+
+if __name__ == '__main__':
+    root_ca_cert, root_ca_key = make_ca("root CA")
+    elastic_cert, elastic_key = make_server_cert("elasticsearch", root_ca_cert, root_ca_key)
+    localhost_cert, localhost_key = make_no_role_cert("127.0.0.1", root_ca_cert, root_ca_key)
+    minifi_cert, minifi_key = make_client_cert("minifi-cpp-flow", root_ca_cert, root_ca_key)
+
+    f = open("docker/test/integration/resources/elasticsearch/minifi_cert.pem", "wb")
+    f.write(dump_certificate(minifi_cert))
+    f.close()
+    f = open("docker/test/integration/resources/elasticsearch/minifi_cert.key", "wb")
+    f.write(dump_privatekey(minifi_key))
+    f.close()
+
+    f = open("docker/test/integration/resources/elasticsearch/elastic_cert.pem", "wb")
+    f.write(dump_certificate(elastic_cert))
+    f.close()
+    f = open("docker/test/integration/resources/elasticsearch/elastic_cert.key", "wb")
+    f.write(dump_privatekey(elastic_key))
+    f.close()
+
+    f = open("docker/test/integration/resources/elasticsearch/elastic_transport.pem", "wb")
+    f.write(dump_certificate(localhost_cert))
+    f.close()
+    f = open("docker/test/integration/resources/elasticsearch/elastic_transport.key", "wb")
+    f.write(dump_privatekey(localhost_key))
+    f.close()
+
+    f = open("docker/test/integration/resources/elasticsearch/root_ca.pem", "wb")
+    f.write(dump_certificate(root_ca_cert))
+    f.close()

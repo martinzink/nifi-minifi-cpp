@@ -23,17 +23,19 @@ class ElasticsearchContainer(Container):
         super().__init__(name, 'elasticsearch', vols, network, image_store, command)
 
     def get_startup_finished_log_entry(self):
-        return "Ansible playbook complete, will begin streaming splunkd_stderr.log"
+        return '"current.health":"GREEN"'
 
     def deploy(self):
         if not self.set_deployed():
             return
 
         logging.info('Creating and running Elasticsearch docker container...')
-        logging.info('Creating and running a Syslog tcp client docker container...')
         self.client.containers.run(
-            "elasticsearch:8.2.2",
+            self.image_store.get_image(self.get_engine()),
             detach=True,
             name=self.name,
+            environment=[
+                "ELASTIC_PASSWORD=password",
+            ],
             network=self.network.name)
         logging.info('Added container \'%s\'', self.name)

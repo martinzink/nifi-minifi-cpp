@@ -77,7 +77,7 @@ class BulkElasticHandler : public MockElasticHandler {
     mg_printf(conn, "HTTP/1.1 200 OK\r\n");
     mg_printf(conn, "Content-length: %lu", buffer.GetSize());
     mg_printf(conn, "\r\n\r\n");
-    mg_printf(conn, buffer.GetString());
+    mg_printf(conn, "%s", buffer.GetString());
     return true;
   }
 };

@@ -59,7 +59,7 @@ class MiNiFi_integration_test:
         return self.cluster.acquire_container(name, engine, command)
 
     def wait_for_container_startup_to_finish(self, container_name):
-        startup_success = self.cluster.wait_for_startup_log(container_name, 120)
+        startup_success = self.cluster.wait_for_startup_log(container_name, 1200)
         if not startup_success:
             logging.error("Cluster startup failed for %s", container_name)
             self.cluster.log_app_output()

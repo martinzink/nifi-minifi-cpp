@@ -32,7 +32,7 @@ namespace org::apache::nifi::minifi::extensions::elasticsearch {
 const core::Relationship PutElasticsearchJson::Success("success", "All flowfiles that succeed in being transferred into Elasticsearch go here. Documents received by the Elasticsearch _bulk API may still result in errors on the Elasticsearch side. The Elasticsearch response will need to be examined to determine whether any Document(s)/Record(s) resulted in errors.");
 const core::Relationship PutElasticsearchJson::Failure("failure", "All flowfiles that fail for reasons unrelated to server availability go to this relationship.");
 const core::Relationship PutElasticsearchJson::Retry("retry", "All flowfiles that fail due to server/cluster availability go to this relationship.");
-const core::Relationship PutElasticsearchJson::Errors("errros", R"(If a "Output Error Documents" is set, any FlowFile(s) corresponding to Elasticsearch document(s) that resulted in an "error" (within Elasticsearch) will be routed here.)");
+const core::Relationship PutElasticsearchJson::Errors("errors", R"(If a "Output Error Documents" is set, any FlowFile(s) corresponding to Elasticsearch document(s) that resulted in an "error" (within Elasticsearch) will be routed here.)");
 
 const core::Property PutElasticsearchJson::IndexOperation(core::PropertyBuilder::createProperty("Index operation")
     ->withDescription("The type of the operation used to index (create, delete, index, update, upsert)"
@@ -123,7 +123,7 @@ void PutElasticsearchJson::onSchedule(const std::shared_ptr<core::ProcessContext
 }
 
 namespace {
-auto parseElasticAction(core::ProcessSession& session, core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file) -> nonstd::expected<std::string, std::string> {
+auto parseElasticPayload(core::ProcessSession& session, core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file) -> nonstd::expected<std::string, std::string> {
   rapidjson::Document root = rapidjson::Document(rapidjson::kObjectType);
   auto index_op = context.getProperty(PutElasticsearchJson::IndexOperation, flow_file);
   if (!index_op || (index_op != "index" && index_op != "create" && index_op != "delete" && index_op != "update"))
@@ -174,7 +174,7 @@ auto submitRequest(utils::HTTPClient& client, const size_t expected_items) -> no
     return nonstd::make_unexpected("Submit failed");
   auto response_code = client.getResponseCode();
   if (response_code != 200)
-    return nonstd::make_unexpected("Error occured: " + std::to_string(response_code));
+    return nonstd::make_unexpected("Error occurred: " + std::to_string(response_code));
   rapidjson::Document response;
   rapidjson::ParseResult parse_result = response.Parse<rapidjson::kParseStopWhenDoneFlag>(client.getResponseBody().data());
   if (parse_result.IsError())
@@ -182,7 +182,7 @@ auto submitRequest(utils::HTTPClient& client, const size_t expected_items) -> no
   if (!response.HasMember("items"))
     return nonstd::make_unexpected("Response is invalid");
   if (response["items"].Size() != expected_items)
-    return nonstd::make_unexpected("The number of responses doesnt match the number of requests");
+    return nonstd::make_unexpected("The number of responses dont match the number of requests");
 
   return response;
 }
@@ -212,7 +212,7 @@ void PutElasticsearchJson::onTrigger(const std::shared_ptr<core::ProcessContext>
     auto flow_file = session->get();
     if (!flow_file)
       break;
-    auto elastic_action = parseElasticAction(*session, *context, flow_file);
+    auto elastic_action = parseElasticPayload(*session, *context, flow_file);
     if (!elastic_action) {
       logger_->log_error(elastic_action.error().c_str());
       session->transfer(flow_file, Failure);
