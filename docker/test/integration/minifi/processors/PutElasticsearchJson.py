@@ -26,5 +26,5 @@ class PutElasticsearchJson(Processor):
                 'Index': 'test',
                 'Id': '${filename}'
             },
-            auto_terminate=['success', 'failure', 'retry', 'errros'],
+            auto_terminate=['success', 'failure', 'retry', 'errors'],
             schedule=schedule)

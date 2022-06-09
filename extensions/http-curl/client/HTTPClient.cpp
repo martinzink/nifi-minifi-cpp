@@ -137,13 +137,11 @@ void HTTPClient::setDisableHostVerification() {
 }
 
 void HTTPClient::setBasicAuth(std::string username, std::string password) {
- username_ = std::move(username);
- password_ = std::move(password);
+  username_password_.emplace(std::move(username), std::move(password));
 }
 
 void HTTPClient::clearBasicAuth() {
-  username_.reset();
-  password_.reset();
+  username_password_.reset();
 }
 
 bool HTTPClient::setSpecificSSLVersion(SSLVersion specific_version) {
@@ -280,9 +278,9 @@ bool HTTPClient::submit() {
     curl_easy_setopt(http_session_, CURLOPT_HTTPHEADER, headers_);
   }
 
-  if (username_ && password_) {
-    curl_easy_setopt(http_session_, CURLOPT_USERNAME, username_->c_str());
-    curl_easy_setopt(http_session_, CURLOPT_PASSWORD, password_->c_str());
+  if (username_password_) {
+    curl_easy_setopt(http_session_, CURLOPT_USERNAME, username_password_->first.c_str());
+    curl_easy_setopt(http_session_, CURLOPT_PASSWORD, username_password_->second.c_str());
   }
 
   curl_easy_setopt(http_session_, CURLOPT_URL, url_.c_str());

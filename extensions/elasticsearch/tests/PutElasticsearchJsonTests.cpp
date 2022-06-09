@@ -16,6 +16,7 @@
  */
 
 #include "../PutElasticsearchJson.h"
+#include "../ElasticsearchCredentialsControllerService.h"
 #include "MockElastic.h"
 #include "SingleProcessorTestController.h"
 #include "Catch.h"
@@ -43,6 +44,14 @@ TEST_CASE("PutElasticsearchJson", "[elastic]") {
   test_controller.plan->setProperty(put_elasticsearch_json,
                                     PutElasticsearchJson::Index.getName(),
                                     "test_index");
+
+  test_controller.plan->setProperty(elasticsearch_credentials_controller_service,
+                                    ElasticsearchCredentialsControllerService::CredentialsType.getName(),
+                                    toString(ElasticsearchCredentialsControllerService::CredType::USE_API_KEY));
+
+  test_controller.plan->setProperty(elasticsearch_credentials_controller_service,
+                                    ElasticsearchCredentialsControllerService::ApiKey.getName(),
+                                    MockElastic::API_KEY);
 
   auto results = test_controller.trigger(R"({"field1":"value1"}")");
   CHECK(results[PutElasticsearchJson::Success].size() == 1);

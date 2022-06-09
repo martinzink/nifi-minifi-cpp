@@ -225,6 +225,15 @@ class MiNiFi_integration_test:
     def check_empty_gcs_bucket(self, gcs_container_name):
         assert self.cluster.is_gcs_bucket_empty(gcs_container_name)
 
+    def check_empty_elastic(self, elastic_container_name):
+        assert self.cluster.is_elasticsearch_empty(elastic_container_name)
+
+    def check_elastic_has_id(self, elastic_container_name, doc_id):
+        assert self.cluster.is_elastic_id_present(elastic_container_name, doc_id)
+
+    def create_doc_elasticsearch(self, elastic_container_name, index_name, doc_id):
+        assert self.cluster.create_doc_elasticsearch(elastic_container_name, index_name, doc_id)
+
     def check_minifi_log_contents(self, line, timeout_seconds=60, count=1):
         self.check_container_log_contents("minifi-cpp", line, timeout_seconds, count)
 

@@ -21,6 +21,7 @@ from minifi.core.Funnel import Funnel
 
 from minifi.controllers.SSLContextService import SSLContextService
 from minifi.controllers.GCPCredentialsControllerService import GCPCredentialsControllerService
+from minifi.controllers.ElasticsearchCredentialsService import ElasticsearchCredentialsService
 from minifi.controllers.ODBCService import ODBCService
 from minifi.controllers.KubernetesControllerService import KubernetesControllerService
 
@@ -411,9 +412,12 @@ def step_impl(context):
 
 
 # elasticsearch
-@given("an Elasticsearch server is set up and running")
+@given('an Elasticsearch server is set up and a single document is present with "preloaded_id" in "my_index"')
+@given('an Elasticsearch server is set up and running')
 def step_impl(context):
     context.test.start_elasticsearch()
+    context.test.create_doc_elasticsearch("elasticsearch", "my_index", "preloaded_id")
+
 
 @given(u'a SSL context service is set up for PutElasticsearchJson')
 def step_impl(context):
@@ -427,10 +431,10 @@ def step_impl(context):
 
 @given(u'an ElasticsearchCredentialsService is set up for PutElasticsearchJson')
 def step_impl(context):
-    ssl_context_service = SSLContextService(cert=minifi_crt_file, ca_cert=root_ca_crt_file, key=minifi_key_file)
+    elasticsearch_credential_service = ElasticsearchCredentialsService()
     put_elasticsearch_json = context.test.get_node_by_name("PutElasticsearchJson")
-    put_elasticsearch_json.controller_services.append(ssl_context_service)
-    put_elasticsearch_json.set_property("SSL Context Service", ssl_context_service.name)
+    put_elasticsearch_json.controller_services.append(elasticsearch_credential_service)
+    put_elasticsearch_json.set_property("Elasticsearch Credentials Provider Service", elasticsearch_credential_service.name)
 
 # splunk hec
 @given("a Splunk HEC is set up and running")
@@ -835,3 +839,11 @@ def step_imp(context, content):
 def step_imp(context, content, source, source_type, host):
     attr = {"source": source, "sourcetype": source_type, "host": host}
     context.test.check_splunk_event_with_attributes("splunk", content, attr)
+
+@then("Elasticsearch is empty")
+def step_impl(context):
+    context.test.check_empty_elastic("elasticsearch")
+
+@then('Elasticsearch indexed a document with "{doc_id}"')
+def step_impl(context, doc_id):
+    context.test.check_elastic_has_id("elasticsearch", doc_id)

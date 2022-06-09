@@ -28,8 +28,8 @@ namespace org::apache::nifi::minifi::extensions::elasticsearch {
 class ElasticsearchCredentialsControllerService : public core::controller::ControllerService {
  public:
   SMART_ENUM(CredType,
-             (USE_XPACK, "Use XPack username and password"),
-             (USE_API_KEY, "Use API Key"));
+             (USE_BASIC_AUTHENTICATION, "Basic authentication"),
+             (USE_API_KEY, "API key"));
 
   EXTENSIONAPI static const core::Property CredentialsType;
   EXTENSIONAPI static const core::Property Username;
@@ -54,8 +54,7 @@ class ElasticsearchCredentialsControllerService : public core::controller::Contr
 
   void authenticateClient(utils::HTTPClient& client);
  private:
-  std::optional<std::string> password_;
-  std::optional<std::string> username_;
+  std::optional<std::pair<std::string, std::string>> username_password_;
   std::optional<std::string> api_key_;
   CredType cred_type_ = CredType::USE_API_KEY;
 };

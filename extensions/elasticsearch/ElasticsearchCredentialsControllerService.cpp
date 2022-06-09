@@ -21,16 +21,16 @@
 
 namespace org::apache::nifi::minifi::extensions::elasticsearch {
 const core::Property ElasticsearchCredentialsControllerService::Username(core::PropertyBuilder::createProperty("Username")
-    ->withDescription("The username to use with XPack security.")
+    ->withDescription("The username for basic authentication")
     ->supportsExpressionLanguage(true)
     ->build());
 
 const core::Property ElasticsearchCredentialsControllerService::Password(core::PropertyBuilder::createProperty("Password")
-    ->withDescription("The password to use with XPack security.")
+    ->withDescription("The password for basic authentication")
     ->supportsExpressionLanguage(true)
     ->build());
 
-const core::Property ElasticsearchCredentialsControllerService::CredentialsType(core::PropertyBuilder::createProperty("Username")
+const core::Property ElasticsearchCredentialsControllerService::CredentialsType(core::PropertyBuilder::createProperty("Credentials Type")
     ->withDescription("The location of the credentials.")
     ->withAllowableValues(CredType::values())
     ->withDefaultValue(toString(CredType::USE_API_KEY))
@@ -50,10 +50,14 @@ void ElasticsearchCredentialsControllerService::onEnable(core::controller::Contr
   getProperty(CredentialsType.getName(), cred_type_);
 
   if (cred_type_ == CredType::USE_API_KEY) {
-    getProperty(ApiKey.getName(), api_key_);
-  } else if (cred_type_ == CredType::USE_XPACK) {
-    getProperty(Username.getName(), username_);
-    getProperty(Password.getName(), password_);
+    std::string api_key;
+    getProperty(ApiKey.getName(), api_key);
+    api_key_.emplace(std::move(api_key));
+  } else if (cred_type_ == CredType::USE_BASIC_AUTHENTICATION) {
+    std::string username, password;
+    getProperty(Username.getName(), username);
+    getProperty(Password.getName(), password);
+    username_password_.emplace(std::move(username), std::move(password));
   }
 }
 
@@ -61,9 +65,9 @@ void ElasticsearchCredentialsControllerService::authenticateClient(utils::HTTPCl
   if (cred_type_ == CredType::USE_API_KEY) {
     gsl_Expects(api_key_);
     client.appendHeader("Authorization", "ApiKey " + *api_key_);
-  } else if (cred_type_ == CredType::USE_XPACK) {
-    gsl_Expects(username_ && password_);
-    client.setBasicAuth(*username_, *password_);
+  } else if (cred_type_ == CredType::USE_BASIC_AUTHENTICATION) {
+    gsl_Expects(username_password_);
+    client.setBasicAuth(username_password_->first, username_password_->second);
   }
 }
 

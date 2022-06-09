@@ -254,6 +254,22 @@ class DockerTestCluster(SingleNodeDockerCluster):
         (code, output) = self.client.containers.get(container_name).exec_run(["ls", "/storage/test-bucket"])
         return code == 0 and output == b''
 
+    #retry_check()
+    def is_elasticsearch_empty(self, container_name):
+        (code, output) = self.client.containers.get(container_name).exec_run(["curl", "-u", "elastic:password", "-k", "-XGET", "https://localhost:9200/_search"])
+        return code == 0 and b'"hits":[]' in output
+
+    #retry_check()
+    def is_elastic_id_present(self, container_name, doc_id):
+        (code, output) = self.client.containers.get(container_name).exec_run(["curl", "-u", "elastic:password", "-k", "-XGET", "https://localhost:9200/_search"])
+        return code == 0 and ('"_id":"' + doc_id + '"').encode() in output
+
+    def create_doc_elasticsearch(self, container_name, index_name, doc_id):
+        (code, output) = self.client.containers.get(container_name).exec_run(["/bin/bash", "-c",
+                                                                              "curl -u elastic:password -k -XPUT https://localhost:9200/" + index_name + "/_doc/" + doc_id + " -H Content-Type:application/json -d'{\"hello\":\"world\"}'"])
+        print(output)
+        return code == 0 and ('"_id":"' + doc_id + '"').encode() in output
+
     def query_postgres_server(self, postgresql_container_name, query, number_of_rows):
         (code, output) = self.client.containers.get(postgresql_container_name).exec_run(["psql", "-U", "postgres", "-c", query])
         output = output.decode(self.get_stdout_encoding())

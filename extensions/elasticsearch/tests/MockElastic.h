@@ -120,6 +120,8 @@ class MockElastic {
     assertions_ = std::move(assertions);
   }
 
+  static constexpr const char* API_KEY = "VnVhQ2ZHY0JDZGJrUW0tZTVhT3g6dWkybHAyYXhUTm1zeWFrdzl0dk5udw";
+
  private:
   CivetLibrary lib_;
   std::string port_;

@@ -32,7 +32,7 @@ namespace org::apache::nifi::minifi::extensions::elasticsearch {
 const core::Relationship PutElasticsearchJson::Success("success", "All flowfiles that succeed in being transferred into Elasticsearch go here. Documents received by the Elasticsearch _bulk API may still result in errors on the Elasticsearch side. The Elasticsearch response will need to be examined to determine whether any Document(s)/Record(s) resulted in errors.");
 const core::Relationship PutElasticsearchJson::Failure("failure", "All flowfiles that fail for reasons unrelated to server availability go to this relationship.");
 const core::Relationship PutElasticsearchJson::Retry("retry", "All flowfiles that fail due to server/cluster availability go to this relationship.");
-const core::Relationship PutElasticsearchJson::Errors("errors", R"(If a "Output Error Documents" is set, any FlowFile(s) corresponding to Elasticsearch document(s) that resulted in an "error" (within Elasticsearch) will be routed here.)");
+const core::Relationship PutElasticsearchJson::Errors("errors", "All flowfiles that Elasticsearch responded to with an error go to this relationship.");
 
 const core::Property PutElasticsearchJson::IndexOperation(core::PropertyBuilder::createProperty("Index operation")
     ->withDescription("The type of the operation used to index (create, delete, index, update, upsert)"
@@ -80,7 +80,7 @@ const core::Property PutElasticsearchJson::Id(core::PropertyBuilder::createPrope
 
 void PutElasticsearchJson::initialize() {
   setSupportedRelationships({Success, Failure, Retry, Errors});
-  setSupportedProperties({ElasticCredentials, IndexOperation, MaxBatchSize, Hosts, Index, SSLContext});
+  setSupportedProperties({ElasticCredentials, IndexOperation, MaxBatchSize, Hosts, Index, SSLContext, Id});
 }
 
 namespace {
@@ -119,6 +119,7 @@ void PutElasticsearchJson::onSchedule(const std::shared_ptr<core::ProcessContext
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Missing Elasticsearch credentials service");
 
   client_.initialize("POST", host_url + "/_bulk", getSSLContextService(*context));
+  client_.setContentType("application/json");
   credentials_service->authenticateClient(client_);
 }
 
@@ -174,7 +175,7 @@ auto submitRequest(utils::HTTPClient& client, const size_t expected_items) -> no
     return nonstd::make_unexpected("Submit failed");
   auto response_code = client.getResponseCode();
   if (response_code != 200)
-    return nonstd::make_unexpected("Error occurred: " + std::to_string(response_code));
+    return nonstd::make_unexpected("Error occurred: " + std::to_string(response_code) + client.getResponseBody().data());
   rapidjson::Document response;
   rapidjson::ParseResult parse_result = response.Parse<rapidjson::kParseStopWhenDoneFlag>(client.getResponseBody().data());
   if (parse_result.IsError())
@@ -244,7 +245,10 @@ void PutElasticsearchJson::onTrigger(const std::shared_ptr<core::ProcessContext>
     for (auto it = items[i].MemberBegin(); it != items[i].MemberEnd(); ++it) {
       addAttributesFromResponse("elasticsearch", it, *flowfiles_in_payload[i]);
     }
-    session->transfer(flowfiles_in_payload[i], Success);
+    if (items[i].MemberBegin()->value.HasMember("error"))
+      session->transfer(flowfiles_in_payload[i], Errors);
+    else
+      session->transfer(flowfiles_in_payload[i], Success);
   }
 }
 

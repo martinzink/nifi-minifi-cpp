@@ -23,7 +23,8 @@ Feature: Sending data to Splunk HEC using PutSplunkHTTP
     And a GetFile processor with the "Input Directory" property set to "/tmp/input"
     And a file with the content "{ "field1" : "value1" }" is present in "/tmp/input"
     And a PutElasticsearchJson processor
-    And the "Index" property of the PutElasticsearchJson processor is set to "test"
+    And the "Index" property of the PutElasticsearchJson processor is set to "my_index"
+    And the "Id" property of the PutElasticsearchJson processor is set to "my_id"
     And the "Index operation" property of the PutElasticsearchJson processor is set to "index"
     And a SSL context service is set up for PutElasticsearchJson
     And an ElasticsearchCredentialsService is set up for PutElasticsearchJson
@@ -32,4 +33,23 @@ Feature: Sending data to Splunk HEC using PutSplunkHTTP
     And the "success" relationship of the PutElasticsearchJson processor is connected to the PutFile
 
     When both instances start up
-    Then a flowfile with the content "foobar" is placed in the monitored directory in less than 2000 seconds
+    Then a flowfile with the content "{ "field1" : "value1" }" is placed in the monitored directory in less than 20 seconds
+    And Elasticsearch indexed a document with "my_id"
+
+  Scenario: A MiNiFi instance deletes a document from Elasticsearch with SSL enabled
+    Given an Elasticsearch server is set up and a single document is present with "preloaded_id" in "my_index"
+    And a GetFile processor with the "Input Directory" property set to "/tmp/input"
+    And a file with the content "hello world" is present in "/tmp/input"
+    And a PutElasticsearchJson processor
+    And the "Index" property of the PutElasticsearchJson processor is set to "my_index"
+    And the "Id" property of the PutElasticsearchJson processor is set to "preloaded_id"
+    And the "Index operation" property of the PutElasticsearchJson processor is set to "delete"
+    And a SSL context service is set up for PutElasticsearchJson
+    And an ElasticsearchCredentialsService is set up for PutElasticsearchJson
+    And a PutFile processor with the "Directory" property set to "/tmp/output"
+    And the "success" relationship of the GetFile processor is connected to the PutElasticsearchJson
+    And the "success" relationship of the PutElasticsearchJson processor is connected to the PutFile
+
+    When both instances start up
+    Then a flowfile with the content "hello world" is placed in the monitored directory in less than 20 seconds
+    And Elasticsearch is empty

@@ -301,8 +301,7 @@ class HTTPClient : public BaseHTTPClient, public core::Connectable {
 
   std::chrono::milliseconds keep_alive_idle_{-1};
 
-  std::optional<std::string> username_;
-  std::optional<std::string> password_;
+  std::optional<std::pair<std::string, std::string>> username_password_;
 
   std::shared_ptr<core::logging::Logger> logger_{core::logging::LoggerFactory<HTTPClient>::getLogger()};
 };
