@@ -190,6 +190,7 @@ class DockerTestCluster(SingleNodeDockerCluster):
     @retry_check()
     def check_splunk_event(self, container_name, query):
         (code, output) = self.client.containers.get(container_name).exec_run(["sudo", "/opt/splunk/bin/splunk", "search", query, "-auth", "admin:splunkadmin"])
+        print(output.decode("utf-8"))
         if code != 0:
             return False
         return query in output.decode("utf-8")
