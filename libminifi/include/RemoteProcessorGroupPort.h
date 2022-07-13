@@ -26,7 +26,7 @@
 #include <mutex>
 #include <memory>
 #include <stack>
-#include "utils/HTTPClient.h"
+#include "utils/BaseHTTPClient.h"
 #include "concurrentqueue.h"
 #include "FlowFileRecord.h"
 #include "core/Processor.h"

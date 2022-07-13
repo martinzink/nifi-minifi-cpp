@@ -54,7 +54,7 @@ namespace {
 }  // namespace
 #endif
 
-void pull_trace(uint8_t frames_to_skip /* = 1 */) {
+void pull_trace([[maybe_unused]] uint8_t frames_to_skip /* = 1 */) {
 #ifdef HAS_EXECINFO
   void* stack_buffer[TRACE_BUFFER_SIZE + 1];
 
@@ -120,7 +120,7 @@ void pull_trace(uint8_t frames_to_skip /* = 1 */) {
 #endif
 }
 
-BackTrace TraceResolver::getBackTrace(std::string thread_name, std::thread::native_handle_type thread_handle) {
+BackTrace TraceResolver::getBackTrace(std::string thread_name, [[maybe_unused]] std::thread::native_handle_type thread_handle) {
   // lock so that we only perform one backtrace at a time.
 #ifdef HAS_EXECINFO
   std::lock_guard<std::mutex> lock(mutex_);

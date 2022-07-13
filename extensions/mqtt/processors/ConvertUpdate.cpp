@@ -20,10 +20,12 @@
 #include <algorithm>
 
 #include "ConvertUpdate.h"
-#include "utils/HTTPClient.h"
+#include "utils/BaseHTTPClient.h"
 #include "io/BaseStream.h"
 #include "io/BufferStream.h"
 #include "core/Resource.h"
+
+using namespace std::literals::chrono_literals;
 
 namespace org::apache::nifi::minifi::processors {
 
@@ -60,9 +62,9 @@ void ConvertUpdate::onTrigger(const std::shared_ptr<core::ProcessContext> &conte
         return;
       }
       std::unique_ptr<utils::BaseHTTPClient> client = std::unique_ptr<utils::BaseHTTPClient>(dynamic_cast<utils::BaseHTTPClient*>(client_ptr));
-      client->initialize("GET");
-      client->setConnectionTimeout(std::chrono::milliseconds(2000));
-      client->setReadTimeout(std::chrono::milliseconds(2000));
+      client->initialize("GET", "", nullptr);
+      client->setConnectionTimeout(2s);
+      client->setReadTimeout(2s);
 
       if (client->submit()) {
         auto data = client->getResponseBody();
