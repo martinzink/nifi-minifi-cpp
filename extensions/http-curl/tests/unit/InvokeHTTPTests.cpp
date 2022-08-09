@@ -105,7 +105,7 @@ TEST_CASE("HTTPTestsWithNoResourceClaimPOST", "[httptest1]") {
   auto records = reporter->getEvents();
   auto record = session->get();
   REQUIRE(record == nullptr);
-  REQUIRE(records.size() == 0);
+  REQUIRE(records.empty());
 
   reporter = session->getProvenanceReporter();
 
@@ -199,7 +199,7 @@ TEST_CASE("HTTPTestsWithResourceClaimPOST", "[httptest1]") {
   auto records = reporter->getEvents();
   record = session->get();
   REQUIRE(record == nullptr);
-  REQUIRE(records.size() == 0);
+  REQUIRE(records.empty());
 
   listenhttp->incrementActiveTasks();
   listenhttp->setScheduledState(core::ScheduledState::RUNNING);
@@ -240,7 +240,7 @@ TEST_CASE("HTTPTestsPostNoResourceClaim", "[httptest1]") {
   auto records = plan->getProvenanceRecords();
   std::shared_ptr<core::FlowFile> record = plan->getCurrentFlowFile();
   REQUIRE(record == nullptr);
-  REQUIRE(records.size() == 0);
+  REQUIRE(records.empty());
 
   plan->reset();
   testController.runSession(plan);
