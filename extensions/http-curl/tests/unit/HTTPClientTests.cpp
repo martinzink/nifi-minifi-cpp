@@ -143,4 +143,11 @@ TEST_CASE("HTTPClient should be reusable", "[basic]") {
   LogTestController::getInstance().reset();
 }
 
+#ifdef __linux__
+TEST_CASE("SSL without SSLContextService", "[HTTPClient]") {
+  HTTPClient client;
+  client.initialize("GET", "https://apache.org", nullptr);
+  REQUIRE(client.submit());
+}
+#endif
 }  // namespace org::apache::nifi::minifi::extensions::curl::testing

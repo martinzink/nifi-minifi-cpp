@@ -217,6 +217,7 @@ class HTTPClient : public utils::BaseHTTPClient, public core::Connectable {
 
   static bool isValidHttpHeaderField(std::string_view field_name);
   static std::string replaceInvalidCharactersInHttpHeaderFieldName(std::string field_name);
+  static std::optional<std::filesystem::path> getDefaultCAPath();
 
  private:
   static int onProgress(void *client, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
@@ -247,7 +248,7 @@ class HTTPClient : public utils::BaseHTTPClient, public core::Connectable {
 #endif
   }
 
-  void configure_secure_connection(CURL *http_session);
+  void configure_secure_connection();
 
   std::chrono::milliseconds getAbsoluteTimeout() const { return 3*read_timeout_; }
 
