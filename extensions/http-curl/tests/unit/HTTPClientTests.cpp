@@ -113,3 +113,9 @@ TEST_CASE("HTTPClient replaceInvalidCharactersInHttpHeaderFieldName test") {
   CHECK(utils::HTTPClient::replaceInvalidCharactersInHttpHeaderFieldName(std::string("invalid") + static_cast<char>(128) + "character") == "invalid-character");
   CHECK(utils::HTTPClient::replaceInvalidCharactersInHttpHeaderFieldName("contains:invalid") == "contains-invalid");
 }
+
+TEST_CASE("SSL to well known host", "[HTTPClient]") {
+  utils::HTTPClient client;
+  client.initialize("GET", "https://apache.org", nullptr);
+  REQUIRE(client.submit());
+}
