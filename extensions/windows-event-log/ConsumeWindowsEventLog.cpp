@@ -19,7 +19,7 @@
  */
 
 #include "ConsumeWindowsEventLog.h"
-#include <stdio.h>
+#include <cstdio>
 #include <vector>
 #include <tuple>
 #include <utility>
@@ -44,21 +44,19 @@
 #include "core/PropertyBuilder.h"
 #include "core/Resource.h"
 #include "Bookmark.h"
+#include "wel/UniqueEvtHandle.h"
 #include "utils/Deleters.h"
 #include "logging/LoggerConfiguration.h"
 
 #include "utils/gsl.h"
+#include "utils/OsUtils.h"
 
 #pragma comment(lib, "wevtapi.lib")
 #pragma comment(lib, "ole32.lib")
 
 using namespace std::literals::chrono_literals;
 
-namespace org {
-namespace apache {
-namespace nifi {
-namespace minifi {
-namespace processors {
+namespace org::apache::nifi::minifi::processors {
 
 const int EVT_NEXT_TIMEOUT_MS = 500;
 
@@ -178,8 +176,8 @@ const core::Property ConsumeWindowsEventLog::ProcessOldEvents(
 const core::Relationship ConsumeWindowsEventLog::Success("success", "Relationship for successfully consumed events.");
 
 ConsumeWindowsEventLog::ConsumeWindowsEventLog(const std::string& name, const utils::Identifier& uuid)
-  : core::Processor(name, uuid),
-    logger_(core::logging::LoggerFactory<ConsumeWindowsEventLog>::getLogger()) {
+    : core::Processor(name, uuid),
+      logger_(core::logging::LoggerFactory<ConsumeWindowsEventLog>::getLogger()) {
   char buff[MAX_COMPUTERNAME_LENGTH + 1];
   DWORD size = sizeof(buff);
   if (GetComputerName(buff, &size)) {
@@ -214,7 +212,7 @@ void ConsumeWindowsEventLog::initialize() {
   setSupportedRelationships(relationships());
 }
 
-bool ConsumeWindowsEventLog::insertHeaderName(wel::METADATA_NAMES &header, const std::string &key, const std::string & value) const {
+bool ConsumeWindowsEventLog::insertHeaderName(wel::METADATA_NAMES& header, const std::string& key, const std::string& value) {
   wel::METADATA name = wel::WindowsEventLogMetadata::getMetadataFromString(key);
 
   if (name != wel::METADATA::UNKNOWN) {
@@ -224,7 +222,8 @@ bool ConsumeWindowsEventLog::insertHeaderName(wel::METADATA_NAMES &header, const
   return false;
 }
 
-void ConsumeWindowsEventLog::onSchedule(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSessionFactory> &sessionFactory) {
+void ConsumeWindowsEventLog::onSchedule(const std::shared_ptr<core::ProcessContext>& context,
+                                        const std::shared_ptr<core::ProcessSessionFactory>&) {
   state_manager_ = context->getStateManager();
   if (state_manager_ == nullptr) {
     throw Exception(PROCESSOR_EXCEPTION, "Failed to get StateManager");
@@ -233,7 +232,7 @@ void ConsumeWindowsEventLog::onSchedule(const std::shared_ptr<core::ProcessConte
   context->getProperty(IdentifierMatcher.getName(), regex_);
   context->getProperty(ResolveAsAttributes.getName(), resolve_as_attributes_);
   context->getProperty(IdentifierFunction.getName(), apply_identifier_function_);
-  context->getProperty(EventHeaderDelimiter.getName(), header_delimiter_);
+  header_delimiter_ = context->getProperty(EventHeaderDelimiter);
   context->getProperty(BatchCommitSize.getName(), batch_commit_size_);
 
   header_names_.clear();
@@ -254,6 +253,11 @@ void ConsumeWindowsEventLog::onSchedule(const std::shared_ptr<core::ProcessConte
         }
       }
     }
+  }
+
+  regex_.reset();
+  if (auto identifier_matcher = context->getProperty(IdentifierMatcher); identifier_matcher && !identifier_matcher->empty()) {
+    regex_.emplace(*identifier_matcher);
   }
 
   std::string mode;
@@ -319,14 +323,16 @@ void ConsumeWindowsEventLog::onSchedule(const std::shared_ptr<core::ProcessConte
     }
   }
 
-  context->getProperty(MaxBufferSize.getName(), maxBufferSize_);
-  logger_->log_debug("ConsumeWindowsEventLog: MaxBufferSize %" PRIu64, maxBufferSize_);
+  context->getProperty(MaxBufferSize.getName(), max_buffer_size_);
+  logger_->log_debug("ConsumeWindowsEventLog: MaxBufferSize %" PRIu64, max_buffer_size_);
 
   provenanceUri_ = "winlog://" + computerName_ + "/" + channel_ + "?" + query;
   logger_->log_trace("Successfully configured CWEL");
 }
 
-bool ConsumeWindowsEventLog::commitAndSaveBookmark(const std::wstring &bookmark_xml, const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSession> &session) {
+bool ConsumeWindowsEventLog::commitAndSaveBookmark(const std::wstring& bookmark_xml,
+                                                   const std::shared_ptr<core::ProcessContext>& context,
+                                                   const std::shared_ptr<core::ProcessSession>& session) {
   {
     const TimeDiff time_diff;
     session->commit();
@@ -346,8 +352,10 @@ bool ConsumeWindowsEventLog::commitAndSaveBookmark(const std::wstring &bookmark_
   return true;
 }
 
-std::tuple<size_t, std::wstring> ConsumeWindowsEventLog::processEventLogs(const std::shared_ptr<core::ProcessContext> &context,
-    const std::shared_ptr<core::ProcessSession> &session, const EVT_HANDLE& event_query_results) {
+std::tuple<size_t,
+           std::wstring> ConsumeWindowsEventLog::processEventLogs(const std::shared_ptr<core::ProcessContext>&,
+                                                                  const std::shared_ptr<core::ProcessSession>& session,
+                                                                  const EVT_HANDLE& event_query_results) {
   size_t processed_event_count = 0;
   std::wstring bookmark_xml;
   logger_->log_trace("Enumerating the events in the result set after the bookmarked event.");
@@ -367,19 +375,26 @@ std::tuple<size_t, std::wstring> ConsumeWindowsEventLog::processEventLogs(const 
 
     const auto guard_next_event = gsl::finally([next_event]() { EvtClose(next_event); });
     logger_->log_trace("Succesfully got the next event, performing event rendering");
-    EventRender event_render;
-    std::wstring new_bookmark_xml;
-    if (createEventRender(next_event, event_render) && bookmark_->getNewBookmarkXml(next_event, new_bookmark_xml)) {
-      bookmark_xml = std::move(new_bookmark_xml);
-      processed_event_count++;
-      putEventRenderFlowFileToSession(event_render, *session);
+    auto event_render = createEventRender(next_event);
+    if (!event_render) {
+      logger_->log_error("%s", event_render.error());
+      continue;
     }
+    auto new_bookmark_xml = bookmark_->getNewBookmarkXml(next_event);
+    if (!new_bookmark_xml) {
+      logger_->log_error("%s", new_bookmark_xml.error());
+      continue;
+    }
+    bookmark_xml = std::move(*new_bookmark_xml);
+    processed_event_count++;
+    putEventRenderFlowFileToSession(*event_render, *session);
   }
   logger_->log_trace("Finished enumerating events.");
   return std::make_tuple(processed_event_count, bookmark_xml);
 }
 
-void ConsumeWindowsEventLog::onTrigger(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSession> &session) {
+void ConsumeWindowsEventLog::onTrigger(const std::shared_ptr<core::ProcessContext>& context,
+                                       const std::shared_ptr<core::ProcessSession>& session) {
   std::unique_lock<std::mutex> lock(on_trigger_mutex_, std::try_to_lock);
   if (!lock.owns_lock()) {
     logger_->log_warn("processor was triggered before previous listing finished, configuration should be revised!");
@@ -400,13 +415,12 @@ void ConsumeWindowsEventLog::onTrigger(const std::shared_ptr<core::ProcessContex
     logger_->log_debug("processed %zu Events in %"  PRId64 " ms", processed_event_count, time_diff());
   });
 
-  const auto event_query_results = EvtQuery(0, wstrChannel_.c_str(), wstrQuery_.c_str(), EvtQueryChannelPath);
+  wel::unique_evt_handle event_query_results{EvtQuery(nullptr, wstrChannel_.c_str(), wstrQuery_.c_str(), EvtQueryChannelPath)};
   if (!event_query_results) {
     LOG_LAST_ERROR(EvtQuery);
     context->yield();
     return;
   }
-  const auto guard_event_query_results = gsl::finally([event_query_results]() { EvtClose(event_query_results); });
 
   logger_->log_trace("Retrieved results in Channel: %ls with Query: %ls", wstrChannel_.c_str(), wstrQuery_.c_str());
 
@@ -418,7 +432,7 @@ void ConsumeWindowsEventLog::onTrigger(const std::shared_ptr<core::ProcessContex
     return;
   }
 
-  if (!EvtSeek(event_query_results, 1, bookmark_handle, 0, EvtSeekRelativeToBookmark)) {
+  if (!EvtSeek(event_query_results.get(), 1, bookmark_handle, 0, EvtSeekRelativeToBookmark)) {
     LOG_LAST_ERROR(EvtSeek);
     context->yield();
     return;
@@ -427,7 +441,7 @@ void ConsumeWindowsEventLog::onTrigger(const std::shared_ptr<core::ProcessContex
   refreshTimeZoneData();
 
   std::wstring bookmark_xml;
-  std::tie(processed_event_count, bookmark_xml) = processEventLogs(context, session, event_query_results);
+  std::tie(processed_event_count, bookmark_xml) = processEventLogs(context, session, event_query_results.get());
 
   if (processed_event_count == 0 || !commitAndSaveBookmark(bookmark_xml, context, session)) {
     context->yield();
@@ -435,7 +449,7 @@ void ConsumeWindowsEventLog::onTrigger(const std::shared_ptr<core::ProcessContex
   }
 }
 
-wel::WindowsEventLogHandler& ConsumeWindowsEventLog::getEventLogHandler(const std::string & name) {
+wel::WindowsEventLogHandler& ConsumeWindowsEventLog::getEventLogHandler(const std::string& name) {
   logger_->log_trace("Getting Event Log Handler corresponding to %s", name.c_str());
   auto provider = providers_.find(name);
   if (provider != std::end(providers_)) {
@@ -446,7 +460,10 @@ wel::WindowsEventLogHandler& ConsumeWindowsEventLog::getEventLogHandler(const st
   std::wstring temp_wstring = std::wstring(name.begin(), name.end());
   LPCWSTR widechar = temp_wstring.c_str();
 
-  providers_[name] = wel::WindowsEventLogHandler(EvtOpenPublisherMetadata(NULL, widechar, NULL, 0, 0));
+  auto opened_publisher_metadata_provider = EvtOpenPublisherMetadata(nullptr, widechar, nullptr, 0, 0);
+  if (!opened_publisher_metadata_provider)
+    logger_->log_warn("EvtOpenPublisherMetadata failed due to %s", utils::OsUtils::getWindowsErrorAsString(GetLastError()));
+  providers_[name] = wel::WindowsEventLogHandler(opened_publisher_metadata_provider);
   logger_->log_info("Handler not found for %s, creating. Number of cached handlers: %zu", name, providers_.size());
   return providers_[name];
 }
@@ -463,9 +480,13 @@ void ConsumeWindowsEventLog::substituteXMLPercentageItems(pugi::xml_document& do
     return;
   }
 
-  struct TreeWalker: public pugi::xml_tree_walker {
-    TreeWalker(HMODULE hMsobjsDll, std::unordered_map<std::string, std::string>& xmlPercentageItemsResolutions, std::shared_ptr<core::logging::Logger> logger)
-      : hMsobjsDll_(hMsobjsDll), xmlPercentageItemsResolutions_(xmlPercentageItemsResolutions), logger_(std::move(logger)) {
+  struct TreeWalker : public pugi::xml_tree_walker {
+    TreeWalker(HMODULE hMsobjsDll,
+               std::unordered_map<std::string, std::string>& xmlPercentageItemsResolutions,
+               std::shared_ptr<core::logging::Logger> logger)
+        : hMsobjsDll_(hMsobjsDll),
+          xmlPercentageItemsResolutions_(xmlPercentageItemsResolutions),
+          logger_(std::move(logger)) {
     }
 
     bool for_each(pugi::xml_node& node) override {
@@ -478,11 +499,11 @@ void ConsumeWindowsEventLog::substituteXMLPercentageItems(pugi::xml_document& do
       for (size_t numberPos = 0; std::string::npos != (numberPos = nodeText.find(percentages, numberPos));) {
         numberPos += percentages.size();
 
-        auto number = 0u;
+        uint64_t number{};
         try {
           // Assumption - first character is not '0', otherwise not all digits will be replaced by 'value'.
           number = std::stoul(&nodeText[numberPos]);
-        } catch (const std::invalid_argument &) {
+        } catch (const std::invalid_argument&) {
           continue;
         }
 
@@ -492,12 +513,13 @@ void ConsumeWindowsEventLog::substituteXMLPercentageItems(pugi::xml_document& do
         const auto it = xmlPercentageItemsResolutions_.find(key);
         if (it == xmlPercentageItemsResolutions_.end()) {
           LPTSTR pBuffer{};
-          if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_IGNORE_INSERTS,
-                            hMsobjsDll_,
-                            number,
-                            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                            (LPTSTR)&pBuffer,
-                            1024, 0)) {
+          if (FormatMessage(
+              FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_HMODULE | FORMAT_MESSAGE_IGNORE_INSERTS,
+              hMsobjsDll_,
+              number,
+              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+              (LPTSTR) &pBuffer,
+              1024, nullptr)) {
             value = pBuffer;
             LocalFree(pBuffer);
 
@@ -508,7 +530,9 @@ void ConsumeWindowsEventLog::substituteXMLPercentageItems(pugi::xml_document& do
             // Add "" to xmlPercentageItemsResolutions_ - don't need to call FormaMessage for this 'key' again.
             xmlPercentageItemsResolutions_.insert({key, ""});
 
-            logger_->log_error("!FormatMessage error: %x. '%s' is not found in msobjs.dll.", GetLastError(), key.c_str());
+            logger_->log_error("!FormatMessage error: %x. '%s' is not found in msobjs.dll.",
+                               GetLastError(),
+                               key.c_str());
           }
         } else {
           value = it->second;
@@ -537,79 +561,71 @@ void ConsumeWindowsEventLog::substituteXMLPercentageItems(pugi::xml_document& do
   doc.traverse(treeWalker);
 }
 
-bool ConsumeWindowsEventLog::createEventRender(EVT_HANDLE hEvent, EventRender& eventRender) {
+nonstd::expected<std::string, std::string> ConsumeWindowsEventLog::renderEventAsXml(EVT_HANDLE event_handle) {
   logger_->log_trace("Rendering an event");
   WCHAR stackBuffer[4096];
   DWORD size = sizeof(stackBuffer);
   using Deleter = utils::StackAwareDeleter<WCHAR, utils::FreeDeleter>;
-  std::unique_ptr<WCHAR, Deleter> buf{stackBuffer, Deleter{ stackBuffer }};
+  std::unique_ptr<WCHAR, Deleter> buf{stackBuffer, Deleter{stackBuffer}};
 
   DWORD used = 0;
   DWORD propertyCount = 0;
-  if (!EvtRender(NULL, hEvent, EvtRenderEventXml, size, buf.get(), &used, &propertyCount)) {
-    if (ERROR_INSUFFICIENT_BUFFER != GetLastError()) {
-      LOG_LAST_ERROR(EvtRender);
-      return false;
+  if (!EvtRender(nullptr, event_handle, EvtRenderEventXml, size, buf.get(), &used, &propertyCount)) {
+    DWORD last_error = GetLastError();
+    if (ERROR_INSUFFICIENT_BUFFER != last_error) {
+      std::string error_message = std::format("EvtRender failed due to %s", utils::OsUtils::getWindowsErrorAsString(last_error));
+      return nonstd::make_unexpected(error_message);
     }
-    if (used > maxBufferSize_) {
-      logger_->log_error("Dropping event because it couldn't be rendered within %" PRIu64 " bytes.", maxBufferSize_);
-      return false;
+    if (used > max_buffer_size_) {
+      std::string error_message = std::format("Dropping event because it couldn't be rendered within %" PRIu64 " bytes.", max_buffer_size_);
+      return nonstd::make_unexpected(error_message);
     }
     size = used;
-    buf.reset((LPWSTR)malloc(size));
-    if (!buf) {
-      return false;
-    }
-    if (!EvtRender(NULL, hEvent, EvtRenderEventXml, size, buf.get(), &used, &propertyCount)) {
-      LOG_LAST_ERROR(EvtRender);
-      return false;
+    buf.reset((LPWSTR) malloc(size));
+    if (!EvtRender(nullptr, event_handle, EvtRenderEventXml, size, buf.get(), &used, &propertyCount)) {
+      std::string error_message = std::format("EvtRender failed due to %s", utils::OsUtils::getWindowsErrorAsString(GetLastError()));
+      return nonstd::make_unexpected(error_message);
     }
   }
+  logger_->log_trace("Event rendered with size %" PRIu32, used);
+  return wel::to_string(buf.get());
+}
 
-  logger_->log_debug("Event rendered with size %" PRIu32 ". Performing doc traversing...", used);
-
-  std::string xml = wel::to_string(buf.get());
+nonstd::expected<EventRender, std::string> ConsumeWindowsEventLog::createEventRender(EVT_HANDLE hEvent) {
+  auto event_as_xml = renderEventAsXml(hEvent);
+  if (!event_as_xml)
+    return nonstd::make_unexpected(event_as_xml.error());
 
   pugi::xml_document doc;
-  pugi::xml_parse_result result = doc.load_string(xml.c_str());
+  if (!doc.load_string(event_as_xml->c_str()))
+    return nonstd::make_unexpected("Invalid XML produced");
 
-  if (!result) {
-    logger_->log_error("Invalid XML produced");
-    return false;
-  }
+  EventRender result;
 
   // this is a well known path.
-  std::string providerName = doc.child("Event").child("System").child("Provider").attribute("Name").value();
-  wel::WindowsEventLogMetadataImpl metadata{getEventLogHandler(providerName).getMetadata(), hEvent};
+  std::string provider_name = doc.child("Event").child("System").child("Provider").attribute("Name").value();
+  wel::WindowsEventLogMetadataImpl metadata{getEventLogHandler(provider_name).getMetadata(), hEvent};
   wel::MetadataWalker walker{metadata, channel_, !resolve_as_attributes_, apply_identifier_function_, regex_};
 
   // resolve the event metadata
   doc.traverse(walker);
 
-  logger_->log_debug("Finish doc traversing, performing writing...");
+  logger_->log_trace("Finish doc traversing, performing writing...");
 
   if (output_.plaintext) {
     logger_->log_trace("Writing event in plain text");
 
-    auto& handler = getEventLogHandler(providerName);
-    auto message = handler.getEventMessage(hEvent);
+    auto& handler = getEventLogHandler(provider_name);
+    auto event_message = handler.getEventMessage(hEvent);
 
-    if (!message.empty()) {
-      for (const auto &mapEntry : walker.getIdentifiers()) {
-        // replace the identifiers with their translated strings.
-        if (mapEntry.first.empty() || mapEntry.second.empty()) {
-          continue;  // This is most probably a result of a failed ID resolution
-        }
-        utils::StringUtils::replaceAll(message, mapEntry.first, mapEntry.second);
-      }
-      wel::WindowsEventLogHeader log_header(header_names_);
-      // set the delimiter
-      log_header.setDelimiter(header_delimiter_);
-      // render the header.
-      eventRender.plaintext = log_header.getEventHeader([&walker](wel::METADATA metadata) { return walker.getMetadata(metadata); });
-      eventRender.plaintext += "Message" + header_delimiter_ + " ";
-      eventRender.plaintext += message;
-    }
+    std::string_view payload_name = event_message ? "Message" : "Error";
+
+    wel::WindowsEventLogHeader log_header(header_names_, header_delimiter_, payload_name.size());
+    result.plaintext = log_header.getEventHeader([&walker](wel::METADATA metadata) { return walker.getMetadata(metadata); });
+    result.plaintext += payload_name;
+    result.plaintext += log_header.getDelimiterFor(payload_name.size());
+    result.plaintext += event_message.has_value() ? *event_message : utils::OsUtils::getWindowsErrorAsString(event_message.error());
+
     logger_->log_trace("Finish writing in plain text");
   }
 
@@ -618,7 +634,7 @@ bool ConsumeWindowsEventLog::createEventRender(EVT_HANDLE hEvent, EventRender& e
     logger_->log_trace("Finish substituting %% in XML");
 
     if (resolve_as_attributes_) {
-      eventRender.matched_fields = walker.getFieldValues();
+      result.matched_fields = walker.getFieldValues();
     }
   }
 
@@ -627,27 +643,27 @@ bool ConsumeWindowsEventLog::createEventRender(EVT_HANDLE hEvent, EventRender& e
 
     wel::XmlString writer;
     doc.print(writer, "", pugi::format_raw);  // no indentation or formatting
-    xml = writer.xml_;
+    event_as_xml = writer.xml_;
 
-    eventRender.xml = std::move(xml);
+    result.xml = std::move(*event_as_xml);
     logger_->log_trace("Finish writing in XML");
   }
 
   if (output_.json.type == JSONType::Raw) {
     logger_->log_trace("Writing event in raw JSON");
-    eventRender.json = wel::jsonToString(wel::toRawJSON(doc));
+    result.json = wel::jsonToString(wel::toRawJSON(doc));
     logger_->log_trace("Finish writing in raw JSON");
   } else if (output_.json.type == JSONType::Simple) {
     logger_->log_trace("Writing event in simple JSON");
-    eventRender.json = wel::jsonToString(wel::toSimpleJSON(doc));
+    result.json = wel::jsonToString(wel::toSimpleJSON(doc));
     logger_->log_trace("Finish writing in simple JSON");
   } else if (output_.json.type == JSONType::Flattened) {
     logger_->log_trace("Writing event in flattened JSON");
-    eventRender.json = wel::jsonToString(wel::toFlattenedJSON(doc));
+    result.json = wel::jsonToString(wel::toFlattenedJSON(doc));
     logger_->log_trace("Finish writing in flattened JSON");
   }
 
-  return true;
+  return result;
 }
 
 void ConsumeWindowsEventLog::refreshTimeZoneData() {
@@ -657,19 +673,16 @@ void ConsumeWindowsEventLog::refreshTimeZoneData() {
   long tzbias = 0;  // NOLINT long comes from WINDOWS API
   bool dst = false;
   switch (ret) {
-    case TIME_ZONE_ID_INVALID:
-      logger_->log_error("Failed to get timezone information!");
+    case TIME_ZONE_ID_INVALID:logger_->log_error("Failed to get timezone information!");
       return;  // Don't update members in case we cannot get data
-    case TIME_ZONE_ID_UNKNOWN:
-      tzstr = tzinfo.StandardName;
+    case TIME_ZONE_ID_UNKNOWN:tzstr = tzinfo.StandardName;
       tzbias = tzinfo.Bias;
       break;
-    case TIME_ZONE_ID_DAYLIGHT:
-      tzstr = tzinfo.DaylightName;
+    case TIME_ZONE_ID_DAYLIGHT:tzstr = tzinfo.DaylightName;
       dst = true;
       [[fallthrough]];
-    case TIME_ZONE_ID_STANDARD:
-      tzstr = tzstr.empty() ? tzinfo.StandardName : tzstr;  // Use standard timezome name in case there is no daylight name or in case it's not DST
+    case TIME_ZONE_ID_STANDARD:tzstr = tzstr.empty() ? tzinfo.StandardName
+                                                     : tzstr;  // Use standard timezome name in case there is no daylight name or in case it's not DST
       tzbias = tzinfo.Bias + (dst ? tzinfo.DaylightBias : tzinfo.StandardBias);
       break;
   }
@@ -685,21 +698,27 @@ void ConsumeWindowsEventLog::refreshTimeZoneData() {
   logger_->log_trace("Timezone name: %s, offset: %s", timezone_name_, timezone_offset_);
 }
 
-void ConsumeWindowsEventLog::putEventRenderFlowFileToSession(const EventRender& eventRender, core::ProcessSession& session) const {
-  auto commitFlowFile = [&] (const std::shared_ptr<core::FlowFile>& flowFile, const std::string& content, const std::string& mimeType) {
-    session.writeBuffer(flowFile, content);
-    session.putAttribute(flowFile, core::SpecialFlowAttribute::MIME_TYPE, mimeType);
-    session.putAttribute(flowFile, "timezone.name", timezone_name_);
-    session.putAttribute(flowFile, "timezone.offset", timezone_offset_);
-    session.getProvenanceReporter()->receive(flowFile, provenanceUri_, getUUIDStr(), "Consume windows event logs", 0ms);
-    session.transfer(flowFile, Success);
-  };
+void ConsumeWindowsEventLog::putEventRenderFlowFileToSession(const EventRender& eventRender,
+                                                             core::ProcessSession& session) const {
+  auto commitFlowFile =
+      [&](const std::shared_ptr<core::FlowFile>& flowFile, const std::string& content, const std::string& mimeType) {
+        session.writeBuffer(flowFile, content);
+        session.putAttribute(flowFile, core::SpecialFlowAttribute::MIME_TYPE, mimeType);
+        session.putAttribute(flowFile, "timezone.name", timezone_name_);
+        session.putAttribute(flowFile, "timezone.offset", timezone_offset_);
+        session.getProvenanceReporter()->receive(flowFile,
+                                                 provenanceUri_,
+                                                 getUUIDStr(),
+                                                 "Consume windows event logs",
+                                                 0ms);
+        session.transfer(flowFile, Success);
+      };
 
   if (output_.xml) {
     auto flowFile = session.create();
     logger_->log_trace("Writing rendered XML to a flow file");
 
-    for (const auto &fieldMapping : eventRender.matched_fields) {
+    for (const auto& fieldMapping : eventRender.matched_fields) {
       if (!fieldMapping.second.empty()) {
         session.putAttribute(flowFile, fieldMapping.first, fieldMapping.second);
       }
@@ -725,28 +744,24 @@ void ConsumeWindowsEventLog::putEventRenderFlowFileToSession(const EventRender& 
   }
 }
 
-void ConsumeWindowsEventLog::LogWindowsError(std::string error) const {
+void ConsumeWindowsEventLog::LogWindowsError(const std::string& error) const {
   auto error_id = GetLastError();
   LPVOID lpMsg;
 
   FormatMessage(
-    FORMAT_MESSAGE_ALLOCATE_BUFFER |
-    FORMAT_MESSAGE_FROM_SYSTEM,
-    NULL,
-    error_id,
-    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-    (LPTSTR)&lpMsg,
-    0, NULL);
+      FORMAT_MESSAGE_ALLOCATE_BUFFER |
+          FORMAT_MESSAGE_FROM_SYSTEM,
+      nullptr,
+      error_id,
+      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+      (LPTSTR) &lpMsg,
+      0, nullptr);
 
-  logger_->log_error((error + " %x: %s\n").c_str(), static_cast<int>(error_id), reinterpret_cast<char *>(lpMsg));
+  logger_->log_error((error + " %x: %s\n").c_str(), static_cast<int>(error_id), reinterpret_cast<char*>(lpMsg));
 
   LocalFree(lpMsg);
 }
 
 REGISTER_RESOURCE(ConsumeWindowsEventLog, Processor);
 
-}  // namespace processors
-}  // namespace minifi
-}  // namespace nifi
-}  // namespace apache
-}  // namespace org
+}  // namespace org::apache::nifi::minifi::processors
