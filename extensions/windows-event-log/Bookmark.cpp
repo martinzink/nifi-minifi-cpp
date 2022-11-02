@@ -74,7 +74,8 @@ Bookmark::Bookmark(const std::wstring& channel,
     state_manager_->set(state_map);
   }
 
-  if (!(hBookmark_ = unique_evt_handle{ EvtCreateBookmark(nullptr) })) {
+  hBookmark_ = unique_evt_handle{EvtCreateBookmark(nullptr)};
+  if (!hBookmark_) {
     LOG_LAST_ERROR(EvtCreateBookmark);
     return;
   }
