@@ -169,11 +169,20 @@ void PutTCP::onSchedule(core::ProcessContext* const context, core::ProcessSessio
 }
 
 namespace {
+#if defined(__GNUC__) && __GNUC__ < 11
+// [coroutines] unexpected 'warning: statement has no effect [-Wunused-value]'
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=96749
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-value"
+#endif  // defined(__GNUC__) && __GNUC__ < 11
 asio::awaitable<void> timeout(steady_clock::duration duration) {
   asio::steady_timer timer(co_await asio::this_coro::executor);
   timer.expires_after(duration);
   co_await timer.async_wait(use_nothrow_awaitable);
 }
+#if defined(__GNUC__) && __GNUC__ < 11
+#pragma GCC diagnostic pop
+#endif  // defined(__GNUC__) && __GNUC__ < 11
 
 asio::awaitable<std::error_code> asyncOperationWithTimeout(auto async_operation, steady_clock::duration timeout_duration) {
   auto operation_result = co_await(std::move(async_operation) || timeout(timeout_duration));
