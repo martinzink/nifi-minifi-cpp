@@ -184,11 +184,15 @@ asio::awaitable<void> timeout(steady_clock::duration duration) {
 #pragma GCC diagnostic pop
 #endif  // defined(__GNUC__) && __GNUC__ < 11
 
-asio::awaitable<std::error_code> asyncOperationWithTimeout(auto async_operation, steady_clock::duration timeout_duration) {
+template<class... Types>
+asio::awaitable<std::tuple<std::error_code, Types...>> asyncOperationWithTimeout(asio::awaitable<std::tuple<std::error_code, Types...>> async_operation, steady_clock::duration timeout_duration) {
   auto operation_result = co_await(std::move(async_operation) || timeout(timeout_duration));
-  if (operation_result.index() == 1)
-    co_return asio::error::timed_out;
-  co_return std::get<std::error_code>(std::get<0>(operation_result));
+  if (operation_result.index() == 1) {
+    std::tuple<std::error_code, Types...> result;
+    std::get<0>(result) = asio::error::timed_out;
+    co_return result;
+  }
+  co_return std::get<0>(operation_result);
 }
 
 asio::ssl::context getSslContext(const auto& ssl_context_service) {
@@ -261,7 +265,8 @@ asio::awaitable<std::error_code> ConnectionHandler<TcpSocket>::establishNewConne
   auto socket = TcpSocket(io_context);
   std::error_code last_error;
   for (const auto& endpoint : resolved_query) {
-    if (auto connection_error = co_await asyncOperationWithTimeout(socket.async_connect(endpoint, use_nothrow_awaitable), timeout_duration_)) {
+    auto [connection_error] = co_await asyncOperationWithTimeout(socket.async_connect(endpoint, use_nothrow_awaitable), timeout_duration_);
+    if (connection_error) {
       core::logging::LOG_DEBUG(logger_) << "Connecting to " << endpoint.endpoint() << " failed due to " << connection_error.message();
       last_error = connection_error;
       continue;
@@ -280,12 +285,14 @@ asio::awaitable<std::error_code> ConnectionHandler<SslSocket>::establishNewConne
   auto socket = SslSocket(io_context, ssl_context);
   std::error_code last_error;
   for (const auto& endpoint : resolved_query) {
-    if (auto connection_error = co_await asyncOperationWithTimeout(socket.lowest_layer().async_connect(endpoint, use_nothrow_awaitable), timeout_duration_)) {
+    auto [connection_error] = co_await asyncOperationWithTimeout(socket.lowest_layer().async_connect(endpoint, use_nothrow_awaitable), timeout_duration_);
+    if (connection_error) {
       core::logging::LOG_DEBUG(logger_) << "Connecting to " << endpoint.endpoint() << " failed due to " << connection_error.message();
       last_error = connection_error;
       continue;
     }
-    if (auto handshake_error = co_await asyncOperationWithTimeout(socket.async_handshake(HandshakeType::client, use_nothrow_awaitable), timeout_duration_)) {
+    auto [handshake_error] = co_await asyncOperationWithTimeout(socket.async_handshake(HandshakeType::client, use_nothrow_awaitable), timeout_duration_);
+    if (handshake_error) {
       core::logging::LOG_DEBUG(logger_) << "Handshake with " << endpoint.endpoint() << " failed due to " << handshake_error.message();
       last_error = handshake_error;
       continue;
@@ -337,11 +344,15 @@ asio::awaitable<std::error_code> ConnectionHandler<SocketType>::send(const std::
   gsl::span<std::byte> buffer{data_chunk};
   while (stream_to_send->tell() < stream_to_send->size()) {
     size_t num_read = stream_to_send->read(buffer);
-    if (auto write_error = co_await asyncOperationWithTimeout(asio::async_write(*socket_, asio::buffer(data_chunk, num_read), use_nothrow_awaitable), timeout_duration_))
+    auto [write_error, bytes_written] = co_await asyncOperationWithTimeout(asio::async_write(*socket_, asio::buffer(data_chunk, num_read), use_nothrow_awaitable), timeout_duration_);
+    if (write_error)
       co_return write_error;
+    logger_->log_trace("Writing flowfile(%zu bytes) to socket succeeded", bytes_written);
   }
-  if (auto delimiter_write_error = co_await asyncOperationWithTimeout(asio::async_write(*socket_, asio::buffer(delimiter), use_nothrow_awaitable), timeout_duration_))
+  auto [delimiter_write_error, delimiter_bytes_written] = co_await asyncOperationWithTimeout(asio::async_write(*socket_, asio::buffer(delimiter), use_nothrow_awaitable), timeout_duration_);
+  if (delimiter_write_error)
     co_return delimiter_write_error;
+  logger_->log_trace("Writing delimiter(%zu bytes) to socket succeeded", delimiter_bytes_written);
 
   last_used_ = steady_clock::now();
   co_return std::error_code();
