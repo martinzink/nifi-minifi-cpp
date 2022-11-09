@@ -176,7 +176,7 @@ namespace {
 #pragma GCC diagnostic ignored "-Wunused-value"
 #endif  // defined(__GNUC__) && __GNUC__ < 11
 asio::awaitable<void> timeout(steady_clock::duration duration) {
-  asio::steady_timer timer(co_await asio::this_coro::executor);
+  asio::steady_timer timer(co_await asio::this_coro::executor);  // NOLINT
   timer.expires_after(duration);
   co_await timer.async_wait(use_nothrow_awaitable);
 }
