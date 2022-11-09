@@ -17,6 +17,7 @@
 #include "PutTCP.h"
 
 #include <utility>
+#include <tuple>
 
 #include "range/v3/range/conversion.hpp"
 
@@ -27,7 +28,6 @@
 #include "core/PropertyBuilder.h"
 #include "core/Resource.h"
 #include "core/logging/Logger.h"
-#include "controllers/SSLContextService.h"
 
 #include "asio/ssl.hpp"
 #include "asio/ip/tcp.hpp"
@@ -246,8 +246,6 @@ class ConnectionHandler : public ConnectionHandlerBase {
   asio::awaitable<std::error_code> establishNewConnection(const tcp::resolver::results_type& resolved_query, asio::io_context& io_context_);
   asio::awaitable<std::error_code> send(const std::shared_ptr<io::InputStream>& stream_to_send, const std::vector<std::byte>& delimiter);
 
-  nonstd::expected<tcp::resolver::results_type, std::error_code> resolveHostname(asio::io_context& io_context);
-
   detail::ConnectionId connection_id_;
   std::optional<SocketType> socket_;
 
@@ -309,20 +307,11 @@ template<class SocketType>
 [[nodiscard]] asio::awaitable<std::error_code> ConnectionHandler<SocketType>::setupUsableSocket(asio::io_context& io_context) {
   if (hasUsableSocket())
     co_return std::error_code();
-  auto resolved_query = resolveHostname(io_context);
-  if (!resolved_query)
-    co_return resolved_query.error();
-  co_return co_await establishNewConnection(*resolved_query, io_context);
-}
-
-template<class SocketType>
-nonstd::expected<tcp::resolver::results_type, std::error_code> ConnectionHandler<SocketType>::resolveHostname(asio::io_context& io_context) {
   tcp::resolver resolver(io_context);
-  std::error_code error_code;
-  auto resolved_query = resolver.resolve(connection_id_.getHostname(), connection_id_.getPort(), error_code);
-  if (error_code)
-    return nonstd::make_unexpected(error_code);
-  return resolved_query;
+  auto [resolve_error, resolve_result] = co_await asyncOperationWithTimeout(resolver.async_resolve(connection_id_.getHostname(), connection_id_.getPort(), use_nothrow_awaitable), timeout_duration_);
+  if (resolve_error)
+    co_return resolve_error;
+  co_return co_await establishNewConnection(resolve_result, io_context);
 }
 
 template<class SocketType>
