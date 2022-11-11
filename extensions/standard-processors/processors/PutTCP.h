@@ -33,6 +33,7 @@
 #include "utils/StringUtils.h"  // for string <=> on libc++
 
 #include <asio/io_context.hpp>
+#include <asio/ssl/context.hpp>
 #include <asio/awaitable.hpp>
 
 namespace org::apache::nifi::minifi::processors::detail {
@@ -129,7 +130,7 @@ class PutTCP final : public core::Processor {
   std::optional<std::chrono::milliseconds> idle_connection_expiration_;
   std::optional<size_t> max_size_of_socket_send_buffer_;
   std::chrono::milliseconds timeout_duration_ = std::chrono::seconds(15);
-  std::shared_ptr<controllers::SSLContextService> ssl_context_service_;
+  std::optional<asio::ssl::context> ssl_context_ = std::nullopt;
   std::shared_ptr<core::logging::Logger> logger_ = core::logging::LoggerFactory<PutTCP>::getLogger();
 };
 

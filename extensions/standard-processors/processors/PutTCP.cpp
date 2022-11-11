@@ -113,6 +113,21 @@ void PutTCP::initialize() {
 
 void PutTCP::notifyStop() {}
 
+namespace {
+asio::ssl::context getSslContext(const auto& ssl_context_service) {
+  gsl_Expects(ssl_context_service);
+  asio::ssl::context ssl_context(asio::ssl::context::sslv23);
+  ssl_context.load_verify_file(ssl_context_service->getCACertificate());
+  ssl_context.set_verify_mode(asio::ssl::verify_peer);
+  if (auto cert_file = ssl_context_service->getCertificateFile(); !cert_file.empty())
+    ssl_context.use_certificate_file(cert_file, asio::ssl::context::pem);
+  if (auto private_key_file = ssl_context_service->getPrivateKeyFile(); !private_key_file.empty())
+    ssl_context.use_private_key_file(private_key_file, asio::ssl::context::pem);
+  ssl_context.set_password_callback([password = ssl_context_service->getPassphrase()](std::size_t&, asio::ssl::context_base::password_purpose&) { return password; });
+  return ssl_context;
+}
+}  // namespace
+
 void PutTCP::onSchedule(core::ProcessContext* const context, core::ProcessSessionFactory*) {
   gsl_Expects(context);
 
@@ -134,12 +149,14 @@ void PutTCP::onSchedule(core::ProcessContext* const context, core::ProcessSessio
     timeout_duration_ = 15s;
 
   std::string context_name;
-  ssl_context_service_.reset();
+  ssl_context_.reset();
   if (context->getProperty(SSLContextService.getName(), context_name) && !IsNullOrEmpty(context_name)) {
     if (auto controller_service = context->getControllerService(context_name)) {
-      ssl_context_service_ = std::dynamic_pointer_cast<minifi::controllers::SSLContextService>(context->getControllerService(context_name));
-      if (!ssl_context_service_)
+      if (auto ssl_context_service = std::dynamic_pointer_cast<minifi::controllers::SSLContextService>(context->getControllerService(context_name)))
+        ssl_context_ = getSslContext(ssl_context_service);
+      else
         logger_->log_error("%s is not a SSL Context Service", context_name);
+
     } else {
       logger_->log_error("Invalid controller service: %s", context_name);
     }
@@ -159,32 +176,18 @@ void PutTCP::onSchedule(core::ProcessContext* const context, core::ProcessSessio
 }
 
 namespace {
-asio::ssl::context getSslContext(const auto& ssl_context_service) {
-  gsl_Expects(ssl_context_service);
-  asio::ssl::context ssl_context(asio::ssl::context::sslv23);
-  ssl_context.load_verify_file(ssl_context_service->getCACertificate());
-  ssl_context.set_verify_mode(asio::ssl::verify_peer);
-  if (auto cert_file = ssl_context_service->getCertificateFile(); !cert_file.empty())
-    ssl_context.use_certificate_file(cert_file, asio::ssl::context::pem);
-  if (auto private_key_file = ssl_context_service->getPrivateKeyFile(); !private_key_file.empty())
-    ssl_context.use_private_key_file(private_key_file, asio::ssl::context::pem);
-  ssl_context.set_password_callback([password = ssl_context_service->getPassphrase()](std::size_t&, asio::ssl::context_base::password_purpose&) { return password; });
-  return ssl_context;
-}
-
-template<class SocketType>
 class ConnectionHandler : public ConnectionHandlerBase {
  public:
   ConnectionHandler(detail::ConnectionId connection_id,
                     std::chrono::milliseconds timeout,
                     std::shared_ptr<core::logging::Logger> logger,
                     std::optional<size_t> max_size_of_socket_send_buffer,
-                    std::shared_ptr<controllers::SSLContextService> ssl_context_service)
+                    std::optional<asio::ssl::context>& ssl_context)
       : connection_id_(std::move(connection_id)),
         timeout_duration_(timeout),
         logger_(std::move(logger)),
         max_size_of_socket_send_buffer_(max_size_of_socket_send_buffer),
-        ssl_context_service_(std::move(ssl_context_service)) {
+        ssl_context_(ssl_context) {
   }
 
   ~ConnectionHandler() override = default;
@@ -198,20 +201,27 @@ class ConnectionHandler : public ConnectionHandlerBase {
 
   void reset() override {
     last_used_.reset();
-    socket_.reset();
+    socket_.emplace<std::monostate>();
   }
 
   [[nodiscard]] bool hasBeenUsed() const override { return last_used_.has_value(); }
   [[nodiscard]] asio::awaitable<std::error_code> setupUsableSocket(asio::io_context& io_context);
   [[nodiscard]] bool hasUsableSocket() const {
-    return socket_ && socket_->lowest_layer().is_open();
+    struct isUsableSocketVisitor {
+      bool operator()(std::monostate) { return false; }
+      bool operator()(const TcpSocket& tcp_socket) { return tcp_socket.lowest_layer().is_open(); }
+      bool operator()(const SslSocket& ssl_socket) { return ssl_socket.lowest_layer().is_open(); }
+    };
+    return std::visit(isUsableSocketVisitor{}, socket_);
   }
 
   asio::awaitable<std::error_code> establishNewConnection(const tcp::resolver::results_type& resolved_query, asio::io_context& io_context_);
   asio::awaitable<std::error_code> send(const std::shared_ptr<io::InputStream>& stream_to_send, const std::vector<std::byte>& delimiter);
 
+  std::variant<std::monostate, TcpSocket, SslSocket> createNewSocket(asio::io_context& io_context);
+
   detail::ConnectionId connection_id_;
-  std::optional<SocketType> socket_;
+  std::variant<std::monostate, TcpSocket, SslSocket> socket_;
 
   std::optional<steady_clock::time_point> last_used_;
   std::chrono::milliseconds timeout_duration_;
@@ -219,56 +229,78 @@ class ConnectionHandler : public ConnectionHandlerBase {
   std::shared_ptr<core::logging::Logger> logger_;
   std::optional<size_t> max_size_of_socket_send_buffer_;
 
-  std::shared_ptr<controllers::SSLContextService> ssl_context_service_;
+  std::optional<asio::ssl::context>& ssl_context_;
 };
 
-template<>
-asio::awaitable<std::error_code> ConnectionHandler<TcpSocket>::establishNewConnection(const tcp::resolver::results_type& resolved_query, asio::io_context& io_context) {
-  auto socket = TcpSocket(io_context);
-  std::error_code last_error;
-  for (const auto& endpoint : resolved_query) {
-    auto [connection_error] = co_await asyncOperationWithTimeout(socket.async_connect(endpoint, use_nothrow_awaitable), timeout_duration_);
-    if (connection_error) {
-      core::logging::LOG_DEBUG(logger_) << "Connecting to " << endpoint.endpoint() << " failed due to " << connection_error.message();
-      last_error = connection_error;
-      continue;
-    }
-    if (max_size_of_socket_send_buffer_)
-      socket.lowest_layer().set_option(TcpSocket::send_buffer_size(*max_size_of_socket_send_buffer_));
-    socket_.emplace(std::move(socket));
-    co_return std::error_code();
-  }
-  co_return last_error;
+namespace {
+void setMaxBufferSize(std::variant<std::monostate, TcpSocket, SslSocket>& socket, size_t max_size) {
+  struct MaxBufferSizeVisitor {
+   public:
+    MaxBufferSizeVisitor(size_t max_size) : max_size_(max_size) {}
+    void operator()(std::monostate) { return; }
+    void operator()(TcpSocket& tcp_socket) { tcp_socket.set_option(TcpSocket::send_buffer_size(max_size_)); }
+    void operator()(SslSocket& ssl_socket) { ssl_socket.lowest_layer().set_option(TcpSocket::send_buffer_size(max_size_)); }
+
+   private:
+    size_t max_size_;
+  };
+  std::visit(MaxBufferSizeVisitor{max_size}, socket);
+}
+}  // namespace
+
+std::variant<std::monostate, TcpSocket, SslSocket> ConnectionHandler::createNewSocket(asio::io_context& io_context) {
+  std::variant<std::monostate, TcpSocket, SslSocket> new_socket;
+  if (ssl_context_)
+    new_socket = SslSocket(io_context, *ssl_context_);
+  else
+    new_socket = TcpSocket(io_context);
+  return new_socket;
 }
 
-template<>
-asio::awaitable<std::error_code> ConnectionHandler<SslSocket>::establishNewConnection(const tcp::resolver::results_type& resolved_query, asio::io_context& io_context) {
-  auto ssl_context = getSslContext(ssl_context_service_);
-  auto socket = SslSocket(io_context, ssl_context);
+asio::awaitable<std::error_code> ConnectionHandler::establishNewConnection(const tcp::resolver::results_type& resolved_query, asio::io_context& io_context) {
+  class SocketConnectionVisitor {
+   public:
+    SocketConnectionVisitor(asio::ip::tcp::endpoint endpoint) : endpoint_(endpoint) {}
+    asio::awaitable<std::tuple<std::error_code>> operator()(std::monostate) { co_return std::tuple<std::error_code>{asio::error::not_socket}; }
+    asio::awaitable<std::tuple<std::error_code>> operator()(TcpSocket& tcp_socket) { co_return co_await tcp_socket.lowest_layer().async_connect(endpoint_, use_nothrow_awaitable); }
+    asio::awaitable<std::tuple<std::error_code>> operator()(SslSocket& ssl_socket) { co_return co_await ssl_socket.lowest_layer().async_connect(endpoint_, use_nothrow_awaitable); }
+
+    asio::ip::tcp::endpoint endpoint_;
+  };
+
+  class SocketHandshakeVisitor {
+   public:
+    asio::awaitable<std::tuple<std::error_code>> operator()(std::monostate) { co_return asio::error::not_socket; }
+    asio::awaitable<std::tuple<std::error_code>> operator()(TcpSocket&) { co_return std::error_code(); }
+    asio::awaitable<std::tuple<std::error_code>> operator()(SslSocket& ssl_socket) { co_return co_await ssl_socket.async_handshake(HandshakeType::client, use_nothrow_awaitable); }
+  };
+
+  std::variant<std::monostate, TcpSocket, SslSocket> socket = createNewSocket(io_context);
+  if (std::holds_alternative<std::monostate>(socket_))
+    co_return asio::error::not_socket;
   std::error_code last_error;
   for (const auto& endpoint : resolved_query) {
-    auto [connection_error] = co_await asyncOperationWithTimeout(socket.lowest_layer().async_connect(endpoint, use_nothrow_awaitable), timeout_duration_);
+    auto [connection_error] = co_await asyncOperationWithTimeout(std::visit(SocketConnectionVisitor{endpoint.endpoint()}, socket_), timeout_duration_);
     if (connection_error) {
       core::logging::LOG_DEBUG(logger_) << "Connecting to " << endpoint.endpoint() << " failed due to " << connection_error.message();
       last_error = connection_error;
       continue;
     }
-    auto [handshake_error] = co_await asyncOperationWithTimeout(socket.async_handshake(HandshakeType::client, use_nothrow_awaitable), timeout_duration_);
+    auto [handshake_error] = co_await asyncOperationWithTimeout(std::visit(SocketHandshakeVisitor{}, socket_), timeout_duration_);
     if (handshake_error) {
       core::logging::LOG_DEBUG(logger_) << "Handshake with " << endpoint.endpoint() << " failed due to " << handshake_error.message();
       last_error = handshake_error;
       continue;
     }
     if (max_size_of_socket_send_buffer_)
-      socket.lowest_layer().set_option(TcpSocket::send_buffer_size(*max_size_of_socket_send_buffer_));
-    socket_.emplace(std::move(socket));
+      setMaxBufferSize(socket, *max_size_of_socket_send_buffer_);
+    socket_ = std::move(socket);
     co_return std::error_code();
   }
   co_return last_error;
 }
 
-template<class SocketType>
-[[nodiscard]] asio::awaitable<std::error_code> ConnectionHandler<SocketType>::setupUsableSocket(asio::io_context& io_context) {
+[[nodiscard]] asio::awaitable<std::error_code> ConnectionHandler::setupUsableSocket(asio::io_context& io_context) {
   if (hasUsableSocket())
     co_return std::error_code();
   tcp::resolver resolver(io_context);
@@ -278,8 +310,7 @@ template<class SocketType>
   co_return co_await establishNewConnection(resolve_result, io_context);
 }
 
-template<class SocketType>
-asio::awaitable<std::error_code> ConnectionHandler<SocketType>::sendStreamWithDelimiter(const std::shared_ptr<io::InputStream>& stream_to_send,
+asio::awaitable<std::error_code> ConnectionHandler::sendStreamWithDelimiter(const std::shared_ptr<io::InputStream>& stream_to_send,
                                                                                         const std::vector<std::byte>& delimiter,
                                                                                         asio::io_context& io_context) {
   if (auto connection_error = co_await setupUsableSocket(io_context))
@@ -287,22 +318,31 @@ asio::awaitable<std::error_code> ConnectionHandler<SocketType>::sendStreamWithDe
   co_return co_await send(stream_to_send, delimiter);
 }
 
-template<class SocketType>
-asio::awaitable<std::error_code> ConnectionHandler<SocketType>::send(const std::shared_ptr<io::InputStream>& stream_to_send,
-                                                                     const std::vector<std::byte>& delimiter) {
+asio::awaitable<std::error_code> ConnectionHandler::send(const std::shared_ptr<io::InputStream>& stream_to_send,
+                                                         const std::vector<std::byte>& delimiter) {
   gsl_Expects(hasUsableSocket());
+
+  class WriteToSocketVisitor {
+   public:
+    WriteToSocketVisitor(asio::const_buffer buffer) : buffer_(std::move(buffer)) {}
+    asio::awaitable<std::tuple<std::error_code, size_t>> operator()(std::monostate) { co_return std::tuple<std::error_code, size_t>{asio::error::not_socket, 0}; }
+    asio::awaitable<std::tuple<std::error_code, size_t>> operator()(TcpSocket& tcp_socket) { return asio::async_write(tcp_socket, buffer_, use_nothrow_awaitable); }
+    asio::awaitable<std::tuple<std::error_code, size_t>> operator()(SslSocket& ssl_socket) { return asio::async_write(ssl_socket, buffer_, use_nothrow_awaitable); }
+
+    asio::const_buffer buffer_;
+  };
 
   std::vector<std::byte> data_chunk;
   data_chunk.resize(chunk_size);
   gsl::span<std::byte> buffer{data_chunk};
   while (stream_to_send->tell() < stream_to_send->size()) {
     size_t num_read = stream_to_send->read(buffer);
-    auto [write_error, bytes_written] = co_await asyncOperationWithTimeout(asio::async_write(*socket_, asio::buffer(data_chunk, num_read), use_nothrow_awaitable), timeout_duration_);
+    auto [write_error, bytes_written] = co_await asyncOperationWithTimeout(std::visit(WriteToSocketVisitor(asio::buffer(data_chunk, num_read)), socket_), timeout_duration_);
     if (write_error)
       co_return write_error;
     logger_->log_trace("Writing flowfile(%zu bytes) to socket succeeded", bytes_written);
   }
-  auto [delimiter_write_error, delimiter_bytes_written] = co_await asyncOperationWithTimeout(asio::async_write(*socket_, asio::buffer(delimiter), use_nothrow_awaitable), timeout_duration_);
+  auto [delimiter_write_error, delimiter_bytes_written] = co_await asyncOperationWithTimeout(std::visit(WriteToSocketVisitor(asio::buffer(delimiter)), socket_), timeout_duration_);
   if (delimiter_write_error)
     co_return delimiter_write_error;
   logger_->log_trace("Writing delimiter(%zu bytes) to socket succeeded", delimiter_bytes_written);
@@ -336,10 +376,7 @@ void PutTCP::onTrigger(core::ProcessContext* context, core::ProcessSession* cons
   auto connection_id = detail::ConnectionId(std::move(hostname), std::move(port));
   std::shared_ptr<ConnectionHandlerBase> handler;
   if (!connections_ || !connections_->contains(connection_id)) {
-    if (ssl_context_service_)
-      handler = std::make_shared<ConnectionHandler<SslSocket>>(connection_id, timeout_duration_, logger_, max_size_of_socket_send_buffer_, ssl_context_service_);
-    else
-      handler = std::make_shared<ConnectionHandler<TcpSocket>>(connection_id, timeout_duration_, logger_, max_size_of_socket_send_buffer_, nullptr);
+    handler = std::make_shared<ConnectionHandler>(connection_id, timeout_duration_, logger_, max_size_of_socket_send_buffer_, ssl_context_);
     if (connections_)
       (*connections_)[connection_id] = handler;
   } else {
