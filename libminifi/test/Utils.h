@@ -19,6 +19,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <memory>
 
 #include "rapidjson/document.h"
 #include "asio.hpp"
@@ -201,6 +202,24 @@ std::error_code sendMessagesViaSSL(const std::vector<std::string_view>& contents
     }
   }
   return std::error_code();
+}
+
+template<class T>
+uint16_t scheduleProcessorOnRandomPort(const std::shared_ptr<TestPlan>& test_plan, const std::shared_ptr<T>& processor) {
+  REQUIRE(processor->setProperty(T::Port, "0"));
+  test_plan->scheduleProcessor(processor);
+  uint16_t port = processor->getPort();
+  auto deadline = std::chrono::steady_clock::now() + 200ms;
+  while (port == 0 && deadline > std::chrono::steady_clock::now()) {
+    std::this_thread::sleep_for(20ms);
+    port = processor->getPort();
+  }
+  REQUIRE(port != 0);
+  return port;
+}
+
+void CHECK_NO_ERROR(std::error_code error_code) {
+  CHECK_FALSE(error_code);
 }
 
 }  // namespace org::apache::nifi::minifi::test::utils
