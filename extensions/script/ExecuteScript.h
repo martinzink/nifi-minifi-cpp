@@ -29,12 +29,12 @@
 #include "core/Processor.h"
 
 #include "ScriptEngine.h"
-#include "ScriptProcessContext.h"
 #include "utils/Enum.h"
 #include "utils/ResourceQueue.h"
 
 #ifdef LUA_SUPPORT
 #include "lua/LuaScriptEngine.h"
+#include "lua/LuaScriptProcessContext.h"
 #endif  // LUA_SUPPORT
 
 #ifdef PYTHON_SUPPORT

@@ -26,10 +26,10 @@
 #include "core/ProcessSession.h"
 
 #include "../ScriptEngine.h"
-#include "../ScriptProcessContext.h"
 #include "../ScriptException.h"
 
 #include "LuaProcessSession.h"
+#include "LuaScriptProcessContext.h"
 
 namespace org::apache::nifi::minifi::lua {
 
@@ -62,7 +62,7 @@ class LuaScriptEngine : public script::ScriptEngine {
 
   class TriggerSession {
    public:
-    TriggerSession(std::shared_ptr<script::ScriptProcessContext> script_context,
+    TriggerSession(std::shared_ptr<script::LuaScriptProcessContext> script_context,
                    std::shared_ptr<lua::LuaProcessSession> lua_session)
         : script_context_(std::move(script_context)),
           lua_session_(std::move(lua_session)) {
@@ -75,14 +75,14 @@ class LuaScriptEngine : public script::ScriptEngine {
 
 
    private:
-    std::shared_ptr<script::ScriptProcessContext> script_context_;
+    std::shared_ptr<script::LuaScriptProcessContext> script_context_;
     std::shared_ptr<LuaProcessSession> lua_session_;
   };
 
   void onTrigger(const std::shared_ptr<core::ProcessContext> &context,
       const std::shared_ptr<core::ProcessSession> &session) override {
-    auto script_context = convert(context);
-    auto lua_session = convert(session);
+    auto script_context = std::make_shared<script::LuaScriptProcessContext>(context, &lua_);
+    auto lua_session = std::make_shared<LuaProcessSession>(session);
     TriggerSession trigger_session(script_context, lua_session);
     call("onTrigger", script_context, lua_session);
   }
@@ -95,14 +95,6 @@ class LuaScriptEngine : public script::ScriptEngine {
   template<typename T>
   T convert(const T &value) {
     return value;
-  }
-
-  static std::shared_ptr<script::ScriptProcessContext> convert(const std::shared_ptr<core::ProcessContext> &context) {
-    return std::make_shared<script::ScriptProcessContext>(context);
-  }
-
-  static std::shared_ptr<LuaProcessSession> convert(const std::shared_ptr<core::ProcessSession> &session) {
-    return std::make_shared<LuaProcessSession>(session);
   }
 
  private:

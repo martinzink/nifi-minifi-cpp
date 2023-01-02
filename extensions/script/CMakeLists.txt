@@ -25,7 +25,7 @@ include(Sol2)
 
 include(${CMAKE_SOURCE_DIR}/extensions/ExtensionHeader.txt)
 
-file(GLOB SOURCES  "ExecuteScript.cpp" "ScriptFlowFile.cpp" "ScriptProcessContext.cpp")
+file(GLOB SOURCES  "ExecuteScript.cpp" "ScriptFlowFile.cpp")
 
 add_library(minifi-script-extensions SHARED ${SOURCES})
 

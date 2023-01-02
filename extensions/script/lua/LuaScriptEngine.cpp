@@ -19,10 +19,10 @@
 #include <string>
 #include <filesystem>
 
-#include "../ScriptProcessContext.h"
-
+#include "LuaScriptProcessContext.h"
 #include "LuaScriptEngine.h"
 #include "LuaProcessSession.h"
+
 #include "utils/StringUtils.h"
 
 namespace org::apache::nifi::minifi::lua {
@@ -61,6 +61,13 @@ LuaScriptEngine::LuaScriptEngine() {
   lua_.new_usertype<lua::LuaOutputStream>(
       "OutputStream",
       "write", &lua::LuaOutputStream::write);
+  lua_.new_usertype<script::LuaScriptProcessContext>(
+      "ProcessContext",
+      "getStateManager", &script::LuaScriptProcessContext::getStateManager);
+  lua_.new_usertype<script::LuaScriptStateManager>(
+      "StateManager",
+      "set", &script::LuaScriptStateManager::set,
+      "get", &script::LuaScriptStateManager::get);
 }
 
 void LuaScriptEngine::executeScriptWithAppendedModulePaths(std::string& script) {

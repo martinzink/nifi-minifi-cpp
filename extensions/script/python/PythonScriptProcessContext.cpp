@@ -16,32 +16,26 @@
  * limitations under the License.
  */
 
-#pragma once
-
-#include <string>
 #include <memory>
+#include <string>
+#include <utility>
 
-#include "core/ProcessSession.h"
+#include "PythonScriptProcessContext.h"
 
-namespace org {
-namespace apache {
-namespace nifi {
-namespace minifi {
-namespace script {
+namespace org::apache::nifi::minifi::script {
 
-class ScriptProcessContext {
- public:
-  explicit ScriptProcessContext(std::shared_ptr<core::ProcessContext> context);
+PythonScriptProcessContext::PythonScriptProcessContext(std::shared_ptr<core::ProcessContext> context)
+    : context_(std::move(context)) {
+}
 
-  std::string getProperty(const std::string &name);
-  void releaseProcessContext();
+std::string PythonScriptProcessContext::getProperty(const std::string &name) {
+  std::string value;
+  context_->getProperty(name, value);
+  return value;
+}
 
- private:
-  std::shared_ptr<core::ProcessContext> context_;
-};
+void PythonScriptProcessContext::releaseProcessContext() {
+  context_.reset();
+}
 
-} /* namespace script */
-} /* namespace minifi */
-} /* namespace nifi */
-} /* namespace apache */
-} /* namespace org */
+}  // namespace org::apache::nifi::minifi::script

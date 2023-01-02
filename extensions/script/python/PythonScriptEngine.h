@@ -27,7 +27,7 @@
 #include "core/Processor.h"
 
 #include "../ScriptEngine.h"
-#include "../ScriptProcessContext.h"
+#include "PythonScriptProcessContext.h"
 #include "PythonProcessor.h"
 #include "PyProcessSession.h"
 #include "../ScriptException.h"
@@ -118,7 +118,7 @@ class PythonScriptEngine : public script::ScriptEngine {
 
   class TriggerSession {
    public:
-    TriggerSession(std::shared_ptr<script::ScriptProcessContext> script_context, std::shared_ptr<python::PyProcessSession> py_session)
+    TriggerSession(std::shared_ptr<script::PythonScriptProcessContext> script_context, std::shared_ptr<python::PyProcessSession> py_session)
         : script_context_(std::move(script_context)),
           py_session_(std::move(py_session)) {
     }
@@ -129,13 +129,13 @@ class PythonScriptEngine : public script::ScriptEngine {
     }
 
    private:
-    std::shared_ptr<script::ScriptProcessContext> script_context_;
+    std::shared_ptr<script::PythonScriptProcessContext> script_context_;
     std::shared_ptr<python::PyProcessSession> py_session_;
   };
 
   class TriggerProcessor {
    public:
-    TriggerProcessor(std::shared_ptr<script::ScriptProcessContext> script_context, std::shared_ptr<python::PyProcessSession> py_session)
+    TriggerProcessor(std::shared_ptr<script::PythonScriptProcessContext> script_context, std::shared_ptr<python::PyProcessSession> py_session)
         : script_context_(std::move(script_context)),
           py_session_(std::move(py_session)) {
     }
@@ -146,13 +146,13 @@ class PythonScriptEngine : public script::ScriptEngine {
     }
 
    private:
-    std::shared_ptr<script::ScriptProcessContext> script_context_;
+    std::shared_ptr<script::PythonScriptProcessContext> script_context_;
     std::shared_ptr<python::PyProcessSession> py_session_;
   };
 
   class TriggerSchedule {
    public:
-    explicit TriggerSchedule(std::shared_ptr<script::ScriptProcessContext> script_context)
+    explicit TriggerSchedule(std::shared_ptr<script::PythonScriptProcessContext> script_context)
         : script_context_(script_context) {
     }
 
@@ -161,7 +161,7 @@ class PythonScriptEngine : public script::ScriptEngine {
     }
 
    private:
-    std::shared_ptr<script::ScriptProcessContext> script_context_;
+    std::shared_ptr<script::PythonScriptProcessContext> script_context_;
   };
 
   class TriggerInit {
@@ -171,7 +171,7 @@ class PythonScriptEngine : public script::ScriptEngine {
     ~TriggerInit() = default;
 
    private:
-    std::shared_ptr<script::ScriptProcessContext> script_context_;
+    std::shared_ptr<script::PythonScriptProcessContext> script_context_;
   };
 
   void onInitialize(core::Processor* proc) {
@@ -221,8 +221,8 @@ class PythonScriptEngine : public script::ScriptEngine {
     return std::make_shared<python::PyProcessSession>(session);
   }
 
-  std::shared_ptr<script::ScriptProcessContext> convertContext(const std::shared_ptr<core::ProcessContext> &context) {
-    return std::make_shared<script::ScriptProcessContext>(context);
+  std::shared_ptr<script::PythonScriptProcessContext> convertContext(const std::shared_ptr<core::ProcessContext> &context) {
+    return std::make_shared<script::PythonScriptProcessContext>(context);
   }
 
   std::shared_ptr<python::PythonProcessor> convertProcessor(core::Processor* proc) {

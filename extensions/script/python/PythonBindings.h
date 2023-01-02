@@ -26,7 +26,7 @@
 #include "pybind11/embed.h"
 #include "core/ProcessSession.h"
 
-#include "../ScriptProcessContext.h"
+#include "PythonScriptProcessContext.h"
 
 #include "PyProcessSession.h"
 #include "PythonProcessor.h"
@@ -62,8 +62,8 @@ PYBIND11_EMBEDDED_MODULE(minifi_native, m) { // NOLINT
         .def("setDescription", &python::PythonProcessor::setDecription)
         .def("addProperty", &python::PythonProcessor::addProperty);
 
-  py::class_<script::ScriptProcessContext, std::shared_ptr<script::ScriptProcessContext>>(m, "ProcessContext")
-      .def("getProperty", &script::ScriptProcessContext::getProperty);
+  py::class_<script::PythonScriptProcessContext, std::shared_ptr<script::PythonScriptProcessContext>>(m, "ProcessContext")
+      .def("getProperty", &script::PythonScriptProcessContext::getProperty);
 
   py::class_<script::ScriptFlowFile, std::shared_ptr<script::ScriptFlowFile>>(m, "FlowFile")
       .def("getAttribute", &script::ScriptFlowFile::getAttribute)

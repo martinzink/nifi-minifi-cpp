@@ -29,7 +29,7 @@
 #include "core/Processor.h"
 
 #include "../ScriptEngine.h"
-#include "../ScriptProcessContext.h"
+#include "PythonScriptProcessContext.h"
 #include "PythonScriptEngine.h"
 #include "core/PropertyBuilder.h"
 
