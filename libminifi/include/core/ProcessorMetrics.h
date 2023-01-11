@@ -29,10 +29,10 @@
 namespace org::apache::nifi::minifi::core {
 
 template<typename T>
-concept Summable = requires(T x) { x + x; };  // NOLINT(readability/braces)
+concept Summable = requires(T x) { x + x; };
 
 template<typename T>
-concept DividableByInteger = requires(T x, uint32_t divisor) { x / divisor; };  // NOLINT(readability/braces)
+concept DividableByInteger = requires(T x, uint32_t divisor) { x / divisor; };
 
 class Processor;
 

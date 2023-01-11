@@ -222,7 +222,7 @@ concept NetworkingProcessor = std::derived_from<T, minifi::core::Processor>
     && requires(T x) {
       {T::Port} -> std::convertible_to<core::Property>;
       {x.getPort()} -> std::convertible_to<uint16_t>;
-    };  // NOLINT(readability/braces)
+    };
 
 template<NetworkingProcessor T>
 uint16_t scheduleProcessorOnRandomPort(const std::shared_ptr<TestPlan>& test_plan, const std::shared_ptr<T>& processor) {
