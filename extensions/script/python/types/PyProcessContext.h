@@ -16,33 +16,30 @@
  */
 #pragma once
 
-#include "PythonBindings.h"
-#include "../core/logging/Logger.h"
+#include <memory>
+
+#include "../../ScriptProcessContext.h"
+#include "../PythonBindings.h"
 
 namespace org::apache::nifi::minifi::python {
 
-struct PyLogger {
-  using Logger = org::apache::nifi::minifi::core::logging::Logger;
-  using HeldType = std::weak_ptr<Logger>;
+struct PyProcessContext {
+  using HeldType = std::weak_ptr<script::ScriptProcessContext>;
 
   PyObject_HEAD
-  HeldType logger_;
+  HeldType process_context_;
 
-  static PyObject *newInstance(PyTypeObject *type, PyObject *args, PyObject *kwds);
-  static int init(PyLogger *self, PyObject *args, PyObject *kwds);
-  static void dealloc(PyLogger *self);
+  static PyObject* newInstance(PyTypeObject* type, PyObject* args, PyObject* kwds);
+  static int init(PyProcessContext* self, PyObject* args, PyObject* kwds);
+  static void dealloc(PyProcessContext* self);
 
-  static PyObject *error(PyLogger *self, PyObject *args);
-  static PyObject *warn(PyLogger *self, PyObject *args);
-  static PyObject *info(PyLogger *self, PyObject *args);
-  static PyObject *debug(PyLogger *self, PyObject *args);
-  static PyObject *trace(PyLogger *self, PyObject *args);
+  static PyObject* getProperty(PyProcessContext* self, PyObject* args);
 
-  static PyTypeObject *typeObject();
+  static PyTypeObject* typeObject();
 };
 
 namespace object {
-template <>
-struct Converter<PyLogger::HeldType> : public HolderTypeConverter<PyLogger> {};
+template<>
+struct Converter<PyProcessContext::HeldType> : public HolderTypeConverter<PyProcessContext> {};
 }  // namespace object
-} // namespace org::apache::nifi::minifi::python
+}  // namespace org::apache::nifi::minifi::python

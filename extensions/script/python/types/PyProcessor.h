@@ -1,5 +1,4 @@
 /**
- *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,31 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #pragma once
-
-#include "PythonBindings.h"
-#include "io/InputStream.h"
+#include <memory>
+#include "../PythonBindings.h"
+#include "PythonProcessor.h"
 
 namespace org::apache::nifi::minifi::python {
 
-struct PyInputStream {
-  using HeldType = std::weak_ptr<org::apache::nifi::minifi::io::InputStream>;
+struct PyProcessor {
+  using HeldType = std::weak_ptr<PythonProcessor>;
 
   PyObject_HEAD
-  HeldType input_stream_;
+  HeldType processor_;
 
-  static PyObject *newInstance(PyTypeObject *type, PyObject *args, PyObject *kwds);
-  static int init(PyInputStream *self, PyObject *args, PyObject *kwds);
-  static void dealloc(PyInputStream *self);
+  static PyObject* newInstance(PyTypeObject* type, PyObject* args, PyObject* kwds);
+  static int init(PyProcessor* self, PyObject* args, PyObject* kwds);
+  static void dealloc(PyProcessor* self);
 
-  static PyObject *read(PyInputStream *self, PyObject *args);
+  static PyObject* setSupportsDynamicProperties(PyProcessor* self, PyObject* args);
+  static PyObject* setDescription(PyProcessor* self, PyObject* args);
+  static PyObject* addProperty(PyProcessor* self, PyObject* args);
 
-  static PyTypeObject *typeObject();
+  static PyTypeObject* typeObject();
 };
 
 namespace object {
-template <>
-struct Converter<PyInputStream::HeldType> : public HolderTypeConverter<PyInputStream> {};
-}
-}  // namespace org::apache::nifi::minifi::python
+template<>
+struct Converter<PyProcessor::HeldType> : public HolderTypeConverter<PyProcessor> {};
+}  // namespace object
+}  //  namespace org::apache::nifi::minifi::python

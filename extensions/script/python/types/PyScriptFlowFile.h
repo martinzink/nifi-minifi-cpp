@@ -16,8 +16,9 @@
  */
 #pragma once
 
-#include "PythonBindings.h"
-#include "../ScriptFlowFile.h"
+#include <memory>
+#include "../PythonBindings.h"
+#include "../../ScriptFlowFile.h"
 
 namespace org::apache::nifi::minifi::python {
 
@@ -28,21 +29,21 @@ struct PyScriptFlowFile {
   PyObject_HEAD
   HeldType script_flow_file_;
 
-  static PyObject *newInstance(PyTypeObject *type, PyObject *args, PyObject *kwds);
-  static int init(PyScriptFlowFile *self, PyObject *args, PyObject *kwds);
-  static void dealloc(PyScriptFlowFile *self);
+  static PyObject* newInstance(PyTypeObject* type, PyObject* args, PyObject* kwds);
+  static int init(PyScriptFlowFile* self, PyObject* args, PyObject* kwds);
+  static void dealloc(PyScriptFlowFile* self);
 
-  static PyObject *getAttribute(PyScriptFlowFile *self, PyObject *args);
-  static PyObject *addAttribute(PyScriptFlowFile *self, PyObject *args);
-  static PyObject *updateAttribute(PyScriptFlowFile *self, PyObject *args);
-  static PyObject *removeAttribute(PyScriptFlowFile *self, PyObject *args);
-  static PyObject *setAttribute(PyScriptFlowFile *self, PyObject *args);
+  static PyObject* getAttribute(PyScriptFlowFile* self, PyObject* args);
+  static PyObject* addAttribute(PyScriptFlowFile* self, PyObject* args);
+  static PyObject* updateAttribute(PyScriptFlowFile* self, PyObject* args);
+  static PyObject* removeAttribute(PyScriptFlowFile* self, PyObject* args);
+  static PyObject* setAttribute(PyScriptFlowFile* self, PyObject* args);
 
-  static PyTypeObject *typeObject();
+  static PyTypeObject* typeObject();
 };
 
 namespace object {
-template <>
+template<>
 struct Converter<PyScriptFlowFile::HeldType> : public HolderTypeConverter<PyScriptFlowFile> {};
-} // namespace object
-} // namespace org::apache::nifi::minifi::python
+}  // namespace object
+}  // namespace org::apache::nifi::minifi::python

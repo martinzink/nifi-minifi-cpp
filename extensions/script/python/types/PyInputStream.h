@@ -1,4 +1,5 @@
 /**
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,22 +15,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #pragma once
-#include "BaseTypes.h"
-#include <stdexcept>
+#include <memory>
+
+#include "../PythonBindings.h"
+#include "io/InputStream.h"
 
 namespace org::apache::nifi::minifi::python {
 
-class PyException : public std::runtime_error {
- public:
-  PyException();
+struct PyInputStream {
+  using HeldType = std::weak_ptr<org::apache::nifi::minifi::io::InputStream>;
 
- private:
-  static std::string exceptionString();
+  PyObject_HEAD
+  HeldType input_stream_;
 
-  OwnedReference type_;
-  OwnedReference value_;
-  OwnedReference traceback_;
+  static PyObject* newInstance(PyTypeObject* type, PyObject* args, PyObject* kwds);
+  static int init(PyInputStream* self, PyObject* args, PyObject* kwds);
+  static void dealloc(PyInputStream* self);
+
+  static PyObject* read(PyInputStream* self, PyObject* args);
+
+  static PyTypeObject* typeObject();
 };
 
-} // namespace org::apache::nifi::minifi::python
+namespace object {
+template<>
+struct Converter<PyInputStream::HeldType> : public HolderTypeConverter<PyInputStream> {};
+}
+}  // namespace org::apache::nifi::minifi::python

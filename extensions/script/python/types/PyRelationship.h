@@ -16,8 +16,8 @@
  */
 #pragma once
 
-#include "PythonBindings.h"
-#include "../core/Relationship.h"
+#include "../PythonBindings.h"
+#include "core/Relationship.h"
 
 namespace org::apache::nifi::minifi::python {
 
@@ -28,18 +28,18 @@ struct PyRelationship {
   PyObject_HEAD
   HeldType relationship_;
 
-  static PyObject *newInstance(PyTypeObject *type, PyObject *args, PyObject *kwds);
-  static int init(PyRelationship *self, PyObject *args, PyObject *kwds);
-  static void dealloc(PyRelationship *self);
+  static PyObject* newInstance(PyTypeObject* type, PyObject* args, PyObject* kwds);
+  static int init(PyRelationship* self, PyObject* args, PyObject* kwds);
+  static void dealloc(PyRelationship* self);
 
-  static PyObject *getName(PyRelationship *self, PyObject *args);
-  static PyObject *getDescription(PyRelationship *self, PyObject *args);
+  static PyObject* getName(PyRelationship* self, PyObject* args);
+  static PyObject* getDescription(PyRelationship* self, PyObject* args);
 
-  static PyTypeObject *typeObject();
+  static PyTypeObject* typeObject();
 };
 
 namespace object {
-template <>
+template<>
 struct Converter<PyRelationship::HeldType> : public HolderTypeConverter<PyRelationship> {};
 }
 }  // namespace org::apache::nifi::minifi::python

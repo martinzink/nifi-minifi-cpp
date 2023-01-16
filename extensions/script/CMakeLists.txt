@@ -32,19 +32,17 @@ add_library(minifi-script-extensions SHARED ${SOURCES})
 target_link_libraries(minifi-script-extensions ${LIBMINIFI} Threads::Threads)
 
 if (NOT DISABLE_PYTHON_SCRIPTING)
-    find_package(PythonLibs 3.6 REQUIRED)
+    find_package(PythonLibs 3.7 REQUIRED)
 
-    include(Pybind11)
     add_definitions(-DPYTHON_SUPPORT)
+    target_compile_definitions(minifi-script-extensions PRIVATE Py_LIMITED_API=0x03070000)
 
-    file(GLOB PY_SOURCES  "python/*.cpp" "pythonloader/PyProcLoader.cpp")
+    file(GLOB PY_SOURCES  "python/*.cpp" "python/types/*.cpp" "pythonloader/PyProcLoader.cpp")
     target_sources(minifi-script-extensions PRIVATE ${PY_SOURCES})
     target_link_libraries(minifi-script-extensions ${PYTHON_LIBRARIES})
-    target_link_libraries(minifi-script-extensions pybind11)
 
     target_include_directories(minifi-script-extensions PRIVATE python)
     target_include_directories(minifi-script-extensions SYSTEM PRIVATE ${PYTHON_INCLUDE_DIR})
-    target_include_directories(minifi-script-extensions SYSTEM PRIVATE ../../thirdparty/pybind11/include)
 endif()
 
 if (ENABLE_LUA_SCRIPTING)
