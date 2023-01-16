@@ -1032,3 +1032,13 @@ def step_impl(context, size: str, duration: str) -> None:
 @then(u'the memory usage of the agent decreases to {peak_usage_percent}% peak usage in less than {duration}')
 def step_impl(context, peak_usage_percent: str, duration: str) -> None:
     context.test.check_memory_usage_compared_to_peak(float(peak_usage_percent) * 0.01, humanfriendly.parse_timespan(duration))
+
+@when(u'the MiNiFi instance starts up in a venv with numpy installed')
+def step_impl(context):
+    container = context.test.acquire_container("minifi-cpp-flow")
+    container.command = ["/bin/sh", "-c", "python3 -m venv venv && "
+                                          "source ./venv/bin/activate && "
+                                          "pip install --upgrade pip && "
+                                          "pip install --extra-index-url https://alpine-wheels.github.io/index numpy &&"
+                                          "/opt/minifi/minifi-current/bin/minifi.sh run"]
+    context.test.start()

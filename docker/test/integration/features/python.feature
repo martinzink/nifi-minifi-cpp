@@ -54,3 +54,20 @@ Feature: MiNiFi can use python processors in its flows
     When all instances start up
     Then the Minifi logs contain the following message: "Removing flow file with UUID" in less than 30 seconds
 
+  Scenario: MiNiFi can use modules installed in virtual environments
+    Given a GaussianDistributionWithNumpy processor
+    And the scheduling period of the GaussianDistributionWithNumpy processor is set to "10 min"
+    And a PutFile processor with the "Directory" property set to "/tmp/output"
+    And the "success" relationship of the GaussianDistributionWithNumpy processor is connected to the PutFile
+
+    When the MiNiFi instance starts up in a venv with numpy installed
+    Then 1 flowfile is placed in the monitored directory in 20 seconds
+
+  Scenario: Native python processors can be stateful
+    Given a CountingProcessor processor
+    And the scheduling period of the CountingProcessor processor is set to "1 sec"
+    And a PutFile processor with the "Directory" property set to "/tmp/output"
+    And the "success" relationship of the CountingProcessor processor is connected to the PutFile
+
+    When all instances start up
+    Then flowfiles with these contents are placed in the monitored directory in less than 60 seconds: "0,1,2,3,4,5"
