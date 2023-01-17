@@ -62,7 +62,6 @@ int PyInputStream::init(PyInputStream* self, PyObject* args, PyObject*) {
   }
 
   auto input_stream = static_cast<HeldType*>(PyCapsule_GetPointer(weak_ptr_capsule, nullptr));
-  // Py_DECREF(weak_ptr_capsule);
   self->input_stream_ = *input_stream;
   return 0;
 }
@@ -78,17 +77,13 @@ PyObject* PyInputStream::read(PyInputStream* self, PyObject* args) {
     return nullptr;
   }
 
-  size_t len = 0;
+  size_t len = input_stream->size();
   if (!PyArg_ParseTuple(args, "|K")) {
     throw PyException();
   }
 
   if (len == 0) {
-    len = input_stream->size();
-  }
-
-  if (len == 0) {
-    return nullptr;
+    return object::returnReference(OwnedBytes::fromStringAndSize(""));
   }
 
   std::vector<std::byte> buffer(len);

@@ -23,6 +23,7 @@
 #include "PyRelationship.h"
 #include "types/PyOutputStream.h"
 #include "types/PyInputStream.h"
+#include "range/v3/algorithm/remove_if.hpp"
 
 namespace org::apache::nifi::minifi::python {
 
@@ -120,7 +121,7 @@ void PyProcessSession::remove(const std::shared_ptr<script::ScriptFlowFile>& flo
   std::shared_ptr<script::ScriptFlowFile> result;
 
   session_->remove(flow_file->getFlowFile());
-  std::remove(flow_files_.begin(), flow_files_.end(), flow_file);
+  ranges::remove_if(flow_files_, [&flow_file](const auto& ff)-> bool { return ff == flow_file; });
 }
 
 extern "C" {
@@ -168,7 +169,6 @@ int PyProcessSessionObject::init(PyProcessSessionObject* self, PyObject* args, P
   }
 
   auto process_session = static_cast<std::weak_ptr<PyProcessSession>*>(PyCapsule_GetPointer(weak_ptr_capsule, nullptr));
-  // Py_DECREF(weak_ptr_capsule);
   self->process_session_ = *process_session;
   return 0;
 }

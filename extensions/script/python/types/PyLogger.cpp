@@ -64,7 +64,6 @@ int PyLogger::init(PyLogger* self, PyObject* args, PyObject*) {
   }
 
   auto weak_ptr = static_cast<std::weak_ptr<Logger>*>(PyCapsule_GetPointer(weak_ptr_capsule, nullptr));
-//   Py_DECREF(weak_ptr_capsule);
   self->logger_ = *weak_ptr;
   return 0;
 }

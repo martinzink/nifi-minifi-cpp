@@ -152,11 +152,7 @@ PyObject* returnReference(T value) {
 }
 }  // namespace object
 
-/**
- * @brief Wrapper for Python "long" objects
- *
- * @tparam reference_type
- */
+
 template<ReferenceType reference_type>
 class Long : public ReferenceHolder<reference_type> {
  public:
@@ -177,11 +173,6 @@ class Long : public ReferenceHolder<reference_type> {
   }
 };
 
-/**
- * @brief Wrapper for Python "bytes" objects
- *
- * @tparam reference_type
- */
 template<ReferenceType reference_type>
 class Bytes : public ReferenceHolder<reference_type> {
  public:
@@ -202,11 +193,6 @@ class Bytes : public ReferenceHolder<reference_type> {
   }
 };
 
-/**
- * @brief Wrapper for Python "str" objects
- *
- * @tparam reference_type
- */
 template<ReferenceType reference_type>
 class Str : public ReferenceHolder<reference_type> {
  public:
@@ -230,13 +216,15 @@ class Str : public ReferenceHolder<reference_type> {
   static OwnedStr from(convertible_to_object auto object) requires(reference_type == ReferenceType::OWNED) {
     return OwnedStr(PyObject_Str(static_cast<PyObject*>(object)));
   }
+
+  static BorrowedStr fromTuple(PyObject* tuple, Py_ssize_t location) requires(reference_type == ReferenceType::BORROWED) {
+    BorrowedStr string_from_tuple{PyTuple_GetItem(tuple, location)};
+    if (string_from_tuple.get() == nullptr)
+      throw PyException();
+    return string_from_tuple;
+  }
 };
 
-/**
- * @brief Wrapper for Python "list" objects
- *
- * @tparam reference_type
- */
 template<ReferenceType reference_type>
 class List : public ReferenceHolder<reference_type> {
  public:
@@ -265,11 +253,7 @@ class List : public ReferenceHolder<reference_type> {
   }
 };
 
-/**
- * @brief Wrapper for Python "dict" objects
- *
- * @tparam reference_type
- */
+
 template<ReferenceType reference_type>
 class Dict : public ReferenceHolder<reference_type> {
  public:
@@ -306,10 +290,6 @@ class Dict : public ReferenceHolder<reference_type> {
   }
 };
 
-/**
- * @brief Helper methods for callable objects
- *
- */
 namespace callable {
 template<ReferenceType reference_type>
 ObjectReference<reference_type> argument(ObjectReference<reference_type> reference) {
@@ -331,11 +311,6 @@ OwnedReference argument(T value) {
 
 }  // namespace callable
 
-/**
- * @brief Wrapper for Python objects implementing the callable protocol
- *
- * @tparam reference_type
- */
 template<ReferenceType reference_type>
 class Callable : public ReferenceHolder<reference_type> {
  public:
@@ -357,11 +332,6 @@ class Callable : public ReferenceHolder<reference_type> {
   }
 };
 
-/**
- * @brief Wrapper for Python modules
- *
- * @tparam reference_type
- */
 template<ReferenceType reference_type>
 class Module : public ReferenceHolder<reference_type> {
  public:

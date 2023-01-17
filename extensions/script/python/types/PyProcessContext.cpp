@@ -60,7 +60,6 @@ int PyProcessContext::init(PyProcessContext* self, PyObject* args, PyObject*) {
   }
 
   auto process_context = static_cast<HeldType*>(PyCapsule_GetPointer(weak_ptr_capsule, nullptr));
-  // Py_DECREF(weak_ptr_capsule);
   self->process_context_ = *process_context;
   return 0;
 }

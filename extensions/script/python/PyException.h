@@ -19,7 +19,6 @@
 #include <stdexcept>
 #include "types/BaseTypes.h"
 
-
 namespace org::apache::nifi::minifi::python {
 
 class PyException : public std::runtime_error {

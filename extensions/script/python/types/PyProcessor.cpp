@@ -18,6 +18,7 @@
 #include "PyProcessor.h"
 #include <string>
 #include "PyException.h"
+#include "Types.h"
 
 extern "C" {
 namespace org::apache::nifi::minifi::python {
@@ -96,6 +97,22 @@ PyObject* PyProcessor::setDescription(PyProcessor* self, PyObject* args) {
   Py_RETURN_NONE;
 }
 
+namespace {
+bool getBoolFromTuple(PyObject* tuple, Py_ssize_t location) {
+  auto object = PyTuple_GetItem(tuple, location);
+
+  if (!object)
+    throw PyException();
+
+  if (object == Py_True)
+    return true;
+  if (object == Py_False)
+    return false;
+  throw std::invalid_argument(fmt::format("{} is expected to be Py_True({}) or Py_False({})", fmt::ptr(object), fmt::ptr(Py_True), fmt::ptr(Py_False)));
+}
+}  // namespace
+
+
 PyObject* PyProcessor::addProperty(PyProcessor* self, PyObject* args) {
   auto processor = self->processor_.lock();
   if (!processor) {
@@ -103,17 +120,13 @@ PyObject* PyProcessor::addProperty(PyProcessor* self, PyObject* args) {
     Py_RETURN_NONE;
   }
 
-  const char* name;
-  const char* description;
-  const char* defaultValue;
-  bool required;
-  bool el;
-  if (!PyArg_ParseTuple(args, "ssspp", &name, &description, &defaultValue, &required, &el)) {
-    throw PyException();
-  }
+  BorrowedStr name = BorrowedStr::fromTuple(args, 0);
+  BorrowedStr description = BorrowedStr::fromTuple(args, 1);
+  BorrowedStr default_value = BorrowedStr::fromTuple(args, 2);
+  bool is_required = getBoolFromTuple(args, 3);
+  bool supports_expression_language = getBoolFromTuple(args, 4);
 
-  // const std::string &name, const std::string &description, const std::string &defaultvalue, bool required, bool el
-  processor->addProperty(std::string(name), std::string(description), std::string(defaultValue), required, el);
+  processor->addProperty(name.toUtf8String(), description.toUtf8String(), default_value.toUtf8String(), is_required, supports_expression_language);
   Py_RETURN_NONE;
 }
 

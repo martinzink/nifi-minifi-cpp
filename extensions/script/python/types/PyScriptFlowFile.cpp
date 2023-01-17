@@ -64,7 +64,6 @@ int PyScriptFlowFile::init(PyScriptFlowFile* self, PyObject* args, PyObject*) {
   }
 
   auto script_flow_file = static_cast<std::weak_ptr<ScriptFlowFile>*>(PyCapsule_GetPointer(weak_ptr_capsule, nullptr));
-//   Py_DECREF(weak_ptr_capsule);
   self->script_flow_file_ = *script_flow_file;
   return 0;
 }
