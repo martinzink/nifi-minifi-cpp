@@ -32,7 +32,10 @@ add_library(minifi-script-extensions SHARED ${SOURCES})
 target_link_libraries(minifi-script-extensions ${LIBMINIFI} Threads::Threads)
 
 if (NOT DISABLE_PYTHON_SCRIPTING)
+    set(Python_FIND_UNVERSIONED_NAMES FIRST)
     find_package(Python 3.6 REQUIRED COMPONENTS Interpreter Development)
+
+    message(MINIFICPP-1961: ${Python_LIBRARIES})
 
     add_definitions(-DPYTHON_SUPPORT)
     target_compile_definitions(minifi-script-extensions PRIVATE Py_LIMITED_API=0x03060000)
