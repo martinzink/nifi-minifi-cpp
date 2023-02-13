@@ -12,11 +12,12 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+
 # MiNiFi - C++ Expression Language
 
 Apache NiFi - MiNiFi - C++ supports a subset of the [Apache NiFi Expression
 Language](https://nifi.apache.org/docs/nifi-docs/html/expression-language-guide.html)
-(EL).  EL is a tiny DSL enabling processor property values to be computed
+(EL). EL is a tiny DSL enabling processor property values to be computed
 dynamically according to contextual information such as FlowFile attributes.
 Dynamic values may be manipulated by a number of functions supported by EL,
 including boolean logic, string manipulation, encoding/decoding, searching,
@@ -64,13 +65,13 @@ case, we reference the `filename` attribute and then manipulate this value by
 using the `toUpper` function. A function call consists of 5 elements. First,
 there is a function call delimiter `:`. Second is the name of the function --in
 this case, `toUpper`. Next is an open parenthesis (`(`), followed by the
-function arguments.  The arguments necessary are dependent upon which function
+function arguments. The arguments necessary are dependent upon which function
 is being called. In this example, we are using the `toUpper` function, which
 does not have any arguments, so this element is omitted. Finally, the closing
 parenthesis (`)`) indicates the end of the function call. There are many
 different functions that are supported by the Expression Language to achieve
 many different goals. Some functions provide String (text) manipulation, such
-as the `toUpper` function.  Others, such as the equals and matches functions,
+as the `toUpper` function. Others, such as the equals and matches functions,
 provide comparison functionality. Functions also exist for manipulating dates
 and times and for performing mathematical operations. Each of these functions
 is described below, in the Functions section, with an explanation of what the
@@ -84,7 +85,7 @@ calls, where the return value of the first function becomes the subject of the
 second function and its return value becomes the subject of the third function
 and so on. Continuing with our example, we can chain together multiple
 functions by using an expression similar to
-`${filename:toUpper():equals('HELLO.TXT')}`.  There is no limit to the number
+`${filename:toUpper():equals('HELLO.TXT')}`. There is no limit to the number
 of functions that can be chained together.
 
 Any FlowFile attribute can be referenced using the Expression Language.
@@ -224,6 +225,7 @@ token, filename.
 - [`hostname`](#hostname)
 - [`UUID`](#uuid)
 - [`literal`](#literal)
+- [`reverseLookup`](#reverseLookup)
 
 ### Evaluating Multiple Attributes
 
@@ -332,11 +334,11 @@ a Regular Expression.
 
 **Subject Type**: Any
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The value to compare the Subject to. Must be same type as the Subject. |
+| Argument | Description                                                            |
+|----------|------------------------------------------------------------------------|
+| value    | The value to compare the Subject to. Must be same type as the Subject. |
 
 **Return Type**: Boolean
 
@@ -353,11 +355,11 @@ two values differ only by case (upper case vs. lower case).
 
 **Subject Type**: String
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The value to compare the Subject to. |
+| Argument | Description                          |
+|----------|--------------------------------------|
+| value    | The value to compare the Subject to. |
 
 **Return Type**: Boolean
 
@@ -372,11 +374,11 @@ the argument cannot be coerced into a Number, this function returns `false`.
 
 **Subject Type**: Number
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The number to compare the Subject to. |
+| Argument | Description                           |
+|----------|---------------------------------------|
+| value    | The number to compare the Subject to. |
 
 **Return Type**: Boolean
 
@@ -393,11 +395,11 @@ subject or the argument cannot be coerced into a Number, this function returns
 
 **Subject Type**: Number
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The number to compare the Subject to. |
+| Argument | Description                           |
+|----------|---------------------------------------|
+| value    | The number to compare the Subject to. |
 
 **Return Type**: Boolean
 
@@ -413,11 +415,11 @@ argument cannot be coerced into a Number, this function returns `false`.
 
 **Subject Type**: Number
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The number to compare the Subject to. |
+| Argument | Description                           |
+|----------|---------------------------------------|
+| value    | The number to compare the Subject to. |
 
 **Return Type**: Boolean
 
@@ -434,11 +436,11 @@ subject or the argument cannot be coerced into a Number, this function returns
 
 **Subject Type**: Number
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The number to compare the Subject to. |
+| Argument | Description                           |
+|----------|---------------------------------------|
+| value    | The number to compare the Subject to. |
 
 **Return Type**: Boolean
 
@@ -456,10 +458,10 @@ as the argument.
 
 **Subject Type**: Boolean
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
+| Argument  | Description                                 |
+|-----------|---------------------------------------------|
 | condition | The right-hand-side of the `and` Expression |
 
 **Return Type**: Boolean
@@ -483,10 +485,10 @@ function will return `false`.
 
 **Subject Type**: Boolean
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
+| Argument  | Description                                |
+|-----------|--------------------------------------------|
 | condition | The right-hand-side of the `or` Expression |
 
 **Return Type**: Boolean
@@ -522,9 +524,9 @@ filename is `hello.txt`.
 
 **Subject Type**: Boolean
 
-| Argument | Description |
-| - | - |
-| EvaluateIfTrue | The value to return if the Subject is `true` |
+| Argument        | Description                                   |
+|-----------------|-----------------------------------------------|
+| EvaluateIfTrue  | The value to return if the Subject is `true`  |
 | EvaluateIfFalse | The value to return if the Subject is `false` |
 
 **Return Type**: String
@@ -536,14 +538,14 @@ If the `filename` attribute has the value `a brand new filename.txt`, the
 value `true`, then the following expressions will provide the following
 results:
 
-| Expression | Value |
-| - | - |
-| `${bool:ifElse('a','b')}` | a |
-| `${literal(true):ifElse('a','b')}` | a |
+| Expression                                                               | Value               |
+|--------------------------------------------------------------------------|---------------------|
+| `${bool:ifElse('a','b')}`                                                | a                   |
+| `${literal(true):ifElse('a','b')}`                                       | a                   |
 | `${nullFilename:isNull():ifElse('file does not exist', 'located file')}` | file does not exist |
-| `${nullFilename:ifElse('found', 'not_found')}` | not_found |
-| `${filename:ifElse('found', 'not_found')}` | not_found |
-| `${filename:isNull():not():ifElse('found', 'not_found')}` | found |
+| `${nullFilename:ifElse('found', 'not_found')}`                           | not_found           |
+| `${filename:ifElse('found', 'not_found')}`                               | not_found           |
+| `${filename:isNull():not():ifElse('found', 'not_found')}`                | found               |
 
 ## String Manipulation
 
@@ -602,10 +604,10 @@ Subject or has a value less than 0, this function call will result in an error.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
+| Argument       | Description                                                     |
+|----------------|-----------------------------------------------------------------|
 | starting index | The 0-based index of the first character to capture (inclusive) |
-| ending index | The 0-based index of the last character to capture (exclusive) |
+| ending index   | The 0-based index of the last character to capture (exclusive)  |
 
 **Return Type**: String
 
@@ -615,12 +617,12 @@ If we have an attribute named `filename` with the value `a brand new
 filename.txt`, then the following Expressions will result in the following
 values:
 
-| Expression | Value |
-| - | - |
-| `${filename:substring(0,1)}` | a |
-| `${filename:substring(2)}` | brand new filename.txt |
-| `${filename:substring(12)}` | filename.txt |
-| `${filename:substring( ${filename:length():minus(2)} )}` | xt |
+| Expression                                               | Value                  |
+|----------------------------------------------------------|------------------------|
+| `${filename:substring(0,1)}`                             | a                      |
+| `${filename:substring(2)}`                               | brand new filename.txt |
+| `${filename:substring(12)}`                              | filename.txt           |
+| `${filename:substring( ${filename:length():minus(2)} )}` | xt                     |
 
 ### substringBefore
 
@@ -633,9 +635,9 @@ Subject, the entire Subject will be returned.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The String to search for in the Subject |
+| Argument | Description                             |
+|----------|-----------------------------------------|
+| value    | The String to search for in the Subject |
 
 **Return Type**: String
 
@@ -643,11 +645,11 @@ Subject, the entire Subject will be returned.
 filename.txt`, then the following Expressions will result in the following
 values:
 
-| Expression | Value |
-| - | - |
-| `${filename:substringBefore('.')}` | a brand new filename |
-| `${filename:substringBefore(' ')}` | a |
-| `${filename:substringBefore(' n')}` | a brand |
+| Expression                               | Value                    |
+|------------------------------------------|--------------------------|
+| `${filename:substringBefore('.')}`       | a brand new filename     |
+| `${filename:substringBefore(' ')}`       | a                        |
+| `${filename:substringBefore(' n')}`      | a brand                  |
 | `${filename:substringBefore('missing')}` | a brand new filename.txt |
 
 ### substringBeforeLast
@@ -661,9 +663,9 @@ the entire Subject will be returned.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The String to search for in the Subject |
+| Argument | Description                             |
+|----------|-----------------------------------------|
+| value    | The String to search for in the Subject |
 
 **Return Type**: String
 
@@ -671,11 +673,11 @@ the entire Subject will be returned.
 filename.txt`, then the following Expressions will result in the following
 values:
 
-| Expression | Value |
-| - | - |
-| `${filename:substringBeforeLast('.')}` | a brand new filename |
-| `${filename:substringBeforeLast(' ')}` | a brand new |
-| `${filename:substringBeforeLast(' n')}` | a brand |
+| Expression                                   | Value                    |
+|----------------------------------------------|--------------------------|
+| `${filename:substringBeforeLast('.')}`       | a brand new filename     |
+| `${filename:substringBeforeLast(' ')}`       | a brand new              |
+| `${filename:substringBeforeLast(' n')}`      | a brand                  |
 | `${filename:substringBeforeLast('missing')}` | a brand new filename.txt |
 
 ### substringAfter
@@ -689,9 +691,9 @@ Subject will be returned.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The String to search for in the Subject |
+| Argument | Description                             |
+|----------|-----------------------------------------|
+| value    | The String to search for in the Subject |
 
 **Return Type**: String
 
@@ -699,11 +701,11 @@ Subject will be returned.
 filename.txt`, then the following Expressions will result in the following
 values:
 
-| Expression | Value |
-| - | - |
-| `${filename:substringAfter('.')}` | txt |
-| `${filename:substringAfter(' ')}` | brand new filename.txt |
-| `${filename:substringAfter(' n')}` | ew filename.txt |
+| Expression                              | Value                    |
+|-----------------------------------------|--------------------------|
+| `${filename:substringAfter('.')}`       | txt                      |
+| `${filename:substringAfter(' ')}`       | brand new filename.txt   |
+| `${filename:substringAfter(' n')}`      | ew filename.txt          |
 | `${filename:substringAfter('missing')}` | a brand new filename.txt |
 
 ### substringAfterLast
@@ -717,9 +719,9 @@ Subject will be returned.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The String to search for in the Subject |
+| Argument | Description                             |
+|----------|-----------------------------------------|
+| value    | The String to search for in the Subject |
 
 **Return Type**: String
 
@@ -727,11 +729,11 @@ Subject will be returned.
 filename.txt`, then the following Expressions will result in the following
 values:
 
-| Expression | Value |
-| - | - |
-| `${filename:substringAfterLast('.')}` | txt |
-| `${filename:substringAfterLast(' ')}` | filename.txt |
-| `${filename:substringAfterLast(' n')}` | ew filename.txt |
+| Expression                                  | Value                    |
+|---------------------------------------------|--------------------------|
+| `${filename:substringAfterLast('.')}`       | txt                      |
+| `${filename:substringAfterLast(' ')}`       | filename.txt             |
+| `${filename:substringAfterLast(' n')}`      | ew filename.txt          |
 | `${filename:substringAfterLast('missing')}` | a brand new filename.txt |
 
 ### getDelimitedField
@@ -743,12 +745,12 @@ just a single field from that delimited text.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| index | The index of the field to return. A value of 1 will return the first field, a value of 2 will return the second field, and so on. |
-| delimiter | Optional argument that provides the character to use as a field separator. If not specified, a comma will be used. This value must be exactly 1 character. |
-| quoteCHar | Optional argument that provides the character that can be used to quote values so that the delimiter can be used within a single field. If not specified, a double-quote (") will be used. This value must be exactly 1 character. |
-| escapeChar | Optional argument that provides the character that can be used to escape the Quote Character or the Delimiter within a field. If not specified, a backslash (\) is used. This value must be exactly 1 character. |
+| Argument   | Description                                                                                                                                                                                                                                                                                                                                                                       |
+|------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| index      | The index of the field to return. A value of 1 will return the first field, a value of 2 will return the second field, and so on.                                                                                                                                                                                                                                                 |
+| delimiter  | Optional argument that provides the character to use as a field separator. If not specified, a comma will be used. This value must be exactly 1 character.                                                                                                                                                                                                                        |
+| quoteCHar  | Optional argument that provides the character that can be used to quote values so that the delimiter can be used within a single field. If not specified, a double-quote (") will be used. This value must be exactly 1 character.                                                                                                                                                |
+| escapeChar | Optional argument that provides the character that can be used to escape the Quote Character or the Delimiter within a field. If not specified, a backslash (\) is used. This value must be exactly 1 character.                                                                                                                                                                  |
 | stripChars | Optional argument that specifies whether or not quote characters and escape characters should be stripped. For example, if we have a field value `"1, 2, 3"` and this value is `true`, we will get the value `1, 2, 3`, but if this value is false, we will get the value `"1, 2, 3"` with the quotes. The default value is `false`. This value must be either `true` or `false`. |
 
 **Return Type**: String
@@ -757,13 +759,13 @@ just a single field from that delimited text.
 Mr. and the "altLine" attribute contains the value Jacobson, John|32|Mr. then
 the following Expressions will result in the following values:
 
-| Expression | Value |
-| - | - |
-| `${line:getDelimitedField(2)}` | ` 32` |
-| `${line:getDelimitedField(2):trim()}` | `32` |
-| `${line:getDelimitedField(1)}` | `"Jacobson, John"` |
-| `${line:getDelimitedField(1, ',', '"', '\\', true)}` | `Jacobson, John` |
-| `${altLine:getDelimitedField(1, '|')}` | `Jacobson, John` |
+| Expression                                           | Value              |
+|------------------------------------------------------|--------------------|
+| `${line:getDelimitedField(2)}`                       | ` 32`              |
+| `${line:getDelimitedField(2):trim()}`                | `32`               |
+| `${line:getDelimitedField(1)}`                       | `"Jacobson, John"` |
+| `${line:getDelimitedField(1, ',', '"', '\\', true)}` | `Jacobson, John`   |
+| `${altLine:getDelimitedField(1, '                    | ')}`               | `Jacobson, John` |
 
 ### replace
 
@@ -774,10 +776,10 @@ with another String.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| Search String | The String to find within the Subject |
-| Replacement | The value to replace Search String with |
+| Argument      | Description                             |
+|---------------|-----------------------------------------|
+| Search String | The String to find within the Subject   |
+| Replacement   | The value to replace Search String with |
 
 **Return Type**: String
 
@@ -785,12 +787,12 @@ with another String.
 filename.txt`, then the following Expressions will provide the following
 results:
 
-| Expression | Value |
-| - | - |
-| `${filename:replace('.', '_')}` | a brand new filename_txt |
-| `${filename:replace(' ', '.')}` | a.brand.new.filename.txt |
-| `${filename:replace('XYZ', 'ZZZ')}` | a brand new filename.txt |
-| `${filename:replace('filename', 'book')}` | a brand new book.txt |
+| Expression                                | Value                    |
+|-------------------------------------------|--------------------------|
+| `${filename:replace('.', '_')}`           | a brand new filename_txt |
+| `${filename:replace(' ', '.')}`           | a.brand.new.filename.txt |
+| `${filename:replace('XYZ', 'ZZZ')}`       | a brand new filename.txt |
+| `${filename:replace('filename', 'book')}` | a brand new book.txt     |
 
 ### replaceFirst
 
@@ -801,10 +803,10 @@ expression within the Subject with another String.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
+| Argument      | Description                                                                   |
+|---------------|-------------------------------------------------------------------------------|
 | Search String | The String (literal or regular expression pattern) to find within the Subject |
-| Replacement | The value to replace Search String with |
+| Replacement   | The value to replace Search String with                                       |
 
 **Return Type**: String
 
@@ -812,12 +814,12 @@ expression within the Subject with another String.
 filename.txt`, then the following Expressions will provide the following
 results:
 
-| Expression | Value |
-| - | - |
-| `${filename:replaceFirst('a', 'the')}` | the brand new filename.txt |
-| `${filename:replaceFirst('[br]', 'g')}` | a grand new filename.txt |
-| `${filename:replaceFirst('XYZ', 'ZZZ')}` | a brand new filename.txt |
-| `${filename:replaceFirst('\w{8}', 'book')}` | a brand new book.txt |
+| Expression                                  | Value                      |
+|---------------------------------------------|----------------------------|
+| `${filename:replaceFirst('a', 'the')}`      | the brand new filename.txt |
+| `${filename:replaceFirst('[br]', 'g')}`     | a grand new filename.txt   |
+| `${filename:replaceFirst('XYZ', 'ZZZ')}`    | a brand new filename.txt   |
+| `${filename:replaceFirst('\w{8}', 'book')}` | a brand new book.txt       |
 
 ### replaceAll
 
@@ -831,9 +833,9 @@ Expression.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| Regex | he Regular Expression (in Java syntax) to match in the Subject |
+| Argument    | Description                                                                                                                                                      |
+|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Regex       | he Regular Expression (in Java syntax) to match in the Subject                                                                                                   |
 | Replacement | The value to use for replacing matches in the Subject. If the regular expression argument uses Capturing Groups, back references are allowed in the replacement. |
 
 **Return Type**: String
@@ -842,11 +844,11 @@ Expression.
 filename.txt`, then the following Expressions will provide the following
 results:
 
-| Expression | Value |
-| - | - |
-| `${filename:replaceAll('\..*', '')}` | a brand new filename |
-| `${filename:replaceAll('a brand (new)', '$1')}` | new filename.txt |
-| `${filename:replaceAll('XYZ', 'ZZZ')}` | a brand new filename.txt |
+| Expression                                             | Value                       |
+|--------------------------------------------------------|-----------------------------|
+| `${filename:replaceAll('\..*', '')}`                   | a brand new filename        |
+| `${filename:replaceAll('a brand (new)', '$1')}`        | new filename.txt            |
+| `${filename:replaceAll('XYZ', 'ZZZ')}`                 | a brand new filename.txt    |
 | `${filename:replaceAll('brand (new)', 'somewhat $1')}` | a somewhat new filename.txt |
 
 ### replaceNull
@@ -858,13 +860,15 @@ null. Otherwise, returns the Subject.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
+| Argument    | Description                                 |
+|-------------|---------------------------------------------|
 | Replacement | The value to return if the Subject is null. |
 
 **Return Type**: Type of Subject if Subject is not null; else, type of Argument
 
-**Examples**: If the attribute `filename` has the value `a brand new filename.txt` and the attribute `hello` does not exist, then the Expression `${filename:replaceNull('abc')}` will return `a brand new filename.txt`, while `${hello:replaceNull('abc')}` will return `abc`.
+**Examples**: If the attribute `filename` has the value `a brand new filename.txt` and the attribute `hello` does not
+exist, then the Expression `${filename:replaceNull('abc')}` will return `a brand new filename.txt`,
+while `${hello:replaceNull('abc')}` will return `abc`.
 
 ### replaceEmpty
 
@@ -876,8 +880,8 @@ tab, space). Otherwise, returns the Subject.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
+| Argument    | Description                                          |
+|-------------|------------------------------------------------------|
 | Replacement | The value to return if the Subject is null or empty. |
 
 **Return Type**: String
@@ -911,9 +915,9 @@ argument itself.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The String to append to the end of the Subject |
+| Argument | Description                                    |
+|----------|------------------------------------------------|
+| value    | The String to append to the end of the Subject |
 
 **Return Type**: String
 
@@ -931,9 +935,9 @@ argument itself.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The String to prepend to the beginning of the Subject |
+| Argument | Description                                           |
+|----------|-------------------------------------------------------|
+| value    | The String to prepend to the beginning of the Subject |
 
 **Return Type**: String
 
@@ -972,9 +976,9 @@ Subject cannot be coerced into a Number, returns null.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| Operand | The value to add to the Subject |
+| Argument | Description                     |
+|----------|---------------------------------|
+| Operand  | The value to add to the Subject |
 
 **Return Type**: Number or Decimal (depending on input types)
 
@@ -989,9 +993,9 @@ Expression `${fileSize:plus(1000)}` will return the value 1100.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| Operand | The value to subtract from the Subject |
+| Argument | Description                            |
+|----------|----------------------------------------|
+| Operand  | The value to subtract from the Subject |
 
 **Return Type**: Number or Decimal (depending on input types)
 
@@ -1006,9 +1010,9 @@ Expression `${fileSize:minus(100)}` will return the value 0.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| Operand | The value to multiple the Subject by |
+| Argument | Description                          |
+|----------|--------------------------------------|
+| Operand  | The value to multiple the Subject by |
 
 **Return Type**: Number or Decimal (depending on input types)
 
@@ -1023,9 +1027,9 @@ Expression `${fileSize:multiply(1024)}` will return the value 102400.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| Operand | The value to divide the Subject by |
+| Argument | Description                        |
+|----------|------------------------------------|
+| Operand  | The value to divide the Subject by |
 
 **Return Type**: Number or Decimal (depending on input types)
 
@@ -1042,9 +1046,9 @@ return not the quotient but rather the remainder.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| Operand | The value to divide the Subject by |
+| Argument | Description                        |
+|----------|------------------------------------|
+| Operand  | The value to divide the Subject by |
 
 **Return Type**: Number or Decimal (depending on input types)
 
@@ -1066,24 +1070,24 @@ number and then processed.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| Desired Base | A Number between 2 and 36 (inclusive) |
-| Padding | Optional argument that specifies the minimum number of characters in the converted output |
+| Argument     | Description                                                                               |
+|--------------|-------------------------------------------------------------------------------------------|
+| Desired Base | A Number between 2 and 36 (inclusive)                                                     |
+| Padding      | Optional argument that specifies the minimum number of characters in the converted output |
 
 **Return Type**: String
 
 **Examples**: If the `fileSize` attributes has a value of 1024, then the
 following Expressions will yield the following results:
 
-| Expression | Value |
-| - | - |
-| `${fileSize:toRadix(10)}` | 1024 |
-| `${fileSize:toRadix(10, 1)}` | 1024 |
-| `${fileSize:toRadix(10, 8)}` | 00001024 |
-| `${fileSize:toRadix(16)}` | 400 |
-| `${fileSize:toRadix(16, 8)}` | 00000400 |
-| `${fileSize:toRadix(2)}` | 10000000000 |
+| Expression                   | Value            |
+|------------------------------|------------------|
+| `${fileSize:toRadix(10)}`    | 1024             |
+| `${fileSize:toRadix(10, 1)}` | 1024             |
+| `${fileSize:toRadix(10, 8)}` | 00001024         |
+| `${fileSize:toRadix(16)}`    | 400              |
+| `${fileSize:toRadix(16, 8)}` | 00000400         |
+| `${fileSize:toRadix(2)}`     | 10000000000      |
 | `${fileSize:toRadix(2, 16)}` | 0000010000000000 |
 
 ### fromRadix
@@ -1101,8 +1105,8 @@ number and then processed.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
+| Argument     | Description                           |
+|--------------|---------------------------------------|
 | Subject Base | A Number between 2 and 36 (inclusive) |
 
 **Return Type**: Number
@@ -1110,10 +1114,10 @@ number and then processed.
 **Examples**: If the `fileSize` attributes has a value of 1234A, then the
 following Expressions will yield the following results:
 
-| Expression | Value |
-| - | - |
-| `${fileSize:fromRadix(11)}` | 17720 |
-| `${fileSize:fromRadix(16)}` | 74570 |
+| Expression                  | Value  |
+|-----------------------------|--------|
+| `${fileSize:fromRadix(11)}` | 17720  |
+| `${fileSize:fromRadix(16)}` | 74570  |
 | `${fileSize:fromRadix(20)}` | 177290 |
 
 ### random
@@ -1139,11 +1143,11 @@ as the argument, `false` otherwise.
 
 **Subject Type**: String
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The value to search for |
+| Argument | Description             |
+|----------|-------------------------|
+| value    | The value to search for |
 
 **Return Type**: Boolean
 
@@ -1161,11 +1165,11 @@ the argument, `false` otherwise.
 
 **Subject Type**: String
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The value to search for |
+| Argument | Description             |
+|----------|-------------------------|
+| value    | The value to search for |
 
 **Return Type**: Boolean
 
@@ -1183,11 +1187,11 @@ argument anywhere in the value.
 
 **Subject Type**: String
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The value to search for |
+| Argument | Description             |
+|----------|-------------------------|
+| value    | The value to search for |
 
 **Return Type**: Boolean
 
@@ -1205,12 +1209,12 @@ arguments.
 
 **Subject Type**: String
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| value1 | First possible matching value |
-| valueN | Nth possible matching value |
+| Argument | Description                   |
+|----------|-------------------------------|
+| value1   | First possible matching value |
+| valueN   | Nth possible matching value   |
 
 **Return Type**: Boolean
 
@@ -1227,11 +1231,11 @@ characters that matches the Regular Expression provided by the argument.
 
 **Subject Type**: String
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| Regex | The Regular Expression to match against the Subject |
+| Argument | Description                                         |
+|----------|-----------------------------------------------------|
+| Regex    | The Regular Expression to match against the Subject |
 
 **Return Type**: Boolean
 
@@ -1240,11 +1244,11 @@ characters that matches the Regular Expression provided by the argument.
 If the `filename` attribute has the value "a brand new filename.txt", then the
 following Expressions will provide the following results:
 
-| Expression | Value |
-| - | - |
-| `${filename:find('a [Bb]rand [Nn]ew')}` | `true` |
-| `${filename:find('Brand.*')}` | `false` |
-| `${filename:find('brand')}` | `true` |
+| Expression                              | Value   |
+|-----------------------------------------|---------|
+| `${filename:find('a [Bb]rand [Nn]ew')}` | `true`  |
+| `${filename:find('Brand.*')}`           | `false` |
+| `${filename:find('brand')}`             | `true`  |
 
 ### matches
 
@@ -1252,11 +1256,11 @@ following Expressions will provide the following results:
 
 **Subject Type**: String
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| Regex | The Regular Expression to match against the Subject |
+| Argument | Description                                         |
+|----------|-----------------------------------------------------|
+| Regex    | The Regular Expression to match against the Subject |
 
 **Return Type**: Boolean
 
@@ -1265,11 +1269,11 @@ following Expressions will provide the following results:
 If the `filename` attribute has the value "a brand new filename.txt", then the
 following Expressions will provide the following results:
 
-| Expression | Value |
-| - | - |
-| `${filename:matches('a.*txt')}` | `true` |
-| `${filename:matches('brand')}` | `false` |
-| `${filename:matches('.brand.')}` | `true` |
+| Expression                       | Value   |
+|----------------------------------|---------|
+| `${filename:matches('a.*txt')}`  | `true`  |
+| `${filename:matches('brand')}`   | `false` |
+| `${filename:matches('.brand.')}` | `true`  |
 
 ### indexOf
 
@@ -1282,11 +1286,11 @@ found at the beginning of the Subject, the value returned will be `0`, not `1`.
 
 **Subject Type**: String
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The value to search for in the Subject |
+| Argument | Description                            |
+|----------|----------------------------------------|
+| value    | The value to search for in the Subject |
 
 **Return Type**: Boolean
 
@@ -1295,12 +1299,12 @@ found at the beginning of the Subject, the value returned will be `0`, not `1`.
 If the `filename` attribute has the value "a brand new filename.txt", then the
 following Expressions will provide the following results:
 
-| Expression | Value |
-| - | - |
-| `${filename:indexOf('a.*txt')}` | `-1` |
-| `${filename:indexOf('.')}` | `20` |
-| `${filename:indexOf('a')}` | `0` |
-| `${filename:indexOf(' ')}` | `1` |
+| Expression                      | Value |
+|---------------------------------|-------|
+| `${filename:indexOf('a.*txt')}` | `-1`  |
+| `${filename:indexOf('.')}`      | `20`  |
+| `${filename:indexOf('a')}`      | `0`   |
+| `${filename:indexOf(' ')}`      | `1`   |
 
 ### lastIndexOf
 
@@ -1313,11 +1317,11 @@ found at the beginning of the Subject, the value returned will be `0`, not `1`.
 
 **Subject Type**: String
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The value to search for in the Subject |
+| Argument | Description                            |
+|----------|----------------------------------------|
+| value    | The value to search for in the Subject |
 
 **Return Type**: Boolean
 
@@ -1326,12 +1330,12 @@ found at the beginning of the Subject, the value returned will be `0`, not `1`.
 If the `filename` attribute has the value "a brand new filename.txt", then the
 following Expressions will provide the following results:
 
-| Expression | Value |
-| - | - |
-| `${filename:lastIndexOf('a.*txt')}` | `-1` |
-| `${filename:lastIndexOf('.')}` | `20` |
-| `${filename:lastIndexOf('a')}` | `17` |
-| `${filename:lastIndexOf(' ')}` | `11` |
+| Expression                          | Value |
+|-------------------------------------|-------|
+| `${filename:lastIndexOf('a.*txt')}` | `-1`  |
+| `${filename:lastIndexOf('.')}`      | `20`  |
+| `${filename:lastIndexOf('a')}`      | `17`  |
+| `${filename:lastIndexOf(' ')}`      | `11`  |
 
 ### Encode/Decode Functions
 
@@ -1545,8 +1549,8 @@ cannot be resolved, the simple hostname will be returned.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
+| Argument        | Description                                                                                                                     |
+|-----------------|---------------------------------------------------------------------------------------------------------------------------------|
 | Fully Qualified | Optional parameter that specifies whether or not the hostname should be fully qualified. If not specified, defaults to `false`. |
 
 **Return Type**: String
@@ -1580,15 +1584,38 @@ to evaluate additional functions against.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| value | The value to be treated as a literal string, number, or boolean value. |
+| Argument | Description                                                            |
+|----------|------------------------------------------------------------------------|
+| value    | The value to be treated as a literal string, number, or boolean value. |
 
 **Return Type**: String
 
 **Examples**: `${literal(2):gt(1)}` returns true.  `${literal(
 ${allMatchingAttributes('a.*'):count()} ):gt(3)}` returns true if there are
 more than 3 attributes whose names begin with the letter a.
+
+### reverseLookup
+
+**Description**: Performs a reverse DNS lookup on an ip address, and returns the first hostname.
+
+**Subject Type**: No subject
+
+**Arguments**:
+
+| Argument   | Description                                          |
+|------------|------------------------------------------------------|
+| ip_address | The ip address to perform the reverse DNS lookup on. |
+
+**Return Type**: String
+
+**Examples**:
+
+| Expression                                 | Value        |
+|--------------------------------------------|--------------|
+| `${reverseLookup('127.0.0.1')}`            | `localhost`  |
+| `${reverseLookup('::1')}`                  | `localhost`  |
+| `${reverseLookup('2001:4860:4860::8888')}` | `dns.google` |
+
 
 ## Evaluating Multiple Attributes
 
@@ -1605,14 +1632,14 @@ condition. This function has no subject and takes one or more arguments that
 are the names of attributes to which the remainder of the Expression is to be
 applied. If any of the attributes specified, when evaluated against the rest of
 the Expression, returns a value of `true`, then this function will return
-`true`.  Otherwise, this function will return `false`.
+`true`. Otherwise, this function will return `false`.
 
 **Subject Type**: No Subject
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
+| Argument        | Description                             |
+|-----------------|-----------------------------------------|
 | Attribute Names | One or more attribute names to evaluate |
 
 **Return Type**: Boolean
@@ -1621,9 +1648,9 @@ the Expression, returns a value of `true`, then this function will return
 "xyz" contains "good bye world", and "filename" contains "file.txt" consider
 the following examples:
 
-| Expression | Value |
-| - | - |
-| `${anyAttribute("abc", "xyz"):contains("bye")}` | `true` |
+| Expression                                                  | Value   |
+|-------------------------------------------------------------|---------|
+| `${anyAttribute("abc", "xyz"):contains("bye")}`             | `true`  |
 | `${anyAttribute("filename","xyz"):toUpper():contains("e")}` | `false` |
 
 ### allAttributes
@@ -1637,10 +1664,10 @@ the Expression, returns a value of `true`, then this function will return
 
 **Subject Type**: No Subject
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
+| Argument        | Description                             |
+|-----------------|-----------------------------------------|
 | Attribute Names | One or more attribute names to evaluate |
 
 **Return Type**: Boolean
@@ -1649,9 +1676,9 @@ the Expression, returns a value of `true`, then this function will return
 "xyz" contains "good bye world", and "filename" contains "file.txt" consider
 the following examples:
 
-| Expression | Value |
-| - | - |
-| `${allAttributes("abc", "xyz"):contains("world")}` | `true` |
+| Expression                                                          | Value   |
+|---------------------------------------------------------------------|---------|
+| `${allAttributes("abc", "xyz"):contains("world")}`                  | `true`  |
 | `${allAttributes("abc", "filename","xyz"):toUpper():contains("e")}` | `false` |
 
 ### anyMatchingAttribute
@@ -1666,11 +1693,11 @@ function will return `true`. Otherwise, this function will return `false`.
 
 **Subject Type**: No Subject
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| Regex | One or more Regular Expressions to evaluate against attribute names |
+| Argument | Description                                                         |
+|----------|---------------------------------------------------------------------|
+| Regex    | One or more Regular Expressions to evaluate against attribute names |
 
 **Return Type**: Boolean
 
@@ -1678,10 +1705,10 @@ function will return `true`. Otherwise, this function will return `false`.
 "xyz" contains "good bye world", and "filename" contains "file.txt" consider
 the following examples:
 
-| Expression | Value |
-| - | - |
-| `${anyMatchingAttribute("[ax].*"):contains('bye')}` | `true` |
-| `${anyMatchingAttribute(".*"):isNull()}` | `false` |
+| Expression                                          | Value   |
+|-----------------------------------------------------|---------|
+| `${anyMatchingAttribute("[ax].*"):contains('bye')}` | `true`  |
+| `${anyMatchingAttribute(".*"):isNull()}`            | `false` |
 
 ### allMatchingAttributes
 
@@ -1695,11 +1722,11 @@ function will return `true`. Otherwise, this function will return `false`.
 
 **Subject Type**: No Subject
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
-| Regex | One or more Regular Expressions to evaluate against attribute names |
+| Argument | Description                                                         |
+|----------|---------------------------------------------------------------------|
+| Regex    | One or more Regular Expressions to evaluate against attribute names |
 
 **Return Type**: Boolean
 
@@ -1707,11 +1734,11 @@ function will return `true`. Otherwise, this function will return `false`.
 "xyz" contains "good bye world", and "filename" contains "file.txt" consider
 the following examples:
 
-| Expression | Value |
-| - | - |
-| `${allMatchingAttributes("[ax].*"):contains("world")}` | `true` |
-| `${allMatchingAttributes(".*"):isNull()}` | `false` |
-| `${allMatchingAttributes("f.*"):count()}` | `1` |
+| Expression                                             | Value   |
+|--------------------------------------------------------|---------|
+| `${allMatchingAttributes("[ax].*"):contains("world")}` | `true`  |
+| `${allMatchingAttributes(".*"):isNull()}`              | `false` |
+| `${allMatchingAttributes("f.*"):count()}`              | `1`     |
 
 ### anyDelineatedValue
 
@@ -1723,12 +1750,12 @@ returns `false`.
 
 **Subject Type**: No Subject
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
+| Argument         | Description                                                                                            |
+|------------------|--------------------------------------------------------------------------------------------------------|
 | Delineated Value | The value that is delineated. This is generally an embedded Expression, though it does not have to be. |
-| Delimiter | The value to use to split apart the delineatedValue argument. |
+| Delimiter        | The value to use to split apart the delineatedValue argument.                                          |
 
 **Return Type**: Boolean
 
@@ -1736,9 +1763,9 @@ returns `false`.
 "1,2,3,4,5", and the "word_list" attribute contains the value "the,and,or,not",
 consider the following examples:
 
-| Expression | Value |
-| - | - |
-| `${anyDelineatedValue("${number_list}", ","):contains("5")}` | `true` |
+| Expression                                                           | Value   |
+|----------------------------------------------------------------------|---------|
+| `${anyDelineatedValue("${number_list}", ","):contains("5")}`         | `true`  |
 | `${anyDelineatedValue("this that and", ","):equals("${word_list}")}` | `false` |
 
 ### allDelineatedValues
@@ -1751,12 +1778,12 @@ Otherwise, the function returns `false`.
 
 **Subject Type**: No Subject
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
+| Argument         | Description                                                                                            |
+|------------------|--------------------------------------------------------------------------------------------------------|
 | Delineated Value | The value that is delineated. This is generally an embedded Expression, though it does not have to be. |
-| Delimiter | The value to use to split apart the delineatedValue argument. |
+| Delimiter        | The value to use to split apart the delineatedValue argument.                                          |
 
 **Return Type**: Boolean
 
@@ -1764,12 +1791,12 @@ Otherwise, the function returns `false`.
 "1,2,3,4,5", and the "word_list" attribute contains the value
 "those,known,or,not", consider the following examples:
 
-| Expression | Value |
-| - | - |
-| `${allDelineatedValues("${word_list}", ","):contains("o")}` | `true` |
-| `${allDelineatedValues("${number_list}", ","):count()}` | `4` |
-| `${allDelineatedValues("${number_list}", ","):matches("[0-9]+")}` | `true` |
-| `${allDelineatedValues("${word_list}", ","):matches('e')}` | `false` |
+| Expression                                                        | Value   |
+|-------------------------------------------------------------------|---------|
+| `${allDelineatedValues("${word_list}", ","):contains("o")}`       | `true`  |
+| `${allDelineatedValues("${number_list}", ","):count()}`           | `4`     |
+| `${allDelineatedValues("${number_list}", ","):matches("[0-9]+")}` | `true`  |
+| `${allDelineatedValues("${word_list}", ","):matches('e')}`        | `false` |
 
 ### join
 
@@ -1779,10 +1806,10 @@ specified delimiter. This function may be used only in conjunction with the
 
 **Subject Type**: String
 
-**Arguments**: 
+**Arguments**:
 
-| Argument | Description |
-| - | - |
+| Argument  | Description                                     |
+|-----------|-------------------------------------------------|
 | Delimiter | The String delimiter to use when joining values |
 
 **Return Type**: String
@@ -1791,10 +1818,10 @@ specified delimiter. This function may be used only in conjunction with the
 "xyz" contains "good bye world", and "filename" contains "file.txt" consider
 the following examples:
 
-| Expression | Value |
-| - | - |
-| `${allMatchingAttributes("[ax].*"):substringBefore(" "):join("-")}` | `hello-good` |
-| `${allAttributes("abc", "xyz"):join(" now")}` | `hello world nowgood bye world now` |
+| Expression                                                          | Value                               |
+|---------------------------------------------------------------------|-------------------------------------|
+| `${allMatchingAttributes("[ax].*"):substringBefore(" "):join("-")}` | `hello-good`                        |
+| `${allAttributes("abc", "xyz"):join(" now")}`                       | `hello world nowgood bye world now` |
 
 ### count
 
@@ -1813,13 +1840,13 @@ non-false values returned by the `allAttributes`, `allMatchingAttributes`, and
 "xyz" contains "good bye world", and "number_list" contains "1,2,3,4,5"
 consider the following examples:
 
-| Expression | Value |
-| - | - |
-| `${allMatchingAttributes("[ax].*"):substringBefore(" "):count()}` | `2` |
-| `${allAttributes("abc", "xyz"):contains("world"):count()}` | `1` |
-| `${allDelineatedValues(${number_list}, ","):count()}` | `5` |
-| `${allAttributes("abc", "non-existent-attr", "xyz"):count()}` | `2` |
-| `${allMatchingAttributes(".*"):length():gt(10):count()}` | `2` |
+| Expression                                                        | Value |
+|-------------------------------------------------------------------|-------|
+| `${allMatchingAttributes("[ax].*"):substringBefore(" "):count()}` | `2`   |
+| `${allAttributes("abc", "xyz"):contains("world"):count()}`        | `1`   |
+| `${allDelineatedValues(${number_list}, ","):count()}`             | `5`   |
+| `${allAttributes("abc", "non-existent-attr", "xyz"):count()}`     | `2`   |
+| `${allMatchingAttributes(".*"):length():gt(10):count()}`          | `2`   |
 
 ### format
 
@@ -1834,9 +1861,9 @@ argument.
 
 **Arguments**:
 
-| Argument | Description |
-| - | - |
-| format | The format to use in the strftime syntax |
+| Argument  | Description                                                                                                      |
+|-----------|------------------------------------------------------------------------------------------------------------------|
+| format    | The format to use in the strftime syntax                                                                         |
 | time zone | Optional argument that specifies the time zone to use from the IANA Time Zone Database (e.g. 'America/New_York') |
 
 **Return Type**: String
@@ -1846,10 +1873,10 @@ argument.
 If the attribute "time" has the value "1420058163264", then the following
 Expressions will yield the following results:
 
-| Expression | Value |
-| - | - |
-| `${time:format("%Y/%m/%d %H:%M:%S", "GMT")}` | `2014/12/31 20:36:03` |
-| `${time:format("%Y", "America/Los_Angeles")}` | `2014` |
+| Expression                                    | Value                 |
+|-----------------------------------------------|-----------------------|
+| `${time:format("%Y/%m/%d %H:%M:%S", "GMT")}`  | `2014/12/31 20:36:03` |
+| `${time:format("%Y", "America/Los_Angeles")}` | `2014`                |
 
 ### toDate
 
@@ -1858,11 +1885,14 @@ milliseconds since the UNIX epoch, based on the format specified by the
 argument. The argument must be a String that is a valid strftime syntax. The
 Subject is expected to be a String that is formatted according the argument.
 The date will be evaluated using the local time zone unless specified in the
+The date will be evaluated using the local time zone unless specified in the
 second optional argument.
 
 **Subject Type**: String
 
-| format | The format to use in the strftime syntax |
+| Argument  | Description                                                                                                                                |
+|-----------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| format    | The format to use in the strftime syntax                                                                                                   |
 | time zone | Optional argument that specifies the time zone to use when parsing the subject, from the IANA Time Zone Database (e.g. 'America/New_York') |
 
 **Return Type**: Number
@@ -1893,9 +1923,9 @@ chaining together the two functions:
 
 **Examples**:
 
-| Expression | Value |
-| - | - |
-| `${now()}` | `Count of milliseconds since the UNIX epoch` |
-| `${now():minus(86400000)` | `A number presenting the time 24 hours ago` |
-| `${now():format('Y')}` | `The current year` |
+| Expression                              | Value                                                                                   |
+|-----------------------------------------|-----------------------------------------------------------------------------------------|
+| `${now()}`                              | `Count of milliseconds since the UNIX epoch`                                            |
+| `${now():minus(86400000)`               | `A number presenting the time 24 hours ago`                                             |
+| `${now():format('Y')}`                  | `The current year`                                                                      |
 | `${now():minus(86400000):format('%a')}` | `The day of the week that was yesterday, as a 3-letter abbreviation (For example, Wed)` |
