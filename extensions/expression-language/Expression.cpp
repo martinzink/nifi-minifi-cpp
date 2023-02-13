@@ -185,6 +185,14 @@ Value expr_ip(const std::vector<Value>& /*args*/) {
   return {};
 }
 
+Value expr_lookup(const std::vector<Value>& args) {
+  std::string hostname_str = args[0].asString();
+
+  return utils::net::lookup(hostname_str)
+      | utils::map([](const auto& ip_addresses)-> Value { return Value(ip_addresses[0].to_string()); })
+      | utils::valueOrElse([&](std::error_code error_code) { throw std::runtime_error(error_code.message());});
+}
+
 Value expr_reverseLookup(const std::vector<Value>& args) {
   std::string ip_address_str = args[0].asString();
 
@@ -1350,6 +1358,8 @@ Expression make_dynamic_function(const std::string &function_name, const std::ve
     return make_dynamic_function_incomplete<resolve_user_id>(function_name, args, 0);
   } else if (function_name == "ip") {
     return make_dynamic_function_incomplete<expr_ip>(function_name, args, 0);
+  } else if (function_name == "lookup") {
+    return make_dynamic_function_incomplete<expr_lookup>(function_name, args, 1);
   } else if (function_name == "reverseLookup") {
     return make_dynamic_function_incomplete<expr_reverseLookup>(function_name, args, 1);
   } else if (function_name == "UUID") {

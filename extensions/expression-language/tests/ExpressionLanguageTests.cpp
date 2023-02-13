@@ -1281,6 +1281,26 @@ TEST_CASE("Full Hostname", "[expressionFullHostname]") {
   REQUIRE(!expr(expression::Parameters{ flow_file_a }).asString().empty());
 }
 
+TEST_CASE("Lookup tests", "[ExpressionLanguage][lookup]") {
+  auto expr = expression::compile("${lookup(${hostname})}");
+
+  auto flow_file_a = std::make_shared<core::FlowFile>();
+  SECTION("dns.google") {
+    flow_file_a->addAttribute("hostname", "dns.google");
+    REQUIRE(expr(expression::Parameters{ flow_file_a }).asString() ==  "2001:4860:4860::8844");
+  }
+
+  SECTION("localhost") {
+    flow_file_a->addAttribute("hostname", "localhost");
+    REQUIRE(expr(expression::Parameters{ flow_file_a }).asString() ==  "::1");
+  }
+
+  SECTION("banana") {
+    flow_file_a->addAttribute("hostname", "banana");
+    REQUIRE_THROWS(expr(expression::Parameters{ flow_file_a }));
+  }
+}
+
 TEST_CASE("Reverse lookup with valid ip", "[ExpressionLanguage][reverseLookup]") {
   auto expr = expression::compile("${reverseLookup(${ip_addr})}");
 

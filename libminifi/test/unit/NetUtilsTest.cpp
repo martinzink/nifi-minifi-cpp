@@ -78,3 +78,26 @@ TEST_CASE("net::reverseLookup", "[net][dns][reverseLookup]") {
     CHECK(ranges::contains(*unresolvable_address, "2001:db8::"));
   }
 }
+
+TEST_CASE("net::lookup", "[net][dns][lookup]") {
+  SECTION("dns.google") {
+    auto dns_google_ip_addresses = net::lookup("dns.google");
+    REQUIRE(dns_google_ip_addresses.has_value());
+    CHECK(ranges::contains(*dns_google_ip_addresses, asio::ip::address::from_string("8.8.8.8")));
+    if (!minifi::test::utils::isIPv6Disabled())
+      CHECK(ranges::contains(*dns_google_ip_addresses, asio::ip::address::from_string("2001:4860:4860::8888")));
+  }
+
+  SECTION("localhost") {
+    auto localhost_ip_addresses = net::lookup("localhost");
+    REQUIRE(localhost_ip_addresses.has_value());
+    CHECK(ranges::contains(*localhost_ip_addresses, asio::ip::address::from_string("127.0.0.1")));
+    if (!minifi::test::utils::isIPv6Disabled())
+      CHECK(ranges::contains(*localhost_ip_addresses, asio::ip::address::from_string("::1")));
+  }
+
+  SECTION("unresolvable") {
+    auto bananas_ip_addresses = net::lookup("bananas");
+    REQUIRE_FALSE(bananas_ip_addresses.has_value());
+  }
+}

@@ -48,4 +48,7 @@ nonstd::expected<asio::ip::address, std::error_code> addressFromString(std::stri
 
 nonstd::expected<std::vector<std::string>, std::error_code> reverseLookup(const asio::ip::address& ip_address);
 
+nonstd::expected<std::vector<asio::ip::address>, std::error_code> lookup(const std::string_view hostname);
+
+
 }  // namespace org::apache::nifi::minifi::utils::net

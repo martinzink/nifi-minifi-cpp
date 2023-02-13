@@ -118,4 +118,21 @@ nonstd::expected<std::vector<std::string>, std::error_code> reverseLookup(const 
   return host_names;
 }
 
+nonstd::expected<std::vector<asio::ip::address>, std::error_code> lookup(const std::string_view hostname) {
+  asio::io_context io_context;
+  asio::ip::basic_resolver<asio::ip::udp> resolver(io_context);
+  std::error_code resolve_error;
+  auto endpoint_entries = resolver.resolve(hostname.data(), "1", resolve_error);
+  if (resolve_error)
+    return nonstd::make_unexpected(resolve_error);
+  std::vector<asio::ip::address> ip_addresses;
+  for (const auto& endpoint_entry : endpoint_entries) {
+    ip_addresses.push_back(endpoint_entry.endpoint().address());
+  }
+  if (ip_addresses.empty()) {
+    return nonstd::make_unexpected(asio::error::not_found);
+  }
+  return ip_addresses;
+}
+
 }  // namespace org::apache::nifi::minifi::utils::net

@@ -225,6 +225,7 @@ token, filename.
 - [`hostname`](#hostname)
 - [`UUID`](#uuid)
 - [`literal`](#literal)
+- [`lookup`](#lookup)
 - [`reverseLookup`](#reverseLookup)
 
 ### Evaluating Multiple Attributes
@@ -1593,6 +1594,27 @@ to evaluate additional functions against.
 **Examples**: `${literal(2):gt(1)}` returns true.  `${literal(
 ${allMatchingAttributes('a.*'):count()} ):gt(3)}` returns true if there are
 more than 3 attributes whose names begin with the letter a.
+
+### lookup
+
+**Description**: Performs a DNS lookup on a hostname, and returns the first ip address.
+
+**Subject Type**: No subject
+
+**Arguments**:
+
+| Argument | Description                                       |
+|----------|---------------------------------------------------|
+| hostname | The hostname to perform the DNS lookup on.        |
+
+**Return Type**: String
+
+**Examples**:
+
+| Expression                | Value        |
+|---------------------------|--------------|
+| `${lookup('localhost')}`  | `127.0.0.1`  |
+| `${lookup('dns.google')}` | `8.8.8.8`    |
 
 ### reverseLookup
 
