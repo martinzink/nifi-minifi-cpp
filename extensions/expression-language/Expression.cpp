@@ -67,6 +67,8 @@
 #include "utils/net/DNS.h"
 #include "utils/expected.h"
 
+using namespace std::literals::chrono_literals;
+
 namespace org::apache::nifi::minifi::expression {
 
 Expression compile(const std::string &expr_str) {
@@ -189,7 +191,7 @@ Value expr_reverseLookup(const std::vector<Value>& args) {
   std::string ip_address_str = args[0].asString();
 
   return utils::net::addressFromString(ip_address_str)
-      | utils::flatMap(utils::net::reverseLookup)
+      | utils::flatMap([](const auto& ip_address) { return utils::net::reverseLookup(ip_address, 5s);})
       | utils::map([](const auto& hostnames)-> Value { return Value(hostnames[0]); })
       | utils::valueOrElse([&](std::error_code error_code) { throw std::runtime_error(error_code.message());});
 }

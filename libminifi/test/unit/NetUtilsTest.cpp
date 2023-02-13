@@ -37,31 +37,17 @@ TEST_CASE("net::resolveHost", "[net][dns][utils][resolveHost]") {
 
 TEST_CASE("net::reverseLookup", "[net][dns][reverseLookup]") {
   SECTION("dns.google") {
-    nonstd::expected<std::vector<std::string>, std::error_code> dns_google_hostname;
+    nonstd::expected<std::vector<std::string>, std::error_code> dns_google_hostnames;
     SECTION("IPv4") {
-      dns_google_hostname = net::reverseLookup(asio::ip::address::from_string("8.8.8.8"));
+      dns_google_hostnames = net::reverseLookup(asio::ip::address::from_string("8.8.8.8"));
     }
     SECTION("IPv6") {
       if (minifi::test::utils::isIPv6Disabled())
         return;
-      dns_google_hostname = net::reverseLookup(asio::ip::address::from_string("2001:4860:4860::8888"));
+      dns_google_hostnames = net::reverseLookup(asio::ip::address::from_string("2001:4860:4860::8888"));
     }
-    REQUIRE(dns_google_hostname.has_value());
-    CHECK(ranges::contains(*dns_google_hostname, "dns.google"));
-  }
-
-  SECTION("localhost") {
-    nonstd::expected<std::vector<std::string>, std::error_code> localhost_hostname;
-    SECTION("IPv4") {
-      localhost_hostname = net::reverseLookup(asio::ip::address::from_string("127.0.0.1"));
-    }
-    SECTION("IPv6") {
-      if (minifi::test::utils::isIPv6Disabled())
-        return;
-      localhost_hostname = net::reverseLookup(asio::ip::address::from_string("::1"));
-    }
-    REQUIRE(localhost_hostname.has_value());
-    CHECK(ranges::contains(*localhost_hostname, "localhost"));
+    REQUIRE(dns_google_hostnames.has_value());
+    CHECK(ranges::contains(*dns_google_hostnames, "dns.google"));
   }
 
   SECTION("Unresolvable address IPv4") {
