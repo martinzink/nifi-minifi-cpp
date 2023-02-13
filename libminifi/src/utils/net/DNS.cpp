@@ -91,4 +91,31 @@ nonstd::expected<gsl::not_null<std::unique_ptr<addrinfo, addrinfo_deleter>>, std
   return addr_info;
 }
 
+nonstd::expected<asio::ip::address, std::error_code> addressFromString(const std::string_view ip_address_str) {
+  std::error_code ip_address_from_string_error;
+  auto ip_address = asio::ip::address::from_string(ip_address_str.data(), ip_address_from_string_error);
+  if (ip_address_from_string_error)
+    return nonstd::make_unexpected(ip_address_from_string_error);
+  return ip_address;
+}
+
+nonstd::expected<std::vector<std::string>, std::error_code> reverseLookup(const asio::ip::address& ip_address) {
+  asio::io_context io_context;
+  asio::ip::basic_resolver<asio::ip::udp> resolver(io_context);
+  asio::ip::basic_endpoint<asio::ip::udp> endpoint;
+  endpoint.address(ip_address);
+  std::error_code resolve_error;
+  auto endpoint_entries = resolver.resolve(endpoint, resolve_error);
+  if (resolve_error)
+    return nonstd::make_unexpected(resolve_error);
+  std::vector<std::string> host_names;
+  for (const auto& endpoint_entry : endpoint_entries) {
+    host_names.push_back(endpoint_entry.host_name());
+  }
+  if (host_names.empty()) {
+    return nonstd::make_unexpected(asio::error::not_found);
+  }
+  return host_names;
+}
+
 }  // namespace org::apache::nifi::minifi::utils::net

@@ -19,9 +19,11 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <vector>
 #include "nonstd/expected.hpp"
 #include "utils/gsl.h"
 #include "IpProtocol.h"
+#include "asio/ip/udp.hpp"
 
 struct addrinfo;
 
@@ -41,4 +43,9 @@ inline auto resolveHost(const char* const hostname, const uint16_t port, const I
 inline auto resolveHost(const uint16_t port, const IpProtocol proto = IpProtocol::TCP, const bool need_canonname = false) {
   return resolveHost(nullptr, port, proto, need_canonname);
 }
+
+nonstd::expected<asio::ip::address, std::error_code> addressFromString(std::string_view ip_address_str);
+
+nonstd::expected<std::vector<std::string>, std::error_code> reverseLookup(const asio::ip::address& ip_address);
+
 }  // namespace org::apache::nifi::minifi::utils::net

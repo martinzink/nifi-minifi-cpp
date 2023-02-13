@@ -64,6 +64,8 @@
 #include "Driver.h"
 
 #include "date/tz.h"
+#include "utils/net/DNS.h"
+#include "utils/expected.h"
 
 namespace org::apache::nifi::minifi::expression {
 
@@ -181,6 +183,15 @@ Value expr_ip(const std::vector<Value>& /*args*/) {
 
   freeaddrinfo(result);
   return {};
+}
+
+Value expr_reverseLookup(const std::vector<Value>& args) {
+  std::string ip_address_str = args[0].asString();
+
+  return utils::net::addressFromString(ip_address_str)
+      | utils::flatMap(utils::net::reverseLookup)
+      | utils::map([](const auto& hostnames)-> Value { return Value(hostnames[0]); })
+      | utils::valueOrElse([&](std::error_code error_code) { throw std::runtime_error(error_code.message());});
 }
 
 Value expr_uuid(const std::vector<Value>& /*args*/) {
@@ -1339,6 +1350,8 @@ Expression make_dynamic_function(const std::string &function_name, const std::ve
     return make_dynamic_function_incomplete<resolve_user_id>(function_name, args, 0);
   } else if (function_name == "ip") {
     return make_dynamic_function_incomplete<expr_ip>(function_name, args, 0);
+  } else if (function_name == "reverseLookup") {
+    return make_dynamic_function_incomplete<expr_reverseLookup>(function_name, args, 1);
   } else if (function_name == "UUID") {
     return make_dynamic_function_incomplete<expr_uuid>(function_name, args, 0);
   } else if (function_name == "toUpper") {
