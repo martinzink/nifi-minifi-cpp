@@ -1860,10 +1860,10 @@ argument.
 
 **Arguments**:
 
-| Argument  | Description                                                                                                                                                          |
-|-----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| format    | The format to use in the strftime syntax                                                                                                                             |
-| time zone | Optional argument that specifies the time zone to use from the IANA Time Zone Database (e.g. 'America/New_York')<br>If unspecified it will use the agent's timezone. |
+| Argument  | Description                                                                                                      |
+|-----------|------------------------------------------------------------------------------------------------------------------|
+| format    | The format to use in the strftime syntax                                                                         |
+| time zone | Optional argument that specifies the time zone to use from the IANA Time Zone Database (e.g. 'America/New_York') |
 
 **Return Type**: String
 
@@ -1881,17 +1881,18 @@ Expressions will yield the following results:
 
 **Description**: Converts a String into a date represented by the number of
 milliseconds since the UNIX epoch, based on the format specified by the
-argument. The argument must be a String that is a valid strftime syntax. The
+argument. The first argument must be a String that is a valid strftime syntax. The
 Subject is expected to be a String that is formatted according the argument.
 The date will be evaluated using the local time zone unless specified in the
 second optional argument.
+If called without arguments it will parse the subject as a RFC3339 formatted datetime.  
 
 **Subject Type**: String
 
-| Argument  | Description                                                                                                                                                                                    |
-|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| format    | The format to use in the strftime syntax                                                                                                                                                       |
-| time zone | Optional argument that specifies the time zone to use when parsing the subject, from the IANA Time Zone Database (e.g. 'America/New_York')<br>If unspecified it will use the agent's timezone. |
+| Argument  | Description                                                                                                                                |
+|-----------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| format    | Optional argument the specifies the format to use in the strftime syntax                                                                   |
+| time zone | Optional argument that specifies the time zone to use when parsing the subject, from the IANA Time Zone Database (e.g. 'America/New_York') |
 
 **Return Type**: Number
 

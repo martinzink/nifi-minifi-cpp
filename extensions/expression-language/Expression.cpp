@@ -648,6 +648,13 @@ Value expr_format(const std::vector<Value> &args) {
 Value expr_toDate(const std::vector<Value> &args) {
   using std::chrono::milliseconds;
   auto input_string = args[0].asString();
+
+  if (args.size() == 1) {
+    if (auto parsed_rfc3339 = org::apache::nifi::minifi::utils::timeutils::parseRfc3339(input_string))
+      return Value(int64_t{std::chrono::duration_cast<milliseconds>(parsed_rfc3339->time_since_epoch()).count()});
+    else
+      throw std::runtime_error(fmt::format("Failed to parse \"{}\" as an RFC3339 formatted datetime", input_string));
+  }
   auto format_string = args[1].asString();
   auto zone = args.size() > 2 ? date::locate_zone(args[2].asString()) : date::current_zone();
 
@@ -1514,7 +1521,7 @@ Expression make_dynamic_function(const std::string &function_name, const std::ve
   } else if (function_name == "format") {
     return make_dynamic_function_incomplete<expr_format>(function_name, args, 1);
   } else if (function_name == "toDate") {
-    return make_dynamic_function_incomplete<expr_toDate>(function_name, args, 1);
+    return make_dynamic_function_incomplete<expr_toDate>(function_name, args, 0);
   } else if (function_name == "now") {
     return make_dynamic_function_incomplete<expr_now>(function_name, args, 0);
   } else {

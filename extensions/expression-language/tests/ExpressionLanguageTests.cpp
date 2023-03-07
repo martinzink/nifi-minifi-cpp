@@ -1242,6 +1242,14 @@ TEST_CASE("Parse Date", "[expressionParseDate]") {
 
   CHECK("1677697495190" == expression::compile("${timestamp_with_zone_info_00_00:toDate('%FT%T%Ez', 'UTC')}")(expression::Parameters{ flow_file_a }).asString());
   CHECK("1677697495190" == expression::compile("${timestamp_with_zone_info_08_45:toDate('%FT%T%Ez', 'UTC')}")(expression::Parameters{ flow_file_a }).asString());
+
+  flow_file_a->addAttribute("invalid_timestamp_1", " 2023-03-02T03:49:55.190+08:45");
+  flow_file_a->addAttribute("invalid_timestamp_2", "2023-03-02T03:49:55.190+08:45 ");
+  flow_file_a->addAttribute("invalid_timestamp_3", "2023-03-02 03:49:55.190+08:45 ");
+
+  REQUIRE_THROWS_AS(expression::compile("${invalid_timestamp_1:toDate('%FT%T%Ez', 'UTC')}")(expression::Parameters{ flow_file_a }), std::runtime_error);
+  REQUIRE_THROWS_AS(expression::compile("${invalid_timestamp_2:toDate('%FT%T%Ez', 'UTC')}")(expression::Parameters{ flow_file_a }), std::runtime_error);
+  REQUIRE_THROWS_AS(expression::compile("${invalid_timestamp_3:toDate('%FT%T%Ez', 'UTC')}")(expression::Parameters{ flow_file_a }), std::runtime_error);
 }
 
 TEST_CASE("Reformat Date", "[expressionReformatDate]") {
@@ -1266,6 +1274,63 @@ TEST_CASE("Now Date", "[expressionNowDate]") {
   auto current_year = date::year_month_day{std::chrono::floor<std::chrono::days>(std::chrono::system_clock::now())}.year().operator int();
 
   CHECK(current_year == expr(expression::Parameters{ }).asSignedLong());
+}
+
+TEST_CASE("Parse RFC3339 with Expression Language toDate") {
+  using date::sys_days;
+  using org::apache::nifi::minifi::utils::timeutils::parseRfc3339;
+  using namespace date::literals;
+  using namespace std::literals::chrono_literals;
+  using std::chrono::milliseconds;
+
+  milliseconds expected_second = std::chrono::floor<milliseconds>((sys_days(2023_y / 03 / 01) + 19h + 04min + 55s).time_since_epoch());
+  milliseconds expected_tenth_second = std::chrono::floor<milliseconds>((sys_days(2023_y / 03 / 01) + 19h + 04min + 55s + 100ms).time_since_epoch());
+  milliseconds expected_milli_second = std::chrono::floor<milliseconds>((sys_days(2023_y / 03 / 01) + 19h + 04min + 55s + 190ms).time_since_epoch());
+
+  CHECK(expression::compile("${literal('2023-03-01T19:04:55Z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_second.count());
+  CHECK(expression::compile("${literal('2023-03-01T19:04:55.1Z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_tenth_second.count());
+  CHECK(expression::compile("${literal('2023-03-01T19:04:55.19Z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01T19:04:55.190Z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01T19:04:55.190999Z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01t19:04:55z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_second.count());
+  CHECK(expression::compile("${literal('2023-03-01t19:04:55.190z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01T20:04:55+01:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_second.count());
+  CHECK(expression::compile("${literal('2023-03-01T20:04:55.190+01:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01T20:04:55.190999+01:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 20:04:55+01:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 20:04:55.1+01:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_tenth_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 20:04:55.19+01:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 20:04:55.190+01:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 20:04:55.190999+01:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 19:04:55Z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_second.count());
+  CHECK(expression::compile("${literal('2023-03-01_19:04:55Z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 19:04:55z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_second.count());
+  CHECK(expression::compile("${literal('2023-03-01_19:04:55z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 19:04:55.1Z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_tenth_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 19:04:55.19Z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 19:04:55.190Z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01_19:04:55.190Z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 19:04:55.190999Z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01_19:04:55.190999Z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 19:04:55.190z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01_19:04:55.190z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 19:04:55.190999z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01_19:04:55.190999z'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 19:04:55-00:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_second.count());
+  CHECK(expression::compile("${literal('2023-03-01 19:04:55.190-00:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01T19:04:55-00:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_second.count());
+  CHECK(expression::compile("${literal('2023-03-01T19:04:55.190-00:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-02T03:49:55+08:45'):toDate()}")(expression::Parameters()).asSignedLong() == expected_second.count());
+  CHECK(expression::compile("${literal('2023-03-01T19:04:55+00:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_second.count());
+  CHECK(expression::compile("${literal('2023-03-01T19:04:55.190+00:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_milli_second.count());
+  CHECK(expression::compile("${literal('2023-03-01T18:04:55-01:00'):toDate()}")(expression::Parameters()).asSignedLong() == expected_second.count());
+
+  REQUIRE_THROWS_AS(expression::compile("${literal('2023-03-01T19:04:55Zbanana'):toDate()}")(expression::Parameters()), std::runtime_error);
+  REQUIRE_THROWS_AS(expression::compile("${literal('2023-03-01T19:04:55'):toDate()}")(expression::Parameters()), std::runtime_error);
+  REQUIRE_THROWS_AS(expression::compile("${literal('2023-03-01T19:04:55T'):toDate()}")(expression::Parameters()), std::runtime_error);
+  REQUIRE_THROWS_AS(expression::compile("${literal('2023-03-01T19:04:55Z '):toDate()}")(expression::Parameters()), std::runtime_error);
+  REQUIRE_THROWS_AS(expression::compile("${literal(' 2023-03-01T19:04:55Z'):toDate()}")(expression::Parameters()), std::runtime_error);
+  REQUIRE_THROWS_AS(expression::compile("${literal('2023-03-01'):toDate()}")(expression::Parameters()), std::runtime_error);
 }
 
 TEST_CASE("Format Date", "[expressionFormatDate]") {
