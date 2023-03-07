@@ -1226,22 +1226,36 @@ TEST_CASE("Parse Date", "[expressionParseDate]") {
 #ifdef WIN32
   expression::dateSetInstall(TZ_DATA_DIR);
 #endif
-  auto expr = expression::compile("${message:toDate('%Y/%m/%d', 'America/Los_Angeles')}");
-
   auto flow_file_a = std::make_shared<core::FlowFile>();
   flow_file_a->addAttribute("message", "2014/04/30");
-  REQUIRE("1398841200000" == expr(expression::Parameters{ flow_file_a }).asString());
+  CHECK("1398841200000" == expression::compile("${message:toDate('%Y/%m/%d', 'America/Los_Angeles')}")(expression::Parameters{ flow_file_a }).asString());
+
+  flow_file_a->addAttribute("trillion_utc", "2001/09/09 01:46:40.000Z");
+  flow_file_a->addAttribute("trillion_paris", "2001/09/09 03:46:40.000Z");
+  flow_file_a->addAttribute("trillion_la", "2001/09/08 18:46:40.000Z");
+  CHECK("1000000000000" == expression::compile("${trillion_utc:toDate('%Y/%m/%d %H:%M:%SZ', 'UTC')}")(expression::Parameters{ flow_file_a }).asString());
+  CHECK("1000000000000" == expression::compile("${trillion_paris:toDate('%Y/%m/%d %H:%M:%SZ', 'Europe/Paris')}")(expression::Parameters{ flow_file_a }).asString());
+  CHECK("1000000000000" == expression::compile("${trillion_la:toDate('%Y/%m/%d %H:%M:%SZ', 'America/Los_Angeles')}")(expression::Parameters{ flow_file_a }).asString());
+
+  flow_file_a->addAttribute("timestamp_with_zone_info_00_00", "2023-03-02T03:49:55.190+08:45");
+  flow_file_a->addAttribute("timestamp_with_zone_info_08_45", "2023-03-02T03:49:55.190+08:45");
+
+  CHECK("1677697495190" == expression::compile("${timestamp_with_zone_info_00_00:toDate('%FT%T%Ez', 'UTC')}")(expression::Parameters{ flow_file_a }).asString());
+  CHECK("1677697495190" == expression::compile("${timestamp_with_zone_info_08_45:toDate('%FT%T%Ez', 'UTC')}")(expression::Parameters{ flow_file_a }).asString());
 }
 
 TEST_CASE("Reformat Date", "[expressionReformatDate]") {
 #ifdef WIN32
   expression::dateSetInstall(TZ_DATA_DIR);
 #endif
-  auto expr = expression::compile("${message:toDate('%Y/%m/%d', 'GMT'):format('%m-%d-%Y', 'America/New_York')}");
-
   auto flow_file_a = std::make_shared<core::FlowFile>();
   flow_file_a->addAttribute("message", "2014/03/14");
-  REQUIRE("03-13-2014" == expr(expression::Parameters{ flow_file_a }).asString());
+  flow_file_a->addAttribute("blue", "20130917162643");
+
+  CHECK("03-13-2014" == expression::compile("${message:toDate('%Y/%m/%d', 'UTC'):format('%m-%d-%Y', 'America/New_York')}")(expression::Parameters{ flow_file_a }).asString());
+  CHECK("2013/09/17 16:26:43.000Z" == expression::compile("${blue:toDate('%Y%m%d%H%M%S', 'UTC'):format('%Y/%m/%d %H:%M:%SZ', 'UTC')}")(expression::Parameters{ flow_file_a }).asString());
+  CHECK("2013/09/17 18:26:43.000Z" == expression::compile("${blue:toDate('%Y%m%d%H%M%S', 'UTC'):format('%Y/%m/%d %H:%M:%SZ', 'Europe/Paris')}")(expression::Parameters{ flow_file_a }).asString());
+  CHECK("2013/09/17 09:26:43.000Z" == expression::compile("${blue:toDate('%Y%m%d%H%M%S', 'UTC'):format('%Y/%m/%d %H:%M:%SZ', 'America/Los_Angeles')}")(expression::Parameters{ flow_file_a }).asString());
 }
 
 TEST_CASE("Now Date", "[expressionNowDate]") {
@@ -1249,22 +1263,20 @@ TEST_CASE("Now Date", "[expressionNowDate]") {
   expression::dateSetInstall(TZ_DATA_DIR);
 #endif
   auto expr = expression::compile("${now():format('%Y')}");
+  auto current_year = date::year_month_day{std::chrono::floor<std::chrono::days>(std::chrono::system_clock::now())}.year().operator int();
 
-  auto flow_file_a = std::make_shared<core::FlowFile>();
-  flow_file_a->addAttribute("message", "2014/03/14");
-  date::year_month_day date{std::chrono::floor<std::chrono::days>(std::chrono::system_clock::now())};
-
-  REQUIRE(date.year().operator int() == expr(expression::Parameters{ flow_file_a }).asSignedLong());
+  CHECK(current_year == expr(expression::Parameters{ }).asSignedLong());
 }
 
 TEST_CASE("Format Date", "[expressionFormatDate]") {
-  auto expr_gmt = expression::compile("${message:format('%m-%d-%Y', 'GMT')}");
-  auto expr_utc = expression::compile("${message:format('%m-%d-%Y', 'UTC')}");
-
+#ifdef WIN32
+  expression::dateSetInstall(TZ_DATA_DIR);
+#endif
   auto flow_file_a = std::make_shared<core::FlowFile>();
-  flow_file_a->addAttribute("message", "1394755200000");
-  REQUIRE("03-14-2014" == expr_gmt(expression::Parameters{ flow_file_a }).asString());
-  REQUIRE("03-14-2014" == expr_utc(expression::Parameters{ flow_file_a }).asString());
+  flow_file_a->addAttribute("trillion_milliseconds", "1000000000000");
+  CHECK(expression::compile("${trillion_milliseconds:format('%Y/%m/%d %H:%M:%SZ', 'UTC')}")(expression::Parameters{ flow_file_a }).asString() == "2001/09/09 01:46:40.000Z");
+  CHECK(expression::compile("${trillion_milliseconds:format('%Y/%m/%d %H:%M:%SZ', 'Europe/Paris')}")(expression::Parameters{ flow_file_a }).asString() == "2001/09/09 03:46:40.000Z");
+  CHECK(expression::compile("${trillion_milliseconds:format('%Y/%m/%d %H:%M:%SZ', 'America/Los_Angeles')}")(expression::Parameters{ flow_file_a }).asString() == "2001/09/08 18:46:40.000Z");
 }
 
 TEST_CASE("IP", "[expressionIP]") {
