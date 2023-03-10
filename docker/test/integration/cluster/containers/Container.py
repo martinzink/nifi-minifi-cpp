@@ -39,7 +39,9 @@ class Container:
     def cleanup(self):
         logging.info('Cleaning up container: %s', self.name)
         try:
-            self.client.containers.get(self.name).remove(v=True, force=True)
+            container = self.client.containers.get(self.name)
+            container.remove(v=True, force=True)
+            container.wait()
         except docker.errors.NotFound:
             logging.warning("Container '%s' has been cleaned up already, nothing to be done.", self.name)
             pass
