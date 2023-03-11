@@ -1,5 +1,5 @@
 behave==1.2.6
-docker==5.0.0
+docker==6.0.1
 kafka-python==2.0.2
 confluent-kafka==1.7.0
 PyYAML==5.4.1
