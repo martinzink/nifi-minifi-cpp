@@ -61,9 +61,15 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y python3-virtualenv
+      - id: docker_events_start
+        run: docker events > ./build/docker_events.txt &
       - id: test
         name: Docker Verify
         run: cd build && make docker-verify
-      - id: docker_logs
-        if: ${{ failure() }}
-        run: journalctl -xu docker.service
+      - id: docker_events_stop
+        run: kill %1
+      - name: Upload docker events
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker_events
+          path: build/docker_events.txt
