@@ -34,7 +34,7 @@ class Container:
         self.deployed = False
 
     def __del__(self):
-        self.cleanup()
+        pass
 
     def cleanup(self):
         logging.info('Cleaning up container: %s', self.name)
