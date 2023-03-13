@@ -32,6 +32,8 @@ class ElasticsearchContainer(Container):
         logging.info('Creating and running Elasticsearch docker container...')
         self.client.containers.run(
             self.image_store.get_image(self.get_engine()),
+            remove=False,
+            auto_remove=False,
             detach=True,
             name=self.name,
             environment=[

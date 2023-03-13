@@ -124,7 +124,7 @@ class MinifiContainer(FlowContainer):
 
         self.client.containers.run(
             image,
-            remove=True,
+            remove=False,
             auto_remove=False,
             detach=True,
             name=self.name,

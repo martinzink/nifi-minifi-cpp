@@ -53,6 +53,8 @@ class NifiContainer(FlowContainer):
         self.__create_config()
         self.client.containers.run(
             "apache/nifi:" + NifiContainer.NIFI_VERSION,
+            remove=False,
+            auto_remove=False,
             detach=True,
             name=self.name,
             hostname=self.name,

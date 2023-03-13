@@ -32,6 +32,8 @@ class KafkaBrokerContainer(Container):
         logging.info('Creating and running kafka broker docker container...')
         self.client.containers.run(
             self.image_store.get_image(self.get_engine()),
+            remove=False,
+            auto_remove=False,
             detach=True,
             name='kafka-broker',
             network=self.network.name,

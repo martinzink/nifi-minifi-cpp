@@ -30,6 +30,8 @@ class PostgreSQLServerContainer(Container):
 
         self.docker_container = self.client.containers.run(
             self.image_store.get_image(self.get_engine()),
+            remove=False,
+            auto_remove=False,
             detach=True,
             name='postgresql-server',
             network=self.network.name,

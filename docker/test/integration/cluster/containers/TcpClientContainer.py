@@ -31,6 +31,8 @@ class TcpClientContainer(Container):
         self.client.containers.run(
             self.image_store.get_image(self.get_engine()),
             detach=True,
+            remove=False,
+            auto_remove=False,
             name=self.name,
             network=self.network.name,
             entrypoint=self.command)

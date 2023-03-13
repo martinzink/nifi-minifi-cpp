@@ -33,6 +33,8 @@ class ZookeeperContainer(Container):
         self.client.containers.run(
             "wurstmeister/zookeeper:3.4.6",
             detach=True,
+            remove=False,
+            auto_remove=False,
             name='zookeeper',
             network=self.network.name,
             ports={'2181/tcp': 2181},

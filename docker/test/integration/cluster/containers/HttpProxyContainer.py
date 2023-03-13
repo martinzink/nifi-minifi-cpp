@@ -32,6 +32,8 @@ class HttpProxyContainer(Container):
         logging.info('Creating and running http-proxy docker container...')
         self.client.containers.run(
             self.image_store.get_image(self.get_engine()),
+            remove=False,
+            auto_remove=False,
             detach=True,
             name=self.name,
             network=self.network.name,

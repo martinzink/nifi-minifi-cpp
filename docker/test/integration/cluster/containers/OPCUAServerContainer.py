@@ -32,6 +32,8 @@ class OPCUAServerContainer(Container):
         logging.info('Creating and running OPC UA server docker container...')
         self.client.containers.run(
             "lordgamez/open62541:1.3.3",
+            remove=False,
+            auto_remove=False,
             detach=True,
             name=self.name,
             network=self.network.name,

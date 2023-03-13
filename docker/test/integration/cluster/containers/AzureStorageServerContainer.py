@@ -33,6 +33,8 @@ class AzureStorageServerContainer(Container):
         self.client.containers.run(
             "mcr.microsoft.com/azure-storage/azurite:3.14.2",
             detach=True,
+            remove=False,
+            auto_remove=False,
             name=self.name,
             network=self.network.name,
             ports={'10000/tcp': 10000, '10001/tcp': 10001},
