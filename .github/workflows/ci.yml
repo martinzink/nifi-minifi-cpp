@@ -66,9 +66,8 @@ jobs:
       - id: test
         name: Docker Verify
         run: cd build && make docker-verify
-      - id: docker_events_stop
-        run: kill %1
       - name: Upload docker events
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v3
         with:
           name: docker_events
