@@ -109,7 +109,7 @@ class JniByteInputStream {
     int read = 0;
     do {
       // JNI takes size as int, there's not much we can do here to support 2GB+ sizes
-      int actual = static_cast<int>(stream_->read(gsl::make_span(buffer_).subspan(0, std::min(remaining, buffer_.size()))));
+      int actual = static_cast<int>(stream_->read(gsl::make_span(buffer_).subspan(0, std::min(remaining, gsl::narrow<uint64_t>(buffer_.size())))));
       if (actual <= 0) {
         if (read == 0) {
           stream_ = nullptr;
@@ -128,8 +128,8 @@ class JniByteInputStream {
     return read;
   }
 
-  int64_t read(uint8_t &arr) {
-    return stream_->read(arr);
+  int64_t read(uint8_t &arr) const {
+    return gsl::narrow<int64_t>(stream_->read(arr));
   }
 
   std::shared_ptr<minifi::io::InputStream> stream_;
