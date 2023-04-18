@@ -477,3 +477,27 @@ TEST_CASE("FileUtils::get_relative_path", "[TestGetRelativePath]") {
   REQUIRE(*FileUtils::get_relative_path(path, base_path / "") == std::filesystem::path("subdir") / "file.log");
   REQUIRE(*FileUtils::get_relative_path(base_path, base_path) == ".");
 }
+
+TEST_CASE("file_clock to system_clock conversion tests") {
+  using namespace std::chrono;
+
+  static_assert(system_clock::duration::period::num == file_clock::duration::period::num);
+  constexpr auto lowest_den = system_clock::period::den < file_clock::period::den ? system_clock::period::den : file_clock::period::den;
+  using LeastPreciseDurationType = duration<std::common_type_t<system_clock::duration::rep, file_clock::duration::rep>, std::ratio<system_clock::duration::period::num, lowest_den>>;
+
+  {
+    system_clock::time_point system_now = system_clock::now();
+    file_clock::time_point converted_system_now = FileUtils::from_sys(system_now);
+    system_clock::time_point double_converted_system_now = FileUtils::to_sys(converted_system_now);
+
+    CHECK(time_point_cast<LeastPreciseDurationType>(system_now).time_since_epoch().count() == time_point_cast<LeastPreciseDurationType>(double_converted_system_now).time_since_epoch().count());
+  }
+
+  {
+    file_clock::time_point file_now = file_clock ::now();
+    system_clock::time_point converted_file_now = FileUtils::to_sys(file_now);
+    file_clock::time_point double_converted_file_now = FileUtils::from_sys(converted_file_now);
+
+    CHECK(time_point_cast<LeastPreciseDurationType>(file_now).time_since_epoch().count() == time_point_cast<LeastPreciseDurationType>(double_converted_file_now).time_since_epoch().count());
+  }
+}
