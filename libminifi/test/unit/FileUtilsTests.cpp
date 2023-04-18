@@ -490,7 +490,7 @@ TEST_CASE("file_clock to system_clock conversion tests") {
     file_clock::time_point converted_system_now = FileUtils::from_sys(system_now);
     system_clock::time_point double_converted_system_now = FileUtils::to_sys(converted_system_now);
 
-    CHECK(time_point_cast<LeastPreciseDurationType>(system_now).time_since_epoch() == time_point_cast<LeastPreciseDurationType>(double_converted_system_now).time_since_epoch());
+    CHECK(time_point_cast<LeastPreciseDurationType>(system_now).time_since_epoch().count() == time_point_cast<LeastPreciseDurationType>(double_converted_system_now).time_since_epoch().count());
   }
 
   {
@@ -498,6 +498,6 @@ TEST_CASE("file_clock to system_clock conversion tests") {
     system_clock::time_point converted_file_now = FileUtils::to_sys(file_now);
     file_clock::time_point double_converted_file_now = FileUtils::from_sys(converted_file_now);
 
-    CHECK(time_point_cast<LeastPreciseDurationType>(file_now).time_since_epoch() == time_point_cast<LeastPreciseDurationType>(double_converted_file_now).time_since_epoch());
+    CHECK(time_point_cast<LeastPreciseDurationType>(file_now).time_since_epoch().count() == time_point_cast<LeastPreciseDurationType>(double_converted_file_now).time_since_epoch().count());
   }
 }
