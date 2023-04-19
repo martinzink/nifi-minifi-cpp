@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import docker
-import uuid
+import shortuuid
 import logging
 import sys
 import tempfile
@@ -26,8 +26,8 @@ class DockerCommunicator:
     def __init__(self):
         self.client = docker.from_env()
 
-    def create_docker_network(self):
-        net_name = 'minifi_integration_test_network-' + str(uuid.uuid4())
+    def create_docker_network(self, feature_id: str):
+        net_name = 'minifi_integration_test_network-' + feature_id
         logging.debug('Creating network: %s', net_name)
         return self.client.networks.create(net_name)
 

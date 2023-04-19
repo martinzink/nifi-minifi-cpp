@@ -24,7 +24,7 @@ Feature: Using SSL context service to send data with TLS
   Scenario: A MiNiFi instance sends data using InvokeHTTP to a receiver using ListenHTTP with TLS
     Given a GetFile processor with the "Input Directory" property set to "/tmp/input"
     And 200 files with the content "test" are present in "/tmp/input"
-    And a InvokeHTTP processor with the "Remote URL" property set to "https://secondary:4430/contentListener"
+    And a InvokeHTTP processor with the "Remote URL" property set to "https://secondary-${feature_id}:4430/contentListener"
     And the "HTTP Method" property of the InvokeHTTP processor is set to "POST"
 
     And the "success" relationship of the GetFile processor is connected to the InvokeHTTP

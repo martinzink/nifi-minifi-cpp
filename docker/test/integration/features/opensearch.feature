@@ -23,7 +23,7 @@ Feature: PostElasticsearch works on Opensearch (Opensearch doesnt support API Ke
     And a GetFile processor with the "Input Directory" property set to "/tmp/input"
     And a file with the content "{ "field1" : "value1" }" is present in "/tmp/input"
     And a PostElasticsearch processor
-    And the "Hosts" property of the PostElasticsearch processor is set to "https://opensearch:9200"
+    And the "Hosts" property of the PostElasticsearch processor is set to "https://opensearch-${feature_id}:9200"
     And the "Index" property of the PostElasticsearch processor is set to "my_index"
     And the "Identifier" property of the PostElasticsearch processor is set to "my_id"
     And the "Action" property of the PostElasticsearch processor is set to <action>
@@ -47,7 +47,7 @@ Feature: PostElasticsearch works on Opensearch (Opensearch doesnt support API Ke
     And a GetFile processor with the "Input Directory" property set to "/tmp/input"
     And a file with the content "hello world" is present in "/tmp/input"
     And a PostElasticsearch processor
-    And the "Hosts" property of the PostElasticsearch processor is set to "https://opensearch:9200"
+    And the "Hosts" property of the PostElasticsearch processor is set to "https://opensearch-${feature_id}:9200"
     And the "Index" property of the PostElasticsearch processor is set to "my_index"
     And the "Identifier" property of the PostElasticsearch processor is set to "preloaded_id"
     And the "Action" property of the PostElasticsearch processor is set to "delete"
@@ -66,7 +66,7 @@ Feature: PostElasticsearch works on Opensearch (Opensearch doesnt support API Ke
     And a GetFile processor with the "Input Directory" property set to "/tmp/input"
     And a file with the content "{ "field2" : "value2" }" is present in "/tmp/input"
     And a PostElasticsearch processor
-    And the "Hosts" property of the PostElasticsearch processor is set to "https://opensearch:9200"
+    And the "Hosts" property of the PostElasticsearch processor is set to "https://opensearch-${feature_id}:9200"
     And the "Index" property of the PostElasticsearch processor is set to "my_index"
     And the "Identifier" property of the PostElasticsearch processor is set to "preloaded_id"
     And the "Action" property of the PostElasticsearch processor is set to "update"

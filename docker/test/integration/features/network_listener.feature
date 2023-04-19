@@ -26,4 +26,4 @@ Feature: Minifi C++ can act as a network listener
     And the "success" relationship of the ListenTCP processor is connected to the PutFile
 
     When both instances start up
-    Then at least one flowfile with the content "test_tcp_message" is placed in the monitored directory in less than 60 seconds
+    Then at least one flowfile with the content "test_tcp_message" is placed in the monitored directory in less than 10 seconds

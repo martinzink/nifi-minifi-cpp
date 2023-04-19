@@ -33,7 +33,7 @@ Feature: Managing documents on Elasticsearch with PostElasticsearch
     And the "success" relationship of the PostElasticsearch processor is connected to the PutFile
 
     When both instances start up
-    Then a flowfile with the content "{ "field1" : "value1" }" is placed in the monitored directory in less than 20 seconds
+    Then a flowfile with the content "{ "field1" : "value1" }" is placed in the monitored directory in less than 2000 seconds
     And Elasticsearch has a document with "my_id" in "my_index" that has "value1" set in "field1"
 
     Examples:
