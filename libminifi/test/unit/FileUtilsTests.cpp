@@ -479,6 +479,10 @@ TEST_CASE("FileUtils::get_relative_path", "[TestGetRelativePath]") {
 }
 
 TEST_CASE("file_clock to system_clock conversion tests") {
+#ifdef WIN32
+  date::set_install(TZ_DATA_DIR);
+#endif
+
   using namespace std::chrono;
 
   static_assert(system_clock::duration::period::num == file_clock::duration::period::num);

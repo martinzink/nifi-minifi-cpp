@@ -68,7 +68,9 @@ bool contains(const std::filesystem::path& file_path, std::string_view text_to_s
 
 std::chrono::system_clock::time_point to_sys(std::filesystem::file_time_type file_time) {
   using namespace std::chrono;  // NOLINT(build/namespaces)
-#if defined(WIN32) || (defined(_LIBCPP_VERSION) && (_LIBCPP_VERSION < 14000))
+#if defined(WIN32)
+  return clock_cast<system_clock>(file_time);
+#elif defined(_LIBCPP_VERSION) && (_LIBCPP_VERSION < 14000)
   return system_clock::now() + (file_time - file_clock::now());
 #else
   return time_point_cast<system_clock::duration>(file_clock::to_sys(file_time));
@@ -77,7 +79,9 @@ std::chrono::system_clock::time_point to_sys(std::filesystem::file_time_type fil
 
 std::filesystem::file_time_type from_sys(std::chrono::system_clock::time_point sys_time) {
   using namespace std::chrono;  // NOLINT(build/namespaces)
-#if defined(WIN32) || (defined(_LIBCPP_VERSION) && (_LIBCPP_VERSION < 14000))
+#if defined(WIN32)
+  return clock_cast<file_clock>(sys_time);
+#elif defined(_LIBCPP_VERSION) && (_LIBCPP_VERSION < 14000)
   return file_clock::now() + (sys_time - system_clock::now());
 #else
   return time_point_cast<file_clock::duration>(file_clock::from_sys(sys_time));
