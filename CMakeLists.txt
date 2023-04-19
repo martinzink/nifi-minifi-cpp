@@ -50,6 +50,11 @@ if (DOCKER_BUILD_ONLY)
     return()
 endif()
 
+if (WIN32 AND CI_BUILD)
+    add_link_options("/INCREMENTAL:YES")
+    add_link_options("/debug:fastlink")
+endif()
+
 # Generate the build identifier if one is not provided
 if (NOT BUILD_IDENTIFIER)
     string(RANDOM LENGTH 24 BUILD_IDENTIFIER)
