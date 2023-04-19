@@ -71,7 +71,7 @@ std::chrono::system_clock::time_point to_sys(std::filesystem::file_time_type fil
 #if defined(WIN32)
   return clock_cast<system_clock>(file_time);
 #elif defined(_LIBCPP_VERSION) && (_LIBCPP_VERSION < 14000)
-  return system_clock::now() + (file_time - file_clock::now());
+  return system_clock::now() + duration_cast<system_clock::duration>(file_time - file_clock::now());
 #else
   return time_point_cast<system_clock::duration>(file_clock::to_sys(file_time));
 #endif
@@ -82,7 +82,7 @@ std::filesystem::file_time_type from_sys(std::chrono::system_clock::time_point s
 #if defined(WIN32)
   return clock_cast<file_clock>(sys_time);
 #elif defined(_LIBCPP_VERSION) && (_LIBCPP_VERSION < 14000)
-  return file_clock::now() + (sys_time - system_clock::now());
+  return file_clock::now() + duration_cast<file_clock::duration>(sys_time - system_clock::now());
 #else
   return time_point_cast<file_clock::duration>(file_clock::from_sys(sys_time));
 #endif
