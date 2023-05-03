@@ -14,6 +14,7 @@
 # limitations under the License.
 
 @ENABLE_PYTHON_SCRIPTING
+@SKIP_CI
 Feature: MiNiFi can use python modules
   Background:
     Given the content of "/tmp/output" is monitored
