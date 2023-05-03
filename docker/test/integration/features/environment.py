@@ -31,6 +31,7 @@ from cluster.ImageStore import ImageStore  # noqa
 from cluster.DockerTestDirectoryBindings import DockerTestDirectoryBindings  # noqa
 from cluster.KubernetesProxy import KubernetesProxy  # noqa
 
+
 def inject_feature_id(context, step):
     if "${feature_id}" in step.name:
         step.name = step.name.replace("${feature_id}", context.feature_id)
@@ -39,6 +40,7 @@ def inject_feature_id(context, step):
             for i in range(len(row.cells)):
                 if "${feature_id}" in row.cells[i]:
                     row.cells[i] = row.cells[i].replace("${feature_id}", context.feature_id)
+
 
 def before_scenario(context, scenario):
     if "skip" in scenario.effective_tags:
@@ -49,6 +51,7 @@ def before_scenario(context, scenario):
     context.test = MiNiFi_integration_test(context=context, feature_id=context.feature_id)
     for step in scenario.steps:
         inject_feature_id(context, step)
+
 
 def after_scenario(context, scenario):
     if "skip" in scenario.effective_tags:
@@ -68,12 +71,6 @@ def before_all(context):
     context.kubernetes_proxy = None
 
 
-def after_tag(context, tag):
-    if tag == "requires.kubernetes.cluster" and context.kubernetes_proxy:
-        context.kubernetes_proxy.cleanup()
-        context.kubernetes_proxy = None
-
-
 def before_feature(context, feature):
     if "x86_x64_only" in feature.tags:
         is_x86 = platform.machine() in ("i386", "AMD64", "x86_64")
@@ -89,3 +86,9 @@ def before_feature(context, feature):
             os.path.join(os.environ['TEST_DIRECTORY'], 'resources', 'kubernetes', 'pods-etc'))
         context.kubernetes_proxy.create_config(context.directory_bindings.get_directory_bindings(context.feature_id))
         context.kubernetes_proxy.start_cluster()
+
+
+def after_feature(context, feature):
+    if "requires.kubernetes.cluster" in feature.tags and context.kubernetes_proxy:
+        context.kubernetes_proxy.cleanup()
+        context.kubernetes_proxy = None
