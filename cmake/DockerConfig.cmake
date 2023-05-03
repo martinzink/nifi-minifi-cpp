@@ -138,31 +138,19 @@ add_custom_target(
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/docker/)
 
 if (EXISTS ${CMAKE_SOURCE_DIR}/docker/test/integration/features)
-    add_subdirectory(${CMAKE_SOURCE_DIR}/docker/test/integration/features)
-
-    add_custom_target(
-        docker-verify-all
-        COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerVerify.sh ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH} ${ALL_BEHAVE_TESTS})
+    set(ENABLED_TAGS "CORE")
+    foreach(MINIFI_OPTION ${MINIFI_OPTIONS})
+        string(FIND ${MINIFI_OPTION} "ENABLE" my_index)
+        if(my_index EQUAL -1)
+            continue()
+        elseif(${${MINIFI_OPTION}})
+            set(ENABLED_TAGS "${ENABLED_TAGS},${MINIFI_OPTION}")
+        endif()
+    endforeach()
 
     add_custom_target(
         docker-verify
-        COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerVerify.sh ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH} ${ENABLED_BEHAVE_TESTS})
-
-    add_custom_target(
-        docker-verify-q1
-        COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerVerify.sh ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH} ${ENABLED_BEHAVE_TESTS_FIRST_QUADRANT})
-
-    add_custom_target(
-        docker-verify-q2
-        COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerVerify.sh ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH} ${ENABLED_BEHAVE_TESTS_SECOND_QUADRANT})
-
-    add_custom_target(
-        docker-verify-q3
-        COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerVerify.sh ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH} ${ENABLED_BEHAVE_TESTS_THIRD_QUADRANT})
-
-    add_custom_target(
-        docker-verify-q4
-        COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerVerify.sh ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH} ${ENABLED_BEHAVE_TESTS_LAST_QUADRANT})
+        COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerVerify.sh ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH} ${ENABLED_TAGS})
 endif()
 
 include(VerifyPythonCompatibility)

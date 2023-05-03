@@ -155,8 +155,9 @@ export PATH
 TEST_DIRECTORY="${docker_dir}/test/integration"
 export TEST_DIRECTORY
 
+echo ${_arg_feature_path}
 # Add --no-logcapture to see logs interleaved with the test output
-BEHAVE_OPTS=(--logging-level INFO --parallel-processes 8 --parallel-scheme feature -o ${PWD}/behavex_output -t @CORE)
+BEHAVE_OPTS=(--logging-level INFO --parallel-processes 8 --parallel-scheme feature -o ${PWD}/behavex_output -t ${_arg_feature_path})
 
 # Specify feature or scenario to run a specific test e.g.:
 # behave "${BEHAVE_OPTS[@]}" "features/file_system_operations.feature"
