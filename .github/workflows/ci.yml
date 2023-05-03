@@ -57,5 +57,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: behavex_output
-          path: build/behavex_output-${{ matrix.feature }}
+          name: behavex_output-${{ matrix.feature }}
+          path: build/behavex_output
