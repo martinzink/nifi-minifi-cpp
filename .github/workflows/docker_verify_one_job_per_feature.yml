@@ -1,0 +1,81 @@
+on: [workflow_dispatch]
+env:
+  DOCKER_CMAKE_FLAGS: -DUSE_SHARED_LIBS= -DSTRICT_GSL_CHECKS=AUDIT -DCI_BUILD=ON -DDISABLE_JEMALLOC=ON -DENABLE_AWS=ON -DENABLE_LIBRDKAFKA=ON -DENABLE_MQTT=ON -DENABLE_AZURE=ON -DENABLE_SQL=ON \
+    -DENABLE_SPLUNK=ON -DENABLE_GCP=ON -DENABLE_OPC=ON -DENABLE_PYTHON_SCRIPTING=ON -DENABLE_LUA_SCRIPTING=ON -DENABLE_KUBERNETES=ON -DENABLE_TEST_PROCESSORS=ON -DENABLE_PROMETHEUS=ON \
+    -DENABLE_ELASTICSEARCH=OFF -DDOCKER_BUILD_ONLY=ON -DDOCKER_CCACHE_DUMP_LOCATION=$HOME/.ccache
+
+# Define a reusable function to run DockerVerify for each feature file
+jobs:
+  run_docker_verify:
+    name: "${{ matrix.feature }}"
+    runs-on: ubuntu-20.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        feature:
+          - attributes_to_json.feature
+          - azure_storage.feature
+          - core_functionality.feature
+          - defragtextflowfiles.feature
+          - file_system_operations.feature
+          - google_cloud_storage.feature
+          - hashcontent.feature
+          - http.feature
+          - https.feature
+          - kafka.feature
+          - kubernetes_logging.feature
+          - kubernetes_metrics.feature
+          - lua_script.feature
+          - minifi_c2_server.feature
+          - mqtt.feature
+          - network_listener.feature
+          - opcua.feature
+          - prometheus.feature
+          - python.feature
+          - python_script.feature
+          - replace_text.feature
+          - routetext.feature
+          - s2s.feature
+          - s3.feature
+          - splunk.feature
+          - sql.feature
+          - syslog_listener.feature
+
+    steps:
+      - id: checkout
+        uses: actions/checkout@v3
+      - id: run_cmake
+        name: Run CMake
+        run: |
+          mkdir build
+          cd build
+          cmake ${DOCKER_CMAKE_FLAGS} ..
+      - name: Download artifact
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          # Optional, workflow file name or ID
+          # If not specified, will be inferred from run_id (if run_id is specified), or will be the current workflow
+          workflow: ci.yml
+          workflow_conclusion: success
+          # Optional, will use the specified branch. Defaults to all branches
+          branch: main
+          # Optional, defaults to all types
+          event: push
+          # Optional, run number from the workflow
+          name: minifi_docker
+          path: build/
+          skip_unpack: false
+          if_no_artifact_found: fail
+      - name: Load Docker image
+        run: |
+          docker load --input ./build/minifi_docker.tar
+      - id: install_deps
+        name: Install dependencies for Docker Verify
+        run: |
+          sudo apt update
+          sudo apt install -y python3-virtualenv
+      - id: test
+        name: Docker Verify
+        run: pwd && docker/DockerVerify.sh 0.14.0 features/${{ matrix.feature }}
