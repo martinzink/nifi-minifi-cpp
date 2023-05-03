@@ -43,6 +43,7 @@ def inject_feature_id(context, step):
 
 
 def before_scenario(context, scenario):
+    print(f'Running scenario: {scenario.name} with {context.feature_id}')
     if "skip" in scenario.effective_tags:
         scenario.skip("Marked with @skip")
         return
@@ -54,6 +55,7 @@ def before_scenario(context, scenario):
 
 
 def after_scenario(context, scenario):
+    print(f'Scenario: {scenario.name} done with {context.feature_id}')
     if "skip" in scenario.effective_tags:
         logging.info("Scenario was skipped, no need for clean up.")
         return

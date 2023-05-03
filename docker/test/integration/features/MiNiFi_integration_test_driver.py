@@ -75,6 +75,8 @@ class MiNiFi_integration_test:
 
     def cleanup(self):
         self.cluster.cleanup()
+        if self.file_system_observer:
+            self.file_system_observer.observer.unschedule_all()
 
     def acquire_container(self, context, name, engine='minifi-cpp', command=None):
         return self.cluster.acquire_container(context=context, name=name, engine=engine, command=command)

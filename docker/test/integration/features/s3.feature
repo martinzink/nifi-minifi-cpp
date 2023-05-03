@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+@ENABLE_AWS
 Feature: Sending data from MiNiFi-C++ to an AWS server
   In order to transfer data to interact with AWS servers
   As a user of MiNiFi

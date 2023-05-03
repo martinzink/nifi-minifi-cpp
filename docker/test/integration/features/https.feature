@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+@CORE
 Feature: Using SSL context service to send data with TLS
   In order to send data via HTTPS
   As a user of MiNiFi

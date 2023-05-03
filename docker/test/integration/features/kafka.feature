@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+@ENABLE_LIBRDKAFKA
 Feature: Sending data to using Kafka streaming platform using PublishKafka
   In order to send data to a Kafka stream
   As a user of MiNiFi

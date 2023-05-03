@@ -14,6 +14,7 @@
 # limitations under the License.
 
 @x86_x64_only
+@ENABLE_SPLUNK
 Feature: Sending data to Splunk HEC using PutSplunkHTTP
 
   Background:

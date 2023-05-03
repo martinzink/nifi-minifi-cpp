@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+@CORE
 Feature: Sending data from MiNiFi-C++ to NiFi using S2S protocol
   In order to transfer data inbetween NiFi and MiNiFi flows
   As a user of MiNiFi
