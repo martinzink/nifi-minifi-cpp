@@ -55,6 +55,7 @@ jobs:
         working-directory: ./build
         run: make docker-verify-${{ matrix.feature }}
       - name: Upload artifact
+        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: behavex_output-${{ matrix.feature }}
