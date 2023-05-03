@@ -155,9 +155,12 @@ export PATH
 TEST_DIRECTORY="${docker_dir}/test/integration"
 export TEST_DIRECTORY
 
-echo ${_arg_feature_path}
+printenv
+num_threads=$(echo $MFLAGS | sed 's/.*-j\([0-9]*\).*/\1/')
+echo "Number of threads: $num_threads"
+exit
 # Add --no-logcapture to see logs interleaved with the test output
-BEHAVE_OPTS=(--logging-level INFO --parallel-processes 4 --parallel-scheme feature -o ${PWD}/behavex_output -t ${_arg_feature_path})
+BEHAVE_OPTS=(--logging-level INFO --parallel-processes 2 --parallel-scheme feature -o ${PWD}/behavex_output --dry-run -t ${_arg_feature_path})
 
 # Specify feature or scenario to run a specific test e.g.:
 # behave "${BEHAVE_OPTS[@]}" "features/file_system_operations.feature"
