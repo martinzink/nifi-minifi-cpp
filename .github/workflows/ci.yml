@@ -46,4 +46,5 @@ jobs:
           sudo apt install -y python3-virtualenv
       - id: test
         name: Docker Verify
-        run: cd build && make docker-verify-q1 & make docker-verify-q2 & make docker-verify-q3 & make docker-verify-q4 & wait
+        working-directory: ./build
+        run: make docker-verify-q1 & make docker-verify-q2 & make docker-verify-q3 & make docker-verify-q4 & wait
