@@ -156,11 +156,11 @@ TEST_DIRECTORY="${docker_dir}/test/integration"
 export TEST_DIRECTORY
 
 # Add --no-logcapture to see logs interleaved with the test output
-BEHAVE_OPTS=(-f pretty --logging-level INFO --logging-clear-handlers)
+BEHAVE_OPTS=(--parallel-processes 4 --parallel-scheme feature --dry-run -o ${PWD}/behavex_output)
 
 # Specify feature or scenario to run a specific test e.g.:
 # behave "${BEHAVE_OPTS[@]}" "features/file_system_operations.feature"
 # behave "${BEHAVE_OPTS[@]}" "features/file_system_operations.feature" -n "Get and put operations run in a simple flow"
 cd "${docker_dir}/test/integration"
 exec
-  behave "${BEHAVE_OPTS[@]}" "${_arg_feature_path[@]}"
+  behavex "${BEHAVE_OPTS[@]}" "${_arg_feature_path[@]}"

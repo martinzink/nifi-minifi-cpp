@@ -5,11 +5,17 @@ env:
     -DENABLE_ELASTICSEARCH=OFF -DDOCKER_BUILD_ONLY=ON -DDOCKER_CCACHE_DUMP_LOCATION=$HOME/.ccache
 jobs:
   docker_tests:
-    name: "Docker integration tests"
+    name: "Docker integration tests ${{ matrix.feature }}/4"
     runs-on: ubuntu-20.04
     timeout-minutes: 180
     strategy:
       fail-fast: false
+      matrix:
+        feature:
+          - q1
+          - q2
+          - q3
+          - q4
     steps:
       - id: checkout
         uses: actions/checkout@v3
@@ -47,4 +53,9 @@ jobs:
       - id: test
         name: Docker Verify
         working-directory: ./build
-        run: make docker-verify-q1 & make docker-verify-q2 & make docker-verify-q3 & make docker-verify-q4 & wait
+        run: make docker-verify-${{ matrix.feature }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: behavex_output
+          path: build/behavex_output
