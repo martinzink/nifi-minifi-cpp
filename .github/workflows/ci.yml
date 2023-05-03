@@ -6,7 +6,6 @@ env:
 jobs:
   docker_tests:
     name: "Docker integration tests ${{ matrix.feature }}/4"
-    needs: docker_build
     runs-on: ubuntu-20.04
     timeout-minutes: 180
     strategy:
