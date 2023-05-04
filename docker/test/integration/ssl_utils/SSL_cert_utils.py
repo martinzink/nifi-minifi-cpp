@@ -151,5 +151,5 @@ def dump_certificate(cert):
     return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 
 
-def dump_privatekey(key, passphrase=None):
+def dump_privatekey(key):
     return crypto.dump_privatekey(type=crypto.FILETYPE_PEM, pkey=key)

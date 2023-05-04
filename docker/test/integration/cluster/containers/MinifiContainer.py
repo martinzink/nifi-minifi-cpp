@@ -105,10 +105,10 @@ class MinifiContainer(FlowContainer):
 
             if self.options.set_ssl_context_properties:
                 f.write("nifi.remote.input.secure=true\n")
-                f.write("nifi.security.client.certificate=/tmp/resources/minifi-c2-server-ssl/minifi-cpp-flow.crt\n")
-                f.write("nifi.security.client.private.key=/tmp/resources/minifi-c2-server-ssl/minifi-cpp-flow.key\n")
+                f.write("nifi.security.client.certificate=/tmp/resources/minifi-cpp-flow.crt\n")
+                f.write("nifi.security.client.private.key=/tmp/resources/minifi-cpp-flow.key\n")
                 f.write("nifi.security.client.pass.phrase=abcdefgh\n")
-                f.write("nifi.security.client.ca.certificate=/tmp/resources/minifi-c2-server-ssl/root-ca.pem\n")
+                f.write("nifi.security.client.ca.certificate=/tmp/resources/root_ca.crt\n")
 
             if not self.options.enable_provenance:
                 f.write("nifi.provenance.repository.class.name=NoOpRepository\n")

@@ -15,13 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
+set(PROJECT_VERSION_STR ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
+
 # Create a custom build target called "docker" that will invoke DockerBuild.sh and create the NiFi-MiNiFi-CPP Docker image
 add_custom_target(
     docker
     COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerBuild.sh
         -u 1000
         -g 1000
-        -v ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}
+        -v ${PROJECT_VERSION_STR}
         -o ${MINIFI_DOCKER_OPTIONS_STR}
         -c DOCKER_BASE_IMAGE=${DOCKER_BASE_IMAGE}
         -c DOCKER_CCACHE_DUMP_LOCATION=${DOCKER_CCACHE_DUMP_LOCATION}
@@ -37,7 +39,7 @@ add_custom_target(
         -u 1000
         -g 1000
         -t minimal
-        -v ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}
+        -v ${PROJECT_VERSION_STR}
         -o \"-DENABLE_LIBRDKAFKA=ON
              -DENABLE_AWS=ON
              -DENABLE_AZURE=ON
@@ -60,7 +62,7 @@ add_custom_target(
     COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerBuild.sh
         -u 1000
         -g 1000
-        -v ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}
+        -v ${PROJECT_VERSION_STR}
         -o ${MINIFI_DOCKER_OPTIONS_STR}
         -l ${CMAKE_BINARY_DIR}
         -d centos
@@ -75,7 +77,7 @@ add_custom_target(
     COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerBuild.sh
         -u 1000
         -g 1000
-        -v ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}
+        -v ${PROJECT_VERSION_STR}
         -o ${MINIFI_DOCKER_OPTIONS_STR}
         -d centos
         -c BUILD_NUMBER=${BUILD_NUMBER}
@@ -88,7 +90,7 @@ add_custom_target(
     COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerBuild.sh
         -u 1000
         -g 1000
-        -v ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}
+        -v ${PROJECT_VERSION_STR}
         -o ${MINIFI_DOCKER_OPTIONS_STR}
         -l ${CMAKE_BINARY_DIR}
         -d fedora
@@ -101,7 +103,7 @@ add_custom_target(
     COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerBuild.sh
         -u 1000
         -g 1000
-        -v ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}
+        -v ${PROJECT_VERSION_STR}
         -o ${MINIFI_DOCKER_OPTIONS_STR}
         -l ${CMAKE_BINARY_DIR}
         -d bionic
@@ -114,7 +116,7 @@ add_custom_target(
     COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerBuild.sh
         -u 1000
         -g 1000
-        -v ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}
+        -v ${PROJECT_VERSION_STR}
         -o ${MINIFI_DOCKER_OPTIONS_STR}
         -l ${CMAKE_BINARY_DIR}
         -d focal
@@ -127,7 +129,7 @@ add_custom_target(
     COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerBuild.sh
         -u 1000
         -g 1000
-        -v ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}
+        -v ${PROJECT_VERSION_STR}
         -o ${MINIFI_DOCKER_OPTIONS_STR}
         -l ${CMAKE_BINARY_DIR}
         -d rockylinux
@@ -150,7 +152,7 @@ if (EXISTS ${CMAKE_SOURCE_DIR}/docker/test/integration/features)
 
     add_custom_target(
         docker-verify
-        COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerVerify.sh ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH} ${ENABLED_TAGS})
+        COMMAND ${CMAKE_SOURCE_DIR}/docker/DockerVerify.sh ${PROJECT_VERSION_STR} ${ENABLED_TAGS})
 endif()
 
 include(VerifyPythonCompatibility)
