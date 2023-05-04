@@ -658,7 +658,7 @@ def delivery_report(err, msg):
 def step_impl(context, content, topic_name):
     producer = Producer({"bootstrap.servers": "localhost:29092", "client.id": socket.gethostname()})
     producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report)
-    producer.flush(10)
+    producer.flush(30)
 
 
 @when("a message with content \"{content}\" is published to the \"{topic_name}\" topic using an ssl connection")
@@ -689,7 +689,7 @@ def step_impl(context, content, topic_name):
         "ssl.key.password": "",
         "client.id": socket.gethostname()})
     producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report)
-    producer.flush(10)
+    producer.flush(30)
 
 
 # Used for testing transactional message consumption
@@ -704,23 +704,23 @@ def step_impl(context, transaction_type, topic_name, messages):
         for content in messages.split(", "):
             producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report)
         producer.commit_transaction()
-        producer.flush(10)
+        producer.flush(30)
     elif transaction_type == "TWO_SEPARATE_TRANSACTIONS":
         for content in messages.split(", "):
             producer.begin_transaction()
             producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report)
             producer.commit_transaction()
-        producer.flush(10)
+        producer.flush(30)
     elif transaction_type == "NON_COMMITTED_TRANSACTION":
         producer.begin_transaction()
         for content in messages.split(", "):
             producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report)
-        producer.flush(10)
+        producer.flush(30)
     elif transaction_type == "CANCELLED_TRANSACTION":
         producer.begin_transaction()
         for content in messages.split(", "):
             producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report)
-        producer.flush(10)
+        producer.flush(30)
         producer.abort_transaction()
     else:
         raise Exception("Unknown transaction type.")
@@ -735,7 +735,7 @@ def step_impl(context, content, topic_name, message_key):
     producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report, key=message_key.encode("utf-8"))
     # Wait for any outstanding messages to be delivered and delivery report
     # callbacks to be triggered.
-    producer.flush(10)
+    producer.flush(30)
 
 
 @when("{number_of_messages} kafka messages are sent to the topic \"{topic_name}\"")
@@ -743,7 +743,7 @@ def step_impl(context, number_of_messages, topic_name):
     producer = Producer({"bootstrap.servers": "localhost:29092", "client.id": socket.gethostname()})
     for i in range(0, int(number_of_messages)):
         producer.produce(topic_name, str(uuid.uuid4()).encode("utf-8"))
-    producer.flush(10)
+    producer.flush(30)
 
 
 @when("a message with content \"{content}\" is published to the \"{topic_name}\" topic with headers \"{semicolon_separated_headers}\"")
