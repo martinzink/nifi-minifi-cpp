@@ -56,7 +56,7 @@ else()
     set(SOCKET_SOURCES "src/io/posix/*.cpp")
 endif()
 
-if (NOT OPENSSL_OFF)
+if (ENABLE_OPENSSL)
     set(TLS_SOURCES "src/utils/tls/*.cpp" "src/io/tls/*.cpp")
 endif()
 
@@ -97,7 +97,7 @@ list(APPEND LIBMINIFI_LIBRARIES yaml-cpp ZLIB::ZLIB concurrentqueue RapidJSON sp
 if(NOT WIN32)
     list(APPEND LIBMINIFI_LIBRARIES OSSP::libuuid++)
 endif()
-if (NOT OPENSSL_OFF)
+if (ENABLE_OPENSSL)
     list(APPEND LIBMINIFI_LIBRARIES OpenSSL::Crypto OpenSSL::SSL)
 endif()
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)

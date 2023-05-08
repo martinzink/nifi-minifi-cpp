@@ -50,7 +50,7 @@ function(use_bundled_curl SOURCE_DIR BINARY_DIR)
             -DHAVE_FSETXATTR_5=0
             -DHAVE_FSETXATTR_5__TRYRUN_OUTPUT=""
             )
-    if (OPENSSL_OFF)
+    if (NOT ENABLE_OPENSSL)
         list(APPEND CURL_CMAKE_ARGS -DCMAKE_USE_OPENSSL=OFF)
     else()
         list(APPEND CURL_CMAKE_ARGS -DCMAKE_USE_OPENSSL=ON)
@@ -73,7 +73,7 @@ function(use_bundled_curl SOURCE_DIR BINARY_DIR)
 
     # Set dependencies
     add_dependencies(curl-external ZLIB::ZLIB)
-    if (NOT OPENSSL_OFF)
+    if (ENABLE_OPENSSL)
         add_dependencies(curl-external OpenSSL::SSL OpenSSL::Crypto)
     endif()
 
@@ -96,7 +96,7 @@ function(use_bundled_curl SOURCE_DIR BINARY_DIR)
     add_dependencies(CURL::libcurl curl-external)
     set_property(TARGET CURL::libcurl APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${CURL_INCLUDE_DIRS})
     set_property(TARGET CURL::libcurl APPEND PROPERTY INTERFACE_LINK_LIBRARIES ZLIB::ZLIB Threads::Threads)
-    if (NOT OPENSSL_OFF)
+    if (ENABLE_OPENSSL)
         set_property(TARGET CURL::libcurl APPEND PROPERTY INTERFACE_LINK_LIBRARIES OpenSSL::SSL OpenSSL::Crypto)
     endif()
 endfunction(use_bundled_curl SOURCE_DIR BINARY_DIR)

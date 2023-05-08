@@ -214,7 +214,7 @@ else()
     message(VERBOSE "No custom malloc implementation")
 endif()
 
-if (NOT DISABLE_BZIP2 AND (NOT DISABLE_LIBARCHIVE OR (NOT DISABLE_ROCKSDB AND NOT WIN32)))
+if (ENABLE_BZIP2 AND (ENABLE_LIBARCHIVE OR (ENABLE_ROCKSDB AND NOT WIN32)))
     include(BundledBZip2)
     use_bundled_bzip2(${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/bzip2/dummy")
@@ -239,7 +239,7 @@ if(NOT WIN32)
 endif()
 
 # OpenSSL/LibreSSL
-if (NOT OPENSSL_OFF)
+if (ENABLE_OPENSSL)
     include(BundledLibreSSL)
     use_libre_ssl("${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}")
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/ssl")
@@ -264,7 +264,7 @@ add_library(ut INTERFACE)
 target_include_directories(ut SYSTEM INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/ut")
 
 # cURL
-if(NOT DISABLE_CURL)
+if(ENABLE_CURL)
     include(BundledLibcURL)
     use_bundled_curl(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/curl/dummy")
@@ -346,13 +346,13 @@ include(Extensions)
 
 add_subdirectory(libminifi)
 
-if ((ENABLE_OPENWSMAN AND NOT DISABLE_CIVET AND NOT DISABLE_CURL) OR ENABLE_ALL OR ENABLE_AZURE)
+if ((ENABLE_OPENWSMAN AND ENABLE_CIVET AND ENABLE_CURL) OR ENABLE_ALL OR ENABLE_AZURE)
     include(BundledLibXml2)
     use_bundled_libxml2(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/libxml2/dummy")
 endif()
 
-if (ENABLE_ALL OR ENABLE_PROMETHEUS OR NOT DISABLE_CIVET)
+if (ENABLE_ALL OR ENABLE_PROMETHEUS OR ENABLE_CIVET)
     include(CivetWeb)
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/civetweb/dummy")
 endif()
@@ -376,7 +376,7 @@ if (ENABLE_ENCRYPT_CONFIG)
     add_subdirectory(encrypt-config)
 endif()
 
-if (NOT DISABLE_CURL AND NOT DISABLE_CONTROLLER)
+if (ENABLE_CURL AND NOT DISABLE_CONTROLLER)
     add_subdirectory(controller)
 endif()
 
@@ -626,7 +626,7 @@ registerTest("${TEST_DIR}/flow-tests")
 
 registerTest("${TEST_DIR}/schema-tests")
 
-if (NOT DISABLE_ROCKSDB AND NOT DISABLE_LIBARCHIVE)
+if (ENABLE_ROCKSDB AND ENABLE_LIBARCHIVE)
     registerTest("${TEST_DIR}/persistence-tests")
 endif()
 
