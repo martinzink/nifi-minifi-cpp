@@ -98,7 +98,7 @@ endif()
 
 # Check for exec info before we enable the backtrace features.
 CHECK_INCLUDE_FILE("execinfo.h" HAS_EXECINFO)
-if (ENABLE_OPS AND HAS_EXECINFO AND NOT WIN32)
+if (MINIFI_OPS AND HAS_EXECINFO AND NOT WIN32)
     add_definitions("-DHAS_EXECINFO=1")
 endif()
 
@@ -221,9 +221,9 @@ if (ENABLE_BZIP2 AND (ENABLE_LIBARCHIVE OR (ENABLE_ROCKSDB AND NOT WIN32)))
 endif()
 
 if(NOT WIN32)
-    if (ENABLE_JNI)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DENABLE_JNI")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DENABLE_JNI")
+    if (MINIFI_JNI)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMINIFI_JNI")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DMINIFI_JNI")
     endif()
 endif()
 
@@ -239,7 +239,7 @@ if(NOT WIN32)
 endif()
 
 # OpenSSL/LibreSSL
-if (ENABLE_OPENSSL)
+if (MINIFI_OPENSSL)
     include(BundledLibreSSL)
     use_libre_ssl("${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}")
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/ssl")

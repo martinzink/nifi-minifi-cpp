@@ -40,7 +40,7 @@ COPY . ${MINIFI_BASE_DIR}
 # gpsd-devel and ccache are in EPEL
 RUN dnf -y install epel-release && dnf -y install sudo git which make libarchive ccache ca-certificates cmake && \
     if echo "$MINIFI_OPTIONS" | grep -q "ENABLE_GPS=ON"; then dnf -y install gpsd-devel; fi && \
-    if echo "$MINIFI_OPTIONS" | grep -q "ENABLE_JNI=ON"; then dnf -y install java-1.8.0-openjdk maven; fi && \
+    if echo "$MINIFI_OPTIONS" | grep -q "MINIFI_JNI=ON"; then dnf -y install java-1.8.0-openjdk maven; fi && \
     if echo "$MINIFI_OPTIONS" | grep -q "ENABLE_PCAP=ON"; then dnf -y install libpcap-devel; fi && \
     if echo "$MINIFI_OPTIONS" | grep -q "ENABLE_USB_CAMERA=ON"; then dnf -y install libpng-devel libusbx-devel; fi && \
     if echo "$MINIFI_OPTIONS" | grep -q "ENABLE_OPENCV=ON" || echo "$MINIFI_OPTIONS" | grep -q "ENABLE_BUSTACHE=ON"; then dnf -y install boost-devel; fi && \

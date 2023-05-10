@@ -17,7 +17,7 @@
 # under the License.
 #
 
-if(NOT (ENABLE_ALL OR ENABLE_JNI))
+if(NOT (ENABLE_ALL OR MINIFI_JNI))
     return()
 endif()
 

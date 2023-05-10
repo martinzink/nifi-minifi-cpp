@@ -293,7 +293,7 @@ add_dependency COAP_ENABLED "automake"
 add_dependency COAP_ENABLED "autoconf"
 add_dependency COAP_ENABLED "libtool"
 
-add_option JNI_ENABLED ${FALSE} "ENABLE_JNI"
+add_option JNI_ENABLED ${FALSE} "MINIFI_JNI"
 add_dependency JNI_ENABLED "jnibuild"
 
 add_option OPENCV_ENABLED ${FALSE} "ENABLE_OPENCV"
