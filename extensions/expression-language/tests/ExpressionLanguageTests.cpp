@@ -20,7 +20,7 @@
 
 #include <memory>
 #include <string>
-#ifndef DISABLE_CURL
+#ifdef ENABLE_CURL
 #ifdef WIN32
 #pragma comment(lib, "libcurl.lib")
 #pragma comment(lib, "Ws2_32.lib")
@@ -1210,7 +1210,7 @@ TEST_CASE("Encode Decode CSV", "[expressionEncodeDecodeCSV]") {
   REQUIRE("Zero > One < \"two!\" & 'true'" == expr(expression::Parameters{ flow_file_a }).asString());
 }
 
-#ifndef DISABLE_CURL
+#ifdef ENABLE_CURL
 TEST_CASE("Encode URL", "[expressionEncodeURL]") {
   auto expr = expression::compile("${message:urlEncode()}");
 
