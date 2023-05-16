@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+include(CMakeDependentOption)
 
 set(MINIFI_OPTIONS "")
 function(add_minifi_option OPTION_NAME OPTION_DESCRIPTION OPTION_VALUE)
@@ -53,7 +54,6 @@ add_minifi_option(ENABLE_NANOFI "Instructs the build system to enable nanofi lib
 add_minifi_option(BUILD_SHARED_LIBS "Build yaml cpp shared lib" OFF)
 
 add_minifi_option(BUILD_ROCKSDB "Instructs the build system to use RocksDB from the third party directory" ON)
-add_minifi_option(FORCE_WINDOWS "Instructs the build system to force Windows builds when WIN32 is specified" OFF)
 add_minifi_option(ENABLE_CURL "Enables libCurl Properties." ON)
 
 add_minifi_option(INSTALLER_MERGE_MODULES "Creates installer with merge modules" OFF)
@@ -63,7 +63,7 @@ add_minifi_option(USE_REAL_ODBC_TEST_DRIVER "Use SQLite ODBC driver in SQL exten
 # By default, neither Clang or GCC will add ANSI-formatted colors to your output if they detect
 # the output medium is not a terminal. This means no coloring when using a generator
 # different than "GNU Makefiles".
-add_minifi_option (FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." FALSE)
+add_minifi_option(FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." FALSE)
 add_minifi_option(AWS_ENABLE_UNITY_BUILD "If enabled, AWS SDK libraries will be built as a single, generated .cpp file. \
     This can significantly reduce static library size as well as speed up a single compilation time, but it is regenerated \
     and recompiled in every iterative build instance. Turn off to avoid recompilation." ON)
@@ -91,6 +91,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_minifi_option(ENABLE_SYSTEMD "Enables the systemd extension." ON)
 endif()
 
+add_minifi_option(ENABLE_ALL "Enables all extensions" OFF)
 add_minifi_option(ENABLE_EXPRESSION_LANGUAGE "Enables expression language." ON)
 add_minifi_option(ENABLE_CIVET "Enables CivetWeb components." ON)
 add_minifi_option(ENABLE_ROCKSDB "Enables the RocksDB extension." ON)
@@ -135,7 +136,7 @@ endif()
 function(get_minifi_docker_options RET_VALUE)
     set(MINIFI_DOCKER_OPTIONS_STR ${MINIFI_EXTERNAL_DOCKER_OPTIONS_STR})
     foreach(MINIFI_OPTION ${MINIFI_OPTIONS})
-        if (MINIFI_OPTION MINIFI_OPTION STREQUAL SKIP_TESTS OR MINIFI_OPTION STREQUAL DOCKER_BUILD_ONLY OR MINIFI_OPTION STREQUAL DOCKER_SKIP_TESTS OR MINIFI_OPTION STREQUAL DOCKER_PUSH)
+        if (MINIFI_OPTION STREQUAL "SKIP_TESTS" OR MINIFI_OPTION STREQUAL "DOCKER_BUILD_ONLY" OR MINIFI_OPTION STREQUAL "DOCKER_SKIP_TESTS" OR MINIFI_OPTION STREQUAL "DOCKER_PUSH")
             continue()
         endif()
         set(MINIFI_DOCKER_OPTIONS_STR "${MINIFI_DOCKER_OPTIONS_STR} -D${MINIFI_OPTION}=${${MINIFI_OPTION}}")

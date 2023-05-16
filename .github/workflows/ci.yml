@@ -28,7 +28,7 @@ jobs:
           # brew update
           HOMEBREW_NO_AUTO_UPDATE=1 brew install ossp-uuid flex lua ccache sqliteodbc automake autoconf ninja
       - id: setup_env
-        name: setup enviroment
+        name: setup environment
         run: |
           echo "PATH=/usr/lib/ccache:/usr/local/opt/ccache/bin:/usr/local/opt/ccache/libexec:$PATH" >> $GITHUB_ENV
           echo -e "127.0.0.1\t$HOSTNAME" | sudo tee -a /etc/hosts > /dev/null

@@ -56,10 +56,6 @@
           "value": "ON"
         },
         {
-          "name": "FORCE_WINDOWS",
-          "value": "ON"
-        },
-        {
           "name": "USE_SYSTEM_UUID",
           "value": "OFF"
         },
