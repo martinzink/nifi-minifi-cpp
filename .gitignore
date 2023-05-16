@@ -50,6 +50,7 @@ build
 /*build*
 bt_state
 bin
+bootstrap/env
 target
 thirdparty/**/*.o
 thirdparty/**/*.a

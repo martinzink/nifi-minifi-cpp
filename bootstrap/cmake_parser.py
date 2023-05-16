@@ -1,0 +1,56 @@
+import tempfile
+import os
+import re
+
+
+class CMakeCacheValue:
+    def __init__(self, description: str, name: str, value_type: str, value: str):
+        self.description = description
+        self.name = name
+        self.value_type = value_type
+        self.value = value
+        self.possible_values = None
+
+    def __str__(self):
+        return f"CMakeCacheVariable, description:{self.description} name:{self.name}, type:{self.value_type}, value:{self.value}"
+
+    def create_cmake_option_str(self):
+        return f"-D{self.name}={self.value}"
+
+
+def create_cmake_cache(cmake_path: str, cmake_options: str = None):
+    temp_dir = tempfile.mkdtemp()
+
+    cmake_lists_path = os.path.join(temp_dir, 'CMakeLists.txt')
+    with open(cmake_lists_path, 'w') as cmake_lists_file:
+        cmake_lists_file.write('cmake_minimum_required(VERSION 3.5)\n')
+        cmake_lists_file.write(f'include("{cmake_path}")\n')
+
+    os.chdir(temp_dir)
+    if cmake_options is None:
+        os.system('cmake -G Ninja -Wno-dev --log-level=ERROR .')
+    else:
+        os.system(f'cmake -G Ninja -Wno-dev --no-warn-unused-cli --log-level=ERROR {cmake_options} .')
+    return os.path.join(temp_dir, 'CMakeCache.txt')
+
+
+def parse_cmake_cache_values(path: str):
+    parsed_variables = {}
+    with open(path, 'r') as file:
+        contents = file.read()
+        pattern = r'\/\/(?P<description>[\s\S]*?)\n(?P<variable>.+?):(?P<type>\w+?)=(?P<value>.+)\n'
+        matches = re.findall(pattern, contents)
+
+        for match in matches:
+            cmake_cache_value = CMakeCacheValue(description=match[0].replace("//", "").replace("\n", " "),
+                                                name=match[1],
+                                                value_type=match[2], value=match[3])
+            if cmake_cache_value.name.endswith("-STRINGS"):
+                possible_values_of = cmake_cache_value.name[:-len("-STRINGS")]
+                if possible_values_of not in parsed_variables:
+                    raise ValueError(f"Did not parse {possible_values_of} yet")
+                parsed_variables[possible_values_of].possible_values = cmake_cache_value.value.split(";")
+                continue
+
+            parsed_variables[cmake_cache_value.name] = cmake_cache_value
+    return parsed_variables

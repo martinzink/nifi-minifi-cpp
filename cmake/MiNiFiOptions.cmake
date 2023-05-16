@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+include(CMakeDependentOption)
 
 set(MINIFI_OPTIONS "")
 function(add_minifi_option OPTION_NAME OPTION_DESCRIPTION OPTION_VALUE)
@@ -63,7 +64,7 @@ add_minifi_option(USE_REAL_ODBC_TEST_DRIVER "Use SQLite ODBC driver in SQL exten
 # By default, neither Clang or GCC will add ANSI-formatted colors to your output if they detect
 # the output medium is not a terminal. This means no coloring when using a generator
 # different than "GNU Makefiles".
-add_minifi_option (FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." FALSE)
+add_minifi_option(FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." FALSE)
 add_minifi_option(AWS_ENABLE_UNITY_BUILD "If enabled, AWS SDK libraries will be built as a single, generated .cpp file. \
     This can significantly reduce static library size as well as speed up a single compilation time, but it is regenerated \
     and recompiled in every iterative build instance. Turn off to avoid recompilation." ON)
