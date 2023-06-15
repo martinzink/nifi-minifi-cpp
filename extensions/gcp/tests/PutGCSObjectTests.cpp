@@ -55,10 +55,10 @@ class PutGCSObjectTests : public ::testing::Test {
   void SetUp() override {
     gcp_credentials_node_ = test_controller_.plan->addController("GCPCredentialsControllerService", "gcp_credentials_controller_service");
     test_controller_.plan->setProperty(gcp_credentials_node_,
-                                       GCPCredentialsControllerService::CredentialsLoc.getName(),
-                                       toString(GCPCredentialsControllerService::CredentialsLocation::USE_ANONYMOUS_CREDENTIALS));
+                                       GCPCredentialsControllerService::CredentialsLoc,
+                                       toString(minifi_gcp::CredentialsLocation::USE_ANONYMOUS_CREDENTIALS));
     test_controller_.plan->setProperty(put_gcs_object_,
-                                       PutGCSObject::GCPCredentials.getName(),
+                                       PutGCSObject::GCPCredentials,
                                        "gcp_credentials_controller_service");
   }
   std::shared_ptr<PutGCSObjectMocked> put_gcs_object_ = std::make_shared<PutGCSObjectMocked>("PutGCSObjectMocked");
@@ -87,12 +87,12 @@ class PutGCSObjectTests : public ::testing::Test {
 
 TEST_F(PutGCSObjectTests, MissingBucket) {
   EXPECT_CALL(*put_gcs_object_->mock_client_, CreateResumableSession).Times(0);
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket.getName(), ""));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket, ""));
   const auto& result = test_controller_.trigger("hello world");
   EXPECT_EQ(0, result.at(PutGCSObject::Success).size());
   ASSERT_EQ(1, result.at(PutGCSObject::Failure).size());
-  EXPECT_EQ(std::nullopt, result.at(PutGCSObject::Failure)[0]->getAttribute(minifi_gcp::GCS_ERROR_DOMAIN));
-  EXPECT_EQ(std::nullopt, result.at(PutGCSObject::Failure)[0]->getAttribute(minifi_gcp::GCS_ERROR_REASON));
+  EXPECT_EQ(std::nullopt, result.at(PutGCSObject::Failure)[0]->getAttribute(std::string(minifi_gcp::GCS_ERROR_DOMAIN)));
+  EXPECT_EQ(std::nullopt, result.at(PutGCSObject::Failure)[0]->getAttribute(std::string(minifi_gcp::GCS_ERROR_REASON)));
   EXPECT_EQ("hello world", test_controller_.plan->getContent(result.at(PutGCSObject::Failure)[0]));
 }
 
@@ -108,8 +108,8 @@ TEST_F(PutGCSObjectTests, BucketFromAttribute) {
         EXPECT_CALL(*mock_upload_session, UploadFinalChunk).WillOnce(return_upload_done(request));
         return google::cloud::make_status_or(std::unique_ptr<gcs::internal::ResumableUploadSession>(std::move(mock_upload_session)));
       });
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket.getName(), "${gcs.bucket}"));
-  const auto& result = test_controller_.trigger("hello world", {{minifi_gcp::GCS_BUCKET_ATTR, "bucket-from-attribute"}});
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket, "${gcs.bucket}"));
+  const auto& result = test_controller_.trigger("hello world", {{std::string(minifi_gcp::GCS_BUCKET_ATTR), "bucket-from-attribute"}});
   ASSERT_EQ(1, result.at(PutGCSObject::Success).size());
   EXPECT_EQ(0, result.at(PutGCSObject::Failure).size());
   EXPECT_EQ("hello world", test_controller_.plan->getContent(result.at(PutGCSObject::Success)[0]));
@@ -125,14 +125,14 @@ TEST_F(PutGCSObjectTests, ServerGivesTransientErrors) {
       .WillOnce(return_temp_error)
       .WillOnce(return_temp_error)
       .WillOnce(return_temp_error);
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::NumberOfRetries.getName(), "2"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket.getName(), "bucket-from-property"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key.getName(), "object-name-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::NumberOfRetries, "2"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket, "bucket-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key, "object-name-from-property"));
   const auto& result = test_controller_.trigger("hello world");
   EXPECT_EQ(0, result.at(PutGCSObject::Success).size());
   ASSERT_EQ(1, result.at(PutGCSObject::Failure).size());
-  EXPECT_NE(std::nullopt, result.at(PutGCSObject::Failure)[0]->getAttribute(minifi_gcp::GCS_ERROR_DOMAIN));
-  EXPECT_NE(std::nullopt, result.at(PutGCSObject::Failure)[0]->getAttribute(minifi_gcp::GCS_ERROR_REASON));
+  EXPECT_NE(std::nullopt, result.at(PutGCSObject::Failure)[0]->getAttribute(std::string(minifi_gcp::GCS_ERROR_DOMAIN)));
+  EXPECT_NE(std::nullopt, result.at(PutGCSObject::Failure)[0]->getAttribute(std::string(minifi_gcp::GCS_ERROR_REASON)));
   EXPECT_EQ("hello world", test_controller_.plan->getContent(result.at(PutGCSObject::Failure)[0]));
 }
 
@@ -144,13 +144,13 @@ TEST_F(PutGCSObjectTests, ServerGivesPermaError) {
 
   EXPECT_CALL(*put_gcs_object_->mock_client_, CreateResumableSession)
       .WillOnce(return_permanent_error);
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket.getName(), "bucket-from-property"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key.getName(), "object-name-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket, "bucket-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key, "object-name-from-property"));
   const auto& result = test_controller_.trigger("hello world");
   EXPECT_EQ(0, result.at(PutGCSObject::Success).size());
   ASSERT_EQ(1, result.at(PutGCSObject::Failure).size());
-  EXPECT_NE(std::nullopt, result.at(PutGCSObject::Failure)[0]->getAttribute(minifi_gcp::GCS_ERROR_DOMAIN));
-  EXPECT_NE(std::nullopt, result.at(PutGCSObject::Failure)[0]->getAttribute(minifi_gcp::GCS_ERROR_REASON));
+  EXPECT_NE(std::nullopt, result.at(PutGCSObject::Failure)[0]->getAttribute(std::string(minifi_gcp::GCS_ERROR_DOMAIN)));
+  EXPECT_NE(std::nullopt, result.at(PutGCSObject::Failure)[0]->getAttribute(std::string(minifi_gcp::GCS_ERROR_REASON)));
   EXPECT_EQ("hello world", test_controller_.plan->getContent(result.at(PutGCSObject::Failure)[0]));
 }
 
@@ -168,8 +168,8 @@ TEST_F(PutGCSObjectTests, NonRequiredPropertiesAreMissing) {
         EXPECT_CALL(*mock_upload_session, UploadFinalChunk).WillOnce(return_upload_done(request));
         return google::cloud::make_status_or(std::unique_ptr<gcs::internal::ResumableUploadSession>(std::move(mock_upload_session)));
       });
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket.getName(), "bucket-from-property"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key.getName(), "object-name-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket, "bucket-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key, "object-name-from-property"));
   const auto& result = test_controller_.trigger("hello world");
   EXPECT_EQ(1, result.at(PutGCSObject::Success).size());
   EXPECT_EQ(0, result.at(PutGCSObject::Failure).size());
@@ -189,10 +189,10 @@ TEST_F(PutGCSObjectTests, Crc32cMD5LocationTest) {
         EXPECT_CALL(*mock_upload_session, UploadFinalChunk).WillOnce(return_upload_done(request));
         return google::cloud::make_status_or(std::unique_ptr<gcs::internal::ResumableUploadSession>(std::move(mock_upload_session)));
       });
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::MD5Hash.getName(), "${md5}"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Crc32cChecksum.getName(), "${crc32c}"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket.getName(), "bucket-from-property"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key.getName(), "object-name-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::MD5Hash, "${md5}"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Crc32cChecksum, "${crc32c}"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket, "bucket-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key, "object-name-from-property"));
   const auto& result = test_controller_.trigger("hello world", {{"crc32c", "yZRlqg=="}, {"md5", "XrY7u+Ae7tCTyyK7j1rNww=="}});
   EXPECT_EQ(1, result.at(PutGCSObject::Success).size());
   EXPECT_EQ(0, result.at(PutGCSObject::Failure).size());
@@ -209,9 +209,9 @@ TEST_F(PutGCSObjectTests, DontOverwriteTest) {
         EXPECT_CALL(*mock_upload_session, UploadFinalChunk).WillOnce(return_upload_done(request));
         return google::cloud::make_status_or(std::unique_ptr<gcs::internal::ResumableUploadSession>(std::move(mock_upload_session)));
       });
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::OverwriteObject.getName(), "false"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket.getName(), "bucket-from-property"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key.getName(), "object-name-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::OverwriteObject, "false"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket, "bucket-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key, "object-name-from-property"));
   const auto& result = test_controller_.trigger("hello world", {{"crc32c", "yZRlqg=="}, {"md5", "XrY7u+Ae7tCTyyK7j1rNww=="}});
   ASSERT_EQ(1, result.at(PutGCSObject::Success).size());
   EXPECT_EQ(0, result.at(PutGCSObject::Failure).size());
@@ -229,22 +229,22 @@ TEST_F(PutGCSObjectTests, ValidServerSideEncryptionTest) {
         EXPECT_CALL(*mock_upload_session, UploadFinalChunk).WillOnce(return_upload_done(request));
         return google::cloud::make_status_or(std::unique_ptr<gcs::internal::ResumableUploadSession>(std::move(mock_upload_session)));
       });
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::EncryptionKey.getName(), "ZW5jcnlwdGlvbl9rZXk="));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket.getName(), "bucket-from-property"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key.getName(), "object-name-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::EncryptionKey, "ZW5jcnlwdGlvbl9rZXk="));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket, "bucket-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key, "object-name-from-property"));
   const auto& result = test_controller_.trigger("hello world");
   ASSERT_EQ(1, result.at(PutGCSObject::Success).size());
   EXPECT_EQ(0, result.at(PutGCSObject::Failure).size());
-  EXPECT_NE(std::nullopt, result.at(PutGCSObject::Success)[0]->getAttribute(minifi_gcp::GCS_ENCRYPTION_SHA256_ATTR));
-  EXPECT_NE(std::nullopt, result.at(PutGCSObject::Success)[0]->getAttribute(minifi_gcp::GCS_ENCRYPTION_ALGORITHM_ATTR));
+  EXPECT_NE(std::nullopt, result.at(PutGCSObject::Success)[0]->getAttribute(std::string(minifi_gcp::GCS_ENCRYPTION_SHA256_ATTR)));
+  EXPECT_NE(std::nullopt, result.at(PutGCSObject::Success)[0]->getAttribute(std::string(minifi_gcp::GCS_ENCRYPTION_ALGORITHM_ATTR)));
   EXPECT_EQ("hello world", test_controller_.plan->getContent(result.at(PutGCSObject::Success)[0]));
 }
 
 TEST_F(PutGCSObjectTests, InvalidServerSideEncryptionTest) {
   EXPECT_CALL(*put_gcs_object_->mock_client_, CreateResumableSession).Times(0);
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::EncryptionKey.getName(), "not_base64_key"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket.getName(), "bucket-from-property"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key.getName(), "object-name-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::EncryptionKey, "not_base64_key"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket, "bucket-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key, "object-name-from-property"));
   EXPECT_THROW(test_controller_.trigger("hello world"), minifi::Exception);
 }
 
@@ -259,8 +259,8 @@ TEST_F(PutGCSObjectTests, NoContentType) {
         EXPECT_CALL(*mock_upload_session, UploadFinalChunk).WillOnce(return_upload_done(request));
         return google::cloud::make_status_or(std::unique_ptr<gcs::internal::ResumableUploadSession>(std::move(mock_upload_session)));
       });
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket.getName(), "bucket-from-property"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key.getName(), "object-name-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket, "bucket-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key, "object-name-from-property"));
   const auto& result = test_controller_.trigger("hello world");
   ASSERT_EQ(1, result.at(PutGCSObject::Success).size());
   EXPECT_EQ(0, result.at(PutGCSObject::Failure).size());
@@ -279,8 +279,8 @@ TEST_F(PutGCSObjectTests, ContentTypeFromAttribute) {
         EXPECT_CALL(*mock_upload_session, UploadFinalChunk).WillOnce(return_upload_done(request));
         return google::cloud::make_status_or(std::unique_ptr<gcs::internal::ResumableUploadSession>(std::move(mock_upload_session)));
       });
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket.getName(), "bucket-from-property"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key.getName(), "object-name-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket, "bucket-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key, "object-name-from-property"));
   const auto& result = test_controller_.trigger("hello world", {{"mime.type", "text/attribute"}});
   ASSERT_EQ(1, result.at(PutGCSObject::Success).size());
   EXPECT_EQ(0, result.at(PutGCSObject::Failure).size());
@@ -299,9 +299,9 @@ TEST_F(PutGCSObjectTests, ObjectACLTest) {
         EXPECT_CALL(*mock_upload_session, UploadFinalChunk).WillOnce(return_upload_done(request));
         return google::cloud::make_status_or(std::unique_ptr<gcs::internal::ResumableUploadSession>(std::move(mock_upload_session)));
       });
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket.getName(), "bucket-from-property"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key.getName(), "object-name-from-property"));
-  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::ObjectACL.getName(), toString(PutGCSObject::PredefinedAcl::AUTHENTICATED_READ)));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Bucket, "bucket-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::Key, "object-name-from-property"));
+  EXPECT_TRUE(test_controller_.plan->setProperty(put_gcs_object_, PutGCSObject::ObjectACL, toString(PutGCSObject::PredefinedAcl::AUTHENTICATED_READ)));
   const auto& result = test_controller_.trigger("hello world");
   ASSERT_EQ(1, result.at(PutGCSObject::Success).size());
   EXPECT_EQ(0, result.at(PutGCSObject::Failure).size());

@@ -387,11 +387,11 @@ TEST_CASE("GetTCPEmptyNoConnect", "[GetTCP3]") {
 
   plan->addProcessor("LogAttribute", "logattribute", core::Relationship("success", "description"), true);
 
-  plan->setProperty(getfile, org::apache::nifi::minifi::processors::GetTCP::EndpointList.getName(), org::apache::nifi::minifi::io::Socket::getMyHostName() + ":9182");
-  plan->setProperty(getfile, org::apache::nifi::minifi::processors::GetTCP::ReconnectInterval.getName(), "200 msec");
-  plan->setProperty(getfile, org::apache::nifi::minifi::processors::GetTCP::ConnectionAttemptLimit.getName(), "10");
+  plan->setProperty(getfile, org::apache::nifi::minifi::processors::GetTCP::EndpointList, org::apache::nifi::minifi::io::Socket::getMyHostName() + ":9182");
+  plan->setProperty(getfile, org::apache::nifi::minifi::processors::GetTCP::ReconnectInterval, "200 msec");
+  plan->setProperty(getfile, org::apache::nifi::minifi::processors::GetTCP::ConnectionAttemptLimit, "10");
   // we're using new lines above
-  plan->setProperty(getfile, org::apache::nifi::minifi::processors::GetTCP::EndOfMessageByte.getName(), "10");
+  plan->setProperty(getfile, org::apache::nifi::minifi::processors::GetTCP::EndOfMessageByte, "10");
 
   TestController::runSession(plan, false);
   auto records = plan->getProvenanceRecords();
