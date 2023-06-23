@@ -112,7 +112,7 @@ class PublishKafka::Messages {
   void waitForCompletion() {
     std::unique_lock<std::mutex> lock(mutex_);
     cv_.wait(lock, [this, &lock] {
-      if (logger_->should_log(core::logging::LOG_LEVEL::trace)) {
+      if (logger_->should_log(core::logging::LogLevelOption::TRACE)) {
         logger_->log_trace("%s", logStatus(lock));
       }
       return interrupted_ || std::all_of(std::begin(this->flow_files_), std::end(this->flow_files_), [](const FlowFileResult& flow_file) {

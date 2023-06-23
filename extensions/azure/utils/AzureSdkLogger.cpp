@@ -31,13 +31,13 @@ void AzureSdkLogger::initialize() {
 }
 
 void AzureSdkLogger::setLogLevel() {
-  if (logger_->should_log(minifi::core::logging::LOG_LEVEL::trace) || logger_->should_log(minifi::core::logging::LOG_LEVEL::debug)) {
+  if (logger_->should_log(minifi::core::logging::LogLevelOption::TRACE) || logger_->should_log(minifi::core::logging::LogLevelOption::DEBUG)) {
     Azure::Core::Diagnostics::Logger::SetLevel(Azure::Core::Diagnostics::Logger::Level::Verbose);
-  } else if (logger_->should_log(minifi::core::logging::LOG_LEVEL::info)) {
+  } else if (logger_->should_log(minifi::core::logging::LogLevelOption::INFO)) {
     Azure::Core::Diagnostics::Logger::SetLevel(Azure::Core::Diagnostics::Logger::Level::Informational);
-  } else if (logger_->should_log(minifi::core::logging::LOG_LEVEL::warn)) {
+  } else if (logger_->should_log(minifi::core::logging::LogLevelOption::WARN)) {
     Azure::Core::Diagnostics::Logger::SetLevel(Azure::Core::Diagnostics::Logger::Level::Warning);
-  } else if (logger_->should_log(minifi::core::logging::LOG_LEVEL::err) || logger_->should_log(minifi::core::logging::LOG_LEVEL::critical)) {
+  } else if (logger_->should_log(minifi::core::logging::LogLevelOption::ERR) || logger_->should_log(minifi::core::logging::LogLevelOption::CRITICAL)) {
     Azure::Core::Diagnostics::Logger::SetLevel(Azure::Core::Diagnostics::Logger::Level::Error);
   }
 }

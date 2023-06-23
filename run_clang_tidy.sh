@@ -5,7 +5,7 @@ set -uo pipefail
 FILE=$1
 
 EXCLUDED_EXTENSIONS=("pdh" "windows-event-log" "tensorflow")
-EXCLUDED_DIRECTORY=("nanofi")
+EXCLUDED_DIRECTORY=("nanofi" "libminifi/test/tensorflow-tests")
 
 for excluded_extension in "${EXCLUDED_EXTENSIONS[@]}"; do
   if [[ "${FILE}" =~ extensions/${excluded_extension}/ ]]; then

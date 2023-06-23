@@ -29,17 +29,17 @@ namespace aws {
 namespace utils {
 
 Aws::Utils::Logging::LogLevel AWSSdkLogger::GetLogLevel() const {
-  if (logger_->should_log(minifi::core::logging::LOG_LEVEL::trace))
+  if (logger_->should_log(minifi::core::logging::LogLevelOption::TRACE))
     return Aws::Utils::Logging::LogLevel::Trace;
-  if (logger_->should_log(minifi::core::logging::LOG_LEVEL::debug))
+  if (logger_->should_log(minifi::core::logging::LogLevelOption::DEBUG))
     return Aws::Utils::Logging::LogLevel::Debug;
-  if (logger_->should_log(minifi::core::logging::LOG_LEVEL::info))
+  if (logger_->should_log(minifi::core::logging::LogLevelOption::INFO))
     return Aws::Utils::Logging::LogLevel::Info;
-  if (logger_->should_log(minifi::core::logging::LOG_LEVEL::warn))
+  if (logger_->should_log(minifi::core::logging::LogLevelOption::WARN))
     return Aws::Utils::Logging::LogLevel::Warn;
-  if (logger_->should_log(minifi::core::logging::LOG_LEVEL::err))
+  if (logger_->should_log(minifi::core::logging::LogLevelOption::ERR))
     return Aws::Utils::Logging::LogLevel::Error;
-  if (logger_->should_log(minifi::core::logging::LOG_LEVEL::critical))
+  if (logger_->should_log(minifi::core::logging::LogLevelOption::CRITICAL))
     return Aws::Utils::Logging::LogLevel::Fatal;
   return Aws::Utils::Logging::LogLevel::Off;
 }

@@ -139,7 +139,7 @@ class ListThenFetchSFTPTestsFixture {
 
     // Configure PutFile processor
     plan->setProperty(put_file, "Directory", (dst_dir / "${path}").string());
-    plan->setProperty(put_file, "Conflict Resolution Strategy", minifi::processors::PutFile::CONFLICT_RESOLUTION_STRATEGY_FAIL);
+    plan->setProperty(put_file, "Conflict Resolution Strategy", toString(minifi::processors::put_file::FileExistsResolutionStrategy::FAIL_FLOW));
     plan->setProperty(put_file, "Create Missing Directories", "true");
   }
 
@@ -148,7 +148,7 @@ class ListThenFetchSFTPTestsFixture {
   }
 
   // Create source file
-  void createFile(const std::string& relative_path, const std::string& content, std::optional<std::filesystem::file_time_type> modification_time) {
+  void createFile(const std::string& relative_path, const std::string& content, std::optional<std::chrono::file_clock::time_point> modification_time) {
     std::fstream file;
     std::filesystem::path full_path = src_dir / "vfs" / relative_path;
     std::filesystem::create_directories(full_path.parent_path());

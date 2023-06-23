@@ -81,7 +81,7 @@ bool run_archive_test(OrderedTestArchive& input_archive, const OrderedTestArchiv
     std::shared_ptr<core::Processor> putfile2 = plan->addProcessor("PutFile", "PutFile2", core::Relationship("success", "description"), true);
     plan->setProperty(putfile2, org::apache::nifi::minifi::processors::PutFile::Directory, dir2.string());
     plan->setProperty(putfile2, org::apache::nifi::minifi::processors::PutFile::ConflictResolution,
-                      org::apache::nifi::minifi::processors::PutFile::CONFLICT_RESOLUTION_STRATEGY_REPLACE);
+        toString(org::apache::nifi::minifi::processors::put_file::FileExistsResolutionStrategy::REPLACE_FILE));
 
     auto archive_path_1 = dir1 / TEST_ARCHIVE_NAME;
 

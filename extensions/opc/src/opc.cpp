@@ -85,21 +85,21 @@ void add_value_to_variant(UA_Variant *variant, double value) {
   UA_Variant_setScalarCopy(variant, &ua_value, &UA_TYPES[UA_TYPES_DOUBLE]);
 }
 
-core::logging::LOG_LEVEL MapOPCLogLevel(UA_LogLevel ualvl) {
+core::logging::LogLevelOption MapOPCLogLevel(UA_LogLevel ualvl) {
   switch (ualvl) {
     case UA_LOGLEVEL_TRACE:
-      return core::logging::trace;
+      return core::logging::LogLevelOption::TRACE;
     case UA_LOGLEVEL_DEBUG:
-      return core::logging::debug;
+      return core::logging::LogLevelOption::DEBUG;
     case UA_LOGLEVEL_INFO:
-      return core::logging::info;
+      return core::logging::LogLevelOption::INFO;
     case UA_LOGLEVEL_WARNING:
-      return core::logging::warn;
+      return core::logging::LogLevelOption::WARN;
     case UA_LOGLEVEL_ERROR:
-      return core::logging::err;
+      return core::logging::LogLevelOption::ERR;
     case UA_LOGLEVEL_FATAL:
     default:
-      return core::logging::critical;
+      return core::logging::LogLevelOption::CRITICAL;
   }
 }
 }  // namespace

@@ -32,6 +32,7 @@
 #include "utils/gsl.h"
 #include "utils/SmallString.h"
 #include "utils/meta/detected.h"
+#include "utils/Enum.h"
 
 namespace org::apache::nifi::minifi::core::logging {
 
@@ -101,23 +102,23 @@ inline std::string format_string(int /*max_size*/, char const* format_str) {
   return format_str;
 }
 
-enum LOG_LEVEL {
-  trace = 0,
-  debug = 1,
-  info = 2,
-  warn = 3,
-  err = 4,
-  critical = 5,
-  off = 6
-};
+SMART_ENUM(LogLevelOption,
+    (TRACE, "TRACE"),
+    (DEBUG, "DEBUG"),
+    (INFO, "INFO"),
+    (WARN, "WARN"),
+    (ERR, "ERROR"),
+    (CRITICAL, "CRITICAL"),
+    (OFF, "OFF")
+)
 
 class BaseLogger {
  public:
   virtual ~BaseLogger();
 
-  virtual void log_string(LOG_LEVEL level, std::string str) = 0;
+  virtual void log_string(LogLevelOption level, std::string str) = 0;
 
-  virtual bool should_log(const LOG_LEVEL &level);
+  virtual bool should_log(const LogLevelOption &level);
 };
 
 /**
@@ -126,13 +127,13 @@ class BaseLogger {
  */
 class LogBuilder {
  public:
-  LogBuilder(BaseLogger *l, LOG_LEVEL level);
+  LogBuilder(BaseLogger *l, LogLevelOption level);
 
   ~LogBuilder();
 
   void setIgnore();
 
-  void log_string(LOG_LEVEL level) const;
+  void log_string(LogLevelOption level) const;
 
   template<typename T>
   LogBuilder &operator<<(const T &o) {
@@ -144,7 +145,7 @@ class LogBuilder {
   bool ignore;
   BaseLogger *ptr;
   std::stringstream str;
-  LOG_LEVEL level;
+  LogLevelOption level;
 };
 
 class Logger : public BaseLogger {
@@ -152,6 +153,16 @@ class Logger : public BaseLogger {
   Logger(Logger const&) = delete;
   Logger& operator=(Logger const&) = delete;
 
+
+  /**
+    * @brief Log critical message
+    * @param format format string ('man printf' for syntax)
+    * @warning does not check @p log or @p format for null. Caller must ensure parameters and format string lengths match
+    */
+  template<typename ...Args>
+  void log_critical(const char * const format, Args&& ...args) {
+    log(spdlog::level::critical, format, std::forward<Args>(args)...);
+  }
   /**
    * @brief Log error message
    * @param format format string ('man printf' for syntax)
@@ -206,11 +217,38 @@ class Logger : public BaseLogger {
     max_log_size_ = size;
   }
 
-  bool should_log(const LOG_LEVEL &level) override;
+  bool should_log(const LogLevelOption &level) override;
 
-  void log_string(LOG_LEVEL level, std::string str) override;
+  void log_string(LogLevelOption level, std::string str) override;
 
   virtual std::optional<std::string> get_id() = 0;
+
+  template<typename... Args>
+  void logWithLevel(LogLevelOption log_level, Args&&... args) {
+    switch (log_level.value()) {
+      case LogLevelOption::TRACE:
+        log_trace(std::forward<Args>(args)...);
+        break;
+      case LogLevelOption::DEBUG:
+        log_debug(std::forward<Args>(args)...);
+        break;
+      case LogLevelOption::INFO:
+        log_info(std::forward<Args>(args)...);
+        break;
+      case LogLevelOption::WARN:
+        log_warn(std::forward<Args>(args)...);
+        break;
+      case LogLevelOption::ERR:
+        log_error(std::forward<Args>(args)...);
+        break;
+      case LogLevelOption::CRITICAL:
+        log_critical(std::forward<Args>(args)...);
+        break;
+      case LogLevelOption::OFF:
+      default:
+        break;
+    }
+  }
 
  protected:
   Logger(std::shared_ptr<spdlog::logger> delegate, std::shared_ptr<LoggerControl> controller);
@@ -241,14 +279,16 @@ class Logger : public BaseLogger {
   std::atomic<int> max_log_size_{LOG_BUFFER_SIZE};
 };
 
-#define LOG_DEBUG(x) LogBuilder((x).get(), org::apache::nifi::minifi::core::logging::LOG_LEVEL::debug)
+#define LOG_DEBUG(x) LogBuilder((x).get(), org::apache::nifi::minifi::core::logging::LogLevelOption::DEBUG)
 
-#define LOG_INFO(x) LogBuilder((x).get(), org::apache::nifi::minifi::core::logging::LOG_LEVEL::info)
+#define LOG_INFO(x) LogBuilder((x).get(), org::apache::nifi::minifi::core::logging::LogLevelOption::INFO)
 
-#define LOG_TRACE(x) LogBuilder((x).get(), org::apache::nifi::minifi::core::logging::LOG_LEVEL::trace)
+#define LOG_TRACE(x) LogBuilder((x).get(), org::apache::nifi::minifi::core::logging::LogLevelOption::TRACE)
 
-#define LOG_ERROR(x) LogBuilder((x).get(), org::apache::nifi::minifi::core::logging::LOG_LEVEL::err)
+#define LOG_ERROR(x) LogBuilder((x).get(), org::apache::nifi::minifi::core::logging::LogLevelOption::ERR)
 
-#define LOG_WARN(x) LogBuilder((x).get(), org::apache::nifi::minifi::core::logging::LOG_LEVEL::warn)
+#define LOG_WARN(x) LogBuilder((x).get(), org::apache::nifi::minifi::core::logging::LogLevelOption::WARN)
+
+#define LOG_CRITICAL(x) LogBuilder((x).get(), org::apache::nifi::minifi::core::logging::LogLevelOption::CRITICAL)
 
 }  // namespace org::apache::nifi::minifi::core::logging

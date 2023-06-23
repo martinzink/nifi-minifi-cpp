@@ -60,9 +60,9 @@ void RetryFlowFile::onTrigger(core::ProcessContext* context, core::ProcessSessio
         return;
       }
       // Assuming reuse_mode_ == WARN_ON_REUSE || reuse_mode_ == RESET_REUSE
-      core::logging::LOG_LEVEL reuse_mode_log_level(core::logging::LOG_LEVEL::debug);
+      core::logging::LogLevelOption reuse_mode_log_level(core::logging::LogLevelOption::DEBUG);
       if (reuse_mode_ == WARN_ON_REUSE) {
-        reuse_mode_log_level = core::logging::LOG_LEVEL::warn;
+        reuse_mode_log_level = core::logging::LogLevelOption::WARN;
       }
       logger_->log_string(reuse_mode_log_level, "Reusing retry attribute that belongs to different processor. Resetting value to 0.");
       retry_property_value = 0;

@@ -44,23 +44,23 @@ namespace minifi = org::apache::nifi::minifi;
 
 JNIEXPORT jboolean JNICALL Java_org_apache_nifi_processor_JniLogger_isWarnEnabled(JNIEnv *env, jobject obj) {
   minifi::jni::JniLogger *logger_ref = minifi::jni::JVMLoader::getPtr<minifi::jni::JniLogger>(env, obj);
-  return logger_ref->logger_reference_->should_log(minifi::core::logging::LOG_LEVEL::warn);
+  return logger_ref->logger_reference_->should_log(minifi::core::logging::LogLevelOption::WARN);
 }
 JNIEXPORT jboolean JNICALL  Java_org_apache_nifi_processor_JniLogger_isTraceEnabled(JNIEnv *env, jobject obj) {
   minifi::jni::JniLogger *logger_ref = minifi::jni::JVMLoader::getPtr<minifi::jni::JniLogger>(env, obj);
-  return logger_ref->logger_reference_->should_log(minifi::core::logging::LOG_LEVEL::trace);
+  return logger_ref->logger_reference_->should_log(minifi::core::logging::LogLevelOption::TRACE);
 }
 JNIEXPORT jboolean JNICALL  Java_org_apache_nifi_processor_JniLogger_isInfoEnabled(JNIEnv *env, jobject obj) {
   minifi::jni::JniLogger *logger_ref = minifi::jni::JVMLoader::getPtr<minifi::jni::JniLogger>(env, obj);
-  return logger_ref->logger_reference_->should_log(minifi::core::logging::LOG_LEVEL::info);
+  return logger_ref->logger_reference_->should_log(minifi::core::logging::LogLevelOption::INFO);
 }
 JNIEXPORT jboolean JNICALL  Java_org_apache_nifi_processor_JniLogger_isErrorEnabled(JNIEnv *env, jobject obj) {
   minifi::jni::JniLogger *logger_ref = minifi::jni::JVMLoader::getPtr<minifi::jni::JniLogger>(env, obj);
-  return logger_ref->logger_reference_->should_log(minifi::core::logging::LOG_LEVEL::err);
+  return logger_ref->logger_reference_->should_log(minifi::core::logging::LogLevelOption::ERR);
 }
 JNIEXPORT jboolean JNICALL  Java_org_apache_nifi_processor_JniLogger_isDebugEnabled(JNIEnv *env, jobject obj) {
   minifi::jni::JniLogger *logger_ref = minifi::jni::JVMLoader::getPtr<minifi::jni::JniLogger>(env, obj);
-  return logger_ref->logger_reference_->should_log(minifi::core::logging::LOG_LEVEL::debug);
+  return logger_ref->logger_reference_->should_log(minifi::core::logging::LogLevelOption::DEBUG);
 }
 
 JNIEXPORT void JNICALL Java_org_apache_nifi_processor_JniLogger_warn(JNIEnv *env, jobject obj, jstring msg) {

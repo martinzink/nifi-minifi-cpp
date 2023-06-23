@@ -40,11 +40,11 @@ void LoggerControl::setEnabled(bool status) {
 
 BaseLogger::~BaseLogger() = default;
 
-bool BaseLogger::should_log(const LOG_LEVEL& /*level*/) {
+bool BaseLogger::should_log(const LogLevelOption& /*level*/) {
   return true;
 }
 
-LogBuilder::LogBuilder(BaseLogger *l, LOG_LEVEL level)
+LogBuilder::LogBuilder(BaseLogger *l, LogLevelOption level)
     : ignore(false),
       ptr(l),
       level(level) {
@@ -62,34 +62,35 @@ void LogBuilder::setIgnore() {
   ignore = true;
 }
 
-void LogBuilder::log_string(LOG_LEVEL level) const {
+void LogBuilder::log_string(LogLevelOption level) const {
   ptr->log_string(level, str.str());
 }
 
 
-bool Logger::should_log(const LOG_LEVEL &level) {
+bool Logger::should_log(const LogLevelOption &level) {
   if (controller_ && !controller_->is_enabled())
     return false;
   spdlog::level::level_enum logger_level = spdlog::level::level_enum::info;
-  switch (level) {
-    case critical:
+  switch (level.value()) {
+    case LogLevelOption::CRITICAL:
       logger_level = spdlog::level::level_enum::critical;
       break;
-    case err:
+    case LogLevelOption::ERR:
       logger_level = spdlog::level::level_enum::err;
       break;
-    case info:
+    case LogLevelOption::INFO:
+      logger_level = spdlog::level::level_enum::info;
       break;
-    case debug:
+    case LogLevelOption::DEBUG:
       logger_level = spdlog::level::level_enum::debug;
       break;
-    case off:
+    case LogLevelOption::OFF:
       logger_level = spdlog::level::level_enum::off;
       break;
-    case trace:
+    case LogLevelOption::TRACE:
       logger_level = spdlog::level::level_enum::trace;
       break;
-    case warn:
+    case LogLevelOption::WARN:
       logger_level = spdlog::level::level_enum::warn;
       break;
   }
@@ -98,27 +99,27 @@ bool Logger::should_log(const LOG_LEVEL &level) {
   return delegate_->should_log(logger_level);
 }
 
-void Logger::log_string(LOG_LEVEL level, std::string str) {
-  switch (level) {
-    case critical:
-      log_warn(str.c_str());
+void Logger::log_string(LogLevelOption level, std::string str) {
+  switch (level.value()) {
+    case LogLevelOption::CRITICAL:
+      log_critical(str.c_str());
       break;
-    case err:
+    case LogLevelOption::ERR:
       log_error(str.c_str());
       break;
-    case info:
+    case LogLevelOption::INFO:
       log_info(str.c_str());
       break;
-    case debug:
+    case LogLevelOption::DEBUG:
       log_debug(str.c_str());
       break;
-    case trace:
+    case LogLevelOption::TRACE:
       log_trace(str.c_str());
       break;
-    case warn:
+    case LogLevelOption::WARN:
       log_warn(str.c_str());
       break;
-    case off:
+    case LogLevelOption::OFF:
       break;
   }
 }
