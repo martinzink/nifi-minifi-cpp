@@ -24,31 +24,28 @@
 #include "core/Processor.h"
 #include "core/ProcessSession.h"
 #include "utils/Enum.h"
+#include "SmbConnectionControllerService.hpp"
+#include "core/logging/LoggerConfiguration.h"
 
 namespace org::apache::nifi::minifi::extensions::smb {
 
-class PutSmbFile : public core::Processor {
+class PutSmb : public core::Processor {
  public:
-  explicit PutSmbFile(std::string name,  const utils::Identifier& uuid = {})
+  explicit PutSmb(std::string name,  const utils::Identifier& uuid = {})
       : core::Processor(std::move(name), uuid) {
   }
 
-  ~PutSmbFile() override = default;
+  ~PutSmb() override = default;
 
   EXTENSIONAPI static constexpr const char* Description = "Writes the contents of a FlowFile to an smb network location";
 
-  EXTENSIONAPI static const core::Property Hostname;
-  EXTENSIONAPI static const core::Property Share;
+  EXTENSIONAPI static const core::Property ConnectionControllerService;
   EXTENSIONAPI static const core::Property Directory;
-  EXTENSIONAPI static const core::Property Domain;
-  EXTENSIONAPI static const core::Property Username;
-  EXTENSIONAPI static const core::Property Password;
   EXTENSIONAPI static const core::Property CreateMissingDirectories;
   EXTENSIONAPI static const core::Property ShareAccessStrategy;
   EXTENSIONAPI static const core::Property ConflictResolution;
   EXTENSIONAPI static const core::Property BatchSize;
   EXTENSIONAPI static const core::Property TemporarySuffix;
-  EXTENSIONAPI static const core::Property SmbDialect;
   EXTENSIONAPI static const core::Property UseEncryption;
 
   SMART_ENUM(ShareAccessStrategies,
@@ -58,36 +55,22 @@ class PutSmbFile : public core::Processor {
     (kReadWriteDelete, "read, write, delete")
   )
 
-  SMART_ENUM(ConflictResolutionStrategies,
-    (kReplace, "replace"),
-    (kIgnore, "ignore"),
-    (kFail, "fail")
-  )
-
-  SMART_ENUM(SmbDialects,
-    (kAuto, "AUTO"),
-    (kSmb2_0_2, "SMB 2.0.2"),
-    (kSmb2_1, "SMB 2.1"),
-    (kSmb3_0, "SMB 3.0"),
-    (kSmb3_0_2, "SMB 3.0.2"),
-    (kSmb3_1_1, "SMB 3.1.1")
+  SMART_ENUM(FileExistsResolutionStrategy,
+      (FAIL_FLOW, "fail"),
+      (REPLACE_FILE, "replace"),
+      (IGNORE_REQUEST, "ignore")
   )
 
   static auto properties() {
     return std::array{
-      Hostname,
-      Share,
-      Directory,
-      Domain,
-      Username,
-      Password,
-      CreateMissingDirectories,
-      ShareAccessStrategy,
-      ConflictResolution,
-      BatchSize,
-      TemporarySuffix,
-      SmbDialect,
-      UseEncryption
+        ConnectionControllerService,
+        Directory,
+        CreateMissingDirectories,
+        ShareAccessStrategy,
+        ConflictResolution,
+        BatchSize,
+        TemporarySuffix,
+        UseEncryption
     };
   }
 
@@ -107,7 +90,11 @@ class PutSmbFile : public core::Processor {
   void initialize() override;
 
  private:
-  std::shared_ptr<core::logging::Logger> logger_ = core::logging::LoggerFactory<PutSmbFile>::getLogger(uuid_);
+  std::string getFilePath(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file);
+  bool create_missing_dirs_ = true;
+  FileExistsResolutionStrategy conflict_resolution_strategy_ = FileExistsResolutionStrategy::FAIL_FLOW;
+  std::shared_ptr<SmbConnectionControllerService> smb_connection_controller_service_;
+  std::shared_ptr<core::logging::Logger> logger_ = core::logging::LoggerFactory<PutSmb>::getLogger(uuid_);
 };
 
 }  // namespace org::apache::nifi::minifi::extensions::smb

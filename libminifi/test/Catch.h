@@ -22,6 +22,7 @@
 #include <string>
 #include "spdlog/spdlog.h"
 #include "catch.hpp"
+#include "nonstd/expected.hpp"
 
 namespace Catch {
 template<typename T>
@@ -45,6 +46,15 @@ template <>
 struct StringMaker<std::error_code> {
   static std::string convert(const std::error_code& error_code) {
     return fmt::format("std::error_code(category:{}, value:{}, message:{})", error_code.category().name(), error_code.value(), error_code.message());
+  }
+};
+
+template <class A>
+struct StringMaker<nonstd::expected<A, std::error_code>> {
+  static std::string convert(const nonstd::expected<A, std::error_code>& expected_value) {
+    if (!expected_value.has_value())
+      return fmt::format("Unexpected: {}", expected_value.error().message());
+    return fmt::format("Expected");
   }
 };
 }  // namespace Catch
