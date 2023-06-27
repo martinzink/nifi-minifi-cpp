@@ -50,16 +50,10 @@ TEST_CASE_METHOD(SmbConnectionControllerServiceFixture, "SmbConnectionController
 
     REQUIRE_NOTHROW(plan_->finalize());
 
-    auto smb_connection_status = smb_connection_->isConnected();
-    REQUIRE(smb_connection_status);
-    CHECK_FALSE(*smb_connection_status);
-
     auto connection_result = smb_connection_->connect();
     REQUIRE(connection_result);
 
-    smb_connection_status = smb_connection_->isConnected();
-    REQUIRE(smb_connection_status);
-    CHECK(*smb_connection_status);
+    CHECK(smb_connection_->isConnected());
   }
 
   SECTION("Invalid share") {
@@ -68,16 +62,10 @@ TEST_CASE_METHOD(SmbConnectionControllerServiceFixture, "SmbConnectionController
 
     REQUIRE_NOTHROW(plan_->finalize());
 
-    auto smb_connection_status = smb_connection_->isConnected();
-    REQUIRE(smb_connection_status);
-    CHECK_FALSE(*smb_connection_status);
-
     auto connection_result = smb_connection_->connect();
     REQUIRE_FALSE(connection_result);
 
-    smb_connection_status = smb_connection_->isConnected();
-    REQUIRE(smb_connection_status);
-    CHECK_FALSE(*smb_connection_status);
+    CHECK_FALSE(smb_connection_->isConnected());
   }
 }
 

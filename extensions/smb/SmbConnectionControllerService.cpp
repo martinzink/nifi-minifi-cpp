@@ -109,8 +109,12 @@ nonstd::expected<void, std::error_code> SmbConnectionControllerService::disconne
   return nonstd::make_unexpected(utils::OsUtils::windowsErrorToErrorCode(disconnection_result));
 }
 
-nonstd::expected<bool, std::error_code> SmbConnectionControllerService::isConnected() {
-  return false;
+bool SmbConnectionControllerService::isConnected() {
+  std::error_code error_code;
+  auto exists = std::filesystem::exists(server_path_, error_code);
+  if (error_code)
+    return false;
+  return exists;
 }
 
 REGISTER_RESOURCE(SmbConnectionControllerService, ControllerService);

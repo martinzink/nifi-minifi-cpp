@@ -42,18 +42,7 @@ class PutSmb : public core::Processor {
   EXTENSIONAPI static const core::Property ConnectionControllerService;
   EXTENSIONAPI static const core::Property Directory;
   EXTENSIONAPI static const core::Property CreateMissingDirectories;
-  EXTENSIONAPI static const core::Property ShareAccessStrategy;
   EXTENSIONAPI static const core::Property ConflictResolution;
-  EXTENSIONAPI static const core::Property BatchSize;
-  EXTENSIONAPI static const core::Property TemporarySuffix;
-  EXTENSIONAPI static const core::Property UseEncryption;
-
-  SMART_ENUM(ShareAccessStrategies,
-    (kNone, "none"),
-    (kRead, "read"),
-    (kReadDelete, "read, delete"),
-    (kReadWriteDelete, "read, write, delete")
-  )
 
   SMART_ENUM(FileExistsResolutionStrategy,
       (FAIL_FLOW, "fail"),
@@ -66,11 +55,7 @@ class PutSmb : public core::Processor {
         ConnectionControllerService,
         Directory,
         CreateMissingDirectories,
-        ShareAccessStrategy,
         ConflictResolution,
-        BatchSize,
-        TemporarySuffix,
-        UseEncryption
     };
   }
 
@@ -90,7 +75,7 @@ class PutSmb : public core::Processor {
   void initialize() override;
 
  private:
-  std::string getFilePath(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file);
+  std::filesystem::path getFilePath(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file);
   bool create_missing_dirs_ = true;
   FileExistsResolutionStrategy conflict_resolution_strategy_ = FileExistsResolutionStrategy::FAIL_FLOW;
   std::shared_ptr<SmbConnectionControllerService> smb_connection_controller_service_;

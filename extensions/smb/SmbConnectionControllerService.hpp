@@ -70,9 +70,9 @@ class SmbConnectionControllerService : public core::controller::ControllerServic
 
   nonstd::expected<void, std::error_code> connect();
   nonstd::expected<void, std::error_code> disconnect();
-  nonstd::expected<bool, std::error_code> isConnected();
+  bool isConnected();
 
-  const std::string& getPath() const { return server_path_; }
+  std::filesystem::path getPath() const { return server_path_; }
 
  private:
   struct Credentials {
