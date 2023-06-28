@@ -18,9 +18,9 @@
 #include "utils/net/Socket.h"
 #include "core/logging/LoggerConfiguration.h"
 #ifdef WIN32
-#include "utils/OsUtils.h"
 #include <iphlpapi.h>
 #pragma comment(lib, "IPHLPAPI.lib")
+#include "utils/OsUtils.h"
 #else
 #include <unistd.h>
 #include <netinet/in.h>
