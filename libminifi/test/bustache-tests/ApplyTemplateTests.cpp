@@ -90,7 +90,7 @@ TEST_CASE("Test usage of ApplyTemplate", "[ApplyTemplateTest]") {
     std::shared_ptr<core::Processor> putfile = plan->addProcessor("PutFile", "putfile", core::Relationship("success", "description"), true);
     plan->setProperty(putfile, org::apache::nifi::minifi::processors::PutFile::Directory.getName(), put_file_destination_dir);
     plan->setProperty(putfile, org::apache::nifi::minifi::processors::PutFile::ConflictResolution.getName(),
-                      org::apache::nifi::minifi::processors::PutFile::CONFLICT_RESOLUTION_STRATEGY_REPLACE);
+        toString(org::apache::nifi::minifi::processors::PutFile::FileExistsResolutionStrategy::REPLACE_FILE));
 
     // Write attribute value to file for GetFile->ExtractText
     std::stringstream ss1;

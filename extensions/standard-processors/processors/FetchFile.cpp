@@ -21,7 +21,7 @@
 #include <utility>
 
 #include "utils/ProcessorConfigUtils.h"
-#include "utils/FileReaderCallback.h"
+#include "utils/file/FileReaderCallback.h"
 #include "utils/file/FileUtils.h"
 #include "core/PropertyBuilder.h"
 #include "core/Resource.h"

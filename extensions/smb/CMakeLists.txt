@@ -27,6 +27,7 @@ file(GLOB SOURCES  "*.cpp")
 
 add_library(minifi-smb SHARED ${SOURCES})
 target_link_libraries(minifi-smb ${LIBMINIFI} Mpr)
+target_include_directories(minifi-smb PRIVATE BEFORE "${CMAKE_SOURCE_DIR}/extensions/standard-processors")
 
 register_extension(minifi-smb "SMB EXTENSIONS" SMB-EXTENSIONS "This enables SMB support" "extensions/smb/tests")
 

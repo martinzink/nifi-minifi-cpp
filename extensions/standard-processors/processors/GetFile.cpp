@@ -29,7 +29,7 @@
 #include "core/PropertyBuilder.h"
 #include "core/Resource.h"
 #include "core/TypedValues.h"
-#include "utils/FileReaderCallback.h"
+#include "utils/file/FileReaderCallback.h"
 #include "utils/RegexUtils.h"
 
 using namespace std::literals::chrono_literals;

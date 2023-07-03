@@ -1,7 +1,4 @@
 /**
- * @file PutFile.h
- * PutFile class declaration
- *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -30,20 +27,23 @@
 #include "core/logging/LoggerConfiguration.h"
 #include "utils/Id.h"
 #include "utils/Export.h"
+#include "utils/Enum.h"
 
 namespace org::apache::nifi::minifi::processors {
 
 class PutFile : public core::Processor {
  public:
-  static constexpr char const *CONFLICT_RESOLUTION_STRATEGY_REPLACE = "replace";
-  static constexpr char const *CONFLICT_RESOLUTION_STRATEGY_IGNORE = "ignore";
-  static constexpr char const *CONFLICT_RESOLUTION_STRATEGY_FAIL = "fail";
-
   explicit PutFile(std::string name,  const utils::Identifier& uuid = {})
       : core::Processor(std::move(name), uuid) {
   }
 
   ~PutFile() override = default;
+
+  SMART_ENUM(FileExistsResolutionStrategy,
+      (FAIL_FLOW, "fail"),
+      (REPLACE_FILE, "replace"),
+      (IGNORE_REQUEST, "ignore")
+  )
 
   EXTENSIONAPI static constexpr const char* Description = "Writes the contents of a FlowFile to the local file system";
 
@@ -83,38 +83,13 @@ class PutFile : public core::Processor {
   void onTrigger(core::ProcessContext *context, core::ProcessSession *session) override;
   void initialize() override;
 
-  class ReadCallback {
-   public:
-    ReadCallback(std::filesystem::path tmp_file, std::filesystem::path dest_file);
-    ~ReadCallback();
-    int64_t operator()(const std::shared_ptr<io::InputStream>& stream);
-    bool commit();
-
-   private:
-    std::shared_ptr<core::logging::Logger> logger_{ core::logging::LoggerFactory<PutFile::ReadCallback>::getLogger() };
-    bool write_succeeded_ = false;
-    std::filesystem::path tmp_file_;
-    std::filesystem::path dest_file_;
-  };
-
-  /**
-   * Generate a safe (universally-unique) temporary filename on the same partition
-   *
-   * @param filename from which to generate temporary write file path
-   * @return
-   */
-  static std::filesystem::path tmpWritePath(const std::filesystem::path& filename, const std::filesystem::path& directory);
-
  private:
-  std::string conflict_resolution_;
+  FileExistsResolutionStrategy conflict_resolution_strategy_ = FileExistsResolutionStrategy::FAIL_FLOW;
   bool try_mkdirs_ = true;
-  int64_t max_dest_files_ = -1;
+  std::optional<uint64_t> max_dest_files_ = std::nullopt;
 
-  bool putFile(core::ProcessSession *session,
-               const std::shared_ptr<core::FlowFile>& flowFile,
-               const std::filesystem::path& tmpFile,
-               const std::filesystem::path& destFile,
-               const std::filesystem::path& destDir);
+  std::optional<std::filesystem::path> getDestinationPath(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file);
+  void putFile(core::ProcessSession& session, const std::shared_ptr<core::FlowFile>& flow_file, const std::filesystem::path& dest_file);
   std::shared_ptr<core::logging::Logger> logger_ = core::logging::LoggerFactory<PutFile>::getLogger(uuid_);
   static std::shared_ptr<utils::IdGenerator> id_generator_;
 

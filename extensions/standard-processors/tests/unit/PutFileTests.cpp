@@ -49,7 +49,6 @@ TEST_CASE("PutFileTest", "[getfileputpfile]") {
   LogTestController::getInstance().setDebug<minifi::processors::GetFile>();
   LogTestController::getInstance().setDebug<TestPlan>();
   LogTestController::getInstance().setDebug<minifi::processors::PutFile>();
-  LogTestController::getInstance().setDebug<minifi::processors::PutFile::ReadCallback>();
   LogTestController::getInstance().setDebug<minifi::processors::LogAttribute>();
 
   std::shared_ptr<TestPlan> plan = testController.createPlan();
@@ -287,12 +286,6 @@ TEST_CASE("PutFileTestFileExistsReplace", "[getfileputpfile]") {
   REQUIRE(file_mod_time != utils::file::last_write_time(moved_path));
 #endif
   LogTestController::getInstance().reset();
-}
-
-TEST_CASE("Test generation of temporary write path", "[putfileTmpWritePath]") {
-  auto processor = std::make_shared<org::apache::nifi::minifi::processors::PutFile>("processorname");
-  std::filesystem::path path = std::filesystem::path("a") / std::string("b") / "";
-  CHECK(processor->tmpWritePath(path, "").string().starts_with(path.string()));
 }
 
 TEST_CASE("PutFileMaxFileCountTest", "[getfileputpfilemaxcount]") {

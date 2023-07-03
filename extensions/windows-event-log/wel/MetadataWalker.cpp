@@ -154,10 +154,6 @@ std::map<std::string, std::string> MetadataWalker::getIdentifiers() const {
   return replaced_identifiers_;
 }
 
-std::string MetadataWalker::to_string(const wchar_t* pChar) {
-  return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(pChar);
-}
-
 void MetadataWalker::updateText(pugi::xml_node &node, const std::string &field_name, std::function<std::string(const std::string &)> &&fn) {
   std::string previous_value = node.text().get();
   auto new_field_value = fn(previous_value);

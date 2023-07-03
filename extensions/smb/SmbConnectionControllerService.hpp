@@ -55,26 +55,21 @@ class SmbConnectionControllerService : public core::controller::ControllerServic
 
   void initialize() override;
 
-  void yield() override {
-  }
-
-  bool isWorkAvailable() override {
-    return false;
-  }
-
-  bool isRunning() const override {
-    return getState() == core::controller::ControllerServiceState::ENABLED;
-  }
-
   void onEnable() override;
+  void notifyStop() override;
 
+  void yield() override {}
+  bool isRunning() const override { return getState() == core::controller::ControllerServiceState::ENABLED; }
+  bool isWorkAvailable() override { return false; }
+
+  std::error_code validateConnection();
+  std::filesystem::path getPath() { return server_path_; }
+
+ private:
   nonstd::expected<void, std::error_code> connect();
   nonstd::expected<void, std::error_code> disconnect();
   bool isConnected();
 
-  std::filesystem::path getPath() const { return server_path_; }
-
- private:
   struct Credentials {
     std::string username;
     std::string password;

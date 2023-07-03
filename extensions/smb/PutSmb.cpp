@@ -22,6 +22,7 @@
 #include "utils/gsl.h"
 #include "utils/ProcessorConfigUtils.h"
 #include "utils/OsUtils.h"
+#include "utils/file/FileWriterCallback.h"
 
 namespace org::apache::nifi::minifi::extensions::smb {
 
@@ -82,43 +83,14 @@ std::filesystem::path PutSmb::getFilePath(core::ProcessContext& context, const s
   return smb_connection_controller_service_->getPath() / context.getProperty(Directory, flow_file).value_or("") / filename;
 }
 
-namespace {
-class FlowFileToNetworkShareWriter {
- public:
-  FlowFileToNetworkShareWriter(std::ofstream& file_stream) : file_stream_(file_stream) {}
-  ~FlowFileToNetworkShareWriter() = default;
-  int64_t operator()(const std::shared_ptr<io::InputStream>& stream) {
-    size_t total_size_written = 0;
-    std::array<std::byte, 1024> buffer{};
-
-    do {
-      size_t bytes_read = stream->read(buffer);
-      if (io::isError(bytes_read))
-        return -1;
-      if (bytes_read == 0)
-        break;
-      file_stream_.write(reinterpret_cast<char *>(buffer.data()), gsl::narrow<std::streamsize>(bytes_read));
-      total_size_written += bytes_read;
-    } while (total_size_written < stream->size());
-
-    return gsl::narrow<int64_t>(total_size_written);
-  }
-
- private:
-  std::ofstream& file_stream_;
-};
-}  // namespace
-
 void PutSmb::onTrigger(core::ProcessContext* context, core::ProcessSession* session) {
   gsl_Expects(context && session && smb_connection_controller_service_);
 
-  if (!smb_connection_controller_service_->isConnected()) {
-    auto connected = smb_connection_controller_service_->connect();
-    if (!connected) {
-      logger_->log_error("Couldn't establish connection to the specified network location");
-      context->yield();
-      return;
-    }
+  auto connection_error = smb_connection_controller_service_->validateConnection();
+  if (connection_error) {
+    logger_->log_error("Couldn't establish connection to the specified network location due to %s", connection_error.message());
+    context->yield();
+    return;
   }
 
   auto flow_file = session->get();
@@ -129,18 +101,8 @@ void PutSmb::onTrigger(core::ProcessContext* context, core::ProcessSession* sess
 
   auto full_file_path = getFilePath(*context, flow_file);
 
-
-  if (!std::filesystem::exists(full_file_path.parent_path())) {
-    if (create_missing_dirs_)
-      std::filesystem::create_directories(full_file_path.parent_path());
-    else {
-      session->transfer(flow_file, Failure);
-      return;
-    }
-  }
-
-
-  if (std::filesystem::exists(full_file_path)) {
+  if (utils::file::exists(full_file_path)) {
+    logger_->log_warn("Destination file %s exists; applying Conflict Resolution Strategy: %s", full_file_path.string(), conflict_resolution_strategy_.toString());
     if (conflict_resolution_strategy_ == FileExistsResolutionStrategy::FAIL_FLOW) {
       session->transfer(flow_file, Failure);
       return;
@@ -150,22 +112,23 @@ void PutSmb::onTrigger(core::ProcessContext* context, core::ProcessSession* sess
     }
   }
 
-  std::ofstream file_stream(full_file_path, std::ios::out | std::ios::trunc);
-  if (!file_stream.is_open()) {
-    logger_->log_error("Could not open file for writing");
-    session->transfer(flow_file, Failure);
-    return;
+  if (!utils::file::exists(full_file_path.parent_path()) && create_missing_dirs_) {
+    logger_->log_debug("Destination directory does not exist; will attempt to create: %s", full_file_path.parent_path().string());
+    utils::file::create_dir(full_file_path.parent_path(), true);
   }
 
-  FlowFileToNetworkShareWriter flow_file_to_network_share_writer(file_stream);
-  auto write_result = session->read(flow_file, flow_file_to_network_share_writer);
-  if (io::isError(write_result)) {
-    logger_->log_error("Failed to write flow file onto network share");
-    session->transfer(flow_file, Failure);
-    return;
+  bool success = false;
+
+  utils::FileWriterCallback file_writer_callback(full_file_path);
+  auto read_result = session->read(flow_file, std::ref(file_writer_callback));
+  if (io::isError(read_result)) {
+    logger_->log_error("Failed to write to %s", full_file_path.string());
+    success = false;
+  } else {
+    success = file_writer_callback.commit();
   }
 
-  session->transfer(flow_file, Success);
+  session->transfer(flow_file, success ? Success : Failure);
 }
 
 }  // namespace org::apache::nifi::minifi::extensions::smb

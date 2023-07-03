@@ -90,6 +90,12 @@ void SmbConnectionControllerService::onEnable()  {
   net_resource_.lpProvider = nullptr;
 }
 
+void SmbConnectionControllerService::notifyStop() {
+  auto disconnection_result = disconnect();
+  if (!disconnection_result)
+    logger_->log_error("Error while disconnecting from SMB: %s", disconnection_result.error().message());
+}
+
 nonstd::expected<void, std::error_code> SmbConnectionControllerService::connect() {
   auto connection_result = WNetAddConnection2A(&net_resource_,
       credentials_ ? credentials_->password.c_str() : nullptr,
@@ -115,6 +121,17 @@ bool SmbConnectionControllerService::isConnected() {
   if (error_code)
     return false;
   return exists;
+}
+
+std::error_code SmbConnectionControllerService::validateConnection() {
+  if (isConnected())
+    return std::error_code();
+  auto connection_result = connect();
+  if (!connection_result) {
+    return connection_result.error();
+  }
+
+  return std::error_code();
 }
 
 REGISTER_RESOURCE(SmbConnectionControllerService, ControllerService);

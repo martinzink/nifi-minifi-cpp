@@ -577,4 +577,13 @@ inline std::optional<std::filesystem::path> get_relative_path(const std::filesys
   return std::filesystem::relative(path, base_path);
 }
 
+inline size_t countNumberOfFiles(const std::filesystem::path& path) {
+  size_t counter = 0;
+  for (const auto& entry : std::filesystem::directory_iterator(path)) {
+    if (entry.is_regular_file())
+      ++counter;
+  }
+  return counter;
+}
+
 }  // namespace org::apache::nifi::minifi::utils::file

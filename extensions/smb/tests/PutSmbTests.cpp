@@ -26,7 +26,7 @@
 
 namespace org::apache::nifi::minifi::extensions::smb::test {
 
-std::string checkFileContent(std::filesystem::path path) {
+std::string checkFileContent(const std::filesystem::path& path) {
   gsl_Expects(std::filesystem::exists(path));
   std::ifstream if_stream(path);
   return {std::istreambuf_iterator<char>(if_stream), std::istreambuf_iterator<char>()};

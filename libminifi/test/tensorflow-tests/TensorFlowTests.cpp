@@ -106,7 +106,7 @@ TEST_CASE("TensorFlow: Apply Graph", "[tfApplyGraph]") { // NOLINT
   plan->setProperty(
       put_file,
       processors::PutFile::ConflictResolution.getName(),
-      processors::PutFile::CONFLICT_RESOLUTION_STRATEGY_REPLACE);
+      toStringprocessors::PutFile::FileExistsResolutionStrategy::REPLACE_FILE));
 
   // Build test TensorFlow graph
   {
@@ -255,7 +255,7 @@ TEST_CASE("TensorFlow: ConvertImageToTensor", "[tfConvertImageToTensor]") { // N
   plan->setProperty(
       put_file,
       processors::PutFile::ConflictResolution.getName(),
-      processors::PutFile::CONFLICT_RESOLUTION_STRATEGY_REPLACE);
+      toStringprocessors::PutFile::FileExistsResolutionStrategy::REPLACE_FILE));
 
   // Write test input image
   {
