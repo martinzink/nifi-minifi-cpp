@@ -149,7 +149,7 @@ void PutFile::putFile(core::ProcessSession& session,
     utils::file::create_dir(dest_file.parent_path(), true);
 #ifndef WIN32
     if (directory_permissions_.valid()) {
-      utils::file::set_permissions(destDir, directory_permissions_.getValue());
+      utils::file::set_permissions(dest_file, directory_permissions_.getValue());
     }
 #endif
   }
