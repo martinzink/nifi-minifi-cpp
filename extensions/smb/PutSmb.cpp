@@ -17,7 +17,6 @@
  */
 
 #include "PutSmb.h"
-#include "SmbConnectionControllerService.h"
 #include "core/PropertyBuilder.h"
 #include "utils/gsl.h"
 #include "utils/ProcessorConfigUtils.h"

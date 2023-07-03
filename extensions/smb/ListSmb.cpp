@@ -14,96 +14,111 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ListFile.h"
 
+#include "ListSmb.h"
 #include <filesystem>
 
-#include "utils/StringUtils.h"
+  #include "utils/StringUtils.h"
 #include "utils/TimeUtil.h"
 #include "core/PropertyBuilder.h"
 #include "core/Resource.h"
 
-namespace org::apache::nifi::minifi::processors {
+namespace org::apache::nifi::minifi::extensions::smb {
 
-const core::Property ListFile::InputDirectory(
+const core::Property ListSmb::ConnectionControllerService(
+    core::PropertyBuilder::createProperty("SMB Connection Controller Service")
+        ->withDescription("Specifies the SMB connection controller service to use for connecting to the SMB server.")
+        ->isRequired(true)
+        ->asType<SmbConnectionControllerService>()
+        ->build());
+
+
+const core::Property ListSmb::InputDirectory(
     core::PropertyBuilder::createProperty("Input Directory")
-      ->withDescription("The input directory from which files to pull files")
-      ->isRequired(true)
-      ->build());
+        ->withDescription("The input directory from which files to pull files")
+        ->isRequired(true)
+        ->build());
 
-const core::Property ListFile::RecurseSubdirectories(
+const core::Property ListSmb::RecurseSubdirectories(
     core::PropertyBuilder::createProperty("Recurse Subdirectories")
-      ->withDescription("Indicates whether to list files from subdirectories of the directory")
-      ->withDefaultValue(true)
-      ->isRequired(true)
-      ->build());
+        ->withDescription("Indicates whether to list files from subdirectories of the directory")
+        ->withDefaultValue(true)
+        ->isRequired(true)
+        ->build());
 
-const core::Property ListFile::FileFilter(
+const core::Property ListSmb::FileFilter(
     core::PropertyBuilder::createProperty("File Filter")
-      ->withDescription("Only files whose names match the given regular expression will be picked up")
-      ->build());
+        ->withDescription("Only files whose names match the given regular expression will be picked up")
+        ->build());
 
-const core::Property ListFile::PathFilter(
+const core::Property ListSmb::PathFilter(
     core::PropertyBuilder::createProperty("Path Filter")
-      ->withDescription("When Recurse Subdirectories is true, then only subdirectories whose path matches the given regular expression will be scanned")
-      ->build());
+        ->withDescription("When Recurse Subdirectories is true, then only subdirectories whose path matches the given regular expression will be scanned")
+        ->build());
 
-const core::Property ListFile::MinimumFileAge(
+const core::Property ListSmb::MinimumFileAge(
     core::PropertyBuilder::createProperty("Minimum File Age")
-      ->withDescription("The minimum age that a file must be in order to be pulled; any file younger than this amount of time (according to last modification date) will be ignored")
-      ->isRequired(true)
-      ->withDefaultValue<core::TimePeriodValue>("0 sec")
-      ->build());
+        ->withDescription("The minimum age that a file must be in order to be pulled; any file younger than this amount of time (according to last modification date) will be ignored")
+        ->isRequired(true)
+        ->withDefaultValue<core::TimePeriodValue>("0 sec")
+        ->build());
 
-const core::Property ListFile::MaximumFileAge(
+const core::Property ListSmb::MaximumFileAge(
     core::PropertyBuilder::createProperty("Maximum File Age")
-      ->withDescription("The maximum age that a file must be in order to be pulled; any file older than this amount of time (according to last modification date) will be ignored")
-      ->build());
+        ->withDescription("The maximum age that a file must be in order to be pulled; any file older than this amount of time (according to last modification date) will be ignored")
+        ->build());
 
-const core::Property ListFile::MinimumFileSize(
+const core::Property ListSmb::MinimumFileSize(
     core::PropertyBuilder::createProperty("Minimum File Size")
-      ->withDescription("The minimum size that a file must be in order to be pulled")
-      ->isRequired(true)
-      ->withDefaultValue<core::DataSizeValue>("0 B")
-      ->build());
+        ->withDescription("The minimum size that a file must be in order to be pulled")
+        ->isRequired(true)
+        ->withDefaultValue<core::DataSizeValue>("0 B")
+        ->build());
 
-const core::Property ListFile::MaximumFileSize(
+const core::Property ListSmb::MaximumFileSize(
     core::PropertyBuilder::createProperty("Maximum File Size")
-      ->withDescription("The maximum size that a file can be in order to be pulled")
-      ->build());
+        ->withDescription("The maximum size that a file can be in order to be pulled")
+        ->build());
 
-const core::Property ListFile::IgnoreHiddenFiles(
+const core::Property ListSmb::IgnoreHiddenFiles(
     core::PropertyBuilder::createProperty("Ignore Hidden Files")
-      ->withDescription("Indicates whether or not hidden files should be ignored")
-      ->withDefaultValue(true)
-      ->isRequired(true)
-      ->build());
+        ->withDescription("Indicates whether or not hidden files should be ignored")
+        ->withDefaultValue(true)
+        ->isRequired(true)
+        ->build());
 
-const core::Relationship ListFile::Success("success", "All FlowFiles that are received are routed to success");
+const core::Relationship ListSmb::Success("success", "All FlowFiles that are received are routed to success");
 
-const core::OutputAttribute ListFile::Filename{"filename", { Success }, "The name of the file that was read from filesystem."};
-const core::OutputAttribute ListFile::Path{"path", { Success },
+const core::OutputAttribute ListSmb::Filename{"filename", { Success }, "The name of the file that was read from filesystem."};
+const core::OutputAttribute ListSmb::Path{"path", { Success },
     "The path is set to the relative path of the file's directory on filesystem compared to the Input Directory property. "
     "For example, if Input Directory is set to /tmp, then files picked up from /tmp will have the path attribute set to \"./\". "
     "If the Recurse Subdirectories property is set to true and a file is picked up from /tmp/abc/1/2/3, then the path attribute will be set to \"abc/1/2/3/\"."};
-const core::OutputAttribute ListFile::AbsolutePath{"absolute.path", { Success },
+const core::OutputAttribute ListSmb::AbsolutePath{"absolute.path", { Success },
     "The absolute.path is set to the absolute path of the file's directory on filesystem. "
     "For example, if the Input Directory property is set to /tmp, then files picked up from /tmp will have the path attribute set to \"/tmp/\". "
     "If the Recurse Subdirectories property is set to true and a file is picked up from /tmp/abc/1/2/3, then the path attribute will be set to \"/tmp/abc/1/2/3/\"."};
-const core::OutputAttribute ListFile::FileOwner{"file.owner", { Success }, "The user that owns the file in filesystem"};
-const core::OutputAttribute ListFile::FileGroup{"file.group", { Success }, "The group that owns the file in filesystem"};
-const core::OutputAttribute ListFile::FileSize{"file.size", { Success }, "The number of bytes in the file in filesystem"};
-const core::OutputAttribute ListFile::FilePermissions{"file.permissions", { Success },
+const core::OutputAttribute ListSmb::FileOwner{"file.owner", { Success }, "The user that owns the file in filesystem"};
+const core::OutputAttribute ListSmb::FileGroup{"file.group", { Success }, "The group that owns the file in filesystem"};
+const core::OutputAttribute ListSmb::FileSize{"file.size", { Success }, "The number of bytes in the file in filesystem"};
+const core::OutputAttribute ListSmb::FilePermissions{"file.permissions", { Success },
     "The permissions for the file in filesystem. This is formatted as 3 characters for the owner, 3 for the group, and 3 for other users. For example rw-rw-r--"};
-const core::OutputAttribute ListFile::FileLastModifiedTime{"file.lastModifiedTime", { Success }, "The timestamp of when the file in filesystem was last modified as 'yyyy-MM-dd'T'HH:mm:ssZ'"};
+const core::OutputAttribute ListSmb::FileLastModifiedTime{"file.lastModifiedTime", { Success }, "The timestamp of when the file in filesystem was last modified as 'yyyy-MM-dd'T'HH:mm:ssZ'"};
 
-void ListFile::initialize() {
+void ListSmb::initialize() {
   setSupportedProperties(properties());
   setSupportedRelationships(relationships());
 }
 
-void ListFile::onSchedule(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSessionFactory> &/*sessionFactory*/) {
+void ListSmb::onSchedule(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSessionFactory> &/*sessionFactory*/) {
   gsl_Expects(context);
+
+  if (auto connection_controller_name = context->getProperty(ListSmb::ConnectionControllerService)) {
+    smb_connection_controller_service_ = std::dynamic_pointer_cast<SmbConnectionControllerService>(context->getControllerService(*connection_controller_name));
+  }
+  if (!smb_connection_controller_service_) {
+    throw minifi::Exception(ExceptionType::PROCESS_SCHEDULE_EXCEPTION, "Missing SMB Connection Controller Service");
+  }
 
   auto state_manager = context->getStateManager();
   if (state_manager == nullptr) {
@@ -148,7 +163,7 @@ void ListFile::onSchedule(const std::shared_ptr<core::ProcessContext> &context, 
   context->getProperty(IgnoreHiddenFiles.getName(), file_filter_.ignore_hidden_files);
 }
 
-std::shared_ptr<core::FlowFile> ListFile::createFlowFile(core::ProcessSession& session, const utils::ListedFile& listed_file) {
+std::shared_ptr<core::FlowFile> ListSmb::createFlowFile(core::ProcessSession& session, const utils::ListedFile& listed_file) {
   auto flow_file = session.create();
   session.putAttribute(flow_file, core::SpecialFlowAttribute::FILENAME, listed_file.getPath().filename().string());
   session.putAttribute(flow_file, core::SpecialFlowAttribute::ABSOLUTE_PATH, (listed_file.getPath().parent_path() / "").string());
@@ -159,36 +174,18 @@ std::shared_ptr<core::FlowFile> ListFile::createFlowFile(core::ProcessSession& s
   session.putAttribute(flow_file, "file.size", std::to_string(utils::file::file_size(listed_file.getPath())));
   session.putAttribute(flow_file, "file.lastModifiedTime", utils::timeutils::getDateTimeStr(std::chrono::time_point_cast<std::chrono::seconds>(listed_file.getLastModified())));
 
-  if (auto permission_string = utils::file::FileUtils::get_permission_string(listed_file.getPath())) {
-    session.putAttribute(flow_file, "file.permissions", *permission_string);
-  } else {
-    logger_->log_warn("Failed to get permissions of file '%s'", listed_file.getPath().string());
-    session.putAttribute(flow_file, "file.permissions", "");
-  }
-
-  if (auto owner = utils::file::FileUtils::get_file_owner(listed_file.getPath())) {
-    session.putAttribute(flow_file, "file.owner", *owner);
-  } else {
-    logger_->log_warn("Failed to get owner of file '%s'", listed_file.getPath().string());
-    session.putAttribute(flow_file, "file.owner", "");
-  }
-
-#ifndef WIN32
-  if (auto group = utils::file::FileUtils::get_file_group(listed_file.full_file_path)) {
-    session.putAttribute(flow_file, "file.group", *group);
-  } else {
-    logger_->log_warn("Failed to get group of file '%s'", listed_file.full_file_path.string());
-    session.putAttribute(flow_file, "file.group", "");
-  }
-#else
-  session.putAttribute(flow_file, "file.group", "");
-#endif
-
   return flow_file;
 }
 
-void ListFile::onTrigger(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSession> &session) {
-  gsl_Expects(context && session);
+void ListSmb::onTrigger(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSession> &session) {
+  gsl_Expects(context && session && smb_connection_controller_service_);
+
+  auto connection_error = smb_connection_controller_service_->validateConnection();
+  if (connection_error) {
+    logger_->log_error("Couldn't establish connection to the specified network location due to %s", connection_error.message());
+    context->yield();
+    return;
+  }
 
   auto stored_listing_state = state_manager_->getCurrentState();
   auto latest_listing_state = stored_listing_state;
@@ -216,6 +213,6 @@ void ListFile::onTrigger(const std::shared_ptr<core::ProcessContext> &context, c
   }
 }
 
-REGISTER_RESOURCE(ListFile, Processor);
+REGISTER_RESOURCE(ListSmb, Processor);
 
-}  // namespace org::apache::nifi::minifi::processors
+}  // namespace org::apache::nifi::minifi::extensions::smb

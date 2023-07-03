@@ -28,6 +28,7 @@
 #include "core/logging/LoggerConfiguration.h"
 #include "utils/Enum.h"
 #include "utils/ListingStateManager.h"
+#include "utils/file/ListedFile.h"
 #include "utils/file/FileUtils.h"
 
 namespace org::apache::nifi::minifi::processors {
@@ -100,33 +101,14 @@ class ListFile : public core::Processor {
   void onTrigger(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSession> &session) override;
 
  private:
-  struct ListedFile : public utils::ListedObject {
-    [[nodiscard]] std::chrono::time_point<std::chrono::system_clock> getLastModified() const override {
-      return last_modified_time;
-    }
-
-    [[nodiscard]] std::string getKey() const override {
-      return full_file_path.string();
-    }
-
-    std::chrono::time_point<std::chrono::system_clock> last_modified_time;
-    std::filesystem::path full_file_path;
-  };
-
-  bool fileMatchesFilters(const ListedFile& listed_file);
-  std::shared_ptr<core::FlowFile> createFlowFile(core::ProcessSession& session, const ListedFile& listed_file);
+  bool fileMatchesFilters(const utils::ListedFile& listed_file);
+  std::shared_ptr<core::FlowFile> createFlowFile(core::ProcessSession& session, const utils::ListedFile& listed_file);
 
   std::shared_ptr<core::logging::Logger> logger_ = core::logging::LoggerFactory<ListFile>::getLogger(uuid_);
   std::filesystem::path input_directory_;
   std::unique_ptr<minifi::utils::ListingStateManager> state_manager_;
   bool recurse_subdirectories_ = true;
-  std::optional<std::regex> file_filter_;
-  std::optional<std::regex> path_filter_;
-  std::optional<std::chrono::milliseconds> minimum_file_age_;
-  std::optional<std::chrono::milliseconds> maximum_file_age_;
-  std::optional<uint64_t> minimum_file_size_;
-  std::optional<uint64_t> maximum_file_size_;
-  bool ignore_hidden_files_ = true;
+  utils::FileFilter file_filter_{};
 };
 
 }  // namespace org::apache::nifi::minifi::processors
