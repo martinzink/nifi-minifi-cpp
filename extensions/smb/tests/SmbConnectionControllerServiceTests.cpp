@@ -18,8 +18,8 @@
 
 #include "TestBase.h"
 #include "Catch.h"
-#include "SmbConnectionControllerService.hpp"
-#include "SmbTestUtils.hpp"
+#include "SmbConnectionControllerService.h"
+#include "SmbTestUtils.h"
 
 namespace org::apache::nifi::minifi::extensions::smb::test {
 

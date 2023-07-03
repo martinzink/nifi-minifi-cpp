@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#include "PutSmb.hpp"
-#include "SmbConnectionControllerService.hpp"
+#include "PutSmb.h"
+#include "SmbConnectionControllerService.h"
 #include "core/PropertyBuilder.h"
 #include "utils/gsl.h"
 #include "utils/ProcessorConfigUtils.h"

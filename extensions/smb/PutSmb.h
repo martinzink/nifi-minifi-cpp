@@ -24,7 +24,7 @@
 #include "core/Processor.h"
 #include "core/ProcessSession.h"
 #include "utils/Enum.h"
-#include "SmbConnectionControllerService.hpp"
+#include "SmbConnectionControllerService.h"
 #include "core/logging/LoggerConfiguration.h"
 
 namespace org::apache::nifi::minifi::extensions::smb {

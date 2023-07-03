@@ -18,9 +18,9 @@
 
 #include "TestBase.h"
 #include "Catch.h"
-#include "PutSmb.hpp"
-#include "SmbConnectionControllerService.hpp"
-#include "SmbTestUtils.hpp"
+#include "PutSmb.h"
+#include "SmbConnectionControllerService.h"
+#include "SmbTestUtils.h"
 #include "SingleProcessorTestController.h"
 #include "range/v3/algorithm/count_if.hpp"
 

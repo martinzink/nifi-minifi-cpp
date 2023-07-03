@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-#include "SmbConnectionControllerService.hpp"
+#include "SmbConnectionControllerService.h"
 #include "core/PropertyBuilder.h"
 #include "core/Resource.h"
 #include "utils/OsUtils.h"
