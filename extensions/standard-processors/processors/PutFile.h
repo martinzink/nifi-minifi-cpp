@@ -88,6 +88,7 @@ class PutFile : public core::Processor {
   bool try_mkdirs_ = true;
   std::optional<uint64_t> max_dest_files_ = std::nullopt;
 
+  bool directoryIsFull(std::filesystem::path directory) const;
   std::optional<std::filesystem::path> getDestinationPath(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file);
   void putFile(core::ProcessSession& session, const std::shared_ptr<core::FlowFile>& flow_file, const std::filesystem::path& dest_file);
   std::shared_ptr<core::logging::Logger> logger_ = core::logging::LoggerFactory<PutFile>::getLogger(uuid_);

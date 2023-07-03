@@ -57,7 +57,7 @@ const core::Property PutFile::ConflictResolution(
     core::PropertyBuilder::createProperty("Conflict Resolution Strategy")
         ->withDescription("Indicates what should happen when a file with the same name already exists in the output directory")
         ->withAllowableValues(FileExistsResolutionStrategy::values())
-        ->withDefaultValue(toString(FileExistsResolutionStrategy::REPLACE_FILE))
+        ->withDefaultValue(toString(FileExistsResolutionStrategy::FAIL_FLOW))
         ->isRequired(true)
         ->build());
 
@@ -102,6 +102,10 @@ std::optional<std::filesystem::path> PutFile::getDestinationPath(core::ProcessCo
   return directory / file_name_str;
 }
 
+bool PutFile::directoryIsFull(std::filesystem::path directory) const {
+  return max_dest_files_ && utils::file::is_directory(directory) && utils::file::countNumberOfFiles(directory) >= *max_dest_files_;
+}
+
 void PutFile::onTrigger(core::ProcessContext *context, core::ProcessSession *session) {
   std::shared_ptr<core::FlowFile> flow_file = session->get();
 
@@ -112,29 +116,23 @@ void PutFile::onTrigger(core::ProcessContext *context, core::ProcessSession *ses
 
   auto dest_path = getDestinationPath(*context, flow_file);
   if (!dest_path) {
-    session->transfer(flow_file, Failure);
-    return;
+    return session->transfer(flow_file, Failure);
   }
 
   logger_->log_debug("PutFile writing file %s into directory %s", dest_path->filename().string(), dest_path->parent_path().string());
 
-  if (max_dest_files_ && utils::file::is_directory(dest_path->parent_path())) {
-    if (utils::file::countNumberOfFiles(dest_path->parent_path()) >= *max_dest_files_) {
-      logger_->log_warn("Routing to failure because the output directory %s has at least %u files, which exceeds the "
-                        "configured max number of files", dest_path->parent_path().string(), *max_dest_files_);
-      session->transfer(flow_file, Failure);
-      return;
-    }
+  if (directoryIsFull(dest_path->parent_path())) {
+    logger_->log_warn("Routing to failure because the output directory %s has at least %u files, which exceeds the "
+                      "configured max number of files", dest_path->parent_path().string(), *max_dest_files_);
+    return session->transfer(flow_file, Failure);
   }
 
   if (utils::file::exists(*dest_path)) {
     logger_->log_warn("Destination file %s exists; applying Conflict Resolution Strategy: %s", dest_path->string(), conflict_resolution_strategy_.toString());
     if (conflict_resolution_strategy_ == FileExistsResolutionStrategy::FAIL_FLOW) {
-      session->transfer(flow_file, Failure);
-      return;
+      return session->transfer(flow_file, Failure);
     } else if (conflict_resolution_strategy_ == FileExistsResolutionStrategy::IGNORE_REQUEST) {
-      session->transfer(flow_file, Success);
-      return;
+      return session->transfer(flow_file, Success);
     }
   }
 
