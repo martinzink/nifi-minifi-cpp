@@ -429,7 +429,6 @@ TEST_CASE("PutFileCreateDirectoryTest", "[PutFileProperties]") {
   LogTestController::getInstance().setDebug<minifi::processors::GetFile>();
   LogTestController::getInstance().setDebug<TestPlan>();
   LogTestController::getInstance().setDebug<minifi::processors::PutFile>();
-  LogTestController::getInstance().setDebug<minifi::processors::PutFile::ReadCallback>();
   LogTestController::getInstance().setDebug<minifi::processors::LogAttribute>();
 
   std::shared_ptr<TestPlan> plan = testController.createPlan();

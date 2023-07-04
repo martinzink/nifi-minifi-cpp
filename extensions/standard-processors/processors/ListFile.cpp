@@ -174,10 +174,10 @@ std::shared_ptr<core::FlowFile> ListFile::createFlowFile(core::ProcessSession& s
   }
 
 #ifndef WIN32
-  if (auto group = utils::file::FileUtils::get_file_group(listed_file.full_file_path)) {
+  if (auto group = utils::file::FileUtils::get_file_group(listed_file.getPath())) {
     session.putAttribute(flow_file, "file.group", *group);
   } else {
-    logger_->log_warn("Failed to get group of file '%s'", listed_file.full_file_path.string());
+    logger_->log_warn("Failed to get group of file '%s'", listed_file.getPath().string());
     session.putAttribute(flow_file, "file.group", "");
   }
 #else
