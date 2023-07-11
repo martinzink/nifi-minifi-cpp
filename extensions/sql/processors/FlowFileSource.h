@@ -28,6 +28,7 @@
 #include "data/SQLRowsetProcessor.h"
 #include "ProcessSession.h"
 #include "data/JSONSQLWriter.h"
+#include "OutputAttributeDefinition.h"
 
 namespace org::apache::nifi::minifi::processors {
 
@@ -40,10 +41,6 @@ SMART_ENUM(OutputType,
 
 class FlowFileSource {
  public:
-  EXTENSIONAPI static constexpr std::string_view FRAGMENT_IDENTIFIER = "fragment.identifier";
-  EXTENSIONAPI static constexpr std::string_view FRAGMENT_COUNT = "fragment.count";
-  EXTENSIONAPI static constexpr std::string_view FRAGMENT_INDEX = "fragment.index";
-
   EXTENSIONAPI static constexpr auto OutputFormat = core::PropertyDefinitionBuilder<flow_file_source::OutputType::length>::createProperty("Output Format")
       .withDescription("Set the output format type.")
       .isRequired(true)
@@ -62,6 +59,17 @@ class FlowFileSource {
       .build();
   EXTENSIONAPI static constexpr auto Properties = std::array<core::PropertyReference, 2>{OutputFormat, MaxRowsPerFlowFile};
 
+  EXTENSIONAPI static constexpr auto FragmentIdentifier = core::OutputAttributeDefinition<>{"fragment.identifier", { },
+      "If 'Max Rows Per Flow File' is set then all FlowFiles from the same query result set will have the same value for the fragment.identifier attribute. "
+      "This can then be used to correlate the results."};
+  EXTENSIONAPI static constexpr auto FragmentCount = core::OutputAttributeDefinition<>{"fragment.count", { },
+      "If 'Max Rows Per Flow File' is set then this is the total number of FlowFiles produced by a single ResultSet. "
+      "This can be used in conjunction with the fragment.identifier attribute in order to know how many FlowFiles belonged to the same incoming ResultSet. "
+      "If Output Batch Size is set, then this attribute will not be populated."};
+
+  EXTENSIONAPI static constexpr auto FragmentIndex = core::OutputAttributeDefinition<>{"fragment.index", { },
+      "If 'Max Rows Per Flow File' is set then the position of this FlowFile in the list of outgoing FlowFiles that were all derived from the same result set FlowFile. "
+      "This can be used in conjunction with the fragment.identifier attribute to know which FlowFiles originated from the same query result set and in what order FlowFiles were produced"};
  protected:
   class FlowFileGenerator : public sql::SQLRowSubscriber {
    public:

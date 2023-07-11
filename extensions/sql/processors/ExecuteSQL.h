@@ -62,15 +62,27 @@ class ExecuteSQL : public SQLProcessor, public FlowFileSource {
   EXTENSIONAPI static constexpr core::annotation::Input InputRequirement = core::annotation::Input::INPUT_ALLOWED;
   EXTENSIONAPI static constexpr bool IsSingleThreaded = true;
 
+  EXTENSIONAPI static constexpr auto ResultRowCount = core::OutputAttributeDefinition<>{"executesql.row.count", { Success },
+      "Contains the number of rows returned by the query. "
+      "If 'Max Rows Per Flow File' is set, then this number will reflect the number of rows in the Flow File instead of the entire result set."};
+  EXTENSIONAPI static constexpr auto InputFlowFileUuid = core::OutputAttributeDefinition<>{"input.flowfile.uuid", { Success },
+      "If the processor has an incoming connection, outgoing FlowFiles will have this attribute set to the value of the input FlowFile's UUID. "
+      "If there is no incoming connection, the attribute will not be added."};
+
+  EXTENSIONAPI static constexpr auto OutputAttributes = std::array<core::OutputAttributeReference, 5>{
+      FlowFileSource::FragmentIndex,
+      FlowFileSource::FragmentCount,
+      FlowFileSource::FragmentIdentifier,
+      ExecuteSQL::ResultRowCount,
+      ExecuteSQL::InputFlowFileUuid
+  };
+
   ADD_COMMON_VIRTUAL_FUNCTIONS_FOR_PROCESSORS
 
   void processOnSchedule(core::ProcessContext& context) override;
   void processOnTrigger(core::ProcessContext& context, core::ProcessSession& session) override;
 
   void initialize() override;
-
-  EXTENSIONAPI static const std::string RESULT_ROW_COUNT;
-  EXTENSIONAPI static const std::string INPUT_FLOW_FILE_UUID;
 };
 
 }  // namespace org::apache::nifi::minifi::processors

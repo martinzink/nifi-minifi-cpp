@@ -28,9 +28,6 @@
 
 namespace org::apache::nifi::minifi::processors {
 
-const std::string ExecuteSQL::RESULT_ROW_COUNT = "executesql.row.count";
-const std::string ExecuteSQL::INPUT_FLOW_FILE_UUID = "input.flowfile.uuid";
-
 ExecuteSQL::ExecuteSQL(std::string name, const utils::Identifier& uuid)
   : SQLProcessor(std::move(name), uuid, core::logging::LoggerFactory<ExecuteSQL>::getLogger(uuid)) {
 }
@@ -88,9 +85,9 @@ void ExecuteSQL::processOnTrigger(core::ProcessContext& context, core::ProcessSe
   while (size_t row_count = sql_rowset_processor.process(max_rows_)) {
     auto new_file = flow_file_creator.getLastFlowFile();
     gsl_Expects(new_file);
-    new_file->addAttribute(RESULT_ROW_COUNT, std::to_string(row_count));
+    new_file->addAttribute(ResultRowCount.name, std::to_string(row_count));
     if (input_flow_file) {
-      new_file->addAttribute(INPUT_FLOW_FILE_UUID, input_flow_file->getUUIDStr());
+      new_file->addAttribute(InputFlowFileUuid.name, input_flow_file->getUUIDStr());
     }
   }
 

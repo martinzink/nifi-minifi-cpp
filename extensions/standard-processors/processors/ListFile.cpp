@@ -137,32 +137,32 @@ std::shared_ptr<core::FlowFile> ListFile::createFlowFile(core::ProcessSession& s
   auto relative_path = std::filesystem::relative(listed_file.full_file_path.parent_path(), input_directory_);
   session.putAttribute(flow_file, core::SpecialFlowAttribute::PATH, (relative_path / "").string());
 
-  session.putAttribute(flow_file, "file.size", std::to_string(utils::file::file_size(listed_file.full_file_path)));
-  session.putAttribute(flow_file, "file.lastModifiedTime", utils::timeutils::getDateTimeStr(std::chrono::time_point_cast<std::chrono::seconds>(listed_file.last_modified_time)));
+  session.putAttribute(flow_file, FileSize.name, std::to_string(utils::file::file_size(listed_file.full_file_path)));
+  session.putAttribute(flow_file, FileLastModifiedTime.name, utils::timeutils::getDateTimeStr(std::chrono::time_point_cast<std::chrono::seconds>(listed_file.last_modified_time)));
 
   if (auto permission_string = utils::file::FileUtils::get_permission_string(listed_file.full_file_path)) {
-    session.putAttribute(flow_file, "file.permissions", *permission_string);
+    session.putAttribute(flow_file, FilePermissions.name, *permission_string);
   } else {
     logger_->log_warn("Failed to get permissions of file '%s'", listed_file.full_file_path.string());
-    session.putAttribute(flow_file, "file.permissions", "");
+    session.putAttribute(flow_file, FilePermissions.name, "");
   }
 
   if (auto owner = utils::file::FileUtils::get_file_owner(listed_file.full_file_path)) {
-    session.putAttribute(flow_file, "file.owner", *owner);
+    session.putAttribute(flow_file, FileOwner.name, *owner);
   } else {
     logger_->log_warn("Failed to get owner of file '%s'", listed_file.full_file_path.string());
-    session.putAttribute(flow_file, "file.owner", "");
+    session.putAttribute(flow_file, FileOwner.name, "");
   }
 
 #ifndef WIN32
   if (auto group = utils::file::FileUtils::get_file_group(listed_file.full_file_path)) {
-    session.putAttribute(flow_file, "file.group", *group);
+    session.putAttribute(flow_file, FileGroup.name, *group);
   } else {
     logger_->log_warn("Failed to get group of file '%s'", listed_file.full_file_path.string());
-    session.putAttribute(flow_file, "file.group", "");
+    session.putAttribute(flow_file, FileGroup.name, "");
   }
 #else
-  session.putAttribute(flow_file, "file.group", "");
+  session.putAttribute(flow_file, FileGroup.name, "");
 #endif
 
   return flow_file;

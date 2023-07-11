@@ -31,14 +31,6 @@
 
 namespace org::apache::nifi::minifi::processors {
 
-const std::string QueryDatabaseTable::InitialMaxValueDynamicPropertyPrefix("initial.maxvalue.");
-
-const std::string QueryDatabaseTable::RESULT_TABLE_NAME = "tablename";
-const std::string QueryDatabaseTable::RESULT_ROW_COUNT = "querydbtable.row.count";
-
-const std::string QueryDatabaseTable::TABLENAME_KEY = "tablename";
-const std::string QueryDatabaseTable::MAXVALUE_KEY_PREFIX = "maxvalue.";
-
 QueryDatabaseTable::QueryDatabaseTable(std::string name, const utils::Identifier& uuid)
   : SQLProcessor(std::move(name), uuid, core::logging::LoggerFactory<QueryDatabaseTable>::getLogger(uuid)) {
 }
@@ -109,8 +101,8 @@ void QueryDatabaseTable::processOnTrigger(core::ProcessContext& /*context*/, cor
   while (size_t row_count = sql_rowset_processor.process(max_rows_)) {
     auto new_file = flow_file_creator.getLastFlowFile();
     gsl_Expects(new_file);
-    new_file->addAttribute(RESULT_ROW_COUNT, std::to_string(row_count));
-    new_file->addAttribute(RESULT_TABLE_NAME, table_name_);
+    new_file->addAttribute(ResultRowCount.name, std::to_string(row_count));
+    new_file->addAttribute(ResultTableName.name, table_name_);
   }
 
   // the updated max_values and the total number of flow_files is available from here
@@ -129,11 +121,11 @@ void QueryDatabaseTable::processOnTrigger(core::ProcessContext& /*context*/, cor
 
 bool QueryDatabaseTable::loadMaxValuesFromStoredState(const std::unordered_map<std::string, std::string> &state) {
   std::unordered_map<sql::SQLColumnIdentifier, std::string> new_max_values;
-  if (!state.contains(TABLENAME_KEY)) {
+  if (!state.contains(TABLENAME_KEY.data())) {
     logger_->log_info("State does not specify the table name.");
     return false;
   }
-  if (state.at(TABLENAME_KEY) != table_name_) {
+  if (state.at(TABLENAME_KEY.data()) != table_name_) {
     logger_->log_info("Querying new table \"%s\", resetting state.", table_name_);
     return false;
   }
@@ -238,7 +230,7 @@ bool QueryDatabaseTable::saveState() {
   std::unordered_map<std::string, std::string> state_map;
   state_map.emplace(TABLENAME_KEY, table_name_);
   for (const auto& item : max_values_) {
-    state_map.emplace(MAXVALUE_KEY_PREFIX + item.first.str(), item.second);
+    state_map.emplace(MAXVALUE_KEY_PREFIX.data() + item.first.str(), item.second);
   }
   return state_manager_->set(state_map);
 }

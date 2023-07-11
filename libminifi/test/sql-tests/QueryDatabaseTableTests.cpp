@@ -47,7 +47,7 @@ TEST_CASE("QueryDatabaseTable queries the table and returns specified columns", 
   REQUIRE(flow_files.size() == 1);
 
   std::string row_count;
-  flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::RESULT_ROW_COUNT, row_count);
+  flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::ResultRowCount.name, row_count);
   REQUIRE(row_count == "3");
   auto content = plan->getContent(flow_files[0]);
   utils::verifyJSON(content, R"(
@@ -87,7 +87,7 @@ TEST_CASE("QueryDatabaseTable requerying the table returns only new rows", "[Que
   REQUIRE(second_flow_files.size() == 1);
 
   std::string row_count;
-  second_flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::RESULT_ROW_COUNT, row_count);
+  second_flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::ResultRowCount.name, row_count);
   REQUIRE(row_count == "2");
   auto content = plan->getContent(second_flow_files[0]);
   utils::verifyJSON(content, R"(
@@ -118,7 +118,7 @@ TEST_CASE("QueryDatabaseTable specifying initial max values", "[QueryDatabaseTab
   REQUIRE(flow_files.size() == 1);
 
   std::string row_count;
-  flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::RESULT_ROW_COUNT, row_count);
+  flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::ResultRowCount.name, row_count);
   REQUIRE(row_count == "2");
   auto content = plan->getContent(flow_files[0]);
   utils::verifyJSON(content, R"(
@@ -151,11 +151,11 @@ TEST_CASE("QueryDatabaseTable honors Max Rows Per Flow File and sets output attr
   };
 
   FlowFileMatcher matcher(content_verifier, {
-      minifi::processors::QueryDatabaseTable::RESULT_TABLE_NAME,
-      minifi::processors::QueryDatabaseTable::RESULT_ROW_COUNT,
-      minifi::processors::QueryDatabaseTable::FRAGMENT_COUNT,
-      minifi::processors::QueryDatabaseTable::FRAGMENT_INDEX,
-      minifi::processors::QueryDatabaseTable::FRAGMENT_IDENTIFIER,
+      minifi::processors::QueryDatabaseTable::ResultTableName.name,
+      minifi::processors::QueryDatabaseTable::ResultRowCount.name,
+      minifi::processors::QueryDatabaseTable::FragmentCount.name,
+      minifi::processors::QueryDatabaseTable::FragmentIndex.name,
+      minifi::processors::QueryDatabaseTable::FragmentIdentifier.name,
       "maxvalue.int_col"
   });
 
@@ -193,7 +193,7 @@ TEST_CASE("QueryDatabaseTable changing table name resets state", "[QueryDatabase
   auto flow_files = plan->getOutputs({"success", "d"});
   REQUIRE(flow_files.size() == 1);
   std::string row_count;
-  flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::RESULT_ROW_COUNT, row_count);
+  flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::ResultRowCount.name, row_count);
   REQUIRE(row_count == "3");
 
 
@@ -208,7 +208,7 @@ TEST_CASE("QueryDatabaseTable changing table name resets state", "[QueryDatabase
   plan->run(true);
   flow_files = plan->getOutputs({"success", "d"});
   REQUIRE(flow_files.size() == 1);
-  flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::RESULT_ROW_COUNT, row_count);
+  flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::ResultRowCount.name, row_count);
   REQUIRE(row_count == "3");
 }
 
@@ -232,7 +232,7 @@ TEST_CASE("QueryDatabaseTable changing maximum value columns resets state", "[Qu
   auto flow_files = plan->getOutputs({"success", "d"});
   REQUIRE(flow_files.size() == 1);
   std::string row_count;
-  flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::RESULT_ROW_COUNT, row_count);
+  flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::ResultRowCount.name, row_count);
   REQUIRE(row_count == "3");
 
 
@@ -241,7 +241,7 @@ TEST_CASE("QueryDatabaseTable changing maximum value columns resets state", "[Qu
   plan->run(true);
   flow_files = plan->getOutputs({"success", "d"});
   REQUIRE(flow_files.size() == 1);
-  flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::RESULT_ROW_COUNT, row_count);
+  flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::ResultRowCount.name, row_count);
   REQUIRE(row_count == "3");
 
   // query using ["int_col"] as max value columns again
@@ -249,7 +249,7 @@ TEST_CASE("QueryDatabaseTable changing maximum value columns resets state", "[Qu
   plan->run(true);
   flow_files = plan->getOutputs({"success", "d"});
   REQUIRE(flow_files.size() == 1);
-  flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::RESULT_ROW_COUNT, row_count);
+  flow_files[0]->getAttribute(minifi::processors::QueryDatabaseTable::ResultRowCount.name, row_count);
   REQUIRE(row_count == "3");
 }
 

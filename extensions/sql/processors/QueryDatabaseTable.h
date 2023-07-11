@@ -40,11 +40,9 @@ class QueryDatabaseTable: public SQLProcessor, public FlowFileSource {
  public:
   explicit QueryDatabaseTable(std::string name, const utils::Identifier& uuid = {});
 
-  EXTENSIONAPI static const std::string RESULT_TABLE_NAME;
-  EXTENSIONAPI static const std::string RESULT_ROW_COUNT;
-  EXTENSIONAPI static const std::string TABLENAME_KEY;
-  EXTENSIONAPI static const std::string MAXVALUE_KEY_PREFIX;
-  EXTENSIONAPI static const std::string InitialMaxValueDynamicPropertyPrefix;
+  EXTENSIONAPI static constexpr std::string_view InitialMaxValueDynamicPropertyPrefix = "initial.maxvalue.";
+  EXTENSIONAPI static constexpr std::string_view TABLENAME_KEY = "tablename";
+  EXTENSIONAPI static constexpr std::string_view MAXVALUE_KEY_PREFIX = "maxvalue.";
 
   EXTENSIONAPI static constexpr const char* Description =
       "Fetches all rows of a table, whose values in the specified Maximum-value Columns are larger than the previously-seen maxima. "
@@ -104,6 +102,23 @@ class QueryDatabaseTable: public SQLProcessor, public FlowFileSource {
   EXTENSIONAPI static constexpr bool SupportsDynamicRelationships = false;
   EXTENSIONAPI static constexpr core::annotation::Input InputRequirement = core::annotation::Input::INPUT_FORBIDDEN;
   EXTENSIONAPI static constexpr bool IsSingleThreaded = true;
+
+  EXTENSIONAPI static constexpr auto ResultRowCount = core::OutputAttributeDefinition<>{"querydbtable.row.count", { Success },
+      "Contains the number of rows returned by the query. "
+      "If 'Max Rows Per Flow File' is set, then this number will reflect the number of rows in the Flow File instead of the entire result set."};
+  EXTENSIONAPI static constexpr auto ResultTableName = core::OutputAttributeDefinition<>{"tablename", { Success }, "Name of the table being queried"};
+  EXTENSIONAPI static constexpr auto MaxValueOutputAttribute = core::OutputAttributeDefinition<>{"maxvalue.*", { Success },
+      "Each attribute contains the observed maximum value of a specified 'Maximum-value Column'. "
+      "The suffix of the attribute is the name of the column. If Output Batch Size is set, then this attribute will not be populated."};
+
+  EXTENSIONAPI static constexpr auto OutputAttributes = std::array<core::OutputAttributeReference, 6>{
+      FlowFileSource::FragmentIndex,
+      FlowFileSource::FragmentCount,
+      FlowFileSource::FragmentIdentifier,
+      QueryDatabaseTable::ResultRowCount,
+      QueryDatabaseTable::ResultTableName,
+      QueryDatabaseTable::MaxValueOutputAttribute
+  };
 
   ADD_COMMON_VIRTUAL_FUNCTIONS_FOR_PROCESSORS
 
