@@ -90,20 +90,24 @@ const core::Property ListSmb::IgnoreHiddenFiles(
 const core::Relationship ListSmb::Success("success", "All FlowFiles that are received are routed to success");
 
 const core::OutputAttribute ListSmb::Filename{"filename", { Success }, "The name of the file that was read from filesystem."};
+const core::OutputAttribute ListSmb::ShortName{"shortName", { Success }, "The name of the file that was read from filesystem."};
 const core::OutputAttribute ListSmb::Path{"path", { Success },
-    "The path is set to the relative path of the file's directory on filesystem compared to the Input Directory property. "
-    "For example, if Input Directory is set to /tmp, then files picked up from /tmp will have the path attribute set to \"./\". "
-    "If the Recurse Subdirectories property is set to true and a file is picked up from /tmp/abc/1/2/3, then the path attribute will be set to \"abc/1/2/3/\"."};
-const core::OutputAttribute ListSmb::AbsolutePath{"absolute.path", { Success },
-    "The absolute.path is set to the absolute path of the file's directory on filesystem. "
-    "For example, if the Input Directory property is set to /tmp, then files picked up from /tmp will have the path attribute set to \"/tmp/\". "
-    "If the Recurse Subdirectories property is set to true and a file is picked up from /tmp/abc/1/2/3, then the path attribute will be set to \"/tmp/abc/1/2/3/\"."};
-const core::OutputAttribute ListSmb::FileOwner{"file.owner", { Success }, "The user that owns the file in filesystem"};
-const core::OutputAttribute ListSmb::FileGroup{"file.group", { Success }, "The group that owns the file in filesystem"};
-const core::OutputAttribute ListSmb::FileSize{"file.size", { Success }, "The number of bytes in the file in filesystem"};
-const core::OutputAttribute ListSmb::FilePermissions{"file.permissions", { Success },
-    "The permissions for the file in filesystem. This is formatted as 3 characters for the owner, 3 for the group, and 3 for other users. For example rw-rw-r--"};
-const core::OutputAttribute ListSmb::FileLastModifiedTime{"file.lastModifiedTime", { Success }, "The timestamp of when the file in filesystem was last modified as 'yyyy-MM-dd'T'HH:mm:ssZ'"};
+    "The path is set to the relative path of the file's directory on the remote filesystem compared to the Share root directory. "
+    "For example, for a given remote locationsmb://HOSTNAME:PORT/SHARE/DIRECTORY, and a file is being listed from smb://HOSTNAME:PORT/SHARE/DIRECTORY/sub/folder/file "
+    "then the path attribute will be set to \"DIRECTORY/sub/folder\"."};
+const core::OutputAttribute ListSmb::ServiceLocation	{"serviceLocation", { Success },
+    "The SMB URL of the share."};
+const core::OutputAttribute ListSmb::LastModifiedTime	{"lastModifiedTime", { Success },
+    "The timestamp of when the file's content changed in the filesystem as 'yyyy-MM-dd'T'HH:mm:ss'."};
+const core::OutputAttribute ListSmb::CreationTime	{"creationTime", { Success },
+    "The timestamp of when the file was created in the filesystem as 'yyyy-MM-dd'T'HH:mm:ss'."};
+const core::OutputAttribute ListSmb::LastAccessTime	{"lastAccessTime", { Success },
+    "The timestamp of when the file was accessed in the filesystem as 'yyyy-MM-dd'T'HH:mm:ss'."};
+const core::OutputAttribute ListSmb::ChangeTime{"changeTime", { Success },
+    "The timestamp of when the file's attributes was changed in the filesystem as 'yyyy-MM-dd'T'HH:mm:ss'."};
+
+const core::OutputAttribute ListSmb::Size{"size", { Success }, "The size of the file in bytes.."};
+const core::OutputAttribute ListSmb::AllocationSize{"allocationSize", { Success }, "The number of bytes allocated for the file on the server."};
 
 void ListSmb::initialize() {
   setSupportedProperties(properties());
@@ -171,7 +175,7 @@ std::shared_ptr<core::FlowFile> ListSmb::createFlowFile(core::ProcessSession& se
   auto relative_path = std::filesystem::relative(listed_file.getPath().parent_path(), input_directory_);
   session.putAttribute(flow_file, core::SpecialFlowAttribute::PATH, (relative_path / "").string());
 
-  session.putAttribute(flow_file, "file.size", std::to_string(utils::file::file_size(listed_file.getPath())));
+  session.putAttribute(flow_file, ListSmb::Filename.getName(), std::to_string(utils::file::file_size(listed_file.getPath())));
   session.putAttribute(flow_file, "file.lastModifiedTime", utils::timeutils::getDateTimeStr(std::chrono::time_point_cast<std::chrono::seconds>(listed_file.getLastModified())));
 
   return flow_file;

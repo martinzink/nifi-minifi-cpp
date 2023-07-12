@@ -71,23 +71,27 @@ class ListSmb : public core::Processor {
   static auto relationships() { return std::array{Success}; }
 
   EXTENSIONAPI static const core::OutputAttribute Filename;
+  EXTENSIONAPI static const core::OutputAttribute ShortName;
   EXTENSIONAPI static const core::OutputAttribute Path;
-  EXTENSIONAPI static const core::OutputAttribute AbsolutePath;
-  EXTENSIONAPI static const core::OutputAttribute FileOwner;
-  EXTENSIONAPI static const core::OutputAttribute FileGroup;
-  EXTENSIONAPI static const core::OutputAttribute FileSize;
-  EXTENSIONAPI static const core::OutputAttribute FilePermissions;
-  EXTENSIONAPI static const core::OutputAttribute FileLastModifiedTime;
+  EXTENSIONAPI static const core::OutputAttribute ServiceLocation;
+  EXTENSIONAPI static const core::OutputAttribute LastModifiedTime;
+  EXTENSIONAPI static const core::OutputAttribute CreationTime;
+  EXTENSIONAPI static const core::OutputAttribute LastAccessTime;
+  EXTENSIONAPI static const core::OutputAttribute ChangeTime;
+  EXTENSIONAPI static const core::OutputAttribute Size;
+  EXTENSIONAPI static const core::OutputAttribute AllocationSize;
   static auto outputAttributes() {
     return std::array{
         Filename,
+        ShortName,
         Path,
-        AbsolutePath,
-        FileOwner,
-        FileGroup,
-        FileSize,
-        FilePermissions,
-        FileLastModifiedTime
+        ServiceLocation,
+        LastModifiedTime,
+        CreationTime,
+        LastAccessTime,
+        ChangeTime,
+        Size,
+        AllocationSize
     };
   }
 
