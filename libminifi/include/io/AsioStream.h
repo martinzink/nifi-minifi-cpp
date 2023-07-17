@@ -40,7 +40,7 @@ class AsioStream : public io::BaseStream {
    * @param buf buffer in which we extract data
    * @param buflen
    */
-  size_t read(gsl::span<std::byte> buf) override;
+  size_t read(std::span<std::byte> buf) override;
 
   /**
    * writes value to stream
@@ -75,7 +75,7 @@ size_t AsioStream<AsioSocketStreamType>::write(const uint8_t *value, size_t size
 }
 
 template<typename AsioSocketStreamType>
-size_t AsioStream<AsioSocketStreamType>::read(gsl::span<std::byte> buf) {
+size_t AsioStream<AsioSocketStreamType>::read(std::span<std::byte> buf) {
   if (buf.empty()) {
     return 0;
   }
