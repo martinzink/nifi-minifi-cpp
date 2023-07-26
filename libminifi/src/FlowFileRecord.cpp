@@ -182,7 +182,7 @@ std::shared_ptr<FlowFileRecord> FlowFileRecord::DeSerialize(io::InputStream& inS
     if (ret != 8) {
       return {};
     }
-    file->event_time_ = std::chrono::system_clock::time_point() + std::chrono::milliseconds(event_time_in_ms);
+    file->event_time_ = std::chrono::system_clock::time_point(std::chrono::milliseconds(event_time_in_ms));
   }
 
   {
@@ -191,7 +191,7 @@ std::shared_ptr<FlowFileRecord> FlowFileRecord::DeSerialize(io::InputStream& inS
     if (ret != 8) {
       return {};
     }
-    file->entry_date_ = std::chrono::system_clock::time_point() + std::chrono::milliseconds(entry_date_in_ms);
+    file->entry_date_ = std::chrono::system_clock::time_point(std::chrono::milliseconds(entry_date_in_ms));
   }
 
   {
@@ -200,7 +200,7 @@ std::shared_ptr<FlowFileRecord> FlowFileRecord::DeSerialize(io::InputStream& inS
     if (ret != 8) {
       return {};
     }
-    file->lineage_start_date_ = std::chrono::system_clock::time_point() + std::chrono::milliseconds(lineage_start_date_in_ms);
+    file->lineage_start_date_ = std::chrono::system_clock::time_point(std::chrono::milliseconds(lineage_start_date_in_ms));
   }
 
   {
