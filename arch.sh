@@ -78,8 +78,6 @@ build_deps(){
                         INSTALLED+=("libarchive")
                     elif [ "$FOUND_VALUE" = "tensorflow" ]; then
                         INSTALLED+=("tensorflow")
-                    elif [ "$FOUND_VALUE" = "boost" ]; then
-                        INSTALLED+=("boost")
                     elif [ "$FOUND_VALUE" = "opensslbuild" ]; then
                         INSTALLED+=("perl")
                     fi

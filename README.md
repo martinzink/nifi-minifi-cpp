@@ -217,8 +217,6 @@ dnf install cmake \
   xz-devel \
   doxygen \
   zlib-devel
-# (Optional) for building OpenCV or Bustache support
-dnf install boost-devel
 # (Optional) for building Python support
 dnf install python36-devel
 # (Optional) for building Lua support
@@ -254,8 +252,6 @@ apt install cmake \
   libbz2-dev liblzma-dev \
   doxygen \
   zlib1g-dev
-# (Optional) for building OpenCV or Bustache support
-apt install libboost-all-dev
 # (Optional) for building Python support
 apt install libpython3-dev
 # (Optional) for building Lua support
@@ -291,8 +287,6 @@ brew install cmake \
   zlib
 brew install curl
 brew link curl --force
-# (Optional) for building OpenCV or Bustache support
-brew install boost
 # (Optional) for building USB Camera support
 brew install libusb libpng
 # (Optional) for building docker image/running system integration tests
