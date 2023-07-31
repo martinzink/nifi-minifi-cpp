@@ -124,4 +124,6 @@ SystemDependency(name="libtool", depends_on_option="ENABLE_COAP")
 SystemDependency(name="libssh2", depends_on_option="ENABLE_SFTP")
 
 SystemDependency(name="boost", depends_on_option="ENABLE_BUSTACHE")
-SystemDependency(name="mbedtls", depends_on_option="ENABLE_OPC")
+
+SystemDependency(name="lua", overrides={"ubuntu": "liblua5.1-0-dev"}, depends_on_option="ENABLE_LUA_SCRIPTING")
+SystemDependency(name="python", overrides={"python": "libpython3-dev"}, depends_on_option="ENABLE_PYTHON_SCRIPTING")
