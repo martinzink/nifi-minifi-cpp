@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Optional
 
 import platform
 import os
@@ -12,13 +12,31 @@ from minifi_option import MinifiOptions
 class SystemDependency:
     instances = []
 
-    def __init__(self, name: str, is_required_fn: Callable[[MinifiOptions], bool] = None, depends_on_option: str = None):
+    def __init__(self, name: str, is_required_fn: Callable[[MinifiOptions], bool] = None,
+                 depends_on_option: str = None, overrides: Optional[dict[str, str]] = None):
         if depends_on_option is not None:
             self.is_required_fn = lambda minifi_option: minifi_option.is_enabled(depends_on_option)
         else:
             self.is_required_fn = is_required_fn
+        self.name_overrides = {}
+        if overrides is not None:
+            for key, value in overrides.items():
+                self.name_overrides[key] = value
         self.name = name
         SystemDependency.instances.append(self)
+
+    def get_name(self) -> str:
+        system_id = SystemDependency.get_system_identifier()
+        if system_id in self.name_overrides:
+            return self.name_overrides[system_id]
+        return self.name
+
+    @staticmethod
+    def get_system_identifier():
+        platform_system = platform.system()
+        if platform_system == "Linux":
+            return distro.id()
+        return platform_system
 
     @staticmethod
     def install_with_brew(dependencies_str: str):
@@ -69,7 +87,7 @@ class SystemDependency:
 
     @staticmethod
     def install_required(minifi_options: MinifiOptions):
-        dependencies_str = " ".join(dependency.name for dependency in SystemDependency.instances if dependency.is_required_fn(minifi_options))
+        dependencies_str = " ".join(dependency.get_name() for dependency in SystemDependency.instances if dependency.is_required_fn(minifi_options))
         SystemDependency.install(dependencies_str)
 
     @staticmethod
@@ -90,7 +108,7 @@ class SystemDependency:
 SystemDependency(name="bison", depends_on_option="ENABLE_EXPRESSION_LANGUAGE")
 SystemDependency(name="flex", depends_on_option="ENABLE_EXPRESSION_LANGUAGE")
 
-SystemDependency(name="libarchive", depends_on_option="ENABLE_LIBARCHIVE")
+SystemDependency(name="libarchive", overrides={"ubuntu": "liblzma-dev"}, depends_on_option="ENABLE_LIBARCHIVE")
 
 SystemDependency(name="libpcap", depends_on_option="ENABLE_GPS")
 
