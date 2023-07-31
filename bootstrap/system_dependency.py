@@ -57,9 +57,8 @@ class SystemDependency:
         if platform_system == "Darwin":
             SystemDependency.install_with_brew(dependencies_str)
         elif platform_system == "Linux":
-            print(dir(distro))
             distro_id = distro.id()
-            if distro_id == "Ubuntu":
+            if distro_id == "ubuntu":
                 SystemDependency.install_with_apt(dependencies_str)
             elif "arch" in distro_id or "manjaro" in distro_id:
                 SystemDependency.install_with_pacman(dependencies_str)

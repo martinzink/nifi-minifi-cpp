@@ -14,7 +14,6 @@ class MinifiOptions:
         self.multi_choice_options = [cache_value for name, cache_value in cache_values.items() if cache_value.value_type == "STRING" and cache_value.possible_values is not None]
         self.build_dir = pathlib.Path(__file__).parent.parent.resolve() / "build"
         self.source_dir = pathlib.Path(__file__).parent.parent.resolve()
-        self.compiler = "gcc"
 
     def create_cmake_options_str(self) -> str:
         return ', '.join([bool_option.create_cmake_option_str() for name, bool_option in self.bool_options])
