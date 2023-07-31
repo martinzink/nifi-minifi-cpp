@@ -12,12 +12,12 @@ def run_cmake(minifi_options: MinifiOptions):
     if not os.path.exists(minifi_options.build_dir):
         os.mkdir(minifi_options.build_dir)
     os.chdir(minifi_options.build_dir)
-    os.system(f"cmake {minifi_options.source_dir}")
+    os.system(f"cmake -G Ninja {minifi_options.source_dir}")
 
 
 def do_build(minifi_options: MinifiOptions):
     os.chdir(minifi_options.build_dir)
-    os.system(f"cmake --build .")
+    os.system(f"cmake -G Ninja --build .")
 
 
 def do_one_click_build(minifi_options: MinifiOptions) -> bool:
