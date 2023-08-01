@@ -182,8 +182,6 @@ TEST_CASE("Test GetFile Ignore", "[getfileCreate3]") {
 
   processor->onSchedule(context, factory);
 
-  int prev = 0;
-
   auto session = std::make_shared<core::ProcessSession>(context);
   REQUIRE(processor->getName() == "getfileCreate2");
 
@@ -228,7 +226,6 @@ TEST_CASE("Test GetFile Ignore", "[getfileCreate3]") {
   std::shared_ptr<core::FlowFile> ffr = session->get();
 
   REQUIRE(repo->getRepoMap().empty());
-  prev++;
 }
 
 TEST_CASE("TestConnectionFull", "[ConnectionFull]") {

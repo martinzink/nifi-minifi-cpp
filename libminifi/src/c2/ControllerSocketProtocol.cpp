@@ -101,6 +101,7 @@ asio::awaitable<void> ControllerSocketProtocol::startAccept() {
 
 asio::awaitable<void> ControllerSocketProtocol::handshakeAndHandleCommand(asio::ip::tcp::socket&& socket, std::shared_ptr<minifi::controllers::SSLContextService> ssl_context_service) {
   asio::ssl::context ssl_context = utils::net::getSslContext(*ssl_context_service, asio::ssl::context::tls_server);
+  ssl_context.set_options(utils::net::minifi_ssl_options);
   asio::ssl::stream<asio::ip::tcp::socket> ssl_socket(std::move(socket), ssl_context);
 
   auto [handshake_error] = co_await ssl_socket.async_handshake(utils::net::HandshakeType::server, utils::net::use_nothrow_awaitable);
