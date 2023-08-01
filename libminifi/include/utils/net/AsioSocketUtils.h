@@ -63,7 +63,7 @@ asio::awaitable<std::tuple<std::error_code>> handshake(SslSocket& socket, asio::
 asio::ssl::context getSslContext(const controllers::SSLContextService& ssl_context_service, asio::ssl::context::method ssl_context_method = asio::ssl::context::tls_client);
 
 constexpr auto minifi_ssl_options = asio::ssl::context::default_workarounds | asio::ssl::context::single_dh_use
-    | asio::ssl::context::no_sslv2 | asio::ssl::context::no_sslv3 | asio::ssl::context::no_tlsv1_1;
+    | asio::ssl::context::no_sslv2 | asio::ssl::context::no_sslv3 | asio::ssl::context::no_tlsv1 | asio::ssl::context::no_tlsv1_1;
 }  // namespace org::apache::nifi::minifi::utils::net
 
 namespace std {
