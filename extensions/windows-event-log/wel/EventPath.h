@@ -20,7 +20,10 @@
 
 #include <windows.h>
 #include <winevt.h>
+
 #include <string>
+
+#include "utils/gsl.h"
 
 namespace org::apache::nifi::minifi::wel {
 
@@ -52,6 +55,7 @@ class EventPath {
       case Kind::CHANNEL: return EvtQueryChannelPath;
       case Kind::FILE: return EvtQueryFilePath;
     }
+    gsl_FailFast();
   }
 
  private:

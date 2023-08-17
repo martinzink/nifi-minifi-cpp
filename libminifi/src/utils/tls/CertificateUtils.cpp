@@ -118,7 +118,7 @@ EVP_PKEY_unique_ptr extractPrivateKey(const PCCERT_CONTEXT certificate) {
       auto const blob = reinterpret_cast<BCRYPT_RSAKEY_BLOB *>(data.get());
 
       if (blob->Magic == BCRYPT_RSAFULLPRIVATE_MAGIC) {
-        auto rsa = RSA_new();
+        auto rsa = RSA_new();  // 'RSA_new': deprecated since OpenSSL 3.0
 
         // n is the modulus common to both public and private key
         auto const n = BN_bin2bn(data.get() + sizeof(BCRYPT_RSAKEY_BLOB) + blob->cbPublicExp, blob->cbModulus, nullptr);
@@ -128,7 +128,7 @@ EVP_PKEY_unique_ptr extractPrivateKey(const PCCERT_CONTEXT certificate) {
         auto const d = BN_bin2bn(data.get() + sizeof(BCRYPT_RSAKEY_BLOB) + blob->cbPublicExp + blob->cbModulus + blob->cbPrime1
             + blob->cbPrime2 + blob->cbPrime1 + blob->cbPrime2 + blob->cbPrime1, blob->cbModulus, nullptr);
 
-        RSA_set0_key(rsa, n, e, d);
+        RSA_set0_key(rsa, n, e, d);  // 'RSA_set0_key': deprecated since OpenSSL 3.0
 
         // p and q are the first and second factor of n
         auto const p = BN_bin2bn(data.get() + sizeof(BCRYPT_RSAKEY_BLOB) + blob->cbPublicExp + blob->cbModulus,
@@ -136,7 +136,7 @@ EVP_PKEY_unique_ptr extractPrivateKey(const PCCERT_CONTEXT certificate) {
         auto const q = BN_bin2bn(data.get() + sizeof(BCRYPT_RSAKEY_BLOB) + blob->cbPublicExp + blob->cbModulus + blob->cbPrime1,
                                  blob->cbPrime2, nullptr);
 
-        RSA_set0_factors(rsa, p, q);
+        RSA_set0_factors(rsa, p, q);  // 'RSA_set0_factors': deprecated since OpenSSL 3.0
 
         // dmp1, dmq1 and iqmp are the exponents and coefficient for CRT calculations
         auto const dmp1 = BN_bin2bn(data.get() + sizeof(BCRYPT_RSAKEY_BLOB) + blob->cbPublicExp + blob->cbModulus + blob->cbPrime1
@@ -146,12 +146,12 @@ EVP_PKEY_unique_ptr extractPrivateKey(const PCCERT_CONTEXT certificate) {
         auto const iqmp = BN_bin2bn(data.get() + sizeof(BCRYPT_RSAKEY_BLOB) + blob->cbPublicExp + blob->cbModulus + blob->cbPrime1
             + blob->cbPrime2 + blob->cbPrime1 + blob->cbPrime2, blob->cbPrime1, nullptr);
 
-        RSA_set0_crt_params(rsa, dmp1, dmq1, iqmp);
+        RSA_set0_crt_params(rsa, dmp1, dmq1, iqmp);  // 'RSA_set0_crt_params': deprecated since OpenSSL 3.0
 
         pkey.reset(EVP_PKEY_new());
 
         // ownership of rsa transferred to pkey
-        EVP_PKEY_assign_RSA(pkey.get(), rsa);
+        EVP_PKEY_assign_RSA(pkey.get(), rsa);  // 'EVP_PKEY_assign_RSA': deprecated since OpenSSL 3.0
       }
     }
   }

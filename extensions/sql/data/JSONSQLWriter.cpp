@@ -83,7 +83,7 @@ void JSONSQLWriter::addToJSONRow(const std::string& column_name, rapidjson::Valu
 
 rapidjson::Value JSONSQLWriter::toJSONString(const std::string& s) {
   rapidjson::Value jsonValue;
-  jsonValue.SetString(s.c_str(), s.size(), current_batch_.GetAllocator());
+  jsonValue.SetString(s.c_str(), gsl::narrow<rapidjson::SizeType>(s.size()), current_batch_.GetAllocator());
 
   return jsonValue;
 }

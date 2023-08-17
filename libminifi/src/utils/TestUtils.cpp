@@ -72,7 +72,7 @@ void makeFileOrDirectoryNotWritable(const std::filesystem::path& file_name) {
 #ifdef WIN32
   setAclOnFileOrDirectory(file_name.string(), FILE_GENERIC_WRITE, DENY_ACCESS);
 #else
-  std::filesystem::permissions(filename, std::filesystem::perms::owner_write, std::filesystem::perm_options::remove);
+  std::filesystem::permissions(file_name, std::filesystem::perms::owner_write, std::filesystem::perm_options::remove);
 #endif
 }
 
@@ -80,7 +80,7 @@ void makeFileOrDirectoryWritable(const std::filesystem::path& file_name) {
 #ifdef WIN32
   setAclOnFileOrDirectory(file_name.string(), FILE_GENERIC_WRITE, GRANT_ACCESS);
 #else
-  std::filesystem::permissions(filename, std::filesystem::perms::owner_write, std::filesystem::perm_options::add);
+  std::filesystem::permissions(file_name, std::filesystem::perms::owner_write, std::filesystem::perm_options::add);
 #endif
 }
 

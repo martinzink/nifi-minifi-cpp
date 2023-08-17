@@ -28,6 +28,8 @@
 #include "processors/PutFile.h"
 #include "TestBase.h"
 #include "Catch.h"
+#include "range/v3/view/transform.hpp"
+#include "range/v3/range/conversion.hpp"
 #include "utils/TestUtils.h"
 #include "utils/file/FileUtils.h"
 #include "utils/gsl.h"
@@ -97,7 +99,8 @@ class OutputFormatTestController : public TestController {
 };
 
 void generateLogFile(const std::wstring& channel, const std::filesystem::path& path) {
-  HANDLE event_log = OpenEventLog(NULL, std::string(channel.begin(), channel.end()).c_str());
+  const auto channel_as_string = channel | ranges::views::transform([](wchar_t c) { return gsl::narrow<char>(c); }) | ranges::to<std::string>();  // NOLINT(build/include_what_you_use)
+  HANDLE event_log = OpenEventLog(NULL, channel_as_string.c_str());
   auto guard = gsl::finally([&] {CloseEventLog(event_log);});
 
   if (!EvtExportLog(NULL, channel.c_str(), L"*", path.wstring().c_str(), EvtExportLogChannelPath)) {

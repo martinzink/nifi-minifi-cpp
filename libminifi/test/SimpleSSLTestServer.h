@@ -55,8 +55,8 @@ class SimpleSSLTestServer  {
     static SocketInitializer socket_initializer{};
     minifi::io::OpenSSLInitializer::getInstance();
     ctx_ = SSL_CTX_new(TLS_server_method());
-    SSL_CTX_set_min_proto_version(ctx_, version);
-    SSL_CTX_set_max_proto_version(ctx_, version);
+    SSL_CTX_set_min_proto_version(ctx_, gsl::narrow<int>(version));
+    SSL_CTX_set_max_proto_version(ctx_, gsl::narrow<int>(version));
     configureContext(key_dir);
     socket_descriptor_ = createSocket(port_);
   }
@@ -72,7 +72,7 @@ class SimpleSSLTestServer  {
       SocketDescriptor client = accept(socket_descriptor_, nullptr, nullptr);
       if (client != INVALID_SOCKET) {
         ssl_ = SSL_new(ctx_);
-        SSL_set_fd(ssl_, client);
+        SSL_set_fd(ssl_, gsl::narrow<int>(client));
         had_connection_ = (SSL_accept(ssl_) == 1);
       }
     });

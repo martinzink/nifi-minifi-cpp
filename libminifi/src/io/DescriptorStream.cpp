@@ -58,7 +58,7 @@ size_t DescriptorStream::write(const uint8_t *value, size_t size) {
   if (IsNullOrEmpty(value)) return STREAM_ERROR;
   std::lock_guard<std::recursive_mutex> lock(file_lock_);
 #ifdef WIN32
-  if (static_cast<size_t>(_write(fd_, value, size)) != size) {
+  if (gsl::narrow<size_t>(_write(fd_, value, gsl::narrow<unsigned int>(size))) != size) {
 #else
   if (static_cast<size_t>(::write(fd_, value, size)) != size) {
 #endif
@@ -71,7 +71,7 @@ size_t DescriptorStream::write(const uint8_t *value, size_t size) {
 size_t DescriptorStream::read(std::span<std::byte> buf) {
   if (buf.empty()) return 0;
 #ifdef WIN32
-  const auto size_read = _read(fd_, buf.data(), buf.size());
+  const auto size_read = _read(fd_, buf.data(), gsl::narrow<unsigned int>(buf.size()));
 #else
   const auto size_read = ::read(fd_, buf.data(), buf.size());
 #endif
