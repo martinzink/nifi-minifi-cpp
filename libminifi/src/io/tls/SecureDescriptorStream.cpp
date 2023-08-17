@@ -24,6 +24,9 @@
 #include <Exception.h>
 #include "io/validation.h"
 #include "utils/gsl.h"
+#ifdef WIN32
+#include <io.h>
+#endif
 
 namespace org::apache::nifi::minifi::io {
 
