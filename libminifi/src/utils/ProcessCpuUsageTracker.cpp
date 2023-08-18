@@ -24,11 +24,8 @@
 #include <thread>
 #include <algorithm>
 
-namespace org {
-namespace apache {
-namespace nifi {
-namespace minifi {
-namespace utils {
+namespace org::apache::nifi::minifi::utils {
+
 #ifndef WIN32
 ProcessCpuUsageTracker::ProcessCpuUsageTracker() :
     cpu_times_(0), sys_cpu_times_(0), user_cpu_times_(0) {
@@ -137,8 +134,4 @@ double ProcessCpuUsageTracker::getProcessCpuUsageBetweenLastTwoQueries() const {
 }
 #endif
 
-} /* namespace utils */
-} /* namespace minifi */
-} /* namespace nifi */
-} /* namespace apache */
-} /* namespace org */
+}  // namespace org::apache::nifi::minifi::utils
