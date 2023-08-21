@@ -100,7 +100,7 @@ jobs:
           python-version: '3.11'
       - name: Set up Lua
         run: |
-          choco install lua
+          choco install lua53
       - name: Set up NASM for OpenSSL
         uses: ilammy/setup-nasm@v1
       - id: install-sqliteodbc-driver
