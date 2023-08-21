@@ -99,7 +99,8 @@ jobs:
         with:
           python-version: '3.11'
       - name: Set up Lua
-        uses: xpol/setup-lua@v0.3
+        run: |
+          winget install "lua for windows"
       - name: Set up NASM for OpenSSL
         uses: ilammy/setup-nasm@v1
       - id: install-sqliteodbc-driver
