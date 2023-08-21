@@ -31,11 +31,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Set up Lua
-        run: |
-          choco install lua
-      - name: test lua
-        run: |
-          lua -v
+        uses: leafo/gh-actions-lua@v10
       - name: Set up NASM for OpenSSL
         uses: ilammy/setup-nasm@v1
       - id: install-sqliteodbc-driver
