@@ -31,6 +31,10 @@ set build_jni=OFF
 set build_SQL=OFF
 set build_AWS=OFF
 set build_SFTP=OFF
+set build_PDH=OFF
+set build_SMB=OFF
+set build_SPLUNK=OFF
+set build_GCP=OFF
 set build_azure=OFF
 set enable_bustache=OFF
 set enable_coap=OFF
@@ -72,6 +76,7 @@ for %%x in (%*) do (
     if [%%~x] EQU [/A]                set build_AWS=ON
     if [%%~x] EQU [/SFTP]             set build_SFTP=ON
     if [%%~x] EQU [/PDH]              set build_PDH=ON
+    if [%%~x] EQU [/SMB]              set build_SMB=ON
     if [%%~x] EQU [/SPLUNK]           set build_SPLUNK=ON
     if [%%~x] EQU [/GCP]              set build_GCP=ON
     if [%%~x] EQU [/ELASTIC]          set build_ELASTIC=ON
@@ -115,7 +120,7 @@ if [%generator%] EQU ["Ninja"] (
 echo on
 cmake -G %generator% %build_platform_cmd% -DINSTALLER_MERGE_MODULES=%installer_merge_modules% -DTEST_CUSTOM_WEL_PROVIDER=%test_custom_wel_provider% -DENABLE_SQL=%build_SQL% -DUSE_REAL_ODBC_TEST_DRIVER=%real_odbc% ^
         -DCMAKE_BUILD_TYPE_INIT=%cmake_build_type% -DCMAKE_BUILD_TYPE=%cmake_build_type% -DWIN32=WIN32 -DENABLE_LIBRDKAFKA=%build_kafka% -DENABLE_JNI=%build_jni% -DOPENSSL_OFF=OFF ^
-        -DENABLE_COAP=%build_coap% -DENABLE_AWS=%build_AWS% -DENABLE_PDH=%build_PDH% -DENABLE_AZURE=%build_azure% -DENABLE_SFTP=%build_SFTP% -DENABLE_SPLUNK=%build_SPLUNK% -DENABLE_GCP=%build_GCP% ^
+        -DENABLE_COAP=%build_coap% -DENABLE_AWS=%build_AWS% -DENABLE_PDH=%build_PDH% -DENABLE_SMB=%build_SMB% -DENABLE_AZURE=%build_azure% -DENABLE_SFTP=%build_SFTP% -DENABLE_SPLUNK=%build_SPLUNK% -DENABLE_GCP=%build_GCP% ^
         -DENABLE_NANOFI=%build_nanofi% -DENABLE_OPENCV=%build_opencv% -DENABLE_PROMETHEUS=%build_prometheus% -DENABLE_ELASTICSEARCH=%build_ELASTIC% -DUSE_SHARED_LIBS=OFF -DENABLE_CONTROLLER=OFF  ^
         -DENABLE_BUSTACHE=%enable_bustache% -DENABLE_COAP=%enable_coap% -DENABLE_ENCRYPT_CONFIG=%enable_encrypt_config% -DENABLE_LUA_SCRIPTING=%enable_lua_scripting% ^
         -DENABLE_MQTT=%enable_mqtt% -DENABLE_OPC=%enable_opc% -DENABLE_OPENWSMAN=%enable_openwsman% -DENABLE_OPS=%enable_ops% -DENABLE_PCAP=%enable_pcap% ^
