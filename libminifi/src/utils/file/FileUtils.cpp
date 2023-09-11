@@ -119,7 +119,7 @@ nonstd::expected<FileTimes, std::error_code> getWindowsFileTimes(const std::file
 }
 #elif defined(__APPLE__)
 std::chrono::file_clock::time_point fileTimePointFromTimespec(const timespec& timespec) {
-  return from_sys(std::chrono::system_clock::time_point{std::chrono::seconds(timespec.tv_sec)}) + + std::chrono::nanoseconds(timespec.tv_nsec);
+  return from_sys(std::chrono::system_clock::time_point{std::chrono::seconds(timespec.tv_sec)}) + std::chrono::nanoseconds(timespec.tv_nsec);
 }
 
 nonstd::expected<FileTimes, std::error_code> getFileTimes(const std::filesystem::path& path) {
@@ -133,7 +133,7 @@ nonstd::expected<FileTimes, std::error_code> getFileTimes(const std::filesystem:
 }
 #elif defined(__linux__)
 std::chrono::file_clock::time_point fileTimePointFromStatxTimespec(const statx_timestamp& timespec) {
-  return from_sys(std::chrono::system_clock::time_point{std::chrono::seconds(timespec.tv_sec) + std::chrono::nanoseconds(timespec.tv_nsec)});
+  return from_sys(std::chrono::system_clock::time_point{std::chrono::seconds(timespec.tv_sec)}) + std::chrono::nanoseconds(timespec.tv_nsec);
 }
 
 nonstd::expected<FileTimes, std::error_code> getFileTimes(const std::filesystem::path& path) {
