@@ -108,7 +108,7 @@ std::chrono::file_clock::time_point fileTimePointFromFileTime(const FILETIME& fi
   return std::chrono::file_clock::time_point{duration};
 }
 
-nonstd::expected<FileTimes, std::error_code> getWindowsFileTimes(const std::filesystem::path& path) {
+nonstd::expected<FileTimes, std::error_code> getFileTimes(const std::filesystem::path& path) {
   WIN32_FILE_ATTRIBUTE_DATA file_attributes;
   auto get_file_attributes_result = GetFileAttributesExW(path.c_str(), GetFileExInfoStandard, &file_attributes);
   if (!get_file_attributes_result)
