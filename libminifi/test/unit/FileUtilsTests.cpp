@@ -552,3 +552,43 @@ TEST_CASE("file_clock to system_clock conversion tests") {
     CHECK(file_time_t1-file_time_from_t0 < 10ms);
   }
 }
+
+
+TEST_CASE("Test FileTimes struct") {
+  TestController test_controller;
+  const auto base_path = test_controller.createTempDirectory();
+  const auto file_path = base_path / "foo";
+  {
+    std::ofstream test_file_stream(file_path);
+    test_file_stream << "foo\n";
+  }
+
+  auto file_times_after_creation = FileUtils::getFileTimes(file_path);
+  REQUIRE(file_times_after_creation);
+
+  CHECK(file_times_after_creation->creation_time == file_times_after_creation->last_access_time);
+
+  auto time_after_creation = std::chrono::file_clock::now();
+  REQUIRE(FileUtils::set_last_write_time(file_path, time_after_creation));
+
+  {
+    auto file_times = FileUtils::getFileTimes(file_path);
+    REQUIRE(file_times);
+    CHECK(file_times_after_creation->creation_time == file_times->creation_time);
+    CHECK(file_times->last_write_time == time_after_creation);
+    CHECK(file_times->last_access_time == file_times_after_creation->last_access_time);
+  }
+
+  {
+    std::ifstream test_file_ifstream(file_path);
+    CHECK(test_file_ifstream);
+  }
+
+  {
+    auto file_times = FileUtils::getFileTimes(file_path);
+    REQUIRE(file_times);
+    CHECK(file_times_after_creation->creation_time == file_times->creation_time);
+    CHECK(file_times->last_write_time == time_after_creation);
+    CHECK(file_times->last_access_time >= file_times_after_creation->last_access_time);
+  }
+}

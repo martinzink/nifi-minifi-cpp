@@ -100,7 +100,7 @@ std::chrono::file_clock::time_point from_sys(std::chrono::system_clock::time_poi
 #endif
 }
 
-#ifdef WIN32
+#if defined(WIN32)
 std::chrono::file_clock::time_point fileTimePointFromFileTime(const FILETIME& filetime) {
   // FILETIME contains a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC).
   static_assert(std::ratio_equal_v<std::chrono::file_clock::duration::period, std::ratio<1, 10000000>>, "file_clock duration tick period must be 100 nanoseconds");
@@ -108,14 +108,42 @@ std::chrono::file_clock::time_point fileTimePointFromFileTime(const FILETIME& fi
   return std::chrono::file_clock::time_point{duration};
 }
 
-nonstd::expected<WindowsFileTimes, std::error_code> getWindowsFileTimes(const std::filesystem::path& path) {
+nonstd::expected<FileTimes, std::error_code> getFileTimes(const std::filesystem::path& path) {
   WIN32_FILE_ATTRIBUTE_DATA file_attributes;
   auto get_file_attributes_result = GetFileAttributesExW(path.c_str(), GetFileExInfoStandard, &file_attributes);
   if (!get_file_attributes_result)
     return nonstd::make_unexpected(utils::OsUtils::windowsErrorToErrorCode(GetLastError()));
-  return WindowsFileTimes{.creation_time = fileTimePointFromFileTime(file_attributes.ftCreationTime),
-                          .last_access_time = fileTimePointFromFileTime(file_attributes.ftLastAccessTime),
-                          .last_write_time = fileTimePointFromFileTime(file_attributes.ftLastWriteTime)};
+  return FileTimes{.creation_time = fileTimePointFromFileTime(file_attributes.ftCreationTime),
+                   .last_access_time = fileTimePointFromFileTime(file_attributes.ftLastAccessTime),
+                   .last_write_time = fileTimePointFromFileTime(file_attributes.ftLastWriteTime)};
+}
+#elif defined(__APPLE__)
+std::chrono::file_clock::time_point fileTimePointFromTimespec(const timespec& timespec) {
+  return from_sys(std::chrono::system_clock::time_point{std::chrono::seconds(timespec.tv_sec)}) + std::chrono::nanoseconds(timespec.tv_nsec);
+}
+
+nonstd::expected<FileTimes, std::error_code> getFileTimes(const std::filesystem::path& path) {
+  struct stat file_stat{};
+  if (stat(path.c_str(), &file_stat) != 0)
+    return nonstd::make_unexpected(std::error_code(errno, std::generic_category()));
+
+  return FileTimes{.creation_time = fileTimePointFromTimespec(file_stat.st_birthtimespec),
+                   .last_access_time = fileTimePointFromTimespec(file_stat.st_atimespec),
+                   .last_write_time = fileTimePointFromTimespec(file_stat.st_mtimespec)};
+}
+#elif defined(__linux__)
+std::chrono::file_clock::time_point fileTimePointFromStatxTimespec(const statx_timestamp& timespec) {
+  return from_sys(std::chrono::system_clock::time_point{std::chrono::seconds(timespec.tv_sec)}) + std::chrono::nanoseconds(timespec.tv_nsec);
+}
+
+nonstd::expected<FileTimes, std::error_code> getFileTimes(const std::filesystem::path& path) {
+  struct statx file_stat{};
+  if (statx(AT_FDCWD, path.c_str(), AT_SYMLINK_NOFOLLOW, STATX_ALL, &file_stat) != 0)
+    return nonstd::make_unexpected(std::error_code(errno, std::generic_category()));
+
+  return FileTimes{.creation_time = fileTimePointFromStatxTimespec(file_stat.stx_btime),
+                   .last_access_time = fileTimePointFromStatxTimespec(file_stat.stx_atime),
+                   .last_write_time = fileTimePointFromStatxTimespec(file_stat.stx_mtime)};
 }
 #endif  // WIN32
 
