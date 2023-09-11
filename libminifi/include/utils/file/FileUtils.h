@@ -583,14 +583,12 @@ inline size_t countNumberOfFiles(const std::filesystem::path& path) {
   return counter;
 }
 
-#ifdef WIN32
-struct WindowsFileTimes {
+struct FileTimes {
   std::chrono::file_clock::time_point creation_time;
   std::chrono::file_clock::time_point last_access_time;
   std::chrono::file_clock::time_point last_write_time;
 };
 
-nonstd::expected<WindowsFileTimes, std::error_code> getWindowsFileTimes(const std::filesystem::path& path);
-#endif
+nonstd::expected<FileTimes, std::error_code> getFileTimes(const std::filesystem::path& path);
 
 }  // namespace org::apache::nifi::minifi::utils::file
