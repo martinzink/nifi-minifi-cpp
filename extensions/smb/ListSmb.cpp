@@ -89,7 +89,7 @@ std::shared_ptr<core::FlowFile> ListSmb::createFlowFile(core::ProcessSession& se
 
   session.putAttribute(flow_file, Size.name, std::to_string(utils::file::file_size(listed_file.getPath())));
 
-  if (auto windows_file_times = utils::file::getWindowsFileTimes(listed_file.getPath())) {
+  if (auto windows_file_times = utils::file::getFileTimes(listed_file.getPath())) {
     session.putAttribute(flow_file, CreationTime.name, getDateTimeStr(windows_file_times->creation_time));
     session.putAttribute(flow_file, LastModifiedTime.name, getDateTimeStr(windows_file_times->last_write_time));
     session.putAttribute(flow_file, LastAccessTime.name, getDateTimeStr(windows_file_times->last_access_time));
