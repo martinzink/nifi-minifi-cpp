@@ -32,7 +32,7 @@ set build_SQL=OFF
 set build_AWS=OFF
 set build_SFTP=OFF
 set build_PDH=OFF
-set build_SMB=OFF
+set build_SMB=ON
 set build_SPLUNK=OFF
 set build_GCP=OFF
 set build_azure=OFF
@@ -76,7 +76,7 @@ for %%x in (%*) do (
     if [%%~x] EQU [/A]                set build_AWS=ON
     if [%%~x] EQU [/SFTP]             set build_SFTP=ON
     if [%%~x] EQU [/PDH]              set build_PDH=ON
-    if [%%~x] EQU [/SMB]              set build_SMB=ON
+    if [%%~x] EQU [/NO_SMB]           set build_SMB=OFF
     if [%%~x] EQU [/SPLUNK]           set build_SPLUNK=ON
     if [%%~x] EQU [/GCP]              set build_GCP=ON
     if [%%~x] EQU [/ELASTIC]          set build_ELASTIC=ON
