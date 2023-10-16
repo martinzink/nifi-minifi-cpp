@@ -1152,4 +1152,38 @@ bool ProcessSession::hasBeenTransferred(const core::FlowFile &flow) const {
     (added_flowfiles_.contains(flow.getUUID()) && added_flowfiles_.at(flow.getUUID()).rel != nullptr);
 }
 
+nonstd::expected<size_t, std::error_code> ProcessSession::readExpected(const std::shared_ptr<core::FlowFile>& flow_file, const io::ExpectedInputStreamCallback& callback) {
+  auto flow_file_stream = getFlowFileContentStream(flow_file);
+  if (!flow_file_stream)
+    return 0;
+  return callback(flow_file_stream);
+}
+
+nonstd::expected<size_t, std::error_code> ProcessSession::writeExpected(const std::shared_ptr<core::FlowFile>& flow_file, const io::ExpectedOutputStreamCallback& callback) {
+  gsl_ExpectsAudit(updated_flowfiles_.contains(flow_file->getUUID())
+      || added_flowfiles_.contains(flow_file->getUUID())
+      || std::any_of(cloned_flowfiles_.begin(), cloned_flowfiles_.end(), [&flow_file](const auto& ff) { return flow_file == ff; }));
+
+  std::shared_ptr<ResourceClaim> claim = content_session_->create();
+
+  auto start_time = std::chrono::steady_clock::now();
+  std::shared_ptr<io::BaseStream> stream = content_session_->write(claim);
+  if (!stream)
+    return nonstd::make_unexpected(minifi::Errc::FileOperationErr);
+
+  auto callback_result = callback(stream);
+  if (!callback_result.has_value())
+    return callback_result;
+
+  flow_file->setSize(stream->size());
+  flow_file->setOffset(0);
+  flow_file->setResourceClaim(claim);
+
+  stream->close();
+  std::string details = process_context_->getProcessorNode()->getName() + " modify flow record content " + flow_file->getUUIDStr();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time);
+  provenance_report_->modifyContent(flow_file, details, duration);
+  return callback_result;
+}
+
 }  // namespace org::apache::nifi::minifi::core

@@ -19,6 +19,8 @@
 #include <functional>
 #include <memory>
 
+#include "utils/expected.h"
+
 namespace org::apache::nifi::minifi::io {
 
 class InputStream;
@@ -29,5 +31,11 @@ class OutputStream;
 using InputStreamCallback = std::function<int64_t(const std::shared_ptr<InputStream>& input_stream)>;
 using OutputStreamCallback = std::function<int64_t(const std::shared_ptr<OutputStream>& output_stream)>;
 using InputOutputStreamCallback = std::function<int64_t(const std::shared_ptr<InputStream>& input_stream, const std::shared_ptr<OutputStream>& output_stream)>;
+
+
+using ExpectedInputStreamCallback = std::function<nonstd::expected<size_t, std::error_code>(const std::shared_ptr<InputStream>& input_stream)>;
+using ExpectedOutputStreamCallback = std::function<nonstd::expected<size_t, std::error_code>(const std::shared_ptr<OutputStream>& input_stream)>;
+using ExpectedInputOutputStreamCallback = std::function<nonstd::expected<size_t, std::error_code>(const std::shared_ptr<InputStream>& input_stream,
+    const std::shared_ptr<OutputStream>& output_stream)>;
 
 }  // namespace org::apache::nifi::minifi::io

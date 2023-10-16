@@ -1,4 +1,5 @@
 /**
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,23 +16,19 @@
  * limitations under the License.
  */
 
-#include "utils/Error.h"
 
-#include <cerrno>
-#include "utils/gsl.h"
+#include "../TestBase.h"
+#include "../Catch.h"
+#include "Error.h"
 
-#ifdef WIN32
-#include <windows.h>
-#endif
+namespace org::apache::nifi::minifi::test {
 
-namespace org::apache::nifi::minifi::utils {
-
-std::error_code getLastError() {
-#ifdef WIN32
-  return {gsl::narrow<int>(GetLastError()), std::system_category()};
-#else
-  return {gsl::narrow<int>(errno), std::generic_category()};
-#endif
+TEST_CASE("Simple Error test") {
+  std::error_code ec = Errc::FlowErr;
+  CHECK(ec);
+  CHECK(ec == Errc::FlowErr);
+  CHECK(ec != Errc::ProcessScheduleErr);
+  CHECK(ec.message() == "Flow error");
 }
 
-}  // namespace org::apache::nifi::minifi::utils
+}  // namespace org::apache::nifi::minifi::test

@@ -25,6 +25,7 @@
 #include <string>
 #include "Stream.h"
 #include "utils/Id.h"
+#include "Error.h"
 
 namespace org::apache::nifi::minifi::io {
 
@@ -40,6 +41,21 @@ class InputStream : public virtual Stream {
    * @return resulting read size or STREAM_ERROR on error or static_cast<size_t>(-2) on EAGAIN
    **/
   virtual size_t read(std::span<std::byte> out_buffer) = 0;
+
+  template <typename... Args>
+  nonstd::expected<size_t, std::error_code> readExpected(Args&&... args) {
+    try {
+      size_t read_size = read(std::forward<Args>(args)...);
+      if (STREAM_ERROR == read_size) {
+        return nonstd::make_unexpected(minifi::Errc::StreamError);
+      } else if (static_cast<size_t>(-2) == read_size) {
+        return nonstd::make_unexpected(std::make_error_code(std::errc::resource_unavailable_try_again));
+      }
+      return read_size;
+    } catch(const std::exception&) {
+      return nonstd::make_unexpected(minifi::Errc::StreamError);
+    }
+  }
 
   /**
    * Read string from stream. Use isError (Stream.h) to check for errors.

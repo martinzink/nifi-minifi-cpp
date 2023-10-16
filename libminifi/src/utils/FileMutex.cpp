@@ -21,7 +21,7 @@
 #include <iostream>
 #include "utils/gsl.h"
 #include "utils/OsUtils.h"
-#include "utils/Error.h"
+#include "Error.h"
 
 #ifdef WIN32
 
@@ -37,11 +37,11 @@ void FileMutex::lock() {
   HANDLE handle = CreateFileA(path_.string().c_str(), GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
   if (handle == INVALID_HANDLE_VALUE) {
-    const auto err = utils::getLastError();
+    const auto err = getLastOsError();
     std::string pid_str = "unknown";
     handle = CreateFileA(path_.string().c_str(), GENERIC_READ, FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (handle == INVALID_HANDLE_VALUE) {
-      std::cerr << "Failed to open file to read pid: " << utils::getLastError().message() << std::endl;
+      std::cerr << "Failed to open file to read pid: " << getLastOsError().message() << std::endl;
     } else {
       std::array<char, 16> buffer;
       size_t pid_str_size = 0;
@@ -51,7 +51,7 @@ void FileMutex::lock() {
       }
       pid_str = "'" + std::string(buffer.data(), pid_str_size) + "'";
       if (!CloseHandle(handle)) {
-        std::cerr << "Failed to close file after unsuccessful locking attempt: " << utils::getLastError().message() << std::endl;
+        std::cerr << "Failed to close file after unsuccessful locking attempt: " << getLastOsError().message() << std::endl;
       }
     }
 
@@ -63,9 +63,9 @@ void FileMutex::lock() {
   while (!buffer.empty()) {
     DWORD written;
     if (!WriteFile(handle, buffer.data(), buffer.size(), &written, NULL)) {
-      const auto err = utils::getLastError();
+      const auto err = getLastOsError();
       if (!CloseHandle(file_handle_.value())) {
-        std::cerr << "Failed to close file: " << utils::getLastError().message() << std::endl;
+        std::cerr << "Failed to close file: " << getLastOsError().message() << std::endl;
       }
       throw std::system_error(err, "Failed to write pid to lock file '" + path_.string() + "'");
     }
@@ -79,7 +79,7 @@ void FileMutex::unlock() {
   std::lock_guard guard(mtx_);
   gsl_Expects(file_handle_.has_value());
   if (!CloseHandle(file_handle_.value())) {
-    std::cerr << "Failed to close file: " << utils::getLastError().message() << std::endl;
+    std::cerr << "Failed to close file: " << getLastOsError().message() << std::endl;
   }
   file_handle_.reset();
 }
@@ -105,14 +105,14 @@ void FileMutex::lock() {
 #endif
   int fd = open(path_.string().c_str(), flags, 0644);
   if (fd < 0) {
-    throw std::system_error{utils::getLastError(), "Failed to open file '" + path_.string() + "' to be locked"};
+    throw std::system_error{getLastOsError(), "Failed to open file '" + path_.string() + "' to be locked"};
   }
 
   struct flock file_lock_info{};
   file_lock_info.l_type = F_WRLCK;
   int value = fcntl(fd, F_SETLK, &file_lock_info);
   if (value == -1) {
-    const auto err = utils::getLastError();
+    const auto err = getLastOsError();
     std::string pid_str = "unknown";
     std::array<char, 16> buffer{};
     size_t pid_str_size = 0;
@@ -121,13 +121,13 @@ void FileMutex::lock() {
       pid_str_size += ret;
     }
     if (ret < 0) {
-      std::cerr << "Failed to read file content: " << utils::getLastError().message() << std::endl;
+      std::cerr << "Failed to read file content: " << getLastOsError().message() << std::endl;
     } else {
       pid_str = "'" + std::string(buffer.data(), pid_str_size) + "'";
     }
 
     if (close(fd) == -1) {
-      std::cerr << "Failed to close file after unsuccessful locking attempt: " << utils::getLastError().message() << std::endl;
+      std::cerr << "Failed to close file after unsuccessful locking attempt: " << getLastOsError().message() << std::endl;
     }
     throw std::system_error{err, "Failed to lock file '" + path_.string() + "', previous pid: " + pid_str};
   }
@@ -137,9 +137,9 @@ void FileMutex::lock() {
   while (!buffer.empty()) {
     ssize_t ret = write(fd, buffer.data(), buffer.size());
     if (ret < 0) {
-      const auto err = utils::getLastError();
+      const auto err = getLastOsError();
       if (close(fd) == -1) {
-        std::cerr << "Failed to close file after unsuccessful pid write attempt: " << utils::getLastError().message() << std::endl;
+        std::cerr << "Failed to close file after unsuccessful pid write attempt: " << getLastOsError().message() << std::endl;
       }
       throw std::system_error{err, "Failed to write pid to lock file '" + path_.string() + "'"};
     }
@@ -154,7 +154,7 @@ void FileMutex::unlock() {
   gsl_Expects(file_handle_.has_value());
   auto file_guard = gsl::finally([&] {
     if (close(file_handle_.value()) == -1) {
-      std::cerr << "Failed to close file after unlock: " << utils::getLastError().message() << std::endl;
+      std::cerr << "Failed to close file after unlock: " << getLastOsError().message() << std::endl;
     }
     file_handle_.reset();
   });
@@ -162,7 +162,7 @@ void FileMutex::unlock() {
   file_lock_info.l_type = F_UNLCK;
   int value = fcntl(file_handle_.value(), F_SETLK, &file_lock_info);
   if (value == -1) {
-    throw std::system_error{utils::getLastError(), "Failed to unlock file '" + path_.string() + "'"};
+    throw std::system_error{getLastOsError(), "Failed to unlock file '" + path_.string() + "'"};
   }
 }
 

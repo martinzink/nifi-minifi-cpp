@@ -1,4 +1,7 @@
 /**
+ * @file Exception.h
+ * Exception class declaration
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,13 +17,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #pragma once
 
 #include <system_error>
 
-namespace org::apache::nifi::minifi::utils {
+namespace org::apache::nifi::minifi {
 
-std::error_code getLastError();
+enum class Errc {
+  // no 0
+  FileOperationErr = 1,
+  FlowErr,
+  ProcessorErr,
+  ProcessSessionErr,
+  ProcessScheduleErr,
+  Site2SiteErr,
+  GeneralErr,
+  RegexErr,
+  RepositoryErr,
+  StreamError
+};
 
-}  // namespace org::apache::nifi::minifi::utils
+std::error_code make_error_code(Errc);
+
+std::error_code getLastOsError();
+
+}  // namespace org::apache::nifi::minifi
+
+namespace std {
+template <>
+struct is_error_code_enum<org::apache::nifi::minifi::Errc> : true_type {};
+}  // namespace std
+

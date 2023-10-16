@@ -25,12 +25,9 @@
 #include "utils/gsl.h"
 #include "utils/SmallString.h"
 #include "utils/Id.h"
+#include "Error.h"
 
-namespace org {
-namespace apache {
-namespace nifi {
-namespace minifi {
-namespace io {
+namespace org::apache::nifi::minifi::io {
 
 /**
  * Serializable instances provide base functionality to
@@ -46,6 +43,19 @@ class OutputStream : public virtual Stream {
    * @return resulting write size
    **/
   virtual size_t write(const uint8_t *value, size_t len) = 0;
+
+  template <typename... Args>
+  nonstd::expected<size_t, std::error_code> writeExpected(Args&&... args) {
+    try {
+      size_t write_size = write(std::forward<Args>(args)...);
+      if (STREAM_ERROR == write_size) {
+        return nonstd::make_unexpected(minifi::Errc::StreamError);
+      }
+      return write_size;
+    } catch(const std::exception&) {
+      return nonstd::make_unexpected(minifi::Errc::StreamError);
+    }
+  }
 
   size_t write(const std::span<const std::byte> buffer) {
     return write(reinterpret_cast<const uint8_t*>(buffer.data()), buffer.size());
@@ -118,8 +128,4 @@ class OutputStream : public virtual Stream {
   size_t write_str(const char* str, uint32_t len, bool widen);
 };
 
-}  // namespace io
-}  // namespace minifi
-}  // namespace nifi
-}  // namespace apache
-}  // namespace org
+}  // namespace org::apache::nifi::minifi::io

@@ -115,6 +115,9 @@ class ProcessSession : public ReferenceContainer {
 
   bool outgoingConnectionsFull(const std::string& relationship);
 
+  nonstd::expected<size_t, std::error_code> readExpected(const std::shared_ptr<core::FlowFile> &flow, const io::ExpectedInputStreamCallback& callback);
+  nonstd::expected<size_t, std::error_code> writeExpected(const std::shared_ptr<core::FlowFile> &flow, const io::ExpectedOutputStreamCallback& callback);
+
   /**
    * Imports a file from the data stream
    * @param stream incoming data stream that contains the data to store into a file
