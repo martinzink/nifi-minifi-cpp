@@ -29,7 +29,7 @@ void ReadFromFlowFileTestProcessor::onSchedule(core::ProcessContext*, core::Proc
   logger_->log_info("%s", ON_SCHEDULE_LOG_STR);
 }
 
-void ReadFromFlowFileTestProcessor::onTrigger(core::ProcessContext* context, core::ProcessSession* session) {
+void ReadFromFlowFileTestProcessor::onTrigger(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) {
   gsl_Expects(context && session);
   logger_->log_info("%s", ON_TRIGGER_LOG_STR);
   if (clear_on_trigger_)
@@ -37,7 +37,7 @@ void ReadFromFlowFileTestProcessor::onTrigger(core::ProcessContext* context, cor
 
   while (std::shared_ptr<core::FlowFile> flow_file = session->get()) {
     session->transfer(flow_file, Success);
-    flow_files_read_.emplace_back(session, gsl::not_null(std::move(flow_file)));
+    flow_files_read_.emplace_back(session.get(), gsl::not_null(std::move(flow_file)));
   }
 }
 

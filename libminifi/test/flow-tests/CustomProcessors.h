@@ -124,7 +124,7 @@ class TestFlowFileGenerator : public processors::GenerateFlowFile, public Proces
     if (onTriggerCb_) {
       onTriggerCb_();
     }
-    GenerateFlowFile::onTrigger(context.get(), session.get());
+    GenerateFlowFile::onTrigger(context, session);
   }
 };
 

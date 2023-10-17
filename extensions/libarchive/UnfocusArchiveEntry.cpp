@@ -41,7 +41,7 @@ void UnfocusArchiveEntry::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void UnfocusArchiveEntry::onTrigger(core::ProcessContext *context, core::ProcessSession *session) {
+void UnfocusArchiveEntry::onTrigger(const std::shared_ptr<core::ProcessContext>&context, const std::shared_ptr<core::ProcessSession>&session) {
   auto flowFile = session->get();
 
   if (!flowFile) {

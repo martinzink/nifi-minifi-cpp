@@ -52,7 +52,7 @@ class OutputProcessor : public core::Processor {
     setSupportedRelationships(Relationships);
   }
 
-  void onTrigger(core::ProcessContext* /*context*/, core::ProcessSession* session) override {
+  void onTrigger(const std::shared_ptr<core::ProcessContext>& /*context*/, const std::shared_ptr<core::ProcessSession>& session) override {
     auto id = std::to_string(next_id_++);
     auto ff = session->create();
     ff->addAttribute("index", id);

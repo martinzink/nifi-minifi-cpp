@@ -373,7 +373,7 @@ void ConsumeKafka::process_pending_messages(core::ProcessSession& session) {
   pending_messages_.clear();
 }
 
-void ConsumeKafka::onTrigger(core::ProcessContext* /* context */, core::ProcessSession* session) {
+void ConsumeKafka::onTrigger(const std::shared_ptr<core::ProcessContext>& /* context */, const std::shared_ptr<core::ProcessSession>& session) {
   std::unique_lock<std::mutex> lock(do_not_call_on_trigger_concurrently_);
   logger_->log_debug("ConsumeKafka onTrigger");
 

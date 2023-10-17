@@ -187,7 +187,7 @@ bool MergeContent::checkDefragment(std::unique_ptr<Bin> &bin) {
   return true;
 }
 
-void MergeContent::onTrigger(core::ProcessContext *context, core::ProcessSession *session) {
+void MergeContent::onTrigger(const std::shared_ptr<core::ProcessContext>&context, const std::shared_ptr<core::ProcessSession>&session) {
   BinFiles::onTrigger(context, session);
 }
 

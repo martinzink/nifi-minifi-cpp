@@ -59,7 +59,7 @@ void AppendHostInfo::onSchedule(const std::shared_ptr<core::ProcessContext>& con
     refreshHostInfo();
 }
 
-void AppendHostInfo::onTrigger(core::ProcessContext*, core::ProcessSession* session) {
+void AppendHostInfo::onTrigger(const std::shared_ptr<core::ProcessContext>& , const std::shared_ptr<core::ProcessSession>& session) {
   std::shared_ptr<core::FlowFile> flow = session->get();
   if (!flow)
     return;

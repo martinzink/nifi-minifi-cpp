@@ -68,7 +68,7 @@ class PutUDP final : public core::Processor {
   void initialize() final;
   void notifyStop() final;
   void onSchedule(core::ProcessContext*, core::ProcessSessionFactory *) final;
-  void onTrigger(core::ProcessContext*, core::ProcessSession*) final;
+  void onTrigger(const std::shared_ptr<core::ProcessContext>& , const std::shared_ptr<core::ProcessSession>& ) final;
 
  private:
   std::shared_ptr<core::logging::Logger> logger_;

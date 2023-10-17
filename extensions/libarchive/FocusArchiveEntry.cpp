@@ -44,7 +44,7 @@ void FocusArchiveEntry::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void FocusArchiveEntry::onTrigger(core::ProcessContext *context, core::ProcessSession *session) {
+void FocusArchiveEntry::onTrigger(const std::shared_ptr<core::ProcessContext>&context, const std::shared_ptr<core::ProcessSession>&session) {
   auto flowFile = session->get();
 
   if (!flowFile) {

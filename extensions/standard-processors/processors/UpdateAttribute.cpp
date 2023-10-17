@@ -44,7 +44,7 @@ void UpdateAttribute::onSchedule(core::ProcessContext *context, core::ProcessSes
   }
 }
 
-void UpdateAttribute::onTrigger(core::ProcessContext *context, core::ProcessSession *session) {
+void UpdateAttribute::onTrigger(const std::shared_ptr<core::ProcessContext>&context, const std::shared_ptr<core::ProcessSession>&session) {
   auto flow_file = session->get();
 
   // Do nothing if there are no incoming files

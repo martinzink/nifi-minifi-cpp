@@ -218,7 +218,7 @@ struct Route {
 };
 }  // namespace
 
-void RouteText::onTrigger(core::ProcessContext *context, core::ProcessSession *session) {
+void RouteText::onTrigger(const std::shared_ptr<core::ProcessContext>&context, const std::shared_ptr<core::ProcessSession>&session) {
   gsl_Expects(context && session);
   auto flow_file = session->get();
   if (!flow_file) {

@@ -30,7 +30,7 @@ void WriteToFlowFileTestProcessor::onSchedule(core::ProcessContext*, core::Proce
   logger_->log_info("%s", ON_SCHEDULE_LOG_STR);
 }
 
-void WriteToFlowFileTestProcessor::onTrigger(core::ProcessContext* context, core::ProcessSession* session) {
+void WriteToFlowFileTestProcessor::onTrigger(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) {
   gsl_Expects(context && session);
   logger_->log_info("%s", ON_TRIGGER_LOG_STR);
   if (content_.empty()) {

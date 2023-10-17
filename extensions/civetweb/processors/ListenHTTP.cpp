@@ -172,7 +172,7 @@ void ListenHTTP::onSchedule(core::ProcessContext *context, core::ProcessSessionF
 
 ListenHTTP::~ListenHTTP() = default;
 
-void ListenHTTP::onTrigger(core::ProcessContext*, core::ProcessSession* session) {
+void ListenHTTP::onTrigger(const std::shared_ptr<core::ProcessContext>& , const std::shared_ptr<core::ProcessSession>& session) {
   gsl_Expects(session);
   logger_->log_trace("OnTrigger ListenHTTP");
   const bool incoming_processed = processIncomingFlowFile(*session);

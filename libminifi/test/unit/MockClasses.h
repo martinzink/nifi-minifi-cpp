@@ -107,7 +107,7 @@ class MockProcessor : public minifi::core::Processor {
     setSupportedProperties(Properties);
   }
 
-  void onTrigger(minifi::core::ProcessContext *context, minifi::core::ProcessSession* /*session*/) override {
+  void onTrigger(const std::shared_ptr<minifi::core::ProcessContext>& context, const std::shared_ptr<minifi::core::ProcessSession>& /*session*/) override {
     std::string linked_service = "";
     getProperty("linkedService", linked_service);
     if (!IsNullOrEmpty(linked_service)) {

@@ -58,7 +58,7 @@ void HashContent::onSchedule(core::ProcessContext *context, core::ProcessSession
   }
 }
 
-void HashContent::onTrigger(core::ProcessContext *, core::ProcessSession *session) {
+void HashContent::onTrigger(const std::shared_ptr<core::ProcessContext>&, const std::shared_ptr<core::ProcessSession>&session) {
   std::shared_ptr<core::FlowFile> flowFile = session->get();
 
   if (!flowFile) {

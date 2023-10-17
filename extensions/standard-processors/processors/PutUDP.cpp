@@ -56,7 +56,7 @@ void PutUDP::onSchedule(core::ProcessContext* const context, core::ProcessSessio
   }
 }
 
-void PutUDP::onTrigger(core::ProcessContext* context, core::ProcessSession* const session) {
+void PutUDP::onTrigger(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) {
   gsl_Expects(context && session);
 
   const auto flow_file = session->get();

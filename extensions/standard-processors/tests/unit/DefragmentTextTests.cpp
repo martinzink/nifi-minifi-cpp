@@ -327,7 +327,7 @@ class FragmentGenerator : public core::Processor {
       : Processor(name, uuid) {
   }
 
-  void onTrigger(core::ProcessContext*, core::ProcessSession* session) override {
+  void onTrigger(const std::shared_ptr<core::ProcessContext>& , const std::shared_ptr<core::ProcessSession>& session) override {
     std::vector<core::FlowFile> flow_files;
     for (const size_t max_i = i_ + batch_size_; i_ < fragment_contents_.size() && i_ < max_i; ++i_) {
       std::shared_ptr<core::FlowFile> flow_file = session->create();

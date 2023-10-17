@@ -92,7 +92,7 @@ void ManipulateArchive::onSchedule(core::ProcessContext *context, core::ProcessS
     }
 }
 
-void ManipulateArchive::onTrigger(core::ProcessContext* /*context*/, core::ProcessSession *session) {
+void ManipulateArchive::onTrigger(const std::shared_ptr<core::ProcessContext>& /*context*/, const std::shared_ptr<core::ProcessSession>& session) {
     std::shared_ptr<core::FlowFile> flowFile = session->get();
 
     if (!flowFile) {

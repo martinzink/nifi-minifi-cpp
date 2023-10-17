@@ -205,7 +205,7 @@ void ExecuteProcess::collectChildProcessOutput(core::ProcessSession& session) {
   pid_ = 0;
 }
 
-void ExecuteProcess::onTrigger(core::ProcessContext *context, core::ProcessSession *session) {
+void ExecuteProcess::onTrigger(const std::shared_ptr<core::ProcessContext>&context, const std::shared_ptr<core::ProcessSession>&session) {
   gsl_Expects(context && session);
   if (full_command_.length() == 0) {
     yield();

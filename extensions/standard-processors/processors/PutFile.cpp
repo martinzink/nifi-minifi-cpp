@@ -71,7 +71,7 @@ bool PutFile::directoryIsFull(const std::filesystem::path& directory) const {
   return max_dest_files_ && utils::file::countNumberOfFiles(directory) >= *max_dest_files_;
 }
 
-void PutFile::onTrigger(core::ProcessContext *context, core::ProcessSession *session) {
+void PutFile::onTrigger(const std::shared_ptr<core::ProcessContext>&context, const std::shared_ptr<core::ProcessSession>&session) {
   std::shared_ptr<core::FlowFile> flow_file = session->get();
 
   // Do nothing if there are no incoming files

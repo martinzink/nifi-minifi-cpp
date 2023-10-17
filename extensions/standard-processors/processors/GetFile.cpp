@@ -86,7 +86,7 @@ void GetFile::onSchedule(core::ProcessContext *context, core::ProcessSessionFact
   }
 }
 
-void GetFile::onTrigger(core::ProcessContext* /*context*/, core::ProcessSession* session) {
+void GetFile::onTrigger(const std::shared_ptr<core::ProcessContext>& /*context*/, const std::shared_ptr<core::ProcessSession>& session) {
   const bool is_dir_empty_before_poll = isListingEmpty();
   logger_->log_debug("Listing is %s before polling directory", is_dir_empty_before_poll ? "empty" : "not empty");
   if (is_dir_empty_before_poll) {

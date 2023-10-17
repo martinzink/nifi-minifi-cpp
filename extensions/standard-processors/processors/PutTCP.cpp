@@ -271,7 +271,7 @@ asio::awaitable<std::error_code> ConnectionHandler<SocketType>::send(const std::
 }
 }  // namespace
 
-void PutTCP::onTrigger(core::ProcessContext* context, core::ProcessSession* const session) {
+void PutTCP::onTrigger(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) {
   gsl_Expects(context && session);
 
   const auto flow_file = session->get();

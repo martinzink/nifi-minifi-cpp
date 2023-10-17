@@ -180,20 +180,16 @@ class Processor : public Connectable, public ConfigurableComponent, public state
 
   bool addConnection(Connectable* connection);
 
-  virtual void onTrigger(const std::shared_ptr<ProcessContext> &context, const std::shared_ptr<ProcessSessionFactory> &sessionFactory);
-  void onTrigger(ProcessContext *context, ProcessSessionFactory *sessionFactory);
-
   bool canEdit() override {
     return !isRunning();
   }
 
-  virtual void onTrigger(const std::shared_ptr<ProcessContext> &context, const std::shared_ptr<ProcessSession> &session) {
-    onTrigger(context.get(), session.get());
-  }
-  virtual void onTrigger(ProcessContext* /*context*/, ProcessSession* /*session*/) {
-  }
   void initialize() override {
   }
+
+  virtual void onTrigger(const std::shared_ptr<ProcessContext>& context, const std::shared_ptr<ProcessSessionFactory>& session_factory);
+  virtual void onTrigger(const std::shared_ptr<ProcessContext>&, const std::shared_ptr<ProcessSession>&) { }
+
   virtual void onSchedule(const std::shared_ptr<ProcessContext> &context, const std::shared_ptr<ProcessSessionFactory> &sessionFactory) {
     onSchedule(context.get(), sessionFactory.get());
   }

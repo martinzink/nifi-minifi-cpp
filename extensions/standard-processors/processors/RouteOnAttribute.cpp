@@ -50,7 +50,7 @@ void RouteOnAttribute::onDynamicPropertyModified(const core::Property& /*orig_pr
   setSupportedRelationships(relationships);
 }
 
-void RouteOnAttribute::onTrigger(core::ProcessContext *context, core::ProcessSession *session) {
+void RouteOnAttribute::onTrigger(const std::shared_ptr<core::ProcessContext>&context, const std::shared_ptr<core::ProcessSession>&session) {
   auto flow_file = session->get();
 
   // Do nothing if there are no incoming files

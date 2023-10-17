@@ -252,7 +252,7 @@ class ContentUpdaterProcessor : public core::Processor {
   static constexpr bool IsSingleThreaded = false;
   ADD_COMMON_VIRTUAL_FUNCTIONS_FOR_PROCESSORS
 
-  void onTrigger(core::ProcessContext* /*context*/, core::ProcessSession *session) override {
+  void onTrigger(const std::shared_ptr<core::ProcessContext>& /*context*/, const std::shared_ptr<core::ProcessSession>& session) override {
     auto ff = session->get();
     std::string data = "<override>";
     minifi::io::BufferStream stream(data);

@@ -47,7 +47,7 @@ void KamikazeProcessor::onSchedule(core::ProcessContext *context, core::ProcessS
   logger_->log_error("%s", OnScheduleLogStr);
 }
 
-void KamikazeProcessor::onTrigger(core::ProcessContext *, core::ProcessSession *) {
+void KamikazeProcessor::onTrigger(const std::shared_ptr<core::ProcessContext>&, const std::shared_ptr<core::ProcessSession>&) {
   if (_throwInOnTrigger) {
     throw Exception(PROCESSOR_EXCEPTION, OnTriggerExceptionStr);
   }
