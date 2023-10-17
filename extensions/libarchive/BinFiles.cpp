@@ -47,7 +47,7 @@ void BinFiles::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void BinFiles::onSchedule(core::ProcessContext *context, core::ProcessSessionFactory* /*sessionFactory*/) {
+void BinFiles::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
   uint32_t val32;
   uint64_t val64;
   if (context->getProperty(MinSize, val64)) {

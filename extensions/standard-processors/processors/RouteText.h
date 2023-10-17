@@ -208,7 +208,7 @@ class RouteText : public core::Processor {
   explicit RouteText(std::string_view name, const utils::Identifier& uuid = {});
 
   void initialize() override;
-  void onSchedule(core::ProcessContext *context, core::ProcessSessionFactory* sessionFactory) override;
+  void onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& sessionFactory) override;
   void onTrigger(const std::shared_ptr<core::ProcessContext>&context, const std::shared_ptr<core::ProcessSession>&session) override;
 
   void onDynamicPropertyModified(const core::Property& orig_property, const core::Property& new_property) override;

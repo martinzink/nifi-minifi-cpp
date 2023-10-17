@@ -36,7 +36,7 @@ void ExecuteScript::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void ExecuteScript::onSchedule(core::ProcessContext *context, core::ProcessSessionFactory* /*sessionFactory*/) {
+void ExecuteScript::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
   const auto executor_class_lookup = [](const std::string_view script_engine_prefix) -> const char* {
     if (script_engine_prefix == "lua") return "LuaScriptExecutor";
     if (script_engine_prefix == "python") return "PythonScriptExecutor";

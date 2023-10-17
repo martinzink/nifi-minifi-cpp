@@ -40,7 +40,7 @@ void GetFile::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void GetFile::onSchedule(core::ProcessContext *context, core::ProcessSessionFactory* /*sessionFactory*/) {
+void GetFile::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
   std::string value;
   if (context->getProperty(BatchSize, value)) {
     core::Property::StringToInt(value, request_.batchSize);

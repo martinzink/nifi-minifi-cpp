@@ -41,7 +41,7 @@ void HashContent::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void HashContent::onSchedule(core::ProcessContext *context, core::ProcessSessionFactory* /*sessionFactory*/) {
+void HashContent::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
   context->getProperty(HashAttribute, attrKey_);
   context->getProperty(FailOnEmpty, failOnEmpty_);
 

@@ -49,7 +49,7 @@ std::string MergeContent::readContent(const std::string& path) {
   return (contents);
 }
 
-void MergeContent::onSchedule(core::ProcessContext *context, core::ProcessSessionFactory *sessionFactory) {
+void MergeContent::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& sessionFactory) {
   BinFiles::onSchedule(context, sessionFactory);
 
   context->getProperty(MergeStrategy, mergeStrategy_);

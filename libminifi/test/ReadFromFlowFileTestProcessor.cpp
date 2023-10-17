@@ -25,7 +25,7 @@ void ReadFromFlowFileTestProcessor::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void ReadFromFlowFileTestProcessor::onSchedule(core::ProcessContext*, core::ProcessSessionFactory*) {
+void ReadFromFlowFileTestProcessor::onSchedule(const std::shared_ptr<core::ProcessContext>&, const std::shared_ptr<core::ProcessSessionFactory>&) {
   logger_->log_info("%s", ON_SCHEDULE_LOG_STR);
 }
 

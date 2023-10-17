@@ -53,7 +53,7 @@ void CompressContent::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void CompressContent::onSchedule(core::ProcessContext *context, core::ProcessSessionFactory* /*sessionFactory*/) {
+void CompressContent::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
   context->getProperty(CompressLevel, compressLevel_);
   compressMode_ = utils::parseEnumProperty<compress_content::CompressionMode>(*context, CompressMode);
   compressFormat_ = utils::parseEnumProperty<compress_content::ExtendedCompressionFormat>(*context, CompressFormat);

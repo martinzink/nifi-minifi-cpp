@@ -143,7 +143,7 @@ class PutTCP final : public core::Processor {
 
   void initialize() final;
   void notifyStop() final;
-  void onSchedule(core::ProcessContext*, core::ProcessSessionFactory*) final;
+  void onSchedule(const std::shared_ptr<core::ProcessContext>&, const std::shared_ptr<core::ProcessSessionFactory>&) final;
   void onTrigger(const std::shared_ptr<core::ProcessContext>& , const std::shared_ptr<core::ProcessSession>& ) final;
 
  private:

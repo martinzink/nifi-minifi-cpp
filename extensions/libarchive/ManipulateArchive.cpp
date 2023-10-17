@@ -49,7 +49,7 @@ void ManipulateArchive::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void ManipulateArchive::onSchedule(core::ProcessContext *context, core::ProcessSessionFactory* /*sessionFactory*/) {
+void ManipulateArchive::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
     context->getProperty(Operation, operation_);
     bool invalid = false;
     std::transform(operation_.begin(), operation_.end(), operation_.begin(), ::tolower);

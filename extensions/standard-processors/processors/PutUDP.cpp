@@ -44,7 +44,7 @@ void PutUDP::initialize() {
 
 void PutUDP::notifyStop() {}
 
-void PutUDP::onSchedule(core::ProcessContext* const context, core::ProcessSessionFactory*) {
+void PutUDP::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>&) {
   gsl_Expects(context);
 
   // if the required properties are missing or empty even before evaluating the EL expression, then we can throw in onSchedule, before we waste any flow files

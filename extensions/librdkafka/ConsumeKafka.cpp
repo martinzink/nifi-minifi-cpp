@@ -47,7 +47,7 @@ void ConsumeKafka::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void ConsumeKafka::onSchedule(core::ProcessContext* context, core::ProcessSessionFactory* /* sessionFactory */) {
+void ConsumeKafka::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /* sessionFactory */) {
   gsl_Expects(context);
   // Required properties
   kafka_brokers_                = utils::getRequiredPropertyOrThrow(*context, KafkaBrokers.name);

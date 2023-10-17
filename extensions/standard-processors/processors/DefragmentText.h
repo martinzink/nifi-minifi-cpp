@@ -111,7 +111,7 @@ class DefragmentText : public core::Processor {
   EXTENSIONAPI static const core::Relationship Self;
 
   void initialize() override;
-  void onSchedule(core::ProcessContext* context, core::ProcessSessionFactory* sessionFactory) override;
+  void onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& sessionFactory) override;
   void onTrigger(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) override;
   void restore(const std::shared_ptr<core::FlowFile>& flowFile) override;
   std::set<core::Connectable*> getOutGoingConnections(const std::string &relationship) override;

@@ -35,7 +35,7 @@ void AttributesToJSON::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void AttributesToJSON::onSchedule(core::ProcessContext* context, core::ProcessSessionFactory* /*sessionFactory*/) {
+void AttributesToJSON::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
   std::string value;
   if (context->getProperty(AttributesList, value) && !value.empty()) {
     attribute_list_ = utils::StringUtils::splitAndTrimRemovingEmpty(value, ",");

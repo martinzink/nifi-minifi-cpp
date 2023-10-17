@@ -40,7 +40,7 @@ void ExecuteProcess::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void ExecuteProcess::onSchedule(core::ProcessContext* context, core::ProcessSessionFactory* /*session_factory*/) {
+void ExecuteProcess::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*session_factory*/) {
   gsl_Expects(context);
   std::string value;
   if (context->getProperty(Command, value)) {

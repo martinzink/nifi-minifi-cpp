@@ -34,7 +34,7 @@ void KamikazeProcessor::initialize() {
   setSupportedProperties(Properties);
 }
 
-void KamikazeProcessor::onSchedule(core::ProcessContext *context, core::ProcessSessionFactory* /*sessionFactory*/) {
+void KamikazeProcessor::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
   std::string value;
   context->getProperty(ThrowInOnTrigger, value);
   _throwInOnTrigger = utils::StringUtils::toBool(value).value_or(false);

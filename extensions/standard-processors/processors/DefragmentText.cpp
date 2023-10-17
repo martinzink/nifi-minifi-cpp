@@ -38,7 +38,7 @@ void DefragmentText::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void DefragmentText::onSchedule(core::ProcessContext* context, core::ProcessSessionFactory*) {
+void DefragmentText::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>&) {
   gsl_Expects(context);
 
   if (auto max_buffer_age = context->getProperty(MaxBufferAge) | utils::andThen(&core::TimePeriodValue::fromString)) {

@@ -41,7 +41,7 @@ void PutFile::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void PutFile::onSchedule(core::ProcessContext *context, core::ProcessSessionFactory* /*sessionFactory*/) {
+void PutFile::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
   conflict_resolution_strategy_ = utils::parseEnumProperty<FileExistsResolutionStrategy>(*context, ConflictResolution);
   try_mkdirs_ = context->getProperty<bool>(CreateDirs).value_or(true);
   if (auto max_dest_files = context->getProperty<int64_t>(MaxDestFiles); max_dest_files && *max_dest_files > 0) {
@@ -49,8 +49,8 @@ void PutFile::onSchedule(core::ProcessContext *context, core::ProcessSessionFact
   }
 
 #ifndef WIN32
-  getPermissions(context);
-  getDirectoryPermissions(context);
+  getPermissions(*context);
+  getDirectoryPermissions(*context);
 #endif
 }
 
@@ -142,9 +142,9 @@ void PutFile::putFile(core::ProcessSession& session,
 }
 
 #ifndef WIN32
-void PutFile::getPermissions(core::ProcessContext *context) {
+void PutFile::getPermissions(const core::ProcessContext& context) {
   std::string permissions_str;
-  context->getProperty(Permissions, permissions_str);
+  context.getProperty(Permissions, permissions_str);
   if (permissions_str.empty()) {
     return;
   }
@@ -160,9 +160,9 @@ void PutFile::getPermissions(core::ProcessContext *context) {
   }
 }
 
-void PutFile::getDirectoryPermissions(core::ProcessContext *context) {
+void PutFile::getDirectoryPermissions(const core::ProcessContext& context) {
   std::string dir_permissions_str;
-  context->getProperty(DirectoryPermissions, dir_permissions_str);
+  context.getProperty(DirectoryPermissions, dir_permissions_str);
   if (dir_permissions_str.empty()) {
     return;
   }

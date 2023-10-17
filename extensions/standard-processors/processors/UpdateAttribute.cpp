@@ -33,7 +33,7 @@ void UpdateAttribute::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void UpdateAttribute::onSchedule(core::ProcessContext *context, core::ProcessSessionFactory* /*sessionFactory*/) {
+void UpdateAttribute::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
   attributes_.clear();
   const auto &dynamic_prop_keys = context->getDynamicPropertyKeys();
   logger_->log_info("UpdateAttribute registering %d keys", dynamic_prop_keys.size());

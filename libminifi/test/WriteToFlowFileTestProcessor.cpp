@@ -26,7 +26,7 @@ void WriteToFlowFileTestProcessor::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void WriteToFlowFileTestProcessor::onSchedule(core::ProcessContext*, core::ProcessSessionFactory*) {
+void WriteToFlowFileTestProcessor::onSchedule(const std::shared_ptr<core::ProcessContext>&, const std::shared_ptr<core::ProcessSessionFactory>&) {
   logger_->log_info("%s", ON_SCHEDULE_LOG_STR);
 }
 

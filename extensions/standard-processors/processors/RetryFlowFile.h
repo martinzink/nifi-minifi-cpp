@@ -143,12 +143,12 @@ class RetryFlowFile : public core::Processor {
 
   ADD_COMMON_VIRTUAL_FUNCTIONS_FOR_PROCESSORS
 
-  void onSchedule(core::ProcessContext* context, core::ProcessSessionFactory* /* sessionFactory */) override;
+  void onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /* sessionFactory */) override;
   void onTrigger(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) override;
   void initialize() override;
 
  private:
-  void readDynamicPropertyKeys(core::ProcessContext* context);
+  void readDynamicPropertyKeys(const core::ProcessContext& context);
   std::optional<uint64_t> getRetryPropertyValue(const std::shared_ptr<core::FlowFile>& flow_file) const;
   void setRetriesExceededAttributesOnFlowFile(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file) const;
 

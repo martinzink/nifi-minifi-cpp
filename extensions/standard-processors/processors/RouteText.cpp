@@ -44,7 +44,7 @@ void RouteText::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void RouteText::onSchedule(core::ProcessContext* context, core::ProcessSessionFactory* /*sessionFactory*/) {
+void RouteText::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
   gsl_Expects(context);
   routing_ = utils::parseEnumProperty<route_text::Routing>(*context, RoutingStrategy);
   matching_ = utils::parseEnumProperty<route_text::Matching>(*context, MatchingStrategy);

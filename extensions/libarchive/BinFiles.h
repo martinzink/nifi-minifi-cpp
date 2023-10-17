@@ -256,7 +256,7 @@ class BinFiles : public core::Processor {
   EXTENSIONAPI static const char *SEGMENT_ORIGINAL_FILENAME;
   EXTENSIONAPI static const char *TAR_PERMISSIONS_ATTRIBUTE;
 
-  void onSchedule(core::ProcessContext *context, core::ProcessSessionFactory *sessionFactory) override;
+  void onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& sessionFactory) override;
   void onTrigger(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSession> &session) override;
   void initialize() override;
 

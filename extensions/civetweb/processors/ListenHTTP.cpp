@@ -38,7 +38,7 @@ void ListenHTTP::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void ListenHTTP::onSchedule(core::ProcessContext *context, core::ProcessSessionFactory* /*sessionFactory*/) {
+void ListenHTTP::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
   std::string basePath;
 
   if (!context->getProperty(BasePath, basePath)) {
@@ -151,7 +151,7 @@ void ListenHTTP::onSchedule(core::ProcessContext *context, core::ProcessSessionF
   context->getProperty(BatchSize, batch_size_);
   logger_->log_debug("ListenHTTP using %s: %zu", std::string(BatchSize.name), batch_size_);
 
-  handler_ = std::make_unique<Handler>(basePath, context, std::move(authDNPattern),
+  handler_ = std::make_unique<Handler>(basePath, context.get(), std::move(authDNPattern),
     headersAsAttributesPattern.empty() ? std::nullopt : std::make_optional<utils::Regex>(headersAsAttributesPattern));
   server_->addHandler(basePath, handler_.get());
 

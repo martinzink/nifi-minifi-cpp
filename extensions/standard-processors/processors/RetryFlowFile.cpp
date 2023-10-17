@@ -26,13 +26,13 @@ void RetryFlowFile::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void RetryFlowFile::onSchedule(core::ProcessContext* context, core::ProcessSessionFactory* /* sessionFactory */) {
+void RetryFlowFile::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /* sessionFactory */) {
   context->getProperty(RetryAttribute, retry_attribute_);
   context->getProperty(MaximumRetries, maximum_retries_);
   context->getProperty(PenalizeRetries, penalize_retries_);
   context->getProperty(FailOnNonNumericalOverwrite, fail_on_non_numerical_overwrite_);
   context->getProperty(ReuseMode, reuse_mode_);
-  readDynamicPropertyKeys(context);
+  readDynamicPropertyKeys(*context);
 }
 
 void RetryFlowFile::onTrigger(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) {
@@ -81,9 +81,9 @@ void RetryFlowFile::onTrigger(const std::shared_ptr<core::ProcessContext>& conte
   session->transfer(flow_file, RetriesExceeded);
 }
 
-void RetryFlowFile::readDynamicPropertyKeys(core::ProcessContext* context) {
+void RetryFlowFile::readDynamicPropertyKeys(const core::ProcessContext& context) {
   exceeded_flowfile_attribute_keys_.clear();
-  const std::vector<std::string> dynamic_prop_keys = context->getDynamicPropertyKeys();
+  const std::vector<std::string> dynamic_prop_keys = context.getDynamicPropertyKeys();
   logger_->log_info("RetryFlowFile registering %d keys", dynamic_prop_keys.size());
   for (const auto& key : dynamic_prop_keys) {
     exceeded_flowfile_attribute_keys_.emplace_back(core::PropertyDefinitionBuilder<>::createProperty(key).withDescription("auto generated").supportsExpressionLanguage(true).build());
