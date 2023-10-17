@@ -34,12 +34,12 @@ void KamikazeProcessor::initialize() {
   setSupportedProperties(Properties);
 }
 
-void KamikazeProcessor::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
+void KamikazeProcessor::onSchedule(core::ProcessContext& context, core::ProcessSessionFactory&) {
   std::string value;
-  context->getProperty(ThrowInOnTrigger, value);
+  context.getProperty(ThrowInOnTrigger, value);
   _throwInOnTrigger = utils::StringUtils::toBool(value).value_or(false);
 
-  context->getProperty(ThrowInOnSchedule, value);
+  context.getProperty(ThrowInOnSchedule, value);
 
   if (utils::StringUtils::toBool(value).value_or(false)) {
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, OnScheduleExceptionStr);
@@ -47,7 +47,7 @@ void KamikazeProcessor::onSchedule(const std::shared_ptr<core::ProcessContext>& 
   logger_->log_error("%s", OnScheduleLogStr);
 }
 
-void KamikazeProcessor::onTrigger(const std::shared_ptr<core::ProcessContext>&, const std::shared_ptr<core::ProcessSession>&) {
+void KamikazeProcessor::onTrigger(core::ProcessContext&, core::ProcessSession&) {
   if (_throwInOnTrigger) {
     throw Exception(PROCESSOR_EXCEPTION, OnTriggerExceptionStr);
   }

@@ -86,8 +86,8 @@ class ManipulateArchive : public core::Processor {
   EXTENSIONAPI static char const* OPERATION_MOVE;
   EXTENSIONAPI static char const* OPERATION_TOUCH;
 
-  void onTrigger(const std::shared_ptr<core::ProcessContext>&context, const std::shared_ptr<core::ProcessSession>&session) override;
-  void onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& sessionFactory) override;
+  void onTrigger(core::ProcessContext& context, core::ProcessSession& session) override;
+  void onSchedule(core::ProcessContext& context, core::ProcessSessionFactory& session_factory) override;
   void initialize() override;
 
  private:

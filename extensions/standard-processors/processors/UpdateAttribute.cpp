@@ -33,9 +33,9 @@ void UpdateAttribute::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void UpdateAttribute::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
+void UpdateAttribute::onSchedule(core::ProcessContext& context, core::ProcessSessionFactory&) {
   attributes_.clear();
-  const auto &dynamic_prop_keys = context->getDynamicPropertyKeys();
+  const auto &dynamic_prop_keys = context.getDynamicPropertyKeys();
   logger_->log_info("UpdateAttribute registering %d keys", dynamic_prop_keys.size());
 
   for (const auto &key : dynamic_prop_keys) {
@@ -44,8 +44,8 @@ void UpdateAttribute::onSchedule(const std::shared_ptr<core::ProcessContext>& co
   }
 }
 
-void UpdateAttribute::onTrigger(const std::shared_ptr<core::ProcessContext>&context, const std::shared_ptr<core::ProcessSession>&session) {
-  auto flow_file = session->get();
+void UpdateAttribute::onTrigger(core::ProcessContext& context, core::ProcessSession& session) {
+  auto flow_file = session.get();
 
   // Do nothing if there are no incoming files
   if (!flow_file) {
@@ -55,14 +55,14 @@ void UpdateAttribute::onTrigger(const std::shared_ptr<core::ProcessContext>&cont
   try {
     for (const auto &attribute : attributes_) {
       std::string value;
-      context->getDynamicProperty(attribute, value, flow_file);
+      context.getDynamicProperty(attribute, value, flow_file);
       flow_file->setAttribute(attribute.getName(), value);
       logger_->log_info("Set attribute '%s' of flow file '%s' with value '%s'", attribute.getName(), flow_file->getUUIDStr(), value);
     }
-    session->transfer(flow_file, Success);
+    session.transfer(flow_file, Success);
   } catch (const std::exception &e) {
     logger_->log_error("Caught exception while updating attributes: %s", e.what());
-    session->transfer(flow_file, Failure);
+    session.transfer(flow_file, Failure);
     yield();
   }
 }

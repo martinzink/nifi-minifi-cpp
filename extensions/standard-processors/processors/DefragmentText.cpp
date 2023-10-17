@@ -38,25 +38,23 @@ void DefragmentText::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void DefragmentText::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>&) {
-  gsl_Expects(context);
-
-  if (auto max_buffer_age = context->getProperty(MaxBufferAge) | utils::andThen(&core::TimePeriodValue::fromString)) {
+void DefragmentText::onSchedule(core::ProcessContext& context, core::ProcessSessionFactory&) {
+  if (auto max_buffer_age = context.getProperty(MaxBufferAge) | utils::andThen(&core::TimePeriodValue::fromString)) {
     max_age_ = max_buffer_age->getMilliseconds();
     setTriggerWhenEmpty(true);
     logger_->log_trace("The Buffer maximum age is configured to be %" PRId64 " ms", int64_t{max_buffer_age->getMilliseconds().count()});
   }
 
-  auto max_buffer_size = context->getProperty<core::DataSizeValue>(MaxBufferSize);
+  auto max_buffer_size = context.getProperty<core::DataSizeValue>(MaxBufferSize);
   if (max_buffer_size.has_value() && max_buffer_size->getValue() > 0) {
     max_size_ = max_buffer_size->getValue();
     logger_->log_trace("The Buffer maximum size is configured to be %" PRIu64 " B", max_buffer_size->getValue());
   }
 
-  pattern_location_ = utils::parseEnumProperty<defragment_text::PatternLocation>(*context, PatternLoc);
+  pattern_location_ = utils::parseEnumProperty<defragment_text::PatternLocation>(context, PatternLoc);
 
   std::string pattern_str;
-  if (context->getProperty(Pattern, pattern_str) && !pattern_str.empty()) {
+  if (context.getProperty(Pattern, pattern_str) && !pattern_str.empty()) {
     pattern_ = utils::Regex(pattern_str);
     logger_->log_trace("The Pattern is configured to be %s", pattern_str);
   } else {
@@ -64,23 +62,22 @@ void DefragmentText::onSchedule(const std::shared_ptr<core::ProcessContext>& con
   }
 }
 
-void DefragmentText::onTrigger(const std::shared_ptr<core::ProcessContext>&, const std::shared_ptr<core::ProcessSession>& session) {
-  gsl_Expects(session);
+void DefragmentText::onTrigger(core::ProcessContext&, core::ProcessSession& session) {
   auto flowFiles = flow_file_store_.getNewFlowFiles();
   for (auto& file : flowFiles) {
     if (file)
-      processNextFragment(*session, gsl::not_null(file));
+      processNextFragment(session, gsl::not_null(file));
   }
   {
-    std::shared_ptr<core::FlowFile> original_flow_file = session->get();
+    std::shared_ptr<core::FlowFile> original_flow_file = session.get();
     if (original_flow_file)
-      processNextFragment(*session, gsl::not_null(std::move(original_flow_file)));
+      processNextFragment(session, gsl::not_null(std::move(original_flow_file)));
   }
   for (auto& [fragment_source_id, fragment_source] : fragment_sources_) {
     if (fragment_source.buffer.maxSizeReached(max_size_)) {
-      fragment_source.buffer.flushAndReplace(*session, Failure, nullptr);
+      fragment_source.buffer.flushAndReplace(session, Failure, nullptr);
     } else if (fragment_source.buffer.maxAgeReached(max_age_)) {
-      fragment_source.buffer.flushAndReplace(*session, pattern_location_ == defragment_text::PatternLocation::START_OF_MESSAGE ? Success : Failure, nullptr);
+      fragment_source.buffer.flushAndReplace(session, pattern_location_ == defragment_text::PatternLocation::START_OF_MESSAGE ? Success : Failure, nullptr);
     }
   }
 }

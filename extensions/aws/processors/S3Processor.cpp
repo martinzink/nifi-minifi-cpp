@@ -107,19 +107,19 @@ std::optional<aws::s3::ProxyOptions> S3Processor::getProxy(const std::shared_ptr
   return proxy;
 }
 
-void S3Processor::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
+void S3Processor::onSchedule(core::ProcessContext& context, core::ProcessSessionFactory&) {
   client_config_ = Aws::Client::ClientConfiguration();
   std::string value;
-  if (!context->getProperty(Bucket, value) || value.empty()) {
+  if (!context.getProperty(Bucket, value) || value.empty()) {
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Bucket property missing or invalid");
   }
 
-  if (!context->getProperty(Region, client_config_->region) || client_config_->region.empty() || !ranges::contains(region::REGIONS, client_config_->region)) {
+  if (!context.getProperty(Region, client_config_->region) || client_config_->region.empty() || !ranges::contains(region::REGIONS, client_config_->region)) {
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Region property missing or invalid");
   }
   logger_->log_debug("S3Processor: Region [%s]", client_config_->region);
 
-  if (auto communications_timeout = context->getProperty<core::TimePeriodValue>(CommunicationsTimeout)) {
+  if (auto communications_timeout = context.getProperty<core::TimePeriodValue>(CommunicationsTimeout)) {
     logger_->log_debug("S3Processor: Communications Timeout %" PRId64 " ms", communications_timeout->getMilliseconds().count());
     client_config_->connectTimeoutMs = gsl::narrow<int64_t>(communications_timeout->getMilliseconds().count());
   } else {

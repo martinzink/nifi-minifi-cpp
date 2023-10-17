@@ -44,40 +44,36 @@ void PutUDP::initialize() {
 
 void PutUDP::notifyStop() {}
 
-void PutUDP::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>&) {
-  gsl_Expects(context);
-
+void PutUDP::onSchedule(core::ProcessContext& context, core::ProcessSessionFactory&) {
   // if the required properties are missing or empty even before evaluating the EL expression, then we can throw in onSchedule, before we waste any flow files
-  if (context->getProperty(Hostname).value_or(std::string{}).empty()) {
+  if (context.getProperty(Hostname).value_or(std::string{}).empty()) {
     throw Exception{ExceptionType::PROCESSOR_EXCEPTION, "missing hostname"};
   }
-  if (context->getProperty(Port).value_or(std::string{}).empty()) {
+  if (context.getProperty(Port).value_or(std::string{}).empty()) {
     throw Exception{ExceptionType::PROCESSOR_EXCEPTION, "missing port"};
   }
 }
 
-void PutUDP::onTrigger(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) {
-  gsl_Expects(context && session);
-
-  const auto flow_file = session->get();
+void PutUDP::onTrigger(core::ProcessContext& context, core::ProcessSession& session) {
+  const auto flow_file = session.get();
   if (!flow_file) {
     yield();
     return;
   }
 
-  const auto hostname = context->getProperty(Hostname, flow_file).value_or(std::string{});
-  const auto port = context->getProperty(Port, flow_file).value_or(std::string{});
+  const auto hostname = context.getProperty(Hostname, flow_file).value_or(std::string{});
+  const auto port = context.getProperty(Port, flow_file).value_or(std::string{});
   if (hostname.empty() || port.empty()) {
     logger_->log_error("[%s] invalid target endpoint: hostname: %s, port: %s", flow_file->getUUIDStr(),
         hostname.empty() ? "(empty)" : hostname.c_str(),
         port.empty() ? "(empty)" : port.c_str());
-    session->transfer(flow_file, Failure);
+    session.transfer(flow_file, Failure);
     return;
   }
 
-  const auto data = session->readBuffer(flow_file);
+  const auto data = session.readBuffer(flow_file);
   if (io::isError(data.status)) {
-    session->transfer(flow_file, Failure);
+    session.transfer(flow_file, Failure);
     return;
   }
 
@@ -114,13 +110,13 @@ void PutUDP::onTrigger(const std::shared_ptr<core::ProcessContext>& context, con
   };
 
   const auto transfer_to_success = [&session, &flow_file]() -> void {
-    session->transfer(flow_file, Success);
+    session.transfer(flow_file, Success);
   };
 
   const auto transfer_to_failure = [&session, &flow_file, &logger = this->logger_](std::error_code ec) -> void {
     gsl_Expects(ec);
     logger->log_error("%s", ec.message());
-    session->transfer(flow_file, Failure);
+    session.transfer(flow_file, Failure);
   };
 
   resolve_hostname()

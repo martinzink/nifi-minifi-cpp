@@ -26,24 +26,24 @@ void RetryFlowFile::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void RetryFlowFile::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /* sessionFactory */) {
-  context->getProperty(RetryAttribute, retry_attribute_);
-  context->getProperty(MaximumRetries, maximum_retries_);
-  context->getProperty(PenalizeRetries, penalize_retries_);
-  context->getProperty(FailOnNonNumericalOverwrite, fail_on_non_numerical_overwrite_);
-  context->getProperty(ReuseMode, reuse_mode_);
-  readDynamicPropertyKeys(*context);
+void RetryFlowFile::onSchedule(core::ProcessContext& context, core::ProcessSessionFactory&) {
+  context.getProperty(RetryAttribute, retry_attribute_);
+  context.getProperty(MaximumRetries, maximum_retries_);
+  context.getProperty(PenalizeRetries, penalize_retries_);
+  context.getProperty(FailOnNonNumericalOverwrite, fail_on_non_numerical_overwrite_);
+  context.getProperty(ReuseMode, reuse_mode_);
+  readDynamicPropertyKeys(context);
 }
 
-void RetryFlowFile::onTrigger(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) {
-  auto flow_file = session->get();
+void RetryFlowFile::onTrigger(core::ProcessContext& context, core::ProcessSession& session) {
+  auto flow_file = session.get();
   if (!flow_file) {
     return;
   }
 
   const auto maybe_retry_property_value = getRetryPropertyValue(flow_file);
   if (!maybe_retry_property_value) {
-    session->transfer(flow_file, Failure);
+    session.transfer(flow_file, Failure);
     return;
   }
   uint64_t retry_property_value = maybe_retry_property_value.value();
@@ -56,7 +56,7 @@ void RetryFlowFile::onTrigger(const std::shared_ptr<core::ProcessContext>& conte
         logger_->log_error("FlowFile %s was previously retried with the same attribute by a different "
             "processor (uuid: %s, current uuid: %s). Transfering flowfile to 'failure'...",
             flow_file->getUUIDStr(), last_retried_by_uuid, current_processor_uuid);
-        session->transfer(flow_file, Failure);
+        session.transfer(flow_file, Failure);
         return;
       }
       // Assuming reuse_mode_ == WARN_ON_REUSE || reuse_mode_ == RESET_REUSE
@@ -72,13 +72,13 @@ void RetryFlowFile::onTrigger(const std::shared_ptr<core::ProcessContext>& conte
   if (retry_property_value < maximum_retries_) {
     flow_file->setAttribute(retry_attribute_, std::to_string(retry_property_value + 1));
     if (penalize_retries_) {
-      session->penalize(flow_file);
+      session.penalize(flow_file);
     }
-    session->transfer(flow_file, Retry);
+    session.transfer(flow_file, Retry);
     return;
   }
-  setRetriesExceededAttributesOnFlowFile(*context, flow_file);
-  session->transfer(flow_file, RetriesExceeded);
+  setRetriesExceededAttributesOnFlowFile(context, flow_file);
+  session.transfer(flow_file, RetriesExceeded);
 }
 
 void RetryFlowFile::readDynamicPropertyKeys(const core::ProcessContext& context) {
