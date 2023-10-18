@@ -52,7 +52,6 @@ void ReplaceText::onSchedule(core::ProcessContext& context, core::ProcessSession
 }
 
 void ReplaceText::onTrigger(core::ProcessContext& context, core::ProcessSession& session) {
-
   std::shared_ptr<core::FlowFile> flow_file = session.get();
   if (!flow_file) {
     logger_->log_trace("No flow file");
