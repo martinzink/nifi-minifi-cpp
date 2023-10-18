@@ -50,7 +50,7 @@ void ExecuteJavaProcessor::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void ExecuteJavaProcessor::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
+void ExecuteJavaProcessor::onSchedule_2(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
   gsl_Expects(context);
 
   std::string controller_service_name;
@@ -156,7 +156,7 @@ JNINativeMethod ExecuteJavaProcessor::registerNativeMethod(const std::string& /*
   return mthd;
 }
 
-void ExecuteJavaProcessor::onTrigger(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSessionFactory> &sessionFactory) {
+void ExecuteJavaProcessor::onTrigger_2(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSessionFactory> &sessionFactory) {
   (void)context;  // unused in release builds
   assert(context == jpc.context_);
   auto env = java_servicer_->attach();

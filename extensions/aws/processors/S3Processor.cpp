@@ -42,13 +42,13 @@ S3Processor::S3Processor(std::string_view name, const minifi::utils::Identifier&
     s3_wrapper_(std::move(s3_request_sender)) {
 }
 
-std::optional<Aws::Auth::AWSCredentials> S3Processor::getAWSCredentialsFromControllerService(const std::shared_ptr<core::ProcessContext> &context) const {
+std::optional<Aws::Auth::AWSCredentials> S3Processor::getAWSCredentialsFromControllerService(core::ProcessContext& context) const {
   std::string service_name;
-  if (!context->getProperty(AWSCredentialsProviderService, service_name) || service_name.empty()) {
+  if (!context.getProperty(AWSCredentialsProviderService, service_name) || service_name.empty()) {
     return std::nullopt;
   }
 
-  std::shared_ptr<core::controller::ControllerService> service = context->getControllerService(service_name);
+  std::shared_ptr<core::controller::ControllerService> service = context.getControllerService(service_name);
   if (!service) {
     logger_->log_error("AWS credentials service with name: '%s' could not be found", service_name);
     return std::nullopt;
@@ -64,7 +64,7 @@ std::optional<Aws::Auth::AWSCredentials> S3Processor::getAWSCredentialsFromContr
 }
 
 std::optional<Aws::Auth::AWSCredentials> S3Processor::getAWSCredentials(
-    const std::shared_ptr<core::ProcessContext> &context,
+    core::ProcessContext& context,
     const std::shared_ptr<core::FlowFile> &flow_file) {
   auto service_cred = getAWSCredentialsFromControllerService(context);
   if (service_cred) {
@@ -74,33 +74,33 @@ std::optional<Aws::Auth::AWSCredentials> S3Processor::getAWSCredentials(
 
   aws::AWSCredentialsProvider aws_credentials_provider;
   std::string value;
-  if (context->getProperty(AccessKey, value, flow_file)) {
+  if (context.getProperty(AccessKey, value, flow_file)) {
     aws_credentials_provider.setAccessKey(value);
   }
-  if (context->getProperty(SecretKey, value, flow_file)) {
+  if (context.getProperty(SecretKey, value, flow_file)) {
     aws_credentials_provider.setSecretKey(value);
   }
-  if (context->getProperty(CredentialsFile, value)) {
+  if (context.getProperty(CredentialsFile, value)) {
     aws_credentials_provider.setCredentialsFile(value);
   }
   bool use_default_credentials = false;
-  if (context->getProperty(UseDefaultCredentials, use_default_credentials)) {
+  if (context.getProperty(UseDefaultCredentials, use_default_credentials)) {
     aws_credentials_provider.setUseDefaultCredentials(use_default_credentials);
   }
 
   return aws_credentials_provider.getAWSCredentials();
 }
 
-std::optional<aws::s3::ProxyOptions> S3Processor::getProxy(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::FlowFile> &flow_file) {
+std::optional<aws::s3::ProxyOptions> S3Processor::getProxy(core::ProcessContext& context, const std::shared_ptr<core::FlowFile> &flow_file) {
   aws::s3::ProxyOptions proxy;
-  context->getProperty(ProxyHost, proxy.host, flow_file);
+  context.getProperty(ProxyHost, proxy.host, flow_file);
   std::string port_str;
-  if (context->getProperty(ProxyPort, port_str, flow_file) && !port_str.empty() && !core::Property::StringToInt(port_str, proxy.port)) {
+  if (context.getProperty(ProxyPort, port_str, flow_file) && !port_str.empty() && !core::Property::StringToInt(port_str, proxy.port)) {
     logger_->log_error("Proxy port invalid");
     return std::nullopt;
   }
-  context->getProperty(ProxyUsername, proxy.username, flow_file);
-  context->getProperty(ProxyPassword, proxy.password, flow_file);
+  context.getProperty(ProxyUsername, proxy.username, flow_file);
+  context.getProperty(ProxyPassword, proxy.password, flow_file);
   if (!proxy.host.empty()) {
     logger_->log_info("Proxy for S3Processor was set.");
   }
@@ -133,10 +133,10 @@ void S3Processor::onSchedule(core::ProcessContext& context, core::ProcessSession
 }
 
 std::optional<CommonProperties> S3Processor::getCommonELSupportedProperties(
-    const std::shared_ptr<core::ProcessContext> &context,
+    core::ProcessContext& context,
     const std::shared_ptr<core::FlowFile> &flow_file) {
   CommonProperties properties;
-  if (!context->getProperty(Bucket, properties.bucket, flow_file) || properties.bucket.empty()) {
+  if (!context.getProperty(Bucket, properties.bucket, flow_file) || properties.bucket.empty()) {
     logger_->log_error("Bucket '%s' is invalid or empty!", properties.bucket);
     return std::nullopt;
   }
@@ -155,7 +155,7 @@ std::optional<CommonProperties> S3Processor::getCommonELSupportedProperties(
   }
   properties.proxy = proxy.value();
 
-  context->getProperty(EndpointOverrideURL, properties.endpoint_override_url, flow_file);
+  context.getProperty(EndpointOverrideURL, properties.endpoint_override_url, flow_file);
   if (!properties.endpoint_override_url.empty()) {
     logger_->log_debug("S3Processor: Endpoint Override URL [%s]", properties.endpoint_override_url);
   }

@@ -108,19 +108,19 @@ bool ConsumeWindowsEventLog::insertHeaderName(wel::METADATA_NAMES &header, const
   return false;
 }
 
-void ConsumeWindowsEventLog::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>&) {
-  state_manager_ = context->getStateManager();
+void ConsumeWindowsEventLog::onSchedule(core::ProcessContext& context, core::ProcessSessionFactory&) {
+  state_manager_ = context.getStateManager();
   if (state_manager_ == nullptr) {
     throw Exception(PROCESSOR_EXCEPTION, "Failed to get StateManager");
   }
 
-  context->getProperty(ResolveAsAttributes, resolve_as_attributes_);
-  context->getProperty(IdentifierFunction, apply_identifier_function_);
-  header_delimiter_ = context->getProperty(EventHeaderDelimiter);
-  context->getProperty(BatchCommitSize, batch_commit_size_);
+  context.getProperty(ResolveAsAttributes, resolve_as_attributes_);
+  context.getProperty(IdentifierFunction, apply_identifier_function_);
+  header_delimiter_ = context.getProperty(EventHeaderDelimiter);
+  context.getProperty(BatchCommitSize, batch_commit_size_);
 
   header_names_.clear();
-  if (auto header = context->getProperty(EventHeader)) {
+  if (auto header = context.getProperty(EventHeader)) {
     auto keyValueSplit = utils::StringUtils::split(*header, ",");
     for (const auto &kv : keyValueSplit) {
       auto splitKeyAndValue = utils::StringUtils::split(kv, "=");
@@ -140,7 +140,7 @@ void ConsumeWindowsEventLog::onSchedule(const std::shared_ptr<core::ProcessConte
   }
 
   regex_.reset();
-  if (auto identifier_matcher = context->getProperty(IdentifierMatcher); identifier_matcher && !identifier_matcher->empty()) {
+  if (auto identifier_matcher = context.getProperty(IdentifierMatcher); identifier_matcher && !identifier_matcher->empty()) {
     regex_.emplace(*identifier_matcher);
   }
 
@@ -159,7 +159,7 @@ void ConsumeWindowsEventLog::onSchedule(const std::shared_ptr<core::ProcessConte
     }
   }
 
-  path_ = wel::EventPath{context->getProperty(Channel).value()};
+  path_ = wel::EventPath{context.getProperty(Channel).value()};
   if (path_.kind() == wel::EventPath::Kind::FILE) {
     logger_->log_debug("Using saved log file as log source");
   } else {
@@ -167,15 +167,15 @@ void ConsumeWindowsEventLog::onSchedule(const std::shared_ptr<core::ProcessConte
   }
 
   std::string query;
-  context->getProperty(Query, query);
+  context.getProperty(Query, query);
   wstr_query_ = std::wstring(query.begin(), query.end());
 
   bool processOldEvents{};
-  context->getProperty(ProcessOldEvents, processOldEvents);
+  context.getProperty(ProcessOldEvents, processOldEvents);
 
   if (!bookmark_) {
     std::string bookmarkDir;
-    context->getProperty(BookmarkRootDirectory, bookmarkDir);
+    context.getProperty(BookmarkRootDirectory, bookmarkDir);
     if (bookmarkDir.empty()) {
       logger_->log_error("State Directory is empty");
       throw Exception(PROCESS_SCHEDULE_EXCEPTION, "State Directory is empty");
@@ -187,21 +187,21 @@ void ConsumeWindowsEventLog::onSchedule(const std::shared_ptr<core::ProcessConte
     }
   }
 
-  context->getProperty(MaxBufferSize, max_buffer_size_);
+  context.getProperty(MaxBufferSize, max_buffer_size_);
   logger_->log_debug("ConsumeWindowsEventLog: MaxBufferSize %" PRIu64, max_buffer_size_);
 
-  context->getProperty(CacheSidLookups, cache_sid_lookups_);
+  context.getProperty(CacheSidLookups, cache_sid_lookups_);
   logger_->log_debug("ConsumeWindowsEventLog: will%s cache SID to name lookups", cache_sid_lookups_ ? "" : " not");
 
   provenanceUri_ = "winlog://" + computerName_ + "/" + path_.str() + "?" + query;
   logger_->log_trace("Successfully configured CWEL");
 }
 
-bool ConsumeWindowsEventLog::commitAndSaveBookmark(const std::wstring &bookmark_xml, const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSession> &session) {
+bool ConsumeWindowsEventLog::commitAndSaveBookmark(const std::wstring &bookmark_xml, core::ProcessContext& context, core::ProcessSession& session) {
   {
     const TimeDiff time_diff;
-    session->commit();
-    context->getStateManager()->beginTransaction();
+    session.commit();
+    context.getStateManager()->beginTransaction();
     logger_->log_debug("processQueue commit took %" PRId64 " ms", time_diff());
   }
 
@@ -209,7 +209,7 @@ bool ConsumeWindowsEventLog::commitAndSaveBookmark(const std::wstring &bookmark_
     logger_->log_error("Failed to save bookmark xml");
   }
 
-  if (session->outgoingConnectionsFull("success")) {
+  if (session.outgoingConnectionsFull("success")) {
     logger_->log_debug("Outgoing success connection is full");
     return false;
   }
@@ -256,7 +256,7 @@ std::tuple<size_t, std::wstring> ConsumeWindowsEventLog::processEventLogs(const 
   return std::make_tuple(processed_event_count, bookmark_xml);
 }
 
-void ConsumeWindowsEventLog::onTrigger(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSession> &session) {
+void ConsumeWindowsEventLog::onTrigger(core::ProcessContext& context, core::ProcessSession& session) {
   std::unique_lock<std::mutex> lock(on_trigger_mutex_, std::try_to_lock);
   if (!lock.owns_lock()) {
     logger_->log_warn("processor was triggered before previous listing finished, configuration should be revised!");
@@ -265,7 +265,7 @@ void ConsumeWindowsEventLog::onTrigger(const std::shared_ptr<core::ProcessContex
 
   if (!bookmark_) {
     logger_->log_debug("bookmark_ is null");
-    context->yield();
+    context.yield();
     return;
   }
 
@@ -280,7 +280,7 @@ void ConsumeWindowsEventLog::onTrigger(const std::shared_ptr<core::ProcessContex
   wel::unique_evt_handle event_query_results{EvtQuery(nullptr, path_.wstr().c_str(), wstr_query_.c_str(), path_.getQueryFlags())};
   if (!event_query_results) {
     LOG_LAST_ERROR(EvtQuery);
-    context->yield();
+    context.yield();
     return;
   }
 
@@ -290,13 +290,13 @@ void ConsumeWindowsEventLog::onTrigger(const std::shared_ptr<core::ProcessContex
   if (!bookmark_handle) {
     logger_->log_error("bookmark_handle is null, unrecoverable error!");
     bookmark_.reset();
-    context->yield();
+    context.yield();
     return;
   }
 
   if (!EvtSeek(event_query_results.get(), 1, bookmark_handle, 0, EvtSeekRelativeToBookmark)) {
     LOG_LAST_ERROR(EvtSeek);
-    context->yield();
+    context.yield();
     return;
   }
 
@@ -306,7 +306,7 @@ void ConsumeWindowsEventLog::onTrigger(const std::shared_ptr<core::ProcessContex
   std::tie(processed_event_count, bookmark_xml) = processEventLogs(context, session, event_query_results.get());
 
   if (processed_event_count == 0 || !commitAndSaveBookmark(bookmark_xml, context, session)) {
-    context->yield();
+    context.yield();
     return;
   }
 }

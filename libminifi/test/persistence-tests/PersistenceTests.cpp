@@ -120,7 +120,7 @@ struct TestFlow{
   }
   void trigger() {
     auto session = std::make_shared<core::ProcessSession>(processorContext);
-    processor_->onTrigger(processorContext, session);
+    processor_->onTrigger(*processorContext, *session);
     session->commit();
   }
 
@@ -252,12 +252,12 @@ class ContentUpdaterProcessor : public core::Processor {
   static constexpr bool IsSingleThreaded = false;
   ADD_COMMON_VIRTUAL_FUNCTIONS_FOR_PROCESSORS
 
-  void onTrigger(const std::shared_ptr<core::ProcessContext>& /*context*/, const std::shared_ptr<core::ProcessSession>& session) override {
-    auto ff = session->get();
+  void onTrigger(core::ProcessContext&, core::ProcessSession& session) override {
+    auto ff = session.get();
     std::string data = "<override>";
     minifi::io::BufferStream stream(data);
-    session->importFrom(stream, ff);
-    session->transfer(ff, {"success", "d"});
+    session.importFrom(stream, ff);
+    session.transfer(ff, {"success", "d"});
   }
 };
 

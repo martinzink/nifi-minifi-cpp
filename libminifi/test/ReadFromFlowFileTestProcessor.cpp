@@ -36,7 +36,7 @@ void ReadFromFlowFileTestProcessor::onTrigger(core::ProcessContext&, core::Proce
 
   while (std::shared_ptr<core::FlowFile> flow_file = session.get()) {
     session.transfer(flow_file, Success);
-    flow_files_read_.emplace_back(&session, gsl::not_null(std::move(flow_file)));
+    flow_files_read_.emplace_back(session, gsl::not_null(std::move(flow_file)));
   }
 }
 
@@ -44,8 +44,8 @@ void ReadFromFlowFileTestProcessor::onUnSchedule() {
   logger_->log_info("%s", ON_UNSCHEDULE_LOG_STR);
 }
 
-ReadFromFlowFileTestProcessor::FlowFileData::FlowFileData(core::ProcessSession* session, const gsl::not_null<std::shared_ptr<core::FlowFile>>& flow_file) {
-  content_ = to_string(session->readBuffer(flow_file));
+ReadFromFlowFileTestProcessor::FlowFileData::FlowFileData(core::ProcessSession& session, const gsl::not_null<std::shared_ptr<core::FlowFile>>& flow_file) {
+  content_ = to_string(session.readBuffer(flow_file));
   attributes_ = flow_file->getAttributes();
 }
 

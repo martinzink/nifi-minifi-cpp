@@ -476,7 +476,7 @@ TEST_CASE("Test Find file", "[getfileCreate3]") {
   repo->getElements(recordsReport, deserialized);
   std::function<void(const std::shared_ptr<core::ProcessContext> &, const std::shared_ptr<core::ProcessSession>&)> verifyReporter =
       [&](const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSession> &session) {
-        taskReport->getJsonReport(context, session, recordsReport, jsonStr);
+        taskReport->getJsonReport(*context, *session, recordsReport, jsonStr);
         REQUIRE(recordsReport.size() == 1);
         REQUIRE(taskReport->getName() == std::string(org::apache::nifi::minifi::core::reporting::SiteToSiteProvenanceReportingTask::ReportTaskName));
         REQUIRE(jsonStr.find("\"componentType\": \"getfileCreate2\"") != std::string::npos);
@@ -502,8 +502,8 @@ class TestProcessorNoContent : public minifi::core::Processor {
 
   ADD_COMMON_VIRTUAL_FUNCTIONS_FOR_PROCESSORS
 
-  void onSchedule(core::ProcessContext& context, core::ProcessSessionFactory&) override {}
-  void onTrigger(core::ProcessContext& context, core::ProcessSession& session) override {
+  void onSchedule(core::ProcessContext&, core::ProcessSessionFactory&) override {}
+  void onTrigger(core::ProcessContext&, core::ProcessSession& session) override {
     auto ff = session.create();
     ff->addAttribute("Attribute", "AttributeValue");
     session.transfer(ff, Success);
@@ -558,7 +558,7 @@ void testRPGBypass(const std::string &host, const std::string &port, const std::
   if (hasException) {
     auto expected_error = "Site2Site Protocol: HTTPClient not resolvable. No peers configured or any port specific hostname and port -- cannot schedule";
     try {
-      rpg->onSchedule(context, psf);
+      rpg->onSchedule(*context, *psf);
     } catch (std::exception &e) {
       REQUIRE(expected_error == std::string(e.what()));
     }

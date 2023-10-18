@@ -53,13 +53,13 @@ void CompressContent::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void CompressContent::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
-  context->getProperty(CompressLevel, compressLevel_);
-  compressMode_ = utils::parseEnumProperty<compress_content::CompressionMode>(*context, CompressMode);
-  compressFormat_ = utils::parseEnumProperty<compress_content::ExtendedCompressionFormat>(*context, CompressFormat);
-  context->getProperty(UpdateFileName, updateFileName_);
-  context->getProperty(EncapsulateInTar, encapsulateInTar_);
-  context->getProperty(BatchSize, batchSize_);
+void CompressContent::onSchedule(core::ProcessContext& context, core::ProcessSessionFactory&) {
+  context.getProperty(CompressLevel, compressLevel_);
+  compressMode_ = utils::parseEnumProperty<compress_content::CompressionMode>(context, CompressMode);
+  compressFormat_ = utils::parseEnumProperty<compress_content::ExtendedCompressionFormat>(context, CompressFormat);
+  context.getProperty(UpdateFileName, updateFileName_);
+  context.getProperty(EncapsulateInTar, encapsulateInTar_);
+  context.getProperty(BatchSize, batchSize_);
 
   logger_->log_info("Compress Content: Mode [%s] Format [%s] Level [%d] UpdateFileName [%d] EncapsulateInTar [%d]",
       std::string{magic_enum::enum_name(compressMode_)}, std::string{magic_enum::enum_name(compressFormat_)}, compressLevel_, updateFileName_, encapsulateInTar_);

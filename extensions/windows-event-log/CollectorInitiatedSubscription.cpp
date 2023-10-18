@@ -71,7 +71,7 @@ void CollectorInitiatedSubscription::initialize() {
   setSupportedRelationships(Relationships);
 }
 
-void CollectorInitiatedSubscription::onSchedule(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSessionFactory> &sessionFactory) {
+void CollectorInitiatedSubscription::onSchedule_2(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSessionFactory> &sessionFactory) {
   gsl_Expects(context);
 
   if (subscriptionHandle_) {
@@ -91,7 +91,7 @@ void CollectorInitiatedSubscription::onSchedule(const std::shared_ptr<core::Proc
   max_buffer_size_ = context->getProperty<core::DataSizeValue>(MaxBufferSize).value();
 }
 
-void CollectorInitiatedSubscription::onTrigger(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSession> &session) {
+void CollectorInitiatedSubscription::onTrigger_2(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSession> &session) {
   gsl_Expects(context);
 
   if (!subscriptionHandle_) {

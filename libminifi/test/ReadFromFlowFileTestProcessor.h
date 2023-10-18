@@ -85,7 +85,7 @@ class ReadFromFlowFileTestProcessor : public core::Processor {
 
  private:
   struct FlowFileData {
-    FlowFileData(core::ProcessSession* session, const gsl::not_null<std::shared_ptr<core::FlowFile>>& flow_file);
+    FlowFileData(core::ProcessSession& session, const gsl::not_null<std::shared_ptr<core::FlowFile>>& flow_file);
     std::string content_;
     std::map<std::string, std::string> attributes_;
   };

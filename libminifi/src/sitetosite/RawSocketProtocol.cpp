@@ -549,7 +549,7 @@ std::shared_ptr<Transaction> RawSiteToSiteClient::createTransaction(TransferDire
   }
 }
 
-bool RawSiteToSiteClient::transmitPayload(const std::shared_ptr<core::ProcessContext> &context, const std::shared_ptr<core::ProcessSession> &session, const std::string &payload,
+bool RawSiteToSiteClient::transmitPayload(core::ProcessContext& context, core::ProcessSession& session, const std::string &payload,
                                           std::map<std::string, std::string> attributes) {
   std::shared_ptr<Transaction> transaction;
 
@@ -563,7 +563,7 @@ bool RawSiteToSiteClient::transmitPayload(const std::shared_ptr<core::ProcessCon
   }
 
   if (peer_state_ != READY) {
-    context->yield();
+    context.yield();
     tearDown();
     throw Exception(SITE2SITE_EXCEPTION, "Can not establish handshake with peer");
   }
@@ -572,7 +572,7 @@ bool RawSiteToSiteClient::transmitPayload(const std::shared_ptr<core::ProcessCon
   transaction = createTransaction(SEND);
 
   if (transaction == nullptr) {
-    context->yield();
+    context.yield();
     tearDown();
     throw Exception(SITE2SITE_EXCEPTION, "Can not create transaction");
   }
@@ -582,7 +582,7 @@ bool RawSiteToSiteClient::transmitPayload(const std::shared_ptr<core::ProcessCon
   try {
     DataPacket packet(getLogger(), transaction, attributes, payload);
 
-    int16_t resp = send(transactionID, &packet, nullptr, session);
+    int16_t resp = send(transactionID, &packet, nullptr, &session);
     if (resp == -1) {
       throw Exception(SITE2SITE_EXCEPTION, "Send Failed in transaction " + transactionID.to_string());
     }
@@ -599,14 +599,14 @@ bool RawSiteToSiteClient::transmitPayload(const std::shared_ptr<core::ProcessCon
   } catch (std::exception &exception) {
     if (transaction)
       deleteTransaction(transactionID);
-    context->yield();
+    context.yield();
     tearDown();
     logger_->log_debug("Caught Exception during RawSiteToSiteClient::transmitPayload, type: %s, what: %s", typeid(exception).name(), exception.what());
     throw;
   } catch (...) {
     if (transaction)
       deleteTransaction(transactionID);
-    context->yield();
+    context.yield();
     tearDown();
     logger_->log_debug("Caught Exception during RawSiteToSiteClient::transmitPayload, type: %s", getCurrentExceptionTypeName());
     throw;

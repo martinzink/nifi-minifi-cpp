@@ -146,7 +146,7 @@ std::unique_ptr<minifi::extensions::curl::HTTPClient> InvokeHTTP::createHTTPClie
 }
 
 
-void InvokeHTTP::onSchedule(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
+void InvokeHTTP::onSchedule_2(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSessionFactory>& /*sessionFactory*/) {
   gsl_Expects(context);
 
   setupMembersFromProperties(*context);
@@ -198,7 +198,7 @@ bool InvokeHTTP::appendHeaders(const core::FlowFile& flow_file, /*std::invocable
   return true;
 }
 
-void InvokeHTTP::onTrigger(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) {
+void InvokeHTTP::onTrigger_2(const std::shared_ptr<core::ProcessContext>& context, const std::shared_ptr<core::ProcessSession>& session) {
   gsl_Expects(session && context && client_queue_);
 
   auto flow_file = session->get();
