@@ -204,7 +204,7 @@ void ExecuteProcess::collectChildProcessOutput(core::ProcessSession& session) {
   pid_ = 0;
 }
 
-void ExecuteProcess::onTrigger(core::ProcessContext& context, core::ProcessSession& session) {
+void ExecuteProcess::onTrigger(core::ProcessContext&, core::ProcessSession& session) {
   if (full_command_.length() == 0) {
     yield();
     return;
