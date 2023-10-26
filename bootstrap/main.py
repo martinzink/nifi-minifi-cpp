@@ -7,10 +7,10 @@ from system_dependency import install_compiler
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--noconfirm', action=argparse.BooleanOptionalAction, default=False,
+    parser.add_argument('--noconfirm', action="store_true", default=False,
                         help="Bypass any and all “Are you sure?” messages.")
     parser.add_argument('--override', default="", help="Override the default minifi options")
-    parser.add_argument('--noninteractive', action=argparse.BooleanOptionalAction, default=False,
+    parser.add_argument('--noninteractive', action="store_true", default=False,
                         help="Initiates the one click build")
     args = parser.parse_args()
     no_confirm = args.noconfirm or args.noninteractive

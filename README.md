@@ -317,15 +317,13 @@ pip install -r requirements.txt
 
 After that you can run the bootstrap script that will guide you through the configuration, dependency installation and build processes.
 ```
-usage: main.py [-h] [--noconfirm | --no-noconfirm] [--override OVERRIDE] [--noninteractive | --no-noninteractive]
+usage: main.py [-h] [--noconfirm] [--override OVERRIDE] [--noninteractive]
 
 options:
-  -h, --help            show this help message and exit
-  --noconfirm, --no-noconfirm
-                        Bypass any and all “Are you sure?” messages.
-  --override OVERRIDE   Override the default minifi options
-  --noninteractive, --no-noninteractive
-                        Initiates the one click build
+  -h, --help           show this help message and exit
+  --noconfirm          Bypass any and all “Are you sure?” messages.
+  --override OVERRIDE  Override the default minifi options
+  --noninteractive     Initiates the one click build
 ```
 
 #### Shell based bootstrapping
