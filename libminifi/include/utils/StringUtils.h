@@ -338,15 +338,7 @@ inline std::string to_hex(std::string_view str, bool uppercase = false) {
 }
 
 
-/**
- * Decodes the Base64 encoded string into data
- * @param data the output buffer where the decoded bytes will be written. Must be at least (base64_length / 4 + 1) * 3 bytes long.
- * @param data_length pointer to the length of data the data buffer. It will be filled with the length of the decoded bytes.
- * @param base64 the Base64 encoded string
- * @param base64_length the length of base64
- * @return true on success
- */
-bool from_base64(std::byte* data, size_t* data_length, std::string_view base64);
+bool from_base64(std::vector<std::byte>& data, std::string_view base64);
 
 /**
  * Base64 decodes a string
