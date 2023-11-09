@@ -1,16 +1,33 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import os
 
 import inquirer
 
 from minifi_option import MinifiOptions
+from package_manager import PackageManager
 from system_dependency import install_required
 
 
-def install_dependencies(minifi_options: MinifiOptions):
-    install_required(minifi_options)
+def install_dependencies(minifi_options: MinifiOptions, package_manager: PackageManager):
+    install_required(minifi_options, package_manager)
 
 
-def run_cmake(minifi_options: MinifiOptions):
+def run_cmake(minifi_options: MinifiOptions, _package_manager: PackageManager):
     if not os.path.exists(minifi_options.build_dir):
         os.mkdir(minifi_options.build_dir)
     os.chdir(minifi_options.build_dir)
@@ -19,35 +36,19 @@ def run_cmake(minifi_options: MinifiOptions):
     os.system(cmake_cmd)
 
 
-def do_build(minifi_options: MinifiOptions):
+def do_build(minifi_options: MinifiOptions, _package_manager: PackageManager):
     os.chdir(minifi_options.build_dir)
     os.system("cmake --build .")
 
 
-def do_one_click_build(minifi_options: MinifiOptions) -> bool:
-    install_dependencies(minifi_options)
-    run_cmake(minifi_options)
-    do_build(minifi_options)
+def do_one_click_build(minifi_options: MinifiOptions, package_manager: PackageManager) -> bool:
+    install_dependencies(minifi_options, package_manager)
+    run_cmake(minifi_options, package_manager)
+    do_build(minifi_options, package_manager)
     return True
 
 
-def modify_bool_options(minifi_options: MinifiOptions):
-    options = [inquirer.Checkbox(
-        "MiNiFi C++ options",
-        message="Select MiNiFi C++ components",
-        choices=[name for name, obj in minifi_options.bool_options.items()],
-        default=[name for name, obj in minifi_options.bool_options.items() if obj.value == "ON"]
-    )]
-
-    selection_result = inquirer.prompt(options)
-    for minifi_option in minifi_options.bool_options.values():
-        if minifi_option.name in selection_result:
-            minifi_option.value = "ON"
-        else:
-            minifi_option.value = "OFF"
-
-
-def main_menu(minifi_options: MinifiOptions):
+def main_menu(minifi_options: MinifiOptions, package_manager: PackageManager):
     done = False
     while not done:
         main_menu_options = {
@@ -56,7 +57,7 @@ def main_menu(minifi_options: MinifiOptions):
             "Build options": bool_menu,
             "One click build": do_one_click_build,
             "Step by step build": step_by_step_menu,
-            "Exit": lambda options: True,
+            "Exit": lambda _options, _manager: True,
         }
 
         questions = [
@@ -68,10 +69,10 @@ def main_menu(minifi_options: MinifiOptions):
         ]
 
         main_menu_prompt = inquirer.prompt(questions)
-        done = main_menu_options[main_menu_prompt["sub_menu"]](minifi_options)
+        done = main_menu_options[main_menu_prompt["sub_menu"]](minifi_options, package_manager)
 
 
-def build_type_menu(minifi_options: MinifiOptions) -> bool:
+def build_type_menu(minifi_options: MinifiOptions, _package_manager: PackageManager) -> bool:
     questions = [
         inquirer.List(
             "build_type",
@@ -85,7 +86,7 @@ def build_type_menu(minifi_options: MinifiOptions) -> bool:
     return False
 
 
-def build_dir_menu(minifi_options: MinifiOptions) -> bool:
+def build_dir_menu(minifi_options: MinifiOptions, _package_manager: PackageManager) -> bool:
     questions = [
         inquirer.Path('build_dir',
                       message="Build directory",
@@ -96,13 +97,13 @@ def build_dir_menu(minifi_options: MinifiOptions) -> bool:
     return False
 
 
-def bool_menu(minifi_options: MinifiOptions) -> bool:
+def bool_menu(minifi_options: MinifiOptions, _package_manager: PackageManager) -> bool:
     possible_values = [option_name for option_name in minifi_options.bool_options]
     selected_values = [option.name for option in minifi_options.bool_options.values() if option.value == "ON"]
     questions = [
         inquirer.Checkbox(
             "options",
-            message="MiNiFi C++ Options",
+            message="MiNiFi C++ Options (space to select, enter to confirm)",
             choices=possible_values,
             default=selected_values
         ),
@@ -118,7 +119,7 @@ def bool_menu(minifi_options: MinifiOptions) -> bool:
     return False
 
 
-def step_by_step_menu(minifi_options: MinifiOptions) -> bool:
+def step_by_step_menu(minifi_options: MinifiOptions, package_manager: PackageManager) -> bool:
     done = False
     while not done:
         step_by_step_options = {
@@ -126,7 +127,7 @@ def step_by_step_menu(minifi_options: MinifiOptions) -> bool:
             "Install dependencies": install_dependencies,
             "Run cmake": run_cmake,
             "Build": do_build,
-            "Back": lambda options: True,
+            "Back": lambda _options, _manager: True,
         }
         questions = [
             inquirer.List(
@@ -137,5 +138,5 @@ def step_by_step_menu(minifi_options: MinifiOptions) -> bool:
         ]
 
         step_by_step_prompt = inquirer.prompt(questions)
-        done = step_by_step_options[step_by_step_prompt["selection"]](minifi_options)
+        done = step_by_step_options[step_by_step_prompt["selection"]](minifi_options, package_manager)
     return False
