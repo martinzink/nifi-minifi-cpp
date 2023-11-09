@@ -15,6 +15,7 @@
 
 
 import os
+import subprocess
 
 import inquirer
 
@@ -38,7 +39,7 @@ def run_cmake(minifi_options: MinifiOptions, _package_manager: PackageManager):
 
 def do_build(minifi_options: MinifiOptions, _package_manager: PackageManager):
     os.chdir(minifi_options.build_dir)
-    os.system("cmake --build .")
+    result = subprocess.run(['cmake', '--build', '.'], text=True, check=True)
 
 
 def do_one_click_build(minifi_options: MinifiOptions, package_manager: PackageManager) -> bool:

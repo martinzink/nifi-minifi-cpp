@@ -26,6 +26,7 @@ def _query_yes_no(question: str, no_confirm: bool) -> bool:
     valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
 
     if no_confirm:
+        print("Running {} with noconfirm".format(question))
         return True
     while True:
         print("{} [y/n]".format(question))
@@ -53,8 +54,11 @@ class PackageManager(object):
         raise Exception("NotImplementedException")
 
     def _install(self, dependencies: Dict[str, set[str]], replace_dict: Dict[str, set[str]], install_cmd: str):
+        print(f"Dependencies to install f{dependencies}")
         dependencies.update({k: v for k, v in replace_dict.items() if k in dependencies})
+        print(f"after replace_dict f{dependencies}")
         dependencies = self._filter_out_installed_packages(dependencies)
+        print(f"after filter f{dependencies}")
         dependencies_str = " ".join(str(value) for value_set in dependencies.values() for value in value_set)
         if not dependencies_str or dependencies_str.isspace():
             return
@@ -80,7 +84,7 @@ class BrewPackageManager(PackageManager):
 
     def install_compiler(self) -> str:
         self.install({"compiler": {"llvm"}})
-        return "-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang"
+        return ""
 
     def _get_installed_packages(self) -> set[str]:
         result = subprocess.run(['brew', 'list'], text=True, capture_output=True, check=True)
@@ -153,23 +157,15 @@ class PacmanPackageManager(PackageManager):
 
     def install(self, dependencies: Dict[str, set[str]]):
         self._install(dependencies=dependencies,
-                      install_cmd="sudo dnf --enablerepo=crb install -y epel-release",
-                      replace_dict={"gpsd": {"gpsd-devel"},
-                                    "libpcap": {"libpcap-devel"},
-                                    "lua": {"lua-devel"},
-                                    "python": {"python3-devel"},
-                                    "jni": {"java-1.8.0-openjdk", "java-1.8.0-openjdk-devel", "maven"},
-                                    "libpng": {"libpng-devel"},
-                                    "libusb": {"libusb-devel"}})
+                      install_cmd="sudo pacman --noconfirm -S",
+                      replace_dict={"jni": {"jdk8-openjdk", "maven"}})
 
     def _get_installed_packages(self) -> set[str]:
-        result = subprocess.run(['dnf', 'list', 'installed'], text=True, capture_output=True, check=True)
-        lines = [line.split(' ')[0] for line in result.stdout.splitlines()]
-        lines = [line.rsplit('.', 1)[0] for line in lines]
-        return set(lines)
+        result = subprocess.run(['pacman', '-Qq'], text=True, capture_output=True, check=True)
+        return set(result.stdout.splitlines())
 
     def install_compiler(self) -> str:
-        self.install({"compiler": {"gcc-c++"}})
+        self.install({"compiler": {"gcc"}})
         return ""
 
 

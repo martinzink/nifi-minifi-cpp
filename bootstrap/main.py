@@ -25,14 +25,18 @@ if __name__ == '__main__':
     parser.add_argument('--noconfirm', action="store_true", default=False,
                         help="Bypass any and all “Are you sure?” messages.")
     parser.add_argument('--override', default="", help="Override the default minifi options")
+    parser.add_argument('--compiler', default="", help="Override the default compiler to use")
     parser.add_argument('--noninteractive', action="store_true", default=False,
                         help="Initiates the one click build")
     args = parser.parse_args()
     no_confirm = args.noconfirm or args.noninteractive
 
     package_manager = get_package_manager(no_confirm)
-    compiler_override = package_manager.install_compiler()
-    cmake_overrides = args.override + compiler_override
+    if args.compiler is None:
+        compiler_override = package_manager.install_compiler()
+    else:
+        compiler_override = ""
+    cmake_overrides = args.override + " " + compiler_override
     path = pathlib.Path(__file__).parent.resolve() / '..' / "cmake" / "MiNiFiOptions.cmake"
 
     minifi_options = parse_minifi_options(str(path.as_posix()), cmake_overrides)
