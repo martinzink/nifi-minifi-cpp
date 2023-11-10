@@ -50,7 +50,7 @@ class PackageManager(object):
     def install(self, dependencies: Dict[str, set[str]]):
         raise Exception("NotImplementedException")
 
-    def install_compiler(self, compiler_override):
+    def install_compiler(self):
         raise Exception("NotImplementedException")
 
     def _install(self, dependencies: Dict[str, set[str]], replace_dict: Dict[str, set[str]], install_cmd: str):
@@ -82,10 +82,7 @@ class BrewPackageManager(PackageManager):
                       replace_dict={"patch": set(),
                                     "jni": {"maven"}})
 
-    def install_compiler(self, compiler_override) -> str:
-        if compiler_override is not None:
-            self.install(compiler_override)
-            return ""
+    def install_compiler(self) -> str:
         self.install({"compiler": {"llvm"}})
         return ""
 
@@ -117,10 +114,7 @@ class AptPackageManager(PackageManager):
         lines = [line.rsplit(':', 1)[0] for line in lines]
         return set(lines)
 
-    def install_compiler(self, compiler_override) -> str:
-        if compiler_override is not None:
-            self.install(compiler_override)
-            return ""
+    def install_compiler(self) -> str:
         if distro.id() == "ubuntu" and int(distro.major_version()) < 22:
             self.install({"compiler_prereq": {"software-properties-common"}})
             _run_command_with_confirm("sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test",
@@ -152,10 +146,7 @@ class DnfPackageManager(PackageManager):
         lines = [line.rsplit('.', 1)[0] for line in lines]
         return set(lines)
 
-    def install_compiler(self, compiler_override) -> str:
-        if compiler_override is not None:
-            self.install(compiler_override)
-            return ""
+    def install_compiler(self) -> str:
         self.install({"compiler": {"gcc-c++"}})
         return ""
 
