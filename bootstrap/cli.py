@@ -48,7 +48,7 @@ def run_cmake(minifi_options: MinifiOptions, _package_manager: PackageManager):
 def do_build(minifi_options: MinifiOptions, _package_manager: PackageManager):
     print("do_build")
     try:
-        subprocess.run(['cmake', '--build', minifi_options.build_dir], text=True, check=True)
+        subprocess.run(['cmake', '--build', str(minifi_options.build_dir)], text=True, check=True)
     except subprocess.CalledProcessError as e:
         print(f"Build failed with exit code {e.returncode}")
         print("Standard Output:")
