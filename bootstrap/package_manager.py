@@ -17,7 +17,7 @@ import os
 import platform
 import subprocess
 import sys
-from typing import Dict
+from typing import Dict, Set
 
 from distro import distro
 
@@ -47,13 +47,13 @@ class PackageManager(object):
         self.no_confirm = no_confirm
         pass
 
-    def install(self, dependencies: Dict[str, set[str]]):
+    def install(self, dependencies: Dict[str, Set[str]]):
         raise Exception("NotImplementedException")
 
     def install_compiler(self):
         raise Exception("NotImplementedException")
 
-    def _install(self, dependencies: Dict[str, set[str]], replace_dict: Dict[str, set[str]], install_cmd: str):
+    def _install(self, dependencies: Dict[str, Set[str]], replace_dict: Dict[str, Set[str]], install_cmd: str):
         print(f"Dependencies to install f{dependencies}")
         dependencies.update({k: v for k, v in replace_dict.items() if k in dependencies})
         print(f"after replace_dict f{dependencies}")
@@ -64,10 +64,10 @@ class PackageManager(object):
             return
         assert _run_command_with_confirm(f"{install_cmd} {dependencies_str}", self.no_confirm)
 
-    def _get_installed_packages(self) -> set[str]:
+    def _get_installed_packages(self) -> Set[str]:
         raise Exception("NotImplementedException")
 
-    def _filter_out_installed_packages(self, dependencies: Dict[str, set[str]]):
+    def _filter_out_installed_packages(self, dependencies: Dict[str, Set[str]]):
         installed_packages = self._get_installed_packages()
         return {k: (v - installed_packages) for k, v in dependencies.items()}
 
@@ -76,7 +76,7 @@ class BrewPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
 
-    def install(self, dependencies: Dict[str, set[str]]):
+    def install(self, dependencies: Dict[str, Set[str]]):
         self._install(dependencies=dependencies,
                       install_cmd="brew install",
                       replace_dict={"patch": set(),
@@ -86,7 +86,7 @@ class BrewPackageManager(PackageManager):
         self.install({"compiler": {"llvm"}})
         return ""
 
-    def _get_installed_packages(self) -> set[str]:
+    def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['brew', 'list'], text=True, capture_output=True, check=True)
         lines = result.stdout.splitlines()
         lines = [line.split('@', 1)[0] for line in lines]
@@ -97,7 +97,7 @@ class AptPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
 
-    def install(self, dependencies: Dict[str, set[str]]):
+    def install(self, dependencies: Dict[str, Set[str]]):
         self._install(dependencies=dependencies,
                       install_cmd="sudo apt install -y",
                       replace_dict={"libarchive": {"liblzma-dev"},
@@ -108,7 +108,7 @@ class AptPackageManager(PackageManager):
                                     "libpcap": {"libpcap-dev"},
                                     "jni": {"openjdk-8-jdk", "openjdk-8-source", "maven"}})
 
-    def _get_installed_packages(self) -> set[str]:
+    def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['dpkg', '--get-selections'], text=True, capture_output=True, check=True)
         lines = [line.split('\t')[0] for line in result.stdout.splitlines()]
         lines = [line.rsplit(':', 1)[0] for line in lines]
@@ -129,7 +129,7 @@ class DnfPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
 
-    def install(self, dependencies: Dict[str, set[str]]):
+    def install(self, dependencies: Dict[str, Set[str]]):
         self._install(dependencies=dependencies,
                       install_cmd="sudo dnf --enablerepo=crb install -y epel-release",
                       replace_dict={"gpsd": {"gpsd-devel"},
@@ -140,7 +140,7 @@ class DnfPackageManager(PackageManager):
                                     "libpng": {"libpng-devel"},
                                     "libusb": {"libusb-devel"}})
 
-    def _get_installed_packages(self) -> set[str]:
+    def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['dnf', 'list', 'installed'], text=True, capture_output=True, check=True)
         lines = [line.split(' ')[0] for line in result.stdout.splitlines()]
         lines = [line.rsplit('.', 1)[0] for line in lines]
@@ -155,12 +155,12 @@ class PacmanPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
 
-    def install(self, dependencies: Dict[str, set[str]]):
+    def install(self, dependencies: Dict[str, Set[str]]):
         self._install(dependencies=dependencies,
                       install_cmd="sudo pacman --noconfirm -S",
                       replace_dict={"jni": {"jdk8-openjdk", "maven"}})
 
-    def _get_installed_packages(self) -> set[str]:
+    def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['pacman', '-Qq'], text=True, capture_output=True, check=True)
         return set(result.stdout.splitlines())
 

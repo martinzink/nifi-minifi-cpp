@@ -15,13 +15,13 @@
 
 from __future__ import annotations
 
-from typing import Dict
+from typing import Dict, Set
 
 from minifi_option import MinifiOptions
 from package_manager import PackageManager
 
 
-def _create_system_dependencies(minifi_options: MinifiOptions) -> Dict[str, set[str]]:
+def _create_system_dependencies(minifi_options: MinifiOptions) -> Dict[str, Set[str]]:
     system_dependencies = {'patch': {'patch'}, 'make': {'make'}}
     if minifi_options.is_enabled("ENABLE_EXPRESSION_LANGUAGE"):
         system_dependencies['bison'] = {'bison'}
