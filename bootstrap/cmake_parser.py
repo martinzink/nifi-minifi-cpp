@@ -41,9 +41,9 @@ def create_cmake_cache(cmake_path: str, cmake_options: str, directory: str):
 
     os.chdir(directory)
     if cmake_options is None:
-        os.system('cmake -G Ninja -Wno-dev --log-level=ERROR .')
+        assert(os.system('cmake -G Ninja -Wno-dev --log-level=ERROR .') == 0)
     else:
-        os.system(f'cmake -G Ninja -Wno-dev --no-warn-unused-cli --log-level=ERROR {cmake_options} .')
+        assert(os.system(f'cmake -G Ninja -Wno-dev --no-warn-unused-cli --log-level=ERROR {cmake_options} .') == 0)
     return os.path.join(directory, 'CMakeCache.txt')
 
 
