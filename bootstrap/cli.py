@@ -39,7 +39,16 @@ def run_cmake(minifi_options: MinifiOptions, _package_manager: PackageManager):
 
 def do_build(minifi_options: MinifiOptions, _package_manager: PackageManager):
     os.chdir(minifi_options.build_dir)
-    result = subprocess.run(['cmake', '--build', '.'], text=True, check=True)
+    try:
+        result = subprocess.run(['cmake', '--build', '.'], text=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        print(f"Build failed with exit code {e.returncode}")
+        print("Standard Output:")
+        print(e.stdout)
+        print("Standard Error:")
+        print(e.stderr)
+        # You may choose to raise the exception again if you want the script to exit
+        raise
 
 
 def do_one_click_build(minifi_options: MinifiOptions, package_manager: PackageManager) -> bool:
