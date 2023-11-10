@@ -35,7 +35,7 @@ def run_cmake(minifi_options: MinifiOptions, _package_manager: PackageManager):
         os.mkdir(minifi_options.build_dir)
     cmake_cmd = f"cmake -G Ninja {minifi_options.create_cmake_options_str()} {minifi_options.source_dir} -B {minifi_options.build_dir}"
     try:
-        subprocess.run(cmake_cmd, shell=True, text=True, check=True)
+        subprocess.run(cmake_cmd, shell=True, text=True, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
         print(f"Cmake failed with exit code {e.returncode}")
         print("Standard Output:")
@@ -48,7 +48,7 @@ def run_cmake(minifi_options: MinifiOptions, _package_manager: PackageManager):
 def do_build(minifi_options: MinifiOptions, _package_manager: PackageManager):
     print("do_build")
     try:
-        subprocess.run(['cmake', '--build', str(minifi_options.build_dir)], text=True, check=True)
+        subprocess.run(['cmake', '--build', str(minifi_options.build_dir)], text=True, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
         print(f"Build failed with exit code {e.returncode}")
         print("Standard Output:")
