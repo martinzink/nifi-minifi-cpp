@@ -28,18 +28,16 @@ def install_dependencies(minifi_options: MinifiOptions, package_manager: Package
     install_required(minifi_options, package_manager)
 
 
-def run_cmake(minifi_options: MinifiOptions, _package_manager: PackageManager):
+def run_cmake(minifi_options: MinifiOptions, package_manager: PackageManager):
     if not os.path.exists(minifi_options.build_dir):
         os.mkdir(minifi_options.build_dir)
-    os.chdir(minifi_options.build_dir)
-    cmake_cmd = f"cmake -G Ninja {minifi_options.create_cmake_options_str()} {minifi_options.source_dir}"
-    print(f"Running {cmake_cmd}")
-    os.system(cmake_cmd)
+    cmake_cmd = f"cmake -G Ninja {minifi_options.create_cmake_options_str()} {minifi_options.source_dir} -B {minifi_options.build_dir}"
+    assert package_manager.run_cmd(cmake_cmd)
 
 
-def do_build(minifi_options: MinifiOptions, _package_manager: PackageManager):
-    os.chdir(minifi_options.build_dir)
-    result = subprocess.run(['cmake', '--build', '.'], text=True, check=True)
+def do_build(minifi_options: MinifiOptions, package_manager: PackageManager):
+    build_cmd = f"cmake --build {str(minifi_options.build_dir)}"
+    assert package_manager.run_cmd(build_cmd)
 
 
 def do_one_click_build(minifi_options: MinifiOptions, package_manager: PackageManager) -> bool:

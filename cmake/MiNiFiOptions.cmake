@@ -57,7 +57,7 @@ add_minifi_option(BUILD_ROCKSDB "Instructs the build system to use RocksDB from 
 add_minifi_option(ENABLE_CURL "Enables libCurl Properties." ON)
 
 add_minifi_option(INSTALLER_MERGE_MODULES "Creates installer with merge modules" OFF)
-add_minifi_option(FAIL_ON_WARNINGS "Treat warnings as errors" OFF)
+add_minifi_option(MINIFI_FAIL_ON_WARNINGS "Treat warnings as errors" OFF)
 add_minifi_option(USE_REAL_ODBC_TEST_DRIVER "Use SQLite ODBC driver in SQL extenstion unit tests instead of a mock database" OFF)
 # This is needed for ninja:
 # By default, neither Clang or GCC will add ANSI-formatted colors to your output if they detect

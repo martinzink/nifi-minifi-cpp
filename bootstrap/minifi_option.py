@@ -20,6 +20,7 @@ import pathlib
 
 import cmake_parser
 from cmake_parser import CMakeCacheValue
+from package_manager import PackageManager
 
 
 class MinifiOptions:
@@ -42,6 +43,7 @@ class MinifiOptions:
         if self.compiler_override is not None:
             cmake_options += " " + self.compiler_override
         cmake_options += " -DFORCE_COLORED_OUTPUT:BOOL=ON"
+        cmake_options += f" -DCMAKE_BUILD_TYPE={self.build_type.value}"
         return cmake_options
 
     def is_enabled(self, option_name: str) -> bool:
@@ -56,7 +58,7 @@ class MinifiOptions:
         self.compiler_override = compiler_override
 
 
-def parse_minifi_options(path: str, cmake_options):
+def parse_minifi_options(path: str, cmake_options: str, package_manager: PackageManager):
     cmake_cache_dir = os.path.join(os.getcwd(), 'cmake_cache')
-    cmake_cache_path = cmake_parser.create_cmake_cache(path, cmake_options, cmake_cache_dir)
+    cmake_cache_path = cmake_parser.create_cmake_cache(path, cmake_options, cmake_cache_dir, package_manager)
     return MinifiOptions(cmake_parser.parse_cmake_cache_values(cmake_cache_path))

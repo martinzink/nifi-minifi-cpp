@@ -48,7 +48,7 @@ function(use_bundled_rocksdb SOURCE_DIR BINARY_DIR)
             -DWITH_GFLAGS=OFF
             -DUSE_RTTI=1
             -DROCKSDB_BUILD_SHARED=OFF
-            -DFAIL_ON_WARNINGS=OFF
+            -DMINIFI_FAIL_ON_WARNINGS=OFF
             -DCMAKE_CXX_STANDARD=17  # RocksDB fails to build in C++20 mode on GCC 11: https://godbolt.org/z/YeMcEzs8W
             )
     if(PORTABLE)

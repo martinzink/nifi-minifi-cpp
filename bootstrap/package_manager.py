@@ -12,12 +12,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import glob
 import os
 import platform
 import subprocess
 import sys
-from typing import Dict
+import re
+from typing import Dict, Set
 
 from distro import distro
 
@@ -47,36 +48,39 @@ class PackageManager(object):
         self.no_confirm = no_confirm
         pass
 
-    def install(self, dependencies: Dict[str, set[str]]):
+    def install(self, dependencies: Dict[str, Set[str]]):
         raise Exception("NotImplementedException")
 
     def install_compiler(self):
         raise Exception("NotImplementedException")
 
-    def _install(self, dependencies: Dict[str, set[str]], replace_dict: Dict[str, set[str]], install_cmd: str):
-        print(f"Dependencies to install f{dependencies}")
+    def _install(self, dependencies: Dict[str, Set[str]], replace_dict: Dict[str, Set[str]], install_cmd: str):
         dependencies.update({k: v for k, v in replace_dict.items() if k in dependencies})
-        print(f"after replace_dict f{dependencies}")
         dependencies = self._filter_out_installed_packages(dependencies)
-        print(f"after filter f{dependencies}")
         dependencies_str = " ".join(str(value) for value_set in dependencies.values() for value in value_set)
         if not dependencies_str or dependencies_str.isspace():
             return
-        assert _run_command_with_confirm(f"{install_cmd} {dependencies_str}", self.no_confirm)
+        _run_command_with_confirm(f"{install_cmd} {dependencies_str}", self.no_confirm)
 
-    def _get_installed_packages(self) -> set[str]:
+    def _get_installed_packages(self) -> Set[str]:
         raise Exception("NotImplementedException")
 
-    def _filter_out_installed_packages(self, dependencies: Dict[str, set[str]]):
+    def _filter_out_installed_packages(self, dependencies: Dict[str, Set[str]]):
         installed_packages = self._get_installed_packages()
-        return {k: (v - installed_packages) for k, v in dependencies.items()}
+        filtered_packages = {k: (v - installed_packages) for k, v in dependencies.items()}
+        for installed_package in installed_packages:
+            filtered_packages.pop(installed_package, None)
+        return filtered_packages
+
+    def run_cmd(self, cmd: str) -> bool:
+        return os.system(cmd) == 0
 
 
 class BrewPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
 
-    def install(self, dependencies: Dict[str, set[str]]):
+    def install(self, dependencies: Dict[str, Set[str]]):
         self._install(dependencies=dependencies,
                       install_cmd="brew install",
                       replace_dict={"patch": set(),
@@ -86,7 +90,7 @@ class BrewPackageManager(PackageManager):
         self.install({"compiler": {"llvm"}})
         return ""
 
-    def _get_installed_packages(self) -> set[str]:
+    def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['brew', 'list'], text=True, capture_output=True, check=True)
         lines = result.stdout.splitlines()
         lines = [line.split('@', 1)[0] for line in lines]
@@ -97,7 +101,7 @@ class AptPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
 
-    def install(self, dependencies: Dict[str, set[str]]):
+    def install(self, dependencies: Dict[str, Set[str]]):
         self._install(dependencies=dependencies,
                       install_cmd="sudo apt install -y",
                       replace_dict={"libarchive": {"liblzma-dev"},
@@ -108,7 +112,7 @@ class AptPackageManager(PackageManager):
                                     "libpcap": {"libpcap-dev"},
                                     "jni": {"openjdk-8-jdk", "openjdk-8-source", "maven"}})
 
-    def _get_installed_packages(self) -> set[str]:
+    def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['dpkg', '--get-selections'], text=True, capture_output=True, check=True)
         lines = [line.split('\t')[0] for line in result.stdout.splitlines()]
         lines = [line.rsplit(':', 1)[0] for line in lines]
@@ -129,7 +133,7 @@ class DnfPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
 
-    def install(self, dependencies: Dict[str, set[str]]):
+    def install(self, dependencies: Dict[str, Set[str]]):
         self._install(dependencies=dependencies,
                       install_cmd="sudo dnf --enablerepo=crb install -y epel-release",
                       replace_dict={"gpsd": {"gpsd-devel"},
@@ -140,7 +144,7 @@ class DnfPackageManager(PackageManager):
                                     "libpng": {"libpng-devel"},
                                     "libusb": {"libusb-devel"}})
 
-    def _get_installed_packages(self) -> set[str]:
+    def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['dnf', 'list', 'installed'], text=True, capture_output=True, check=True)
         lines = [line.split(' ')[0] for line in result.stdout.splitlines()]
         lines = [line.rsplit('.', 1)[0] for line in lines]
@@ -155,18 +159,140 @@ class PacmanPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
 
-    def install(self, dependencies: Dict[str, set[str]]):
+    def install(self, dependencies: Dict[str, Set[str]]):
         self._install(dependencies=dependencies,
                       install_cmd="sudo pacman --noconfirm -S",
                       replace_dict={"jni": {"jdk8-openjdk", "maven"}})
 
-    def _get_installed_packages(self) -> set[str]:
+    def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['pacman', '-Qq'], text=True, capture_output=True, check=True)
         return set(result.stdout.splitlines())
 
     def install_compiler(self) -> str:
         self.install({"compiler": {"gcc"}})
         return ""
+
+
+def _fix_strawberry_perl_install():
+    strawberry_perl_toolchain_path = "c:/strawberry/c/bin"
+    for strawberry_tool in glob.glob(strawberry_perl_toolchain_path):
+        if not strawberry_tool.endswith("nasm"):
+            os.remove(strawberry_tool)
+
+
+class WingetPackageManager(PackageManager):
+    def __init__(self, no_confirm):
+        PackageManager.__init__(self, no_confirm)
+        self.path_vars_to_remove = {r"c:\Strawberry\c\bin"}
+
+    # winget cant install maven due to github.com/microsoft/winget-cli/issues/3386
+    def _install_maven(self):
+        subprocess.run("pip install maven", text=True, shell=True)
+
+    def install(self, dependencies: Dict[str, Set[str]]):
+        if "maven" in dependencies:
+            self._install_maven()
+            dependencies.pop("maven")
+        self._install(dependencies=dependencies,
+                      install_cmd="winget install --disable-interactivity --accept-package-agreements",
+                      replace_dict={"lua": {"DEVCOM.Lua"},
+                                    "python": {"python"},
+                                    "patch": set(),
+                                    "bison": set(),
+                                    "flex": set(),
+                                    "libarchive": set(),
+                                    "libpcap": set(),
+                                    "libpng": set(),
+                                    "gpsd": set(),
+                                    "automake": set(),
+                                    "autoconf": set(),
+                                    "libtool": set(),
+                                    "libusb": set(),
+                                    "make": set(),
+                                    "jni": {"AdoptOpenJDK.OpenJDK.8"},
+                                    "openssl": {"StrawberryPerl.StrawberryPerl"}})
+        if "openssl" in dependencies:
+            _fix_strawberry_perl_install()
+
+    def _get_installed_packages(self) -> Set[str]:
+        result = subprocess.run(['winget', 'list'], text=True, capture_output=True, check=True)
+        separator_index = result.stdout.find("-----")
+        result_set = set()
+
+        for line in result.stdout[separator_index:].splitlines()[1:]:
+            package_columns = re.split(r"\s{2,}", line)
+            result_set.add(package_columns[0])  # name
+            result_set.add(package_columns[1])  # id
+        return result_set
+
+    def install_compiler(self) -> str:
+        self.install({"path_updater": {"WingetPathUpdater"}})
+        self.install({"compiler": {'Microsoft.VisualStudio.2022.BuildTools --silent --override "--wait --quiet '
+                                   '--add Microsoft.VisualStudio.Workload.VCTools '
+                                   '--add Microsoft.VisualStudio.Component.VC.ATL --includeRecommended"'}})
+        return ""
+
+    def get_env(self):
+        env = os.environ.copy()
+        path = env["PATH"]
+        path_elements = path.lower().split(';')
+
+        for path_var_to_remote in self.path_vars_to_remove:
+            if path_var_to_remote.lower() in path_elements:
+                path_elements.remove(path_var_to_remote.lower())
+        env["PATH"] = ';'.join(path_elements)
+        return env
+
+    def run_cmd(self, cmd: str) -> bool:
+        vs_cmd = r'"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"'
+        res = subprocess.run(f"{vs_cmd} & set & {cmd}", shell=True, env=self.get_env())
+
+        return res.returncode == 0
+
+
+class ChocolateyPackageManager(PackageManager):
+    def __init__(self, no_confirm):
+        PackageManager.__init__(self, no_confirm)
+
+    def install(self, dependencies: Dict[str, Set[str]]):
+        self._install(dependencies=dependencies,
+                      install_cmd="choco install -y",
+                      replace_dict={"lua": set(),
+                                    "python": {"python"},
+                                    "patch": set(),
+                                    "bison": set(),
+                                    "flex": set(),
+                                    "libarchive": set(),
+                                    "libpcap": set(),
+                                    "libpng": set(),
+                                    "gpsd": set(),
+                                    "automake": set(),
+                                    "autoconf": set(),
+                                    "libtool": set(),
+                                    "libusb": set(),
+                                    "make": set(),
+                                    "jni": {"openjdk", "maven"},
+                                    "openssl": {"strawberryperl"}})
+        if "openssl" in dependencies:
+            _fix_strawberry_perl_install()
+
+    def _get_installed_packages(self) -> Set[str]:
+        result = subprocess.run(['choco', 'list'], text=True, capture_output=True, check=True)
+        lines = [line.split(' ')[0] for line in result.stdout.splitlines()]
+        lines = [line.rsplit('.', 1)[0] for line in lines]
+        return set(lines)
+
+    def install_compiler(self) -> str:
+        self.install({"visualstudio2022buildtools": {'visualstudio2022buildtools --package-parameters "--wait --quiet '
+                                                     '--add Microsoft.VisualStudio.Workload.VCTools '
+                                                     '--add Microsoft.VisualStudio.Component.VC.ATL --includeRecommended"'}})
+        return ""
+
+    def run_cmd(self, cmd: str) -> bool:
+        vs_cmd = r'"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"'
+        res = subprocess.run(f"refreshenv & {vs_cmd} & {cmd}", shell=True)
+
+        return res.returncode == 0
 
 
 def get_package_manager(no_confirm: bool) -> PackageManager:
@@ -184,6 +310,6 @@ def get_package_manager(no_confirm: bool) -> PackageManager:
         else:
             sys.exit(f"Unsupported platform {distro_id} exiting")
     elif platform_system == "Windows":
-        return WingetPackageManager(no_confirm)
+        return ChocolateyPackageManager(no_confirm)
     else:
         sys.exit(f"Unsupported platform {platform_system} exiting")

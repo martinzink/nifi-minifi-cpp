@@ -15,13 +15,13 @@
 
 from __future__ import annotations
 
-from typing import Dict
+from typing import Dict, Set
 
 from minifi_option import MinifiOptions
 from package_manager import PackageManager
 
 
-def _create_system_dependencies(minifi_options: MinifiOptions) -> Dict[str, set[str]]:
+def _create_system_dependencies(minifi_options: MinifiOptions) -> Dict[str, Set[str]]:
     system_dependencies = {'patch': {'patch'}, 'make': {'make'}}
     if minifi_options.is_enabled("ENABLE_EXPRESSION_LANGUAGE"):
         system_dependencies['bison'] = {'bison'}
@@ -46,7 +46,8 @@ def _create_system_dependencies(minifi_options: MinifiOptions) -> Dict[str, set[
     if minifi_options.is_enabled("MINIFI_OPENSSL"):
         system_dependencies['openssl'] = {'perl'}
     if minifi_options.is_enabled("ENABLE_JNI"):
-        system_dependencies['jni'] = {''}
+        system_dependencies['jni'] = {'openjdk'}
+        system_dependencies['maven'] = {'maven'}
     return system_dependencies
 
 
