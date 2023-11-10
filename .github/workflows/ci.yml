@@ -155,10 +155,6 @@ jobs:
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - name: build
         run: |
-          export CC=clang-16
-          export CXX=clang++-16
-          ./bootstrap.sh -e -t
-          cd build
           cd bootstrap && python3 -m venv venv && source venv/bin/activate \
             && pip install -r requirements.txt \
             && python main.py --noninteractive --compiler-override="-DCMAKE_C_COMPILER=clang-16 -DCMAKE_CXX_COMPILER=clang++-16" --override="-DUSE_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCI_BUILD=ON -DSTRICT_GSL_CHECKS=AUDIT -DFAIL_ON_WARNINGS=ON -DENABLE_AWS=ON -DENABLE_AZURE=ON -DENABLE_BUSTACHE=ON -DENABLE_COAP=ON \
