@@ -25,7 +25,7 @@ if __name__ == '__main__':
     parser.add_argument('--noconfirm', action="store_true", default=False,
                         help="Bypass any and all “Are you sure?” messages.")
     parser.add_argument('--override', default="", help="Override the default minifi options")
-    parser.add_argument('--compiler', default="", help="Override the default compiler to use")
+    parser.add_argument('--compiler', help="Override the default compiler to use")
     parser.add_argument('--noninteractive', action="store_true", default=False,
                         help="Initiates the one click build")
     args = parser.parse_args()
