@@ -42,6 +42,7 @@ class MinifiOptions:
         if self.compiler_override is not None:
             cmake_options += " " + self.compiler_override
         cmake_options += " -DFORCE_COLORED_OUTPUT:BOOL=ON"
+        cmake_options += f" -DCMAKE_BUILD_TYPE={self.build_type.value}"
         return cmake_options
 
     def is_enabled(self, option_name: str) -> bool:
