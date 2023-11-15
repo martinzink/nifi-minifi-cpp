@@ -17,6 +17,7 @@ import os
 import platform
 import subprocess
 import sys
+import re
 from typing import Dict, Set
 
 from distro import distro
@@ -166,6 +167,36 @@ class PacmanPackageManager(PackageManager):
 
     def install_compiler(self) -> str:
         self.install({"compiler": {"gcc"}})
+        return ""
+
+
+class WingetPackageManager(PackageManager):
+    def __init__(self, no_confirm):
+        PackageManager.__init__(self, no_confirm)
+
+    def install(self, dependencies: Dict[str, Set[str]]):
+        self._install(dependencies=dependencies,
+                      install_cmd="winget install --disable-interactivity --accept-package-agreements",
+                      replace_dict={"lua": {"DEVCOM.Lua"},
+                                    "python": {"python"},
+                                    "patch": set(),
+                                    "bison": set(),
+                                    "flex": set()})
+
+    def _get_installed_packages(self) -> Set[str]:
+        result = subprocess.run(['winget', 'list'], text=True, capture_output=True, check=True)
+        separator_index = result.stdout.find("-----")
+        result_set = set()
+
+        for line in result.stdout[separator_index:].splitlines()[1:]:
+            package_columns = re.split(r"\s{2,}", line)
+            result_set.add(package_columns[0])  # name
+            result_set.add(package_columns[1])  # id
+        return result_set
+
+    def install_compiler(self) -> str:
+        self.install({"path_updater": {"WingetPathUpdater"}})
+        self.install({"compiler": {"Microsoft.VisualStudio.2022.BuildTools --override \"quiet --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.CMake.Project --add Microsoft.VisualStudio.Component.VC.CoreBuildTools --add Microsoft.VisualStudio.Component.VC.CoreIde\""}})
         return ""
 
 
