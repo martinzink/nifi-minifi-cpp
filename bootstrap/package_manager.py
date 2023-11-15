@@ -63,7 +63,7 @@ class PackageManager(object):
         dependencies_str = " ".join(str(value) for value_set in dependencies.values() for value in value_set)
         if not dependencies_str or dependencies_str.isspace():
             return
-        assert _run_command_with_confirm(f"{install_cmd} {dependencies_str}", self.no_confirm)
+        _run_command_with_confirm(f"{install_cmd} {dependencies_str}", self.no_confirm)
 
     def _get_installed_packages(self) -> Set[str]:
         raise Exception("NotImplementedException")
