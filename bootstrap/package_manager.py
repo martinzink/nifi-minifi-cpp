@@ -222,6 +222,13 @@ class WingetPackageManager(PackageManager):
                                     "patch": set(),
                                     "bison": set(),
                                     "flex": set(),
+                                    "libarchive": set(),
+                                    "libpcap": set(),
+                                    "libpng": set(),
+                                    "gpsd": set(),
+                                    "automake": set(),
+                                    "autoconf": set(),
+                                    "libtool": set(),
                                     "openssl": {"StrawberryPerl.StrawberryPerl", "NASM.NASM"}})
 
     def _get_installed_packages(self) -> Set[str]:
