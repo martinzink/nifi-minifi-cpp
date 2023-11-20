@@ -40,7 +40,7 @@ if __name__ == '__main__':
     cmake_overrides = args.override + " " + compiler_override
     path = pathlib.Path(__file__).parent.resolve() / '..' / "cmake" / "MiNiFiOptions.cmake"
 
-    minifi_options = parse_minifi_options(str(path.as_posix()), cmake_overrides)
+    minifi_options = parse_minifi_options(str(path.as_posix()), cmake_overrides, package_manager)
     minifi_options.no_confirm = no_confirm
     if compiler_override is not None:
         minifi_options.set_compiler_override(compiler_override)
