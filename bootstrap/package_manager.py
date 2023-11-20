@@ -229,6 +229,7 @@ class WingetPackageManager(PackageManager):
                                     "automake": set(),
                                     "autoconf": set(),
                                     "libtool": set(),
+                                    "libusb" : set(),
                                     "openssl": {"StrawberryPerl.StrawberryPerl", "NASM.NASM"}})
 
     def _get_installed_packages(self) -> Set[str]:
