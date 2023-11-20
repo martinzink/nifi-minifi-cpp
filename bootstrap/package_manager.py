@@ -208,7 +208,7 @@ class WingetPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
         self.path_vars_to_add = set()
-        self.path_vars_to_remove = {r"c:\StrawberryPerl\c\bin"}
+        self.path_vars_to_remove = {r"c:\Strawberry\c\bin"}
 
     # winget cant install maven due to github.com/microsoft/winget-cli/issues/3386
     def _install_maven(self):
@@ -265,12 +265,13 @@ class WingetPackageManager(PackageManager):
         for path_var_to_add in self.path_vars_to_add:
             path_elements.append(path_var_to_add.lower())
         env["PATH"] = ';'.join(path_elements)
+        return env
 
     def run_cmd(self, cmd: str) -> bool:
         vs_cmd = r'"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"'
+        res = subprocess.run(f"{vs_cmd} & {cmd}", shell=True, env=self.get_env())
 
-        subprocess.run(f"{vs_cmd} & {cmd}", shell=True, env=self.get_env())
-        return os.system(cmd) == 0
+        return res.returncode == 0
 
 
 def get_package_manager(no_confirm: bool) -> PackageManager:
