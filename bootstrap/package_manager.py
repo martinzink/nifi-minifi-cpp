@@ -199,22 +199,25 @@ class WingetPackageManager(PackageManager):
 
     def install_compiler(self) -> str:
         self.install({"path_updater": {"WingetPathUpdater"}})
-        self.install({"compiler": {"Microsoft.VisualStudio.2022.BuildTools --override \"quiet --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.CMake.Project --add Microsoft.VisualStudio.Component.VC.CoreBuildTools --add Microsoft.VisualStudio.Component.VC.CoreIde\""}})
+        self.install({"compiler": {
+            "Microsoft.VisualStudio.2022.BuildTools --override \"quiet --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.CMake.Project --add Microsoft.VisualStudio.Component.VC.CoreBuildTools --add Microsoft.VisualStudio.Component.VC.CoreIde\""}})
         return ""
-
-
-def get_env_without_strawberry_c_bin():
-    env = os.environ.copy()
-    path = env["PATH"]
-    path = path.replace(r"c:\StrawberryPerl\c\bin", "")
-    env["PATH"] = path
 
 
 class WingetPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
+        self.path_vars_to_add = set()
+        self.path_vars_to_remove = {r"c:\StrawberryPerl\c\bin"}
+
+    # due to a bug in winget maven must be installed manually
+    def _install_maven(self):
+        subprocess.run("pip install maven", text=True, shell=True)
 
     def install(self, dependencies: Dict[str, Set[str]]):
+        if "maven" in dependencies:
+            self._install_maven()
+            dependencies.pop("maven")
         self._install(dependencies=dependencies,
                       install_cmd="winget install --disable-interactivity --accept-package-agreements",
                       replace_dict={"lua": {"DEVCOM.Lua"},
@@ -252,10 +255,19 @@ class WingetPackageManager(PackageManager):
                                    '--add Microsoft.VisualStudio.Component.VC.ATL --includeRecommended"'}})
         return ""
 
+    def get_env(self):
+        env = os.environ.copy()
+        path = env["PATH"]
+        for path_var_to_remote in self.path_vars_to_remove:
+            path = path.replace(path_var_to_remote, "")
+        for path_var_to_add in self.path_vars_to_add:
+            path = f"{path};{path_var_to_add}"
+        env["PATH"] = path
+
     def run_cmd(self, cmd: str) -> bool:
         vs_cmd = r'"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"'
 
-        subprocess.run(f"{vs_cmd} & {cmd}", shell=True, env=get_env_without_strawberry_c_bin())
+        subprocess.run(f"{vs_cmd} & {cmd}", shell=True, env=self.get_env())
         return os.system(cmd) == 0
 
 

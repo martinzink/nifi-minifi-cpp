@@ -46,7 +46,8 @@ def _create_system_dependencies(minifi_options: MinifiOptions) -> Dict[str, Set[
     if minifi_options.is_enabled("MINIFI_OPENSSL"):
         system_dependencies['openssl'] = {'perl'}
     if minifi_options.is_enabled("ENABLE_JNI"):
-        system_dependencies['jni'] = {'maven', 'openjdk'}
+        system_dependencies['jni'] = {'openjdk'}
+        system_dependencies['maven'] = {'maven'}
     return system_dependencies
 
 
