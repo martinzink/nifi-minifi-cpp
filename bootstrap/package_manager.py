@@ -231,6 +231,7 @@ class WingetPackageManager(PackageManager):
                                     "libtool": set(),
                                     "libusb": set(),
                                     "make": set(),
+                                    "jni": {"AdoptOpenJDK.OpenJDK.8"},
                                     "openssl": {"StrawberryPerl.StrawberryPerl", "NASM.NASM"}})
 
     def _get_installed_packages(self) -> Set[str]:
