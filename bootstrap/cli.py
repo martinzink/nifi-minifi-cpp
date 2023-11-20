@@ -29,33 +29,18 @@ def install_dependencies(minifi_options: MinifiOptions, package_manager: Package
     install_required(minifi_options, package_manager)
 
 
-def run_cmake(minifi_options: MinifiOptions, _package_manager: PackageManager):
+def run_cmake(minifi_options: MinifiOptions, package_manager: PackageManager):
     print("run_cmake")
     if not os.path.exists(minifi_options.build_dir):
         os.mkdir(minifi_options.build_dir)
     cmake_cmd = f"cmake -G Ninja {minifi_options.create_cmake_options_str()} {minifi_options.source_dir} -B {minifi_options.build_dir}"
-    try:
-        subprocess.run(cmake_cmd, shell=True, text=True, check=True, capture_output=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Cmake failed with exit code {e.returncode}")
-        print("Standard Output:")
-        print(e.stdout)
-        print("Standard Error:")
-        print(e.stderr)
-        raise
+    assert package_manager.run_cmd(cmake_cmd)
 
 
-def do_build(minifi_options: MinifiOptions, _package_manager: PackageManager):
+def do_build(minifi_options: MinifiOptions, package_manager: PackageManager):
     print("do_build")
-    try:
-        subprocess.run(['cmake', '--build', str(minifi_options.build_dir)], text=True, check=True, capture_output=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Build failed with exit code {e.returncode}")
-        print("Standard Output:")
-        print(e.stdout)
-        print("Standard Error:")
-        print(e.stderr)
-        raise
+    build_cmd = f"cmake --build {str(minifi_options.build_dir)}"
+    assert package_manager.run_cmd(build_cmd)
 
 
 def do_one_click_build(minifi_options: MinifiOptions, package_manager: PackageManager) -> bool:
