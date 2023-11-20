@@ -16,6 +16,7 @@
 import os
 import re
 
+from package_manager import PackageManager
 
 class CMakeCacheValue:
     def __init__(self, description: str, name: str, value_type: str, value: str):
@@ -32,7 +33,7 @@ class CMakeCacheValue:
         return f"-D{self.name}={self.value}"
 
 
-def create_cmake_cache(cmake_path: str, cmake_options: str, directory: str):
+def create_cmake_cache(cmake_path: str, cmake_options: str, directory: str, package_manager: PackageManager):
     cmake_lists_path = os.path.join(directory, 'CMakeLists.txt')
 
     with open(cmake_lists_path, 'w') as cmake_lists_file:
@@ -41,9 +42,9 @@ def create_cmake_cache(cmake_path: str, cmake_options: str, directory: str):
 
     os.chdir(directory)
     if cmake_options is None:
-        assert(os.system('cmake -G Ninja -Wno-dev --log-level=ERROR .') == 0)
+        assert package_manager.run_cmd('cmake -G Ninja -Wno-dev --log-level=ERROR .')
     else:
-        assert(os.system(f'cmake -G Ninja -Wno-dev --no-warn-unused-cli --log-level=ERROR {cmake_options} .') == 0)
+        assert package_manager.run_cmd(f'cmake -G Ninja -Wno-dev --no-warn-unused-cli --log-level=ERROR {cmake_options} .')
     return os.path.join(directory, 'CMakeCache.txt')
 
 

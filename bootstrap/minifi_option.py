@@ -20,6 +20,7 @@ import pathlib
 
 import cmake_parser
 from cmake_parser import CMakeCacheValue
+from package_manager import PackageManager
 
 
 class MinifiOptions:
@@ -57,7 +58,7 @@ class MinifiOptions:
         self.compiler_override = compiler_override
 
 
-def parse_minifi_options(path: str, cmake_options):
+def parse_minifi_options(path: str, cmake_options, package_manager: PackageManager):
     cmake_cache_dir = os.path.join(os.getcwd(), 'cmake_cache')
     cmake_cache_path = cmake_parser.create_cmake_cache(path, cmake_options, cmake_cache_dir)
     return MinifiOptions(cmake_parser.parse_cmake_cache_values(cmake_cache_path))
