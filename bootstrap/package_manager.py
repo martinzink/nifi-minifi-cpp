@@ -217,7 +217,7 @@ class WingetPackageManager(PackageManager):
     def install(self, dependencies: Dict[str, Set[str]]):
         if "maven" in dependencies:
             self._install_maven()
-            dependencies.remove("maven")
+            dependencies.pop("maven")
         self._install(dependencies=dependencies,
                       install_cmd="winget install --disable-interactivity --accept-package-agreements",
                       replace_dict={"lua": {"DEVCOM.Lua"},
