@@ -215,14 +215,7 @@ class WingetPackageManager(PackageManager):
         subprocess.run("pip install maven", text=True, shell=True)
 
     def _make_nasm_available(self):
-        nasm_batch_content = """
-        @echo off
-        call c:/strawberry/c/bin/nasm %*
-        """
-        batch_file_path = "c:/strawberry/perl/bin/nasm.bat"
-        if not os.path.exists(batch_file_path):
-            with open(batch_file_path, "w") as batch_file:
-                batch_file.write(nasm_batch_content)
+        self.path_vars_to_add.add(r"c:Program Files\NASM")
 
     def install(self, dependencies: Dict[str, Set[str]]):
         if "maven" in dependencies:
