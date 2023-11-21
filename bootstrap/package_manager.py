@@ -70,7 +70,10 @@ class PackageManager(object):
 
     def _filter_out_installed_packages(self, dependencies: Dict[str, Set[str]]):
         installed_packages = self._get_installed_packages()
-        return {k: (v - installed_packages) for k, v in dependencies.items()}
+        filtered_packages = {k: (v - installed_packages) for k, v in dependencies.items()}
+        for installed_package in installed_packages:
+            filtered_packages.pop(installed_package, None)
+        return filtered_packages
 
     def run_cmd(self, cmd: str) -> bool:
         return os.system(cmd) == 0
@@ -173,26 +176,25 @@ class PacmanPackageManager(PackageManager):
         return ""
 
 
+def _make_nasm_available():
+    nasm_batch_content = """
+    @echo off
+    call c:/strawberry/c/bin/nasm %*
+    """
+    batch_file_path = "c:/strawberry/perl/bin/nasm.bat"
+    if not os.path.exists(batch_file_path):
+        with open(batch_file_path, "w") as batch_file:
+            batch_file.write(nasm_batch_content)
+
+
 class WingetPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
-        self.path_vars_to_add = {r"c:\Program Files\NASM"}
         self.path_vars_to_remove = {r"c:\Strawberry\c\bin"}
 
     # winget cant install maven due to github.com/microsoft/winget-cli/issues/3386
     def _install_maven(self):
         subprocess.run("pip install maven", text=True, shell=True)
-
-    def _make_nasm_available(self):
-        def _make_nasm_available(self):
-            nasm_batch_content = """
-        @echo off
-        call c:/strawberry/c/bin/nasm %*
-        """
-            batch_file_path = "c:/strawberry/perl/bin/nasm.bat"
-            if not os.path.exists(batch_file_path):
-                with open(batch_file_path, "w") as batch_file:
-                    batch_file.write(nasm_batch_content)
 
     def install(self, dependencies: Dict[str, Set[str]]):
         if "maven" in dependencies:
@@ -217,7 +219,7 @@ class WingetPackageManager(PackageManager):
                                     "jni": {"AdoptOpenJDK.OpenJDK.8"},
                                     "openssl": {"StrawberryPerl.StrawberryPerl"}})
         if "openssl" in dependencies:
-            self._make_nasm_available()
+            _make_nasm_available()
 
     def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['winget', 'list'], text=True, capture_output=True, check=True)
@@ -245,8 +247,66 @@ class WingetPackageManager(PackageManager):
         for path_var_to_remote in self.path_vars_to_remove:
             if path_var_to_remote.lower() in path_elements:
                 path_elements.remove(path_var_to_remote.lower())
-        for path_var_to_add in self.path_vars_to_add:
-            path_elements.append(path_var_to_add.lower())
+        env["PATH"] = ';'.join(path_elements)
+        return env
+
+    def run_cmd(self, cmd: str) -> bool:
+        vs_cmd = r'"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"'
+        res = subprocess.run(f"{vs_cmd} & set & {cmd}", shell=True, env=self.get_env())
+
+        return res.returncode == 0
+
+
+class ChocolateyPackageManager(PackageManager):
+    def __init__(self, no_confirm):
+        PackageManager.__init__(self, no_confirm)
+        self.path_vars_to_remove = {r"c:\Strawberry\c\bin"}
+
+    def install(self, dependencies: Dict[str, Set[str]]):
+        if "maven" in dependencies:
+            self._install_maven()
+            dependencies.pop("maven")
+        self._install(dependencies=dependencies,
+                      install_cmd="choco install -y",
+                      replace_dict={"lua": set(),
+                                    "python": {"python"},
+                                    "patch": set(),
+                                    "bison": set(),
+                                    "flex": set(),
+                                    "libarchive": set(),
+                                    "libpcap": set(),
+                                    "libpng": set(),
+                                    "gpsd": set(),
+                                    "automake": set(),
+                                    "autoconf": set(),
+                                    "libtool": set(),
+                                    "libusb": set(),
+                                    "make": set(),
+                                    "jni": {"AdoptOpenJDK.OpenJDK.8", "maven"},
+                                    "openssl": {"strawberryperl"}})
+        if "openssl" in dependencies:
+            _make_nasm_available()
+
+    def _get_installed_packages(self) -> Set[str]:
+        result = subprocess.run(['choco', 'list'], text=True, capture_output=True, check=True)
+        lines = [line.split(' ')[0] for line in result.stdout.splitlines()]
+        lines = [line.rsplit('.', 1)[0] for line in lines]
+        return set(lines)
+
+    def install_compiler(self) -> str:
+        self.install({"visualstudio2022buildtools": {'visualstudio2022buildtools --package-parameters "--wait --quiet '
+                                                     '--add Microsoft.VisualStudio.Workload.VCTools '
+                                                     '--add Microsoft.VisualStudio.Component.VC.ATL --includeRecommended"'}})
+        return ""
+
+    def get_env(self):
+        env = os.environ.copy()
+        path = env["PATH"]
+        path_elements = path.lower().split(';')
+
+        for path_var_to_remote in self.path_vars_to_remove:
+            if path_var_to_remote.lower() in path_elements:
+                path_elements.remove(path_var_to_remote.lower())
         env["PATH"] = ';'.join(path_elements)
         return env
 
@@ -272,6 +332,6 @@ def get_package_manager(no_confirm: bool) -> PackageManager:
         else:
             sys.exit(f"Unsupported platform {distro_id} exiting")
     elif platform_system == "Windows":
-        return WingetPackageManager(no_confirm)
+        return ChocolateyPackageManager(no_confirm)
     else:
         sys.exit(f"Unsupported platform {platform_system} exiting")
