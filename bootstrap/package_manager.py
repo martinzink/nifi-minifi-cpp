@@ -176,38 +176,7 @@ class PacmanPackageManager(PackageManager):
 class WingetPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
-
-    def install(self, dependencies: Dict[str, Set[str]]):
-        self._install(dependencies=dependencies,
-                      install_cmd="winget install --disable-interactivity --accept-package-agreements",
-                      replace_dict={"lua": {"DEVCOM.Lua"},
-                                    "python": {"python"},
-                                    "patch": set(),
-                                    "bison": set(),
-                                    "flex": set()})
-
-    def _get_installed_packages(self) -> Set[str]:
-        result = subprocess.run(['winget', 'list'], text=True, capture_output=True, check=True)
-        separator_index = result.stdout.find("-----")
-        result_set = set()
-
-        for line in result.stdout[separator_index:].splitlines()[1:]:
-            package_columns = re.split(r"\s{2,}", line)
-            result_set.add(package_columns[0])  # name
-            result_set.add(package_columns[1])  # id
-        return result_set
-
-    def install_compiler(self) -> str:
-        self.install({"path_updater": {"WingetPathUpdater"}})
-        self.install({"compiler": {
-            "Microsoft.VisualStudio.2022.BuildTools --override \"quiet --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.CMake.Project --add Microsoft.VisualStudio.Component.VC.CoreBuildTools --add Microsoft.VisualStudio.Component.VC.CoreIde\""}})
-        return ""
-
-
-class WingetPackageManager(PackageManager):
-    def __init__(self, no_confirm):
-        PackageManager.__init__(self, no_confirm)
-        self.path_vars_to_add = set()
+        self.path_vars_to_add = {r"c:\Program Files\NASM"}
         self.path_vars_to_remove = {r"c:\Strawberry\c\bin"}
 
     # winget cant install maven due to github.com/microsoft/winget-cli/issues/3386
@@ -215,7 +184,15 @@ class WingetPackageManager(PackageManager):
         subprocess.run("pip install maven", text=True, shell=True)
 
     def _make_nasm_available(self):
-        self.path_vars_to_add.add(r"c:Program Files\NASM")
+        def _make_nasm_available(self):
+            nasm_batch_content = """
+        @echo off
+        call c:/strawberry/c/bin/nasm %*
+        """
+            batch_file_path = "c:/strawberry/perl/bin/nasm.bat"
+            if not os.path.exists(batch_file_path):
+                with open(batch_file_path, "w") as batch_file:
+                    batch_file.write(nasm_batch_content)
 
     def install(self, dependencies: Dict[str, Set[str]]):
         if "maven" in dependencies:
@@ -238,7 +215,7 @@ class WingetPackageManager(PackageManager):
                                     "libusb": set(),
                                     "make": set(),
                                     "jni": {"AdoptOpenJDK.OpenJDK.8"},
-                                    "openssl": {"StrawberryPerl.StrawberryPerl", "NASM.NASM"}})
+                                    "openssl": {"StrawberryPerl.StrawberryPerl"}})
         if "openssl" in dependencies:
             self._make_nasm_available()
 
