@@ -183,7 +183,6 @@ def _make_nasm_available():
         with open(batch_file_path, "w") as batch_file:
             batch_file.write(nasm_batch_content)
 
-
 class WingetPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
@@ -278,7 +277,7 @@ class ChocolateyPackageManager(PackageManager):
                                     "libtool": set(),
                                     "libusb": set(),
                                     "make": set(),
-                                    "jni": {"AdoptOpenJDK.OpenJDK.8", "maven"},
+                                    "jni": {"openjdk", "maven"},
                                     "openssl": {"strawberryperl"}})
         if "openssl" in dependencies:
             _make_nasm_available()
@@ -297,7 +296,8 @@ class ChocolateyPackageManager(PackageManager):
 
     def run_cmd(self, cmd: str) -> bool:
         vs_cmd = r'"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"'
-        res = subprocess.run(f"refreshenv & {vs_cmd} & {cmd}", shell=True)
+        remove_strawberry_perl_from_path = r"set PATH=%PATH:C:\Strawberry\c\bin;=%"
+        res = subprocess.run(f"refreshenv & {vs_cmd} & {remove_strawberry_perl_from_path} & {cmd}", shell=True)
 
         return res.returncode == 0
 
