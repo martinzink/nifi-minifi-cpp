@@ -55,11 +55,8 @@ class PackageManager(object):
         raise Exception("NotImplementedException")
 
     def _install(self, dependencies: Dict[str, Set[str]], replace_dict: Dict[str, Set[str]], install_cmd: str):
-        print(f"Dependencies to install f{dependencies}")
         dependencies.update({k: v for k, v in replace_dict.items() if k in dependencies})
-        print(f"after replace_dict f{dependencies}")
         dependencies = self._filter_out_installed_packages(dependencies)
-        print(f"after filter f{dependencies}")
         dependencies_str = " ".join(str(value) for value_set in dependencies.values() for value in value_set)
         if not dependencies_str or dependencies_str.isspace():
             return
@@ -260,7 +257,6 @@ class WingetPackageManager(PackageManager):
 class ChocolateyPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
-        self.path_vars_to_remove = {r"c:\Strawberry\c\bin"}
 
     def install(self, dependencies: Dict[str, Set[str]]):
         if "maven" in dependencies:
@@ -299,20 +295,9 @@ class ChocolateyPackageManager(PackageManager):
                                                      '--add Microsoft.VisualStudio.Component.VC.ATL --includeRecommended"'}})
         return ""
 
-    def get_env(self):
-        env = os.environ.copy()
-        path = env["PATH"]
-        path_elements = path.lower().split(';')
-
-        for path_var_to_remote in self.path_vars_to_remove:
-            if path_var_to_remote.lower() in path_elements:
-                path_elements.remove(path_var_to_remote.lower())
-        env["PATH"] = ';'.join(path_elements)
-        return env
-
     def run_cmd(self, cmd: str) -> bool:
         vs_cmd = r'"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"'
-        res = subprocess.run(f"{vs_cmd} & set & {cmd}", shell=True, env=self.get_env())
+        res = subprocess.run(f"refreshenv & {vs_cmd} & {cmd}", shell=True)
 
         return res.returncode == 0
 
