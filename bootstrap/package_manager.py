@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import glob
 import os
 import platform
 import subprocess
@@ -173,15 +173,12 @@ class PacmanPackageManager(PackageManager):
         return ""
 
 
-def _make_nasm_available():
-    nasm_batch_content = """
-    @echo off
-    call c:/strawberry/c/bin/nasm %*
-    """
-    batch_file_path = "c:/strawberry/perl/bin/nasm.bat"
-    if not os.path.exists(batch_file_path):
-        with open(batch_file_path, "w") as batch_file:
-            batch_file.write(nasm_batch_content)
+def _fix_strawberry_perl_install():
+    strawberry_perl_toolchain_path = "c:/strawberry/c/bin"
+    for strawberry_tool in glob.glob(strawberry_perl_toolchain_path):
+        if not strawberry_tool.endswith("nasm"):
+            os.remove(strawberry_tool)
+
 
 class WingetPackageManager(PackageManager):
     def __init__(self, no_confirm):
@@ -215,7 +212,7 @@ class WingetPackageManager(PackageManager):
                                     "jni": {"AdoptOpenJDK.OpenJDK.8"},
                                     "openssl": {"StrawberryPerl.StrawberryPerl"}})
         if "openssl" in dependencies:
-            _make_nasm_available()
+            _fix_strawberry_perl_install()
 
     def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['winget', 'list'], text=True, capture_output=True, check=True)
@@ -258,9 +255,6 @@ class ChocolateyPackageManager(PackageManager):
         PackageManager.__init__(self, no_confirm)
 
     def install(self, dependencies: Dict[str, Set[str]]):
-        if "maven" in dependencies:
-            self._install_maven()
-            dependencies.pop("maven")
         self._install(dependencies=dependencies,
                       install_cmd="choco install -y",
                       replace_dict={"lua": set(),
@@ -280,7 +274,7 @@ class ChocolateyPackageManager(PackageManager):
                                     "jni": {"openjdk", "maven"},
                                     "openssl": {"strawberryperl"}})
         if "openssl" in dependencies:
-            _make_nasm_available()
+            _fix_strawberry_perl_install()
 
     def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['choco', 'list'], text=True, capture_output=True, check=True)
@@ -296,8 +290,7 @@ class ChocolateyPackageManager(PackageManager):
 
     def run_cmd(self, cmd: str) -> bool:
         vs_cmd = r'"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"'
-        remove_strawberry_perl_from_path = r"set PATH=%PATH:C:\Strawberry\c\bin;=%"
-        res = subprocess.run(f"refreshenv & {vs_cmd} & {remove_strawberry_perl_from_path} & {cmd}", shell=True)
+        res = subprocess.run(f"refreshenv & {vs_cmd} & {cmd}", shell=True)
 
         return res.returncode == 0
 
