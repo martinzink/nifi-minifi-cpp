@@ -73,7 +73,12 @@ class PackageManager(object):
         return filtered_packages
 
     def run_cmd(self, cmd: str) -> bool:
-        result = subprocess.run(f"{cmd}", shell=True)
+        print(f"{cmd}".center(60, '='))
+        result = subprocess.run(f"{cmd}", shell=True, capture_output=True, text=True)
+        print(f"{result.stdout}")
+        print(f"^STD_OUT^".center(60, '='))
+        print(f"{result.stderr}")
+        print(f"^STD_ERR".center(60, '='))
         return result.returncode == 0
 
 

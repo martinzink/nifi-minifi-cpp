@@ -24,22 +24,11 @@ from package_manager import PackageManager
 from system_dependency import install_required
 
 
-def print_checkpoint(checkpoint_msg: str):
-    print(f"{checkpoint_msg}".center(60, '='))
-    set_res = subprocess.run("set", capture_output=True, shell=True)
-    print(f"{set_res.stdout}")
-    print(f"^STD_OUT^".center(60, '='))
-    print(f"{set_res.stderr}")
-    print(f"^STD_ERR".center(60, '='))
-
-
 def install_dependencies(minifi_options: MinifiOptions, package_manager: PackageManager):
-    print_checkpoint("Installing dependencies")
     install_required(minifi_options, package_manager)
 
 
 def run_cmake(minifi_options: MinifiOptions, package_manager: PackageManager):
-    print_checkpoint("Running CMake")
     if not os.path.exists(minifi_options.build_dir):
         os.mkdir(minifi_options.build_dir)
     cmake_cmd = f"cmake -G Ninja {minifi_options.create_cmake_options_str()} {minifi_options.source_dir} -B {minifi_options.build_dir}"
@@ -48,7 +37,6 @@ def run_cmake(minifi_options: MinifiOptions, package_manager: PackageManager):
 
 
 def do_build(minifi_options: MinifiOptions, package_manager: PackageManager):
-    print_checkpoint("Building")
     build_cmd = f"cmake --build {str(minifi_options.build_dir)}"
     assert package_manager.run_cmd(build_cmd)
 
