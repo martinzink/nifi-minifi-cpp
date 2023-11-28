@@ -100,7 +100,7 @@ jobs:
         shell: powershell
       - name: build
         run: |
-          cd bootstrap && python -m venv venv && venv\Scripts\activate \
+          python -m venv venv && venv\Scripts\activate \
             && pip install -r requirements.txt \
             && python main.py --noninteractive --compiler_override="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache" \
               --override="-DCMAKE_BUILD_TYPE=Release -DCI_BUILD=ON -DMINIFI_FAIL_ON_WARNINGS=ON -DENABLE_AWS=ON -DENABLE_AZURE=ON -DENABLE_BUSTACHE=ON -DENABLE_COAP=ON \
@@ -108,6 +108,7 @@ jobs:
                 -DENABLE_OPENWSMAN=ON -DENABLE_OPS=ON -DENABLE_PCAP=ON -DENABLE_SENSORS=ON -DENABLE_SFTP=ON -DENABLE_SQL=ON -DENABLE_SYSTEMD=ON \
                 -DENABLE_USB_CAMERA=ON -DENABLE_PYTHON_SCRIPTING=ON -DENABLE_LUA_SCRIPTING=ON -DENABLE_KUBERNETES=ON -DENABLE_GCP=ON -DENABLE_PROMETHEUS=ON -DENABLE_ELASTICSEARCH=ON"
         shell: cmd
+        working-directory: ./bootstrap
       - name: sccache cache save
         uses: actions/cache/save@v3
         if: always()
@@ -115,11 +116,13 @@ jobs:
           path: ~/AppData/Local/Mozilla/sccache/cache
           key: ${{ runner.os }}-2022-sccache-${{ github.ref }}-${{ github.sha }}
       - name: test
-        run: cd build && ctest --timeout 300 --parallel %NUMBER_OF_PROCESSORS% -C Release --output-on-failure
+        run: ctest --timeout 300 --parallel %NUMBER_OF_PROCESSORS% -C Release --output-on-failure
         shell: cmd
+        working-directory: ./build
       - name: linter
-        run: cd build && cmake --build . --target linter --config Release -j 8
+        run: cmake --build . --target linter --config Release -j 8
         shell: cmd
+        working-directory: ./build
   ubuntu_20_04:
     name: "ubuntu-20.04"
     runs-on: ubuntu-20.04
