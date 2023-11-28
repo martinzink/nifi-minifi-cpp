@@ -291,7 +291,7 @@ class ChocolateyPackageManager(PackageManager):
 
     def run_cmd(self, cmd: str) -> bool:
         print(f"run_cmd: {cmd}")
-        res = subprocess.run(f"refreshenv & {_get_vsdev_cmd()} & {cmd}", shell=True)
+        res = subprocess.run(f"refreshenv & {_get_vsdev_cmd()} & set & {cmd}", shell=True)
 
         return res.returncode == 0
 
