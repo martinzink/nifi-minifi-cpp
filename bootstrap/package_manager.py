@@ -185,7 +185,8 @@ def _get_vsdev_cmd() -> str:
 
     for vswhere_result in vswhere_results.stdout.splitlines():
         possible_path = f"{vswhere_result.decode()}\Common7\Tools\VsDevCmd.bat"
-        print(f"{os.path.exists(possible_path)}")
+        if os.path.exists(possible_path):
+            return possible_path
     raise Exception("Could not find valid Visual Studio installation")
 
 class WingetPackageManager(PackageManager):
