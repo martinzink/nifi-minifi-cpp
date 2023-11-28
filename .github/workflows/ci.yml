@@ -91,8 +91,6 @@ jobs:
         shell: cmd
       - name: Set up Lua
         uses: xpol/setup-lua@v0.3
-      - name: Set up NASM for OpenSSL
-        uses: ilammy/setup-nasm@v1
       - id: install-sqliteodbc-driver
         run: |
           Invoke-WebRequest -Uri "http://www.ch-werner.de/sqliteodbc/sqliteodbc_w64.exe" -OutFile "sqliteodbc_w64.exe"
@@ -102,7 +100,7 @@ jobs:
       - id: remove-strawberry-perl-tool-executables
         run: |
           # Remove conflicting Strawberry Perl executables like patch.exe and cmcldeps.exe (More information in the note under System Requirements in README.md)
-          Remove-Item -Path "C:\Strawberry\c\bin" -Recurse -Force
+          Get-ChildItem -Path "C:\Strawberry\c\bin" | Where-Object { $_.FullName -ne "C:\Strawberry\c\bin\nasm.exe" } | Remove-Item -Recurse -Force
         shell: pwsh
       - name: build
         run: |
