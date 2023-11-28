@@ -184,7 +184,7 @@ def _get_vsdev_cmd() -> str:
     vswhere_results = subprocess.run(f"vswhere -products * -property installationPath -requires Microsoft.VisualStudio.Component.VC.ATL", capture_output=True)
 
     for vswhere_result in vswhere_results.stdout.splitlines():
-        possible_path = f"{vswhere_result.decode()}\Common7\Tools\VsDevCmd.bat"
+        possible_path = f'"{vswhere_result.decode()}\Common7\Tools\VsDevCmd.bat"'
         if os.path.exists(possible_path):
             return possible_path
     raise Exception("Could not find valid Visual Studio installation")
