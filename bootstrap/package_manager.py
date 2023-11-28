@@ -174,7 +174,7 @@ class PacmanPackageManager(PackageManager):
 
 
 def _fix_strawberry_perl_install():
-    strawberry_perl_toolchain_path = "c:/strawberry/c/bin"
+    strawberry_perl_toolchain_path = "c:/strawberry/c/bin/*"
     for strawberry_tool in glob.glob(strawberry_perl_toolchain_path):
         if not strawberry_tool.endswith("nasm"):
             os.remove(strawberry_tool)
