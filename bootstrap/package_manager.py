@@ -73,7 +73,8 @@ class PackageManager(object):
         return filtered_packages
 
     def run_cmd(self, cmd: str) -> bool:
-        return os.system(cmd) == 0
+        result = subprocess.run(f"{cmd}", shell=True)
+        return result.returncode == 0
 
 
 class BrewPackageManager(PackageManager):
