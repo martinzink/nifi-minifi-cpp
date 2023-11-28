@@ -180,6 +180,14 @@ def _fix_strawberry_perl_install():
             os.remove(strawberry_tool)
 
 
+def _get_vsdev_cmd() -> str:
+    vswhere_results = subprocess.run(f"vswhere -products * -property installationPath -requires Microsoft.VisualStudio.Component.VC.ATL", capture_output=True)
+
+    for vswhere_result in vswhere_results.stdout.splitlines():
+        possible_path = f"{vswhere_result.decode()}\Common7\Tools\VsDevCmd.bat"
+        print(f"{os.path.exists(possible_path)}")
+    raise Exception("Could not find valid Visual Studio installation")
+
 class WingetPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
@@ -232,8 +240,7 @@ class WingetPackageManager(PackageManager):
         return ""
 
     def run_cmd(self, cmd: str) -> bool:
-        vs_cmd = r'"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"'
-        res = subprocess.run(f"{vs_cmd} & set & {cmd}", shell=True)
+        res = subprocess.run(f"{_get_vsdev_cmd()} & {cmd}", shell=True)
 
         return res.returncode == 0
 
@@ -273,12 +280,12 @@ class ChocolateyPackageManager(PackageManager):
     def install_compiler(self) -> str:
         self.install({"visualstudio2022buildtools": {'visualstudio2022buildtools --package-parameters "--wait --quiet '
                                                      '--add Microsoft.VisualStudio.Workload.VCTools '
-                                                     '--add Microsoft.VisualStudio.Component.VC.ATL --includeRecommended"'}})
+                                                     '--add Microsoft.VisualStudio.Component.VC.ATL --includeRecommended"'},
+                      "vswhere": {"vswhere"}})
         return ""
 
     def run_cmd(self, cmd: str) -> bool:
-        vs_cmd = r'"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"'
-        res = subprocess.run(f"refreshenv & {vs_cmd} & {cmd}", shell=True)
+        res = subprocess.run(f"refreshenv & {_get_vsdev_cmd()} & {cmd}", shell=True)
 
         return res.returncode == 0
 
