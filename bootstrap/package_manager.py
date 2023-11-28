@@ -176,14 +176,13 @@ class PacmanPackageManager(PackageManager):
 def _fix_strawberry_perl_install():
     strawberry_perl_toolchain_path = "c:/strawberry/c/bin/*"
     for strawberry_tool in glob.glob(strawberry_perl_toolchain_path):
-        if not strawberry_tool.endswith("nasm"):
+        if not strawberry_tool.endswith("nasm.exe"):
             os.remove(strawberry_tool)
 
 
 class WingetPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
-        self.path_vars_to_remove = {r"c:\Strawberry\c\bin"}
 
     # winget cant install maven due to github.com/microsoft/winget-cli/issues/3386
     def _install_maven(self):
@@ -232,20 +231,9 @@ class WingetPackageManager(PackageManager):
                                    '--add Microsoft.VisualStudio.Component.VC.ATL --includeRecommended"'}})
         return ""
 
-    def get_env(self):
-        env = os.environ.copy()
-        path = env["PATH"]
-        path_elements = path.lower().split(';')
-
-        for path_var_to_remote in self.path_vars_to_remove:
-            if path_var_to_remote.lower() in path_elements:
-                path_elements.remove(path_var_to_remote.lower())
-        env["PATH"] = ';'.join(path_elements)
-        return env
-
     def run_cmd(self, cmd: str) -> bool:
         vs_cmd = r'"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"'
-        res = subprocess.run(f"{vs_cmd} & set & {cmd}", shell=True, env=self.get_env())
+        res = subprocess.run(f"{vs_cmd} & set & {cmd}", shell=True)
 
         return res.returncode == 0
 
