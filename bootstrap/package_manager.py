@@ -277,7 +277,7 @@ class ChocolateyPackageManager(PackageManager):
             _fix_strawberry_perl_install()
 
     def _get_installed_packages(self) -> Set[str]:
-        result = subprocess.run(['choco', 'list'], text=True, capture_output=True, check=True)
+        result = subprocess.run(['choco', 'list'], text=True check=True)
         lines = [line.split(' ')[0] for line in result.stdout.splitlines()]
         lines = [line.rsplit('.', 1)[0] for line in lines]
         return set(lines)
