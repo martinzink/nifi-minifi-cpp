@@ -87,9 +87,7 @@ jobs:
       - name: Install ninja-build tool
         uses: seanmiddleditch/gha-setup-ninja@v3
       - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+        run: choco -y install python & refreshenv
       - name: Set up Lua
         uses: xpol/setup-lua@v0.3
       - id: install-sqliteodbc-driver
@@ -100,15 +98,15 @@ jobs:
         shell: powershell
       - name: build
         run: |
-          python -m venv venv && venv\Scripts\activate \
-            && pip install -r requirements.txt \
-            && python main.py --noninteractive --compiler_override="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache" \
+          python -m venv venv & venv\Scripts\activate \
+            & pip install -r requirements.txt \
+            & python main.py --noninteractive --compiler_override="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache" \
               --override="-DCMAKE_BUILD_TYPE=Release -DCI_BUILD=ON -DMINIFI_FAIL_ON_WARNINGS=ON -DENABLE_AWS=ON -DENABLE_AZURE=ON -DENABLE_BUSTACHE=ON -DENABLE_COAP=ON \
                 -DENABLE_ENCRYPT_CONFIG=ON -DENABLE_PDH=ON -DENABLE_SPLUNK=ON -DENABLE_MQTT=ON -DENABLE_OPENCV=ON \
                 -DENABLE_OPENWSMAN=ON -DENABLE_OPS=ON -DENABLE_PCAP=ON -DENABLE_SENSORS=ON -DENABLE_SFTP=ON -DENABLE_SQL=ON -DENABLE_SYSTEMD=ON \
                 -DENABLE_USB_CAMERA=ON -DENABLE_PYTHON_SCRIPTING=ON -DENABLE_LUA_SCRIPTING=ON -DENABLE_KUBERNETES=ON -DENABLE_GCP=ON -DENABLE_PROMETHEUS=ON -DENABLE_ELASTICSEARCH=ON"
         shell: cmd
-        working-directory: ./bootstrap
+        working-directory: bootstrap
       - name: sccache cache save
         uses: actions/cache/save@v3
         if: always()
