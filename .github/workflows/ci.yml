@@ -88,6 +88,7 @@ jobs:
         uses: seanmiddleditch/gha-setup-ninja@v3
       - name: Set up Python
         run: choco -y install python & refreshenv
+        shell: cmd
       - name: Set up Lua
         uses: xpol/setup-lua@v0.3
       - id: install-sqliteodbc-driver
