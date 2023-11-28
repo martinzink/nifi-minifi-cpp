@@ -32,7 +32,6 @@ def run_cmake(minifi_options: MinifiOptions, package_manager: PackageManager):
     if not os.path.exists(minifi_options.build_dir):
         os.mkdir(minifi_options.build_dir)
     cmake_cmd = f"cmake -G Ninja {minifi_options.create_cmake_options_str()} {minifi_options.source_dir} -B {minifi_options.build_dir}"
-    package_manager.run_cmd("set")
     assert package_manager.run_cmd(cmake_cmd)
 
 

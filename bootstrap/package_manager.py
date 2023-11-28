@@ -73,6 +73,7 @@ class PackageManager(object):
         return filtered_packages
 
     def run_cmd(self, cmd: str) -> bool:
+        print(f"run_cmd {cmd}")
         result = subprocess.run(f"{cmd}", shell=True, text=True)
         return result.returncode == 0
 
@@ -290,7 +291,7 @@ class ChocolateyPackageManager(PackageManager):
         return ""
 
     def run_cmd(self, cmd: str) -> bool:
-        print(f"run_cmd: {cmd}")
+        print(f"run_cmd {cmd}")
         res = subprocess.run(f"refreshenv & {_get_vsdev_cmd()} & set & {cmd}", shell=True)
 
         return res.returncode == 0
