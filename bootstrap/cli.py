@@ -26,7 +26,11 @@ from system_dependency import install_required
 
 def print_checkpoint(checkpoint_msg: str):
     print(f"{checkpoint_msg}".center(60, '='))
-    os.system("set")
+    set_res = subprocess.run("set", capture_output=True, shell=True)
+    print(f"{set_res.stdout}")
+    print(f"^STD_OUT^".center(60, '='))
+    print(f"{set_res.stderr}")
+    print(f"^STD_ERR".center(60, '='))
 
 
 def install_dependencies(minifi_options: MinifiOptions, package_manager: PackageManager):
