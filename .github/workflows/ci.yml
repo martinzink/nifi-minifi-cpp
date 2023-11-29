@@ -107,18 +107,21 @@ jobs:
           cmake ..
         if: always()
         working-directory: build
-      - name: build
+      - name: nasm version
         run: nasm.exe -v
         if: always()
+        shell: cmd
         working-directory: c:\Strawberry\c\bin
-      - name: build
+      - name: dir
         run: dir
         if: always()
         working-directory: c:\Strawberry\c\bin
-      - name: build
+        shell: cmd
+      - name: set
         run: set
         if: always()
         working-directory: c:\Strawberry\c\bin
+        shell: cmd
       - name: sccache cache save
         uses: actions/cache/save@v3
         if: always()
