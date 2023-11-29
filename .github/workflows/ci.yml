@@ -97,9 +97,8 @@ jobs:
           if ((Get-FileHash 'sqliteodbc_w64.exe').Hash -ne "a4804e4f54f42c721df1323c5fcac101a8c7a577e7f20979227324ceab572d51") {Write "Hash mismatch"; Exit 1}
           Start-Process -FilePath ".\sqliteodbc_w64.exe" -ArgumentList "/S" -Wait
         shell: powershell
-      - id: reinstall-strawberry-perl
-        run: choco install strawberryperl --force -y
-        shell: cmd
+      - name: Set up NASM for OpenSSL
+        uses: ilammy/setup-nasm@v1
       - name: build
         run: |
           python -m venv venv & venv\Scripts\activate & pip install -r requirements.txt & python main.py --noninteractive --compiler_override="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache" --override="-DCMAKE_BUILD_TYPE=Release -DCI_BUILD=ON -DMINIFI_FAIL_ON_WARNINGS=ON -DENABLE_AWS=ON -DENABLE_AZURE=ON -DENABLE_BUSTACHE=ON -DENABLE_COAP=ON -DENABLE_ENCRYPT_CONFIG=ON -DENABLE_PDH=ON -DENABLE_SPLUNK=ON -DENABLE_MQTT=ON -DENABLE_OPENCV=ON -DENABLE_OPENWSMAN=ON -DENABLE_OPS=ON -DENABLE_PCAP=OFF -DENABLE_SENSORS=ON -DENABLE_SFTP=ON -DENABLE_SQL=ON -DENABLE_SYSTEMD=ON -DENABLE_USB_CAMERA=OFF -DENABLE_PYTHON_SCRIPTING=OFF -DENABLE_LUA_SCRIPTING=OFF -DENABLE_KUBERNETES=ON -DENABLE_GCP=ON -DENABLE_PROMETHEUS=ON -DENABLE_ELASTICSEARCH=ON"
