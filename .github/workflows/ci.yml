@@ -99,7 +99,7 @@ jobs:
         shell: powershell
       - name: Install NASM
         run: |
-          choco -y install NASM
+          choco install nasm -y
         shell: cmd
       - name: Add NASM to path
         run: '[Environment]::SetEnvironmentVariable("PATH", [Environment]::GetEnvironmentVariable("PATH", [EnvironmentVariableTarget]::Machine) + ";C:\MyPath", [EnvironmentVariableTarget]::Machine);'
