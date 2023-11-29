@@ -144,5 +144,13 @@ function(get_minifi_docker_options RET_VALUE)
     set(${RET_VALUE} ${MINIFI_DOCKER_OPTIONS_STR} PARENT_SCOPE)
 endfunction()
 
+
+function(print_minifi_options)
+    foreach(option ${MINIFI_OPTIONS})
+        message(STATUS "  MiNiFi Option: ${option}: ${${option}}")
+    endforeach()
+endfunction()
+
 set(MINIFI_DOCKER_OPTIONS_STR "")
 get_minifi_docker_options(MINIFI_DOCKER_OPTIONS_STR)
+print_minifi_options()
