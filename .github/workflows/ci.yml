@@ -110,7 +110,15 @@ jobs:
       - name: build
         run: nasm.exe -v
         if: always()
-        working-directory: build
+        working-directory: c:\Strawberry\c\bin
+      - name: build
+        run: dir
+        if: always()
+        working-directory: c:\Strawberry\c\bin
+      - name: build
+        run: set
+        if: always()
+        working-directory: c:\Strawberry\c\bin
       - name: sccache cache save
         uses: actions/cache/save@v3
         if: always()
