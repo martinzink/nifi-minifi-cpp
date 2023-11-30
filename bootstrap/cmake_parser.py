@@ -18,6 +18,7 @@ import re
 
 from package_manager import PackageManager
 
+
 class CMakeCacheValue:
     def __init__(self, description: str, name: str, value_type: str, value: str):
         self.description = description
@@ -44,7 +45,8 @@ def create_cmake_cache(cmake_path: str, cmake_options: str, directory: str, pack
     if cmake_options is None:
         assert package_manager.run_cmd('cmake -G Ninja -Wno-dev --log-level=ERROR .')
     else:
-        assert package_manager.run_cmd(f'cmake -G Ninja -Wno-dev --no-warn-unused-cli --log-level=ERROR {cmake_options} .')
+        assert package_manager.run_cmd(
+            f'cmake -G Ninja -Wno-dev --no-warn-unused-cli --log-level=ERROR {cmake_options} .')
     return os.path.join(directory, 'CMakeCache.txt')
 
 

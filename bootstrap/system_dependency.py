@@ -51,5 +51,5 @@ def _create_system_dependencies(minifi_options: MinifiOptions) -> Dict[str, Set[
     return system_dependencies
 
 
-def install_required(minifi_options: MinifiOptions, package_manager: PackageManager):
-    package_manager.install(_create_system_dependencies(minifi_options))
+def install_required(minifi_options: MinifiOptions, package_manager: PackageManager) -> bool:
+    return package_manager.install(_create_system_dependencies(minifi_options))

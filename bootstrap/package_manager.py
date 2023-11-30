@@ -48,19 +48,19 @@ class PackageManager(object):
         self.no_confirm = no_confirm
         pass
 
-    def install(self, dependencies: Dict[str, Set[str]]):
+    def install(self, dependencies: Dict[str, Set[str]]) -> bool:
         raise Exception("NotImplementedException")
 
-    def install_compiler(self):
+    def install_compiler(self) -> str:
         raise Exception("NotImplementedException")
 
-    def _install(self, dependencies: Dict[str, Set[str]], replace_dict: Dict[str, Set[str]], install_cmd: str):
+    def _install(self, dependencies: Dict[str, Set[str]], replace_dict: Dict[str, Set[str]], install_cmd: str) -> bool:
         dependencies.update({k: v for k, v in replace_dict.items() if k in dependencies})
         dependencies = self._filter_out_installed_packages(dependencies)
         dependencies_str = " ".join(str(value) for value_set in dependencies.values() for value in value_set)
         if not dependencies_str or dependencies_str.isspace():
-            return
-        _run_command_with_confirm(f"{install_cmd} {dependencies_str}", self.no_confirm)
+            return True
+        return _run_command_with_confirm(f"{install_cmd} {dependencies_str}", self.no_confirm)
 
     def _get_installed_packages(self) -> Set[str]:
         raise Exception("NotImplementedException")
@@ -82,11 +82,11 @@ class BrewPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
 
-    def install(self, dependencies: Dict[str, Set[str]]):
-        self._install(dependencies=dependencies,
-                      install_cmd="brew install",
-                      replace_dict={"patch": set(),
-                                    "jni": {"maven"}})
+    def install(self, dependencies: Dict[str, Set[str]]) -> bool:
+        return self._install(dependencies=dependencies,
+                             install_cmd="brew install",
+                             replace_dict={"patch": set(),
+                                           "jni": {"maven"}})
 
     def install_compiler(self) -> str:
         self.install({"compiler": {"llvm"}})
@@ -103,16 +103,16 @@ class AptPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
 
-    def install(self, dependencies: Dict[str, Set[str]]):
-        self._install(dependencies=dependencies,
-                      install_cmd="sudo apt install -y",
-                      replace_dict={"libarchive": {"liblzma-dev"},
-                                    "lua": {"liblua5.1-0-dev"},
-                                    "python": {"libpython3-dev"},
-                                    "libusb": {"libusb-1.0-0-dev", "libusb-dev"},
-                                    "libpng": {"libpng-dev"},
-                                    "libpcap": {"libpcap-dev"},
-                                    "jni": {"openjdk-8-jdk", "openjdk-8-source", "maven"}})
+    def install(self, dependencies: Dict[str, Set[str]]) -> bool:
+        return self._install(dependencies=dependencies,
+                             install_cmd="sudo apt install -y",
+                             replace_dict={"libarchive": {"liblzma-dev"},
+                                           "lua": {"liblua5.1-0-dev"},
+                                           "python": {"libpython3-dev"},
+                                           "libusb": {"libusb-1.0-0-dev", "libusb-dev"},
+                                           "libpng": {"libpng-dev"},
+                                           "libpcap": {"libpcap-dev"},
+                                           "jni": {"openjdk-8-jdk", "openjdk-8-source", "maven"}})
 
     def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['dpkg', '--get-selections'], text=True, capture_output=True, check=True)
@@ -135,16 +135,16 @@ class DnfPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
 
-    def install(self, dependencies: Dict[str, Set[str]]):
-        self._install(dependencies=dependencies,
-                      install_cmd="sudo dnf --enablerepo=crb install -y epel-release",
-                      replace_dict={"gpsd": {"gpsd-devel"},
-                                    "libpcap": {"libpcap-devel"},
-                                    "lua": {"lua-devel"},
-                                    "python": {"python3-devel"},
-                                    "jni": {"java-1.8.0-openjdk", "java-1.8.0-openjdk-devel", "maven"},
-                                    "libpng": {"libpng-devel"},
-                                    "libusb": {"libusb-devel"}})
+    def install(self, dependencies: Dict[str, Set[str]]) -> bool:
+        return self._install(dependencies=dependencies,
+                             install_cmd="sudo dnf --enablerepo=crb install -y epel-release",
+                             replace_dict={"gpsd": {"gpsd-devel"},
+                                           "libpcap": {"libpcap-devel"},
+                                           "lua": {"lua-devel"},
+                                           "python": {"python3-devel"},
+                                           "jni": {"java-1.8.0-openjdk", "java-1.8.0-openjdk-devel", "maven"},
+                                           "libpng": {"libpng-devel"},
+                                           "libusb": {"libusb-devel"}})
 
     def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['dnf', 'list', 'installed'], text=True, capture_output=True, check=True)
@@ -161,10 +161,10 @@ class PacmanPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
 
-    def install(self, dependencies: Dict[str, Set[str]]):
-        self._install(dependencies=dependencies,
-                      install_cmd="sudo pacman --noconfirm -S",
-                      replace_dict={"jni": {"jdk8-openjdk", "maven"}})
+    def install(self, dependencies: Dict[str, Set[str]]) -> bool:
+        return self._install(dependencies=dependencies,
+                             install_cmd="sudo pacman --noconfirm -S",
+                             replace_dict={"jni": {"jdk8-openjdk", "maven"}})
 
     def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['pacman', '-Qq'], text=True, capture_output=True, check=True)
@@ -182,21 +182,21 @@ def _fix_strawberry_perl_install():
             os.remove(strawberry_tool)
 
 
-def _get_vsdev_path() -> str:
+def _get_vs_dev_cmd_path() -> str:
     vswhere_results = subprocess.run(
         f"vswhere -products * -property installationPath -requires Microsoft.VisualStudio.Component.VC.ATL",
         capture_output=True)
 
     for vswhere_result in vswhere_results.stdout.splitlines():
-        possible_path = f"{vswhere_result.decode()}\Common7\Tools\VsDevCmd.bat"
+        possible_path = f"{vswhere_result.decode()}\\Common7\\Tools\\VsDevCmd.bat"
         if os.path.exists(possible_path):
             return f'"{possible_path}"'
     raise Exception("Could not find valid Visual Studio installation")
 
 
-def _get_vsdev_cmd() -> str:
-    vsdev_path = _get_vsdev_path()
-    return f"{vsdev_path} -arch=x64 -host_arch=x64"
+def _get_vs_dev_cmd() -> str:
+    vs_dev_path = _get_vs_dev_cmd_path()
+    return f"{vs_dev_path} -arch=x64 -host_arch=x64"
 
 
 class WingetPackageManager(PackageManager):
@@ -204,10 +204,11 @@ class WingetPackageManager(PackageManager):
         PackageManager.__init__(self, no_confirm)
 
     # winget cant install maven due to github.com/microsoft/winget-cli/issues/3386
-    def _install_maven(self):
+    @staticmethod
+    def _install_maven():
         subprocess.run("pip install maven", text=True, shell=True)
 
-    def install(self, dependencies: Dict[str, Set[str]]):
+    def install(self, dependencies: Dict[str, Set[str]]) -> bool:
         if "maven" in dependencies:
             self._install_maven()
             dependencies.pop("maven")
@@ -231,6 +232,7 @@ class WingetPackageManager(PackageManager):
                                     "openssl": {"StrawberryPerl.StrawberryPerl"}})
         if "openssl" in dependencies:
             _fix_strawberry_perl_install()
+        return True
 
     def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['winget', 'list'], text=True, capture_output=True, check=True)
@@ -251,7 +253,7 @@ class WingetPackageManager(PackageManager):
         return ""
 
     def run_cmd(self, cmd: str) -> bool:
-        res = subprocess.run(f"{_get_vsdev_cmd()} & {cmd}", shell=True)
+        res = subprocess.run(f"{_get_vs_dev_cmd()} & {cmd}", shell=True)
 
         return res.returncode == 0
 
@@ -260,7 +262,7 @@ class ChocolateyPackageManager(PackageManager):
     def __init__(self, no_confirm):
         PackageManager.__init__(self, no_confirm)
 
-    def install(self, dependencies: Dict[str, Set[str]]):
+    def install(self, dependencies: Dict[str, Set[str]]) -> bool:
         self._install(dependencies=dependencies,
                       install_cmd="choco install -y",
                       replace_dict={"lua": set(),
@@ -281,6 +283,7 @@ class ChocolateyPackageManager(PackageManager):
                                     "openssl": {"strawberryperl"}})
         if "openssl" in dependencies:
             _fix_strawberry_perl_install()
+        return True
 
     def _get_installed_packages(self) -> Set[str]:
         result = subprocess.run(['choco', 'list'], text=True, capture_output=True, check=True)
@@ -292,13 +295,14 @@ class ChocolateyPackageManager(PackageManager):
     def install_compiler(self) -> str:
         self.install({"visualstudio2022buildtools": {'visualstudio2022buildtools --package-parameters "--wait --quiet '
                                                      '--add Microsoft.VisualStudio.Workload.VCTools '
-                                                     '--add Microsoft.VisualStudio.Component.VC.ATL --includeRecommended"'},
+                                                     '--add Microsoft.VisualStudio.Component.VC.ATL '
+                                                     '--includeRecommended"'},
                       "vswhere": {"vswhere"}})
         return ""
 
     def run_cmd(self, cmd: str) -> bool:
         print(f"run_cmd {cmd}")
-        res = subprocess.run(f"refreshenv & {_get_vsdev_cmd()} & set & {cmd}", shell=True)
+        res = subprocess.run(f"refreshenv & {_get_vs_dev_cmd()} & set & {cmd}", shell=True)
 
         return res.returncode == 0
 

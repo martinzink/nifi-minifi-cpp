@@ -48,7 +48,6 @@ add_minifi_option(LIBC_STATIC "Instructs the build system to statically link lib
 add_minifi_option(MINIFI_OPENSSL "Enables OpenSSL" ON)
 add_minifi_option(ENABLE_OPS "Enable Operations/zlib Tools" ON)
 add_minifi_option(ENABLE_JNI "Instructs the build system to enable the JNI extension" OFF)
-add_minifi_option(ENABLE_OPENCV "Instructs the build system to enable the OpenCV extension" OFF)
 add_minifi_option(ENABLE_OPC "Instructs the build system to enable the OPC extension" ON)
 add_minifi_option(ENABLE_NANOFI "Instructs the build system to enable nanofi library" OFF)
 add_minifi_option(BUILD_SHARED_LIBS "Build yaml cpp shared lib" OFF)
@@ -68,8 +67,8 @@ add_minifi_option(AWS_ENABLE_UNITY_BUILD "If enabled, AWS SDK libraries will be 
     This can significantly reduce static library size as well as speed up a single compilation time, but it is regenerated \
     and recompiled in every iterative build instance. Turn off to avoid recompilation." ON)
 
-add_minifi_dependent_option(ASAN_BUILD "Uses AddressSanitizer to instrument the code" OFF "NOT WIN32" OFF)
-add_minifi_dependent_option(ENABLE_COVERAGE "Use coverage build options and enable coverage build target" OFF "NOT WIN32" OFF)
+add_minifi_dependent_option(MINIFI_ADVANCED_ASAN_BUILD "Uses AddressSanitizer to instrument the code" OFF "NOT WIN32" OFF)
+add_minifi_dependent_option(MINIFI_ADVANCED_CODE_COVERAGE "Use coverage build options and enable coverage build target" OFF "NOT WIN32" OFF)
 
 # Option: STRICT_GSL_CHECKS
 # AUDIT: Enable all checks, including gsl_ExpectsAudit() and gsl_EnsuresAudit()

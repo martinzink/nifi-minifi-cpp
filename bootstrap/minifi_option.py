@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+import tempfile
 from typing import Dict
 
 import pathlib
@@ -59,6 +59,6 @@ class MinifiOptions:
 
 
 def parse_minifi_options(path: str, cmake_options: str, package_manager: PackageManager):
-    cmake_cache_dir = os.path.join(os.getcwd(), 'cmake_cache')
-    cmake_cache_path = cmake_parser.create_cmake_cache(path, cmake_options, cmake_cache_dir, package_manager)
-    return MinifiOptions(cmake_parser.parse_cmake_cache_values(cmake_cache_path))
+    with tempfile.TemporaryDirectory() as cmake_cache_dir:
+        cmake_cache_path = cmake_parser.create_cmake_cache(path, cmake_options, cmake_cache_dir, package_manager)
+        return MinifiOptions(cmake_parser.parse_cmake_cache_values(cmake_cache_path))

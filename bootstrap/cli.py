@@ -15,7 +15,6 @@
 
 
 import os
-import subprocess
 
 import inquirer
 
@@ -24,26 +23,26 @@ from package_manager import PackageManager
 from system_dependency import install_required
 
 
-def install_dependencies(minifi_options: MinifiOptions, package_manager: PackageManager):
-    install_required(minifi_options, package_manager)
+def install_dependencies(minifi_options: MinifiOptions, package_manager: PackageManager) -> bool:
+    return install_required(minifi_options, package_manager)
 
 
 def run_cmake(minifi_options: MinifiOptions, package_manager: PackageManager):
     if not os.path.exists(minifi_options.build_dir):
         os.mkdir(minifi_options.build_dir)
     cmake_cmd = f"cmake -G Ninja {minifi_options.create_cmake_options_str()} {minifi_options.source_dir} -B {minifi_options.build_dir}"
-    assert package_manager.run_cmd(cmake_cmd)
+    return package_manager.run_cmd(cmake_cmd)
 
 
 def do_build(minifi_options: MinifiOptions, package_manager: PackageManager):
     build_cmd = f"cmake --build {str(minifi_options.build_dir)}"
-    assert package_manager.run_cmd(build_cmd)
+    return package_manager.run_cmd(build_cmd)
 
 
 def do_one_click_build(minifi_options: MinifiOptions, package_manager: PackageManager) -> bool:
-    install_dependencies(minifi_options, package_manager)
-    run_cmake(minifi_options, package_manager)
-    do_build(minifi_options, package_manager)
+    assert install_dependencies(minifi_options, package_manager)
+    assert run_cmake(minifi_options, package_manager)
+    assert do_build(minifi_options, package_manager)
     return True
 
 
