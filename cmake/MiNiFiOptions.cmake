@@ -153,4 +153,5 @@ endfunction()
 
 set(MINIFI_DOCKER_OPTIONS_STR "")
 get_minifi_docker_options(MINIFI_DOCKER_OPTIONS_STR)
+list(SORT MINIFI_OPTIONS)
 print_minifi_options()
