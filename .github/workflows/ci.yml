@@ -164,7 +164,7 @@ jobs:
         shell: powershell
       - name: build
         run: |
-          python -m venv venv & venv\Scripts\activate & pip install -r requirements.txt & python main.py --noninteractive --compiler_override="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache" --override="${WINDOWS_CMAKE_FLAGS}""
+          python -m venv venv & venv\Scripts\activate & pip install -r requirements.txt & python main.py --noninteractive --compiler_override="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache" --override="${WINDOWS_CMAKE_FLAGS}"
         shell: cmd
         working-directory: bootstrap
       - name: Save cache
