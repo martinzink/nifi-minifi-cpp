@@ -58,7 +58,6 @@ class MinifiOptions:
         self.compiler_override = compiler_override
 
 
-def parse_minifi_options(path: str, cmake_options: str, package_manager: PackageManager):
-    with tempfile.TemporaryDirectory() as cmake_cache_dir:
-        cmake_cache_path = cmake_parser.create_cmake_cache(path, cmake_options, cmake_cache_dir, package_manager)
-        return MinifiOptions(cmake_parser.parse_cmake_cache_values(cmake_cache_path))
+def parse_minifi_options(path: str, cmake_options: str, package_manager: PackageManager, cmake_cache_dir: str):
+    cmake_cache_path = cmake_parser.create_cmake_cache(path, cmake_options, cmake_cache_dir, package_manager)
+    return MinifiOptions(cmake_parser.parse_cmake_cache_values(cmake_cache_path))
