@@ -41,12 +41,11 @@ def create_cmake_cache(cmake_path: str, cmake_options: str, directory: str, pack
         cmake_lists_file.write('cmake_minimum_required(VERSION 3.5)\n')
         cmake_lists_file.write(f'include("{cmake_path}")\n')
 
-    os.chdir(directory)
     if cmake_options is None:
-        assert package_manager.run_cmd('cmake -G Ninja -Wno-dev --log-level=ERROR .')
+        assert package_manager.run_cmd(f'cmake -G Ninja -Wno-dev --log-level=ERROR {directory} -B {directory}')
     else:
         assert package_manager.run_cmd(
-            f'cmake -G Ninja -Wno-dev --no-warn-unused-cli --log-level=ERROR {cmake_options} .')
+            f'cmake -G Ninja -Wno-dev --no-warn-unused-cli --log-level=ERROR {cmake_options} {directory} -B {directory}')
     return os.path.join(directory, 'CMakeCache.txt')
 
 
