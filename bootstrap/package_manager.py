@@ -182,7 +182,7 @@ def _fix_strawberry_perl_install():
             os.remove(strawberry_tool)
 
 
-def _get_vsdev_cmd() -> str:
+def _get_vsdev_path() -> str:
     vswhere_results = subprocess.run(
         f"vswhere -products * -property installationPath -requires Microsoft.VisualStudio.Component.VC.ATL",
         capture_output=True)
@@ -192,6 +192,11 @@ def _get_vsdev_cmd() -> str:
         if os.path.exists(possible_path):
             return f'"{possible_path}"'
     raise Exception("Could not find valid Visual Studio installation")
+
+
+def _get_vsdev_cmd() -> str:
+    vsdev_path = _get_vsdev_path()
+    return f"{vsdev_path} -arch=x64 -host_arch=x64"
 
 
 class WingetPackageManager(PackageManager):
