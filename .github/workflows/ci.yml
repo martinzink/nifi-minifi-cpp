@@ -11,6 +11,60 @@ jobs:
     name: "macos-xcode"
     runs-on: macos-13
     timeout-minutes: 180
+    env:
+      MACOS_MINIFI_OPTIONS: >-
+        -DCMAKE_BUILD_TYPE=Release
+        -DCI_BUILD=ON
+        -DCUSTOM_MALLOC=OFF
+        -DDOCKER_BUILD_ONLY=OFF
+        -DDOCKER_PUSH=OFF
+        -DDOCKER_SKIP_TESTS=ON
+        -DENABLE_ALL=OFF
+        -DENABLE_AWS=ON
+        -DENABLE_AZURE=ON
+        -DENABLE_BUSTACHE=OFF
+        -DENABLE_BZIP2=ON
+        -DENABLE_CIVET=ON
+        -DENABLE_COAP=OFF
+        -DENABLE_CONTROLLER=ON
+        -DENABLE_CURL=ON
+        -DENABLE_ELASTICSEARCH=ON
+        -DENABLE_ENCRYPT_CONFIG=ON
+        -DENABLE_EXPRESSION_LANGUAGE=ON
+        -DENABLE_GCP=ON
+        -DENABLE_GPS=OFF
+        -DENABLE_JNI=OFF
+        -DENABLE_KUBERNETES=ON
+        -DENABLE_LIBARCHIVE=ON
+        -DENABLE_LIBRDKAFKA=ON
+        -DENABLE_LUA_SCRIPTING=ON
+        -DENABLE_LZMA=ON
+        -DENABLE_MQTT=ON
+        -DENABLE_NANOFI=OFF
+        -DENABLE_OPC=ON
+        -DENABLE_OPENCV=ON
+        -DENABLE_OPENWSMAN=OFF
+        -DENABLE_OPS=ON
+        -DENABLE_PCAP=OFF
+        -DENABLE_PROMETHEUS=ON
+        -DENABLE_PYTHON_SCRIPTING=ON
+        -DENABLE_ROCKSDB=ON
+        -DENABLE_SENSORS=OFF
+        -DENABLE_SFTP=OFF
+        -DENABLE_SPLUNK=ON
+        -DENABLE_SQL=ON
+        -DENABLE_TEST_PROCESSORS=OFF
+        -DENABLE_USB_CAMERA=OFF
+        -DFORCE_COLORED_OUTPUT=OFF
+        -DLIBC_STATIC=OFF
+        -DMINIFI_ADVANCED_ASAN_BUILD=OFF
+        -DMINIFI_ADVANCED_CODE_COVERAGE=OFF
+        -DMINIFI_FAIL_ON_WARNINGS=OFF
+        -DMINIFI_OPENSSL=ON
+        -DMINIFI_USE_REAL_ODBC_TEST_DRIVER=ON
+        -DPORTABLE=ON
+        -DSKIP_TESTS=OFF
+        -DUSE_SHARED_LIBS=ON
     steps:
       - id: checkout
         uses: actions/checkout@v3
@@ -34,11 +88,8 @@ jobs:
           echo -e "127.0.0.1\t$HOSTNAME" | sudo tee -a /etc/hosts > /dev/null
       - name: build
         run: |
-          export PATH="/usr/local/opt/flex/bin:$PATH"
-          export LDFLAGS="-L/usr/local/opt/flex/lib"
-          export CPPFLAGS="-I/usr/local/opt/flex/include"
-          # CPPFLAGS are not recognized by cmake, so we have to force them to CFLAGS and CXXFLAGS to have flex 2.6 working
-          ./bootstrap.sh -e -t && cd build  && cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCI_BUILD=ON -DCMAKE_C_FLAGS="${CPPFLAGS} ${CFLAGS}" -DCMAKE_CXX_FLAGS="${CPPFLAGS} ${CXXFLAGS}" -DENABLE_PYTHON_SCRIPTING=ON -DENABLE_LUA_SCRIPTING=ON -DENABLE_SQL=ON -DMINIFI_USE_REAL_ODBC_TEST_DRIVER=ON -DENABLE_AZURE=ON -DENABLE_GCP=ON -DENABLE_OPENCV=ON -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_RULE_MESSAGES=OFF -DSTRICT_GSL_CHECKS=AUDIT -DFAIL_ON_WARNINGS=ON .. && cmake --build . --parallel 4
+          python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && python main.py --noninteractive --skip_compiler_install --cmake_options="-DCMAKE_C_FLAGS=${CPPFLAGS} ${CFLAGS} -DCMAKE_CXX_FLAGS=${CPPFLAGS} ${CXXFLAGS}" --minifi_options="${MACOS_MINIFI_OPTIONS}"
+        working-directory: bootstrap
       - name: cache save
         uses: actions/cache/save@v3
         if: always()
