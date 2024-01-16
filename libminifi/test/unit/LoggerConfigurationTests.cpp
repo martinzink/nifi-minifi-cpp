@@ -50,7 +50,7 @@ class TestLoggerConfiguration : public logging::LoggerConfiguration {
     return logging::LoggerConfiguration::initialize_namespaces(logger_properties);
   }
   static std::shared_ptr<spdlog::logger> get_logger(const std::shared_ptr<logging::internal::LoggerNamespace> &root_namespace, const std::string &name, std::shared_ptr<spdlog::formatter> formatter) {
-    return logging::LoggerConfiguration::get_logger(LogTestController::getInstance().logger_, root_namespace, name, formatter);
+    return logging::LoggerConfiguration::get_logger(root_namespace, name, formatter);
   }
 };
 

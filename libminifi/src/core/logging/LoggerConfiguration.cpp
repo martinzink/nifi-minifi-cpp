@@ -97,8 +97,7 @@ LoggerConfiguration::LoggerConfiguration()
       core::className<LoggerConfiguration>(),
       std::nullopt,
       controller_,
-      get_logger(nullptr, root_namespace_, core::className<LoggerConfiguration>(), formatter_));
-  loggers.push_back(logger_);
+      get_logger(root_namespace_, core::className<LoggerConfiguration>(), formatter_));
 }
 
 LoggerConfiguration& LoggerConfiguration::getConfiguration() {
@@ -145,18 +144,9 @@ void LoggerConfiguration::initialize(const std::shared_ptr<LoggerProperties> &lo
   }
 
   formatter_ = std::make_shared<spdlog::pattern_formatter>(spdlog_pattern);
-  std::map<std::string, std::shared_ptr<spdlog::logger>> spdloggers;
-  for (auto const & logger_impl : loggers) {
-    std::shared_ptr<spdlog::logger> spdlogger;
-    auto it = spdloggers.find(logger_impl->name);
-    if (it == spdloggers.end()) {
-      spdlogger = get_logger(logger_, root_namespace_, logger_impl->name, formatter_, true);
-      spdloggers[logger_impl->name] = spdlogger;
-    } else {
-      spdlogger = it->second;
-    }
-    logger_impl->set_delegate(spdlogger);
-  }
+  spdlog::apply_all([&](auto spd_logger) {
+    setupSpdLogger(spd_logger, root_namespace_, spd_logger->name(), formatter_);
+  });
   logger_->log_debug("Set following pattern on loggers: {}", spdlog_pattern);
 }
 
@@ -165,7 +155,7 @@ std::shared_ptr<Logger> LoggerConfiguration::getLogger(std::string_view name, co
   return getLogger(name, id, lock);
 }
 
-std::shared_ptr<Logger> LoggerConfiguration::getLogger(std::string_view name, const std::optional<utils::Identifier>& id, const std::lock_guard<std::mutex>& /*lock*/) {
+LoggerConfiguration::LoggerId LoggerConfiguration::calculateLoggerId(std::string_view name, const std::optional<utils::Identifier>& id) const {
   std::string adjusted_name{name};
   const std::string clazz = "class ";
   auto haz_clazz = name.find(clazz);
@@ -174,11 +164,13 @@ std::shared_ptr<Logger> LoggerConfiguration::getLogger(std::string_view name, co
   if (shorten_names_) {
     utils::ClassUtils::shortenClassName(adjusted_name, adjusted_name);
   }
+  return LoggerId{.name = adjusted_name, .uuid = include_uuid_ ? id : std::nullopt};
+}
 
-  const auto id_if_enabled = include_uuid_ ? id : std::nullopt;
+std::shared_ptr<Logger> LoggerConfiguration::getLogger(std::string_view name, const std::optional<utils::Identifier>& id, const std::lock_guard<std::mutex>& /*lock*/) {
+  const auto logger_id = calculateLoggerId(name, id);
 
-  std::shared_ptr<LoggerImpl> result = std::make_shared<LoggerImpl>(adjusted_name, id_if_enabled, controller_, get_logger(logger_, root_namespace_, adjusted_name, formatter_));
-  loggers.push_back(result);
+  std::shared_ptr<LoggerImpl> result = std::make_shared<LoggerImpl>(logger_id.name, logger_id.uuid, controller_, get_logger(root_namespace_, logger_id.name, formatter_));
   if (max_log_entry_length_) {
     result->set_max_log_size(gsl::narrow<int>(*max_log_entry_length_));
   }
@@ -267,7 +259,7 @@ std::shared_ptr<internal::LoggerNamespace> LoggerConfiguration::initialize_names
   return root_namespace;
 }
 
-std::shared_ptr<spdlog::logger> LoggerConfiguration::get_logger(const std::shared_ptr<Logger>& logger, const std::shared_ptr<internal::LoggerNamespace> &root_namespace, std::string_view name_view,
+std::shared_ptr<spdlog::logger> LoggerConfiguration::get_logger(const std::shared_ptr<internal::LoggerNamespace> &root_namespace, std::string_view name_view,
                                                                 const std::shared_ptr<spdlog::formatter>& formatter, bool remove_if_present) {
   std::string name{name_view};
   std::shared_ptr<spdlog::logger> spdlogger = spdlog::get(name);
@@ -278,6 +270,15 @@ std::shared_ptr<spdlog::logger> LoggerConfiguration::get_logger(const std::share
       return spdlogger;
     }
   }
+  return create_logger(root_namespace, name, formatter);
+}
+
+void LoggerConfiguration::setupSpdLogger(std::shared_ptr<spdlog::logger> spd_logger,
+    const std::shared_ptr<internal::LoggerNamespace>& root_namespace,
+    std::string name,
+    const std::shared_ptr<spdlog::formatter>& formatter) {
+  if (!spd_logger)
+    return;
   std::shared_ptr<internal::LoggerNamespace> current_namespace = root_namespace;
   std::vector<std::shared_ptr<spdlog::sinks::sink>> sinks = root_namespace->sinks;
   std::vector<std::shared_ptr<spdlog::sinks::sink>> inherited_sinks;
@@ -303,16 +304,19 @@ std::shared_ptr<spdlog::logger> LoggerConfiguration::get_logger(const std::share
     }
     current_namespace_str += "::";
   }
-  if (logger != nullptr) {
-    logger->log_debug("{} logger got sinks from namespace {} and level {} from namespace {}", name, sink_namespace_str, spdlog::level::to_string_view(level), level_namespace_str);
-  }
   std::copy(inherited_sinks.begin(), inherited_sinks.end(), std::back_inserter(sinks));
-  spdlogger = std::make_shared<spdlog::logger>(name, begin(sinks), end(sinks));
-  spdlogger->set_level(level);
-  spdlogger->set_formatter(formatter->clone());
-  spdlogger->flush_on(std::max(spdlog::level::info, current_namespace->level));
+  spd_logger->sinks() = sinks;
+  spd_logger->set_level(level);
+  spd_logger->set_formatter(formatter->clone());
+  spd_logger->flush_on(std::max(spdlog::level::info, current_namespace->level));
+}
+
+std::shared_ptr<spdlog::logger> LoggerConfiguration::create_logger(const std::shared_ptr<internal::LoggerNamespace>& root_namespace, std::string name,
+  const std::shared_ptr<spdlog::formatter>& formatter) {
+  const auto spd_logger = gsl::make_not_null(std::make_shared<spdlog::logger>(name));
+  setupSpdLogger(spd_logger, root_namespace, name, formatter);
   try {
-    spdlog::register_logger(spdlogger);
+    spdlog::register_logger(spd_logger);
   } catch (const spdlog::spdlog_ex &) {
     // Ignore as someone else beat us to registration, we should get the one they made below
   }

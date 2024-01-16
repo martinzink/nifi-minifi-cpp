@@ -118,9 +118,12 @@ class LoggerConfiguration {
 
  protected:
   static std::shared_ptr<internal::LoggerNamespace> initialize_namespaces(const std::shared_ptr<LoggerProperties> &logger_properties, const std::shared_ptr<Logger> &logger = {});
-  static std::shared_ptr<spdlog::logger> get_logger(const std::shared_ptr<Logger>& logger, const std::shared_ptr<internal::LoggerNamespace> &root_namespace, std::string_view name_view,
+  static std::shared_ptr<spdlog::logger> get_logger(const std::shared_ptr<internal::LoggerNamespace> &root_namespace, std::string_view name_view,
                                                     const std::shared_ptr<spdlog::formatter>& formatter, bool remove_if_present = false);
-
+  static std::shared_ptr<spdlog::logger> create_logger(const std::shared_ptr<internal::LoggerNamespace> &root_namespace, std::string name,
+                                                       const std::shared_ptr<spdlog::formatter>& formatter);
+  static void setupSpdLogger(std::shared_ptr<spdlog::logger> spd_logger, const std::shared_ptr<internal::LoggerNamespace> &root_namespace, std::string name,
+                                                       const std::shared_ptr<spdlog::formatter>& formatter);
  private:
   std::shared_ptr<Logger> getLogger(std::string_view name, const std::optional<utils::Identifier>& id, const std::lock_guard<std::mutex>& lock);
 
@@ -157,7 +160,13 @@ class LoggerConfiguration {
   LoggerConfiguration();
   internal::CompressionManager compression_manager_;
   std::shared_ptr<internal::LoggerNamespace> root_namespace_;
-  std::vector<std::shared_ptr<LoggerImpl>> loggers;
+
+  struct LoggerId {
+    std::string name;
+    std::optional<utils::Identifier> uuid;
+  };
+  LoggerId calculateLoggerId(std::string_view name, const std::optional<utils::Identifier>& id) const;
+
   std::shared_ptr<spdlog::formatter> formatter_;
   std::mutex mutex;
   std::shared_ptr<LoggerImpl> logger_ = nullptr;

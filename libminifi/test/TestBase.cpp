@@ -67,7 +67,9 @@ void LogTestController::setLevel(std::string_view name, spdlog::level::level_enu
   if (config && config->shortenClassNames()) {
     minifi::utils::ClassUtils::shortenClassName(adjusted_name, adjusted_name);
   }
-  logging::LoggerConfiguration::getSpdlogLogger(adjusted_name)->set_level(level);
+  if (const auto spd_logger = logging::LoggerConfiguration::getSpdlogLogger(adjusted_name)) {
+    spd_logger->set_level(level);
+  }
 }
 
 std::shared_ptr<logging::Logger> LogTestController::getLoggerByClassName(std::string_view class_name, const std::optional<utils::Identifier>& id) {
@@ -116,7 +118,6 @@ bool LogTestController::contains(const std::function<std::string()>& log_string_
     }
   } while (!found && !timed_out);
 
-  logger_->log_info("{} {} in log output.", found ? "Successfully found" : "Failed to find", ending);
   return found;
 }
 
