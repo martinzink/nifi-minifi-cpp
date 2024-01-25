@@ -18,6 +18,10 @@
 
 #pragma once
 
+#include <string>
+#include <system_error>
+#include "magic_enum.hpp"
+
 namespace org::apache::nifi::minifi::modbus {
 
 
@@ -55,7 +59,14 @@ inline const ModbusErrorCategory& modbus_category() noexcept {
   return category;
 };
 
-inline std::error_code make_error_code(ModbusExceptionCode c) {
-  return {static_cast<int>(c), modbus_category()};
+inline std::error_code make_error_code(org::apache::nifi::minifi::modbus::ModbusExceptionCode c) {
+  return {static_cast<int>(c), org::apache::nifi::minifi::modbus::modbus_category()};
 }
+
+}
+
+namespace std
+{
+template <>
+  struct is_error_code_enum<org::apache::nifi::minifi::modbus::ModbusExceptionCode> : true_type {};
 }
