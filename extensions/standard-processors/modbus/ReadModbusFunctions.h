@@ -153,13 +153,13 @@ class ReadHoldingRegisters final : public ReadModbusFunction {
     return holding_registers;
   }
 
-private:
+ private:
   uint16_t starting_address_{};
   uint16_t number_of_points_{};
 };
 
 class ReadInputRegisters final : public ReadModbusFunction {
-public:
+ public:
   ReadInputRegisters(const uint16_t starting_address, const uint16_t number_of_points)
       : starting_address_(starting_address),
         number_of_points_(number_of_points) {
@@ -196,7 +196,7 @@ public:
     return holding_registers;
   }
 
-private:
+ private:
   uint16_t starting_address_{};
   uint16_t number_of_points_{};
 };

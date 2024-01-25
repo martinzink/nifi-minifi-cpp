@@ -184,7 +184,6 @@ asio::awaitable<std::error_code> PutTCP::sendStreamWithDelimiter(utils::net::Con
   logger_->log_trace("Writing delimiter({} bytes) to socket succeeded", delimiter_bytes_written);
 
   co_return std::error_code();
-
 }
 
 void PutTCP::processFlowFile(const std::shared_ptr<utils::net::ConnectionHandlerBase>& connection_handler,

@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 #pragma once
-#include "core/Processor.h"
-#include "utils/net/AsioCoro.h"
 
 #include "controllers/SSLContextService.h"
-#include <PropertyDefinitionBuilder.h>
-#include <logging/LoggerFactory.h>
-
-#include <utils/net/AsioSocketUtils.h>
+#include "core/Processor.h"
+#include "core/PropertyDefinitionBuilder.h"
+#include "logging/LoggerFactory.h"
+#include "utils/net/AsioCoro.h"
+#include "utils/net/AsioSocketUtils.h"
+#include "utils/net/ConnectionHandlerBase.h"
 
 namespace org::apache::nifi::minifi::modbus {
 enum class AddressAccessStrategy {
@@ -31,16 +31,14 @@ enum class AddressAccessStrategy {
   AddressFromFile
 };
 
-
 }  // namespace org::apache::nifi::minifi::modbus
-
 
 namespace org::apache::nifi::minifi::modbus {
 
 class ReadModbusTcp final : public core::Processor {
  public:
   explicit ReadModbusTcp(const std::string_view name, const utils::Identifier& uuid = {})
-    : Processor(name, uuid) {
+      : Processor(name, uuid) {
   }
 
   EXTENSIONAPI static constexpr const char* Description = "Processor able to read data from industrial PLCs using Modbus TCP/IP";
@@ -82,7 +80,6 @@ class ReadModbusTcp final : public core::Processor {
 
   ADD_COMMON_VIRTUAL_FUNCTIONS_FOR_PROCESSORS
 
-
   void onSchedule(core::ProcessContext& context, core::ProcessSessionFactory& session_factory) override;
   void onTrigger(core::ProcessContext& context, core::ProcessSession& session) override;
   void initialize() final;
@@ -104,4 +101,4 @@ class ReadModbusTcp final : public core::Processor {
   std::optional<asio::ssl::context> ssl_context_;
   std::shared_ptr<core::logging::Logger> logger_ = core::logging::LoggerFactory<ReadModbusTcp>::getLogger(uuid_);
 };
-}
+}  // namespace org::apache::nifi::minifi::modbus

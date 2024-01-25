@@ -24,7 +24,6 @@
 
 namespace org::apache::nifi::minifi::modbus {
 
-
 enum class ModbusExceptionCode : std::underlying_type_t<std::byte> {
   IllegalFunction = 0x01,
   IllegalDataAddress = 0x02,
@@ -59,14 +58,11 @@ inline const ModbusErrorCategory& modbus_category() noexcept {
   return category;
 };
 
-inline std::error_code make_error_code(org::apache::nifi::minifi::modbus::ModbusExceptionCode c) {
-  return {static_cast<int>(c), org::apache::nifi::minifi::modbus::modbus_category()};
+inline std::error_code make_error_code(ModbusExceptionCode c) {
+  return {static_cast<int>(c), modbus_category()};
 }
 
-}
+}  // namespace org::apache::nifi::minifi::modbus
 
-namespace std
-{
 template <>
-  struct is_error_code_enum<org::apache::nifi::minifi::modbus::ModbusExceptionCode> : true_type {};
-}
+struct std::is_error_code_enum<org::apache::nifi::minifi::modbus::ModbusExceptionCode> : true_type {};
