@@ -57,7 +57,7 @@ class ReadModbusFunction {
       return nonstd::make_unexpected(ModbusExceptionCode::InvalidResponse);
     }
 
-    return ranges::subrange(resp_pdu.begin() + 2, resp_pdu.end());
+    return ranges::subrange<std::vector<std::byte>::const_iterator>(resp_pdu.begin() + 2, resp_pdu.end());
   }
 
   [[nodiscard]] virtual std::byte getFunctionCode() const = 0;
@@ -92,7 +92,7 @@ class ReadCoilStatus final : public ReadModbusFunction {
         if (coils.size() == number_of_points_) {
           break;
         }
-        const bool bit_value = static_cast<bool>((resp_byte & std::byte{unsigned{1} << i}) >> i);
+        const bool bit_value = static_cast<bool>((resp_byte & (std::byte{1} << i)) >> i);
         coils.push_back(bit_value);
       }
     }
