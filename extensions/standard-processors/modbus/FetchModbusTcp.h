@@ -35,9 +35,9 @@ enum class AddressAccessStrategy {
 
 namespace org::apache::nifi::minifi::modbus {
 
-class ReadModbusTcp final : public core::Processor {
+class FetchModbusTcp final : public core::Processor {
  public:
-  explicit ReadModbusTcp(const std::string_view name, const utils::Identifier& uuid = {})
+  explicit FetchModbusTcp(const std::string_view name, const utils::Identifier& uuid = {})
       : Processor(name, uuid) {
   }
 
@@ -108,7 +108,7 @@ class ReadModbusTcp final : public core::Processor {
  private:
   void processFlowFile(const std::shared_ptr<utils::net::ConnectionHandlerBase>& connection_handler,
     core::ProcessSession& session,
-    const std::shared_ptr<core::FlowFile>& flow_file);
+    const std::shared_ptr<core::FlowFile>& flow_file) const;
   std::unordered_map<std::string, std::string> getAddressMap(const core::FlowFile& flow_file) const;
   std::shared_ptr<core::FlowFile> getFlowFile(core::ProcessSession& session) const;
   void removeExpiredConnections();
@@ -119,6 +119,6 @@ class ReadModbusTcp final : public core::Processor {
   std::optional<size_t> max_size_of_socket_send_buffer_;
   std::chrono::milliseconds timeout_duration_ = std::chrono::seconds(15);
   std::optional<asio::ssl::context> ssl_context_;
-  std::shared_ptr<core::logging::Logger> logger_ = core::logging::LoggerFactory<ReadModbusTcp>::getLogger(uuid_);
+  std::shared_ptr<core::logging::Logger> logger_ = core::logging::LoggerFactory<FetchModbusTcp>::getLogger(uuid_);
 };
 }  // namespace org::apache::nifi::minifi::modbus
