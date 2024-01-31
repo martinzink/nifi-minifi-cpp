@@ -35,6 +35,8 @@ enum class AddressAccessStrategy {
 
 namespace org::apache::nifi::minifi::modbus {
 
+class ReadModbusFunction;
+
 class FetchModbusTcp final : public core::Processor {
  public:
   explicit FetchModbusTcp(const std::string_view name, const utils::Identifier& uuid = {})
@@ -106,16 +108,26 @@ class FetchModbusTcp final : public core::Processor {
   void initialize() override;
 
  private:
+  void readDynamicPropertyKeys(const core::ProcessContext& context);
   void processFlowFile(const std::shared_ptr<utils::net::ConnectionHandlerBase>& connection_handler,
+    core::ProcessContext& context,
     core::ProcessSession& session,
-    const std::shared_ptr<core::FlowFile>& flow_file) const;
-  std::unordered_map<std::string, std::string> getAddressMap(const core::FlowFile& flow_file) const;
+    const std::shared_ptr<core::FlowFile>& flow_file);
+
+  auto readModbus(const std::shared_ptr<utils::net::ConnectionHandlerBase>& connection_handler,
+      const std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>>& address_map) -> nonstd::expected<std::unordered_map<std::string, std::string>, std::error_code>;
+  auto sendRequestsAndReadResponses(utils::net::ConnectionHandlerBase& connection_handler,
+      const std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>>& address_map) -> asio::awaitable<nonstd::expected<std::unordered_map<std::string, std::string>, std::error_code>>;
+  asio::awaitable<nonstd::expected<std::string, std::error_code>> sendRequestAndReadResponse(utils::net::ConnectionHandlerBase& connection_handler, const ReadModbusFunction& read_modbus_function);
+  std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>> getAddressMap(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file);
   std::shared_ptr<core::FlowFile> getFlowFile(core::ProcessSession& session) const;
   void removeExpiredConnections();
 
+  std::vector<core::Property> dynamic_property_keys_;
   asio::io_context io_context_;
   std::optional<std::unordered_map<utils::net::ConnectionId, std::shared_ptr<utils::net::ConnectionHandlerBase>>> connections_;
   std::optional<std::chrono::milliseconds> idle_connection_expiration_;
+  std::atomic<uint16_t> transaction_id_ = 0;
   std::optional<size_t> max_size_of_socket_send_buffer_;
   std::chrono::milliseconds timeout_duration_ = std::chrono::seconds(15);
   std::optional<asio::ssl::context> ssl_context_;

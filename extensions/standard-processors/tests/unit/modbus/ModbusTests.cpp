@@ -25,16 +25,16 @@ std::vector<std::byte> createByteVector(Bytes... bytes) {
 }
 
 TEST_CASE("ReadCoilStatus") {
-  const auto read_coil_status = ReadCoilStatus(19, 19);
+  const auto read_coil_status = ReadCoilStatus(280, 19, 19);
   {
-    CHECK(read_coil_status.rawPdu() == createByteVector(0x01, 0x00, 0x13, 0x00, 0x13));
-    auto happy_path = read_coil_status.handleResponse(createByteVector(0x01, 0x03, 0xCD, 0x6B, 0x05));
-    REQUIRE(happy_path.has_value());
-    CHECK(*happy_path == std::vector<bool>{
-        true, false, true, true, false, false, true, true,
-        true, true, false, true, false, true, true, false,
-        true, false, true
-    });
+    {
+      CHECK(read_coil_status.rawPdu() == createByteVector(0x01, 0x00, 0x13, 0x00, 0x13));
+      CHECK(read_coil_status.requestBytes() == createByteVector(0x01, 0x18, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x13, 0x00, 0x13));
+    }
+
+    auto serialized_response = read_coil_status.serializeResponsePdu(createByteVector(0x01, 0x03, 0xCD, 0x6B, 0x05));
+    REQUIRE(serialized_response.has_value());
+    CHECK(*serialized_response == "true, false, true, true, false, false, true, true, true, true, false, true, false, true, true, false, true, false, true");
   }
 
   {
@@ -59,21 +59,26 @@ TEST_CASE("ReadCoilStatus") {
 
 TEST_CASE("ReadHoldingRegisters") {
   {
-    const auto read_holding_registers = ReadHoldingRegisters(5, 3);
-    CHECK(read_holding_registers.rawPdu() == createByteVector(0x03, 0x00, 0x05, 0x00, 0x03));
-    auto happy_path = read_holding_registers.handleResponse<uint16_t>(createByteVector(0x03, 0x06, 0x3A, 0x98, 0x13, 0x88, 0x00, 0xC8));
-    REQUIRE(happy_path.has_value());
-    CHECK(*happy_path == std::vector<uint16_t>{15000, 5000, 200});
+    const auto read_holding_registers = ReadHoldingRegisters<uint16_t>(0, 5, 3);
+    {
+      CHECK(read_holding_registers.rawPdu() == createByteVector(0x03, 0x00, 0x05, 0x00, 0x03));
+    }
+
+    auto serialized_response = read_holding_registers.serializeResponsePdu(createByteVector(0x03, 0x06, 0x3A, 0x98, 0x13, 0x88, 0x00, 0xC8));
+    REQUIRE(serialized_response.has_value());
+    CHECK(*serialized_response == "15000, 5000, 200");
   }
 }
 
 TEST_CASE("ReadInputRegisters") {
   {
-    const auto read_input_registers = ReadInputRegisters(5, 3);
-    CHECK(read_input_registers.rawPdu() == createByteVector(0x04, 0x00, 0x05, 0x00, 0x03));
-    auto happy_path = read_input_registers.handleResponse<uint16_t>(createByteVector(0x04, 0x06, 0x3A, 0x98, 0x13, 0x88, 0x00, 0xC8));
-    REQUIRE(happy_path.has_value());
-    CHECK(*happy_path == std::vector<uint16_t>{15000, 5000, 200});
+    const auto read_input_registers = ReadInputRegisters<uint16_t>(12, 5, 3);
+    {
+      CHECK(read_input_registers.rawPdu() == createByteVector(0x04, 0x00, 0x05, 0x00, 0x03));
+    }
+    auto serialized_response = read_input_registers.serializeResponsePdu(createByteVector(0x04, 0x06, 0x3A, 0x98, 0x13, 0x88, 0x00, 0xC8));
+    REQUIRE(serialized_response.has_value());
+    CHECK(*serialized_response == "15000, 5000, 200");
   }
 }
 

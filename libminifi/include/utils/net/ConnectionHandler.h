@@ -17,9 +17,11 @@
 
 #pragma once
 
-#include "ConnectionHandlerBase.h"
+#include <asio/read.hpp>
+
 #include "AsioCoro.h"
 #include "AsioSocketUtils.h"
+#include "ConnectionHandlerBase.h"
 
 namespace org::apache::nifi::minifi::utils::net {
 
@@ -64,6 +66,7 @@ class ConnectionHandler final : public ConnectionHandlerBase {
 
   asio::awaitable<std::error_code> establishNewConnection(const asio::ip::tcp::resolver::results_type& endpoints, asio::io_context& io_context_);
   [[nodiscard]] asio::awaitable<std::tuple<std::error_code, size_t>> write(const asio::const_buffer& buffer) override;
+  [[nodiscard]] asio::awaitable<std::tuple<std::error_code, size_t>> read(asio::mutable_buffer& buffer) override;
 
   SocketType createNewSocket(asio::io_context& io_context_);
   void shutdownSocket();
@@ -152,6 +155,15 @@ template<class SocketType>
 template<class SocketType>
 asio::awaitable<std::tuple<std::error_code, size_t>> ConnectionHandler<SocketType>::write(const asio::const_buffer& buffer) {
   auto result = co_await asyncOperationWithTimeout(asio::async_write(*socket_, buffer, use_nothrow_awaitable), timeout_duration_);
+  if (!std::get<std::error_code>(result)) {
+    last_used_ = std::chrono::steady_clock::now();
+  }
+  co_return result;
+}
+
+template<class SocketType>
+asio::awaitable<std::tuple<std::error_code, size_t>> ConnectionHandler<SocketType>::read(asio::mutable_buffer& buffer) {
+  auto result = co_await asyncOperationWithTimeout(asio::async_read(*socket_, buffer, use_nothrow_awaitable), timeout_duration_);
   if (!std::get<std::error_code>(result)) {
     last_used_ = std::chrono::steady_clock::now();
   }

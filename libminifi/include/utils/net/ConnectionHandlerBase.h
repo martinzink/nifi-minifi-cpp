@@ -35,6 +35,7 @@ class ConnectionHandlerBase {
   [[nodiscard]] virtual bool hasBeenUsed() const = 0;
   [[nodiscard]] virtual bool hasBeenUsedIn(std::chrono::milliseconds dur) const = 0;
   [[nodiscard]] virtual asio::awaitable<std::tuple<std::error_code, size_t>> write(const asio::const_buffer& buffer) = 0;
+  [[nodiscard]] virtual asio::awaitable<std::tuple<std::error_code, size_t>> read(asio::mutable_buffer& buffer) = 0;
 };
 
 }  // namespace org::apache::nifi::minifi::utils::net

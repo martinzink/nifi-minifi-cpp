@@ -19,6 +19,7 @@
 #pragma once
 #include <array>
 #include <cstdint>
+#include <span>
 
 namespace org::apache::nifi::minifi::modbus {
 
@@ -32,10 +33,10 @@ inline std::array<std::byte, 2> convertToBigEndian(const uint16_t value) {
 }
 
 template<class T>
-T convertFromBigEndian(const std::array<std::byte, 2>& bytes) = delete;
+T convertFromBigEndian(std::span<const std::byte, 2> bytes) = delete;
 
 template<>
-inline uint16_t convertFromBigEndian(const std::array<std::byte, 2>& bytes) {
+uint16_t convertFromBigEndian(std::span<const std::byte, 2> bytes) {
   uint16_t result = 0;
 
   result |= (static_cast<uint16_t>(bytes[0]) << 8);

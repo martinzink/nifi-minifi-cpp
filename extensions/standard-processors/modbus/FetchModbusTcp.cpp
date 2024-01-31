@@ -19,6 +19,11 @@
 
 #include <utils/net/ConnectionHandler.h>
 
+#include <asio/read.hpp>
+#include <range/v3/view/drop.hpp>
+#include <range/v3/view/take.hpp>
+
+
 #include "core/ProcessSession.h"
 #include "modbus/Error.h"
 #include "modbus/ReadModbusFunctions.h"
@@ -104,12 +109,20 @@ void FetchModbusTcp::onTrigger(core::ProcessContext&  context, core::ProcessSess
 
   gsl_Expects(handler);
 
-  processFlowFile(handler, session, flow_file);
+  processFlowFile(handler, context, session, flow_file);
 }
 
 void FetchModbusTcp::initialize() {
   setSupportedProperties(Properties);
   setSupportedRelationships(Relationships);
+}
+
+void FetchModbusTcp::readDynamicPropertyKeys(const core::ProcessContext& context) {
+  dynamic_property_keys_.clear();
+  const std::vector<std::string> dynamic_prop_keys = context.getDynamicPropertyKeys();
+  for (const auto& key : dynamic_prop_keys) {
+    dynamic_property_keys_.emplace_back(core::PropertyDefinitionBuilder<>::createProperty(key).withDescription("auto generated").supportsExpressionLanguage(true).build());
+  }
 }
 
 std::shared_ptr<core::FlowFile> FetchModbusTcp::getFlowFile(core::ProcessSession& session) const {
@@ -119,8 +132,15 @@ std::shared_ptr<core::FlowFile> FetchModbusTcp::getFlowFile(core::ProcessSession
   return session.create();
 }
 
-std::unordered_map<std::string, std::string> FetchModbusTcp::getAddressMap(const core::FlowFile& flow_file) const {
-  return {};
+std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>> FetchModbusTcp::getAddressMap(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file) {
+  std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>> address_map{};
+  for (const auto& dynamic_property : dynamic_property_keys_) {
+    if (std::string dynamic_property_value{}; context.getDynamicProperty(dynamic_property, dynamic_property_value, flow_file)) {
+      if (auto modbus_func = ReadModbusFunction::parse(++transaction_id_, dynamic_property_value); modbus_func)
+        address_map.emplace(dynamic_property.getName(), std::move(modbus_func));
+    }
+  }
+  return address_map;
 }
 
 void FetchModbusTcp::removeExpiredConnections() {
@@ -133,13 +153,18 @@ void FetchModbusTcp::removeExpiredConnections() {
 }
 
 void FetchModbusTcp::processFlowFile(const std::shared_ptr<utils::net::ConnectionHandlerBase>& connection_handler,
+    core::ProcessContext& context,
     core::ProcessSession& session,
-    const std::shared_ptr<core::FlowFile>& flow_file) const {
-  const auto address_map = getAddressMap(*flow_file);
+    const std::shared_ptr<core::FlowFile>& flow_file) {
+  std::unordered_map<std::string, std::string> result_map{};
+  const auto address_map = getAddressMap(context, flow_file);
+  if (address_map.empty()) {
+    logger_->log_warn("There are no registers to query");
+    return;
+  }
 
   std::error_code operation_error{};
-
-
+  // TODO(mzink) do shit
   if (operation_error) {
     connection_handler->reset();
     logger_->log_error("{}", operation_error.message());
@@ -147,6 +172,77 @@ void FetchModbusTcp::processFlowFile(const std::shared_ptr<utils::net::Connectio
   } else {
     session.transfer(flow_file, Success);
   }
+}
+
+nonstd::expected<std::unordered_map<std::string, std::string>, std::error_code> FetchModbusTcp::readModbus(
+    const std::shared_ptr<utils::net::ConnectionHandlerBase>& connection_handler,
+    const std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>>& address_map) {
+  nonstd::expected<std::unordered_map<std::string, std::string>, std::error_code> result;
+
+  io_context_.restart();
+  asio::co_spawn(io_context_,
+    sendRequestsAndReadResponses(*connection_handler, address_map),
+    [&result](const std::exception_ptr& exception_ptr, const auto res) {
+      if (exception_ptr) {
+        result = nonstd::make_unexpected(ModbusExceptionCode::InvalidResponse);
+      } else {
+        result = res;
+      }
+    });
+  io_context_.run();
+  return result;
+}
+
+auto FetchModbusTcp::sendRequestsAndReadResponses(utils::net::ConnectionHandlerBase& connection_handler,
+    const std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>>& address_map) -> asio::awaitable<nonstd::expected<std::unordered_map<std::string, std::string>, std::error_code>> {
+  std::unordered_map<std::string, std::string> result;
+  for (const auto& [variable, read_modbus_fn] : address_map) {
+    auto response = co_await sendRequestAndReadResponse(connection_handler, *read_modbus_fn);
+    if (!response) {
+      co_return nonstd::make_unexpected(response.error());
+    }
+    result[variable] = *response;
+  }
+  co_return result;
+}
+
+
+auto FetchModbusTcp::sendRequestAndReadResponse(utils::net::ConnectionHandlerBase& connection_handler,
+    const ReadModbusFunction& read_modbus_function) -> asio::awaitable<nonstd::expected<std::string, std::error_code>> {
+  std::string result;
+  if (auto connection_error = co_await connection_handler.setupUsableSocket(io_context_))  // NOLINT
+    co_return nonstd::make_unexpected(connection_error);
+
+  if (auto [write_error, bytes_written] = co_await connection_handler.write(asio::buffer(read_modbus_function.requestBytes())); write_error)
+    co_return nonstd::make_unexpected(write_error);
+
+  std::array<std::byte, 7> apu_buffer{};
+  asio::mutable_buffer response_apu(apu_buffer.data(), 7);
+  if (auto [read_error, bytes_read] = co_await connection_handler.read(response_apu); read_error)
+    co_return nonstd::make_unexpected(read_error);
+
+  const auto received_transaction_id = convertFromBigEndian<uint16_t>(std::span<const std::byte, 2>{apu_buffer | ranges::views::take(2)});
+  const auto received_protocol = convertFromBigEndian<uint16_t>(std::span<const std::byte, 2>{apu_buffer | ranges::views::drop(2) | ranges::views::take(2)});
+  const auto received_length = convertFromBigEndian<uint16_t>(std::span<const std::byte, 2>{apu_buffer | ranges::views::drop(4) | ranges::views::take(2)});
+  const auto unit_id = static_cast<const uint8_t>(apu_buffer[6]);
+
+  if (received_transaction_id != read_modbus_function.getTransactionId())
+    co_return nonstd::make_unexpected(ModbusExceptionCode::InvalidTransactionId);
+  if (received_protocol != 0)
+    co_return nonstd::make_unexpected(ModbusExceptionCode::IllegalProtocol);
+  if (unit_id != 0)
+    co_return nonstd::make_unexpected(ModbusExceptionCode::InvalidSlaveId);
+  if (received_length + 6 > 260 || received_length <= 1)
+    co_return nonstd::make_unexpected(ModbusExceptionCode::InvalidResponse);
+
+  std::array<std::byte, 260-7> pdu_buffer{};
+  asio::mutable_buffer response_pdu(pdu_buffer.data(), received_length-1);
+  auto [read_error, bytes_read] = co_await connection_handler.read(response_pdu);
+  if (read_error)
+    co_return nonstd::make_unexpected(read_error);
+
+  const auto pdu_span = std::span<std::byte>(pdu_buffer.data(), received_length-1);
+  co_return read_modbus_function.serializeResponsePdu(pdu_span);
 }
 
 }  // namespace org::apache::nifi::minifi::modbus
