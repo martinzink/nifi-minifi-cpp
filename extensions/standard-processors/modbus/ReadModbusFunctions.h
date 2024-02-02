@@ -81,7 +81,7 @@ class ReadModbusFunction {
       return nonstd::make_unexpected(ModbusExceptionCode::InvalidResponse);
     }
 
-    const uint8_t resp_byte_count = static_cast<uint8_t>(resp_pdu[1]);
+    const auto resp_byte_count = static_cast<uint8_t>(resp_pdu[1]);
     constexpr size_t function_code_length = 1;
     constexpr size_t unit_id_length = 1;
     if (resp_pdu.size() != resp_byte_count + function_code_length + unit_id_length) {
@@ -230,6 +230,8 @@ class ReadRegisters final : public ReadModbusFunction {
         return std::byte{0x03};
       case RegisterType::input:
         return std::byte{0x04};
+      default:
+        throw std::invalid_argument(fmt::format("Invalid RegisterType {}", magic_enum::enum_underlying(register_type_)));
     }
   }
 
@@ -249,7 +251,7 @@ class ReadRegisters final : public ReadModbusFunction {
   uint16_t number_of_points_{};
 };
 
-std::unique_ptr<ReadModbusFunction> parseReadRegister(const RegisterType register_type,
+inline std::unique_ptr<ReadModbusFunction> parseReadRegister(const RegisterType register_type,
   const uint16_t transaction_id,
   const uint8_t unit_id,
   const std::string_view address_str,

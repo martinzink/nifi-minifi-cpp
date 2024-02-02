@@ -31,10 +31,7 @@
 #include "utils/net/AsioCoro.h"
 #include "utils/net/AsioSocketUtils.h"
 
-using asio::ip::tcp;
-
 using namespace std::literals::chrono_literals;
-using std::chrono::steady_clock;
 
 namespace org::apache::nifi::minifi::modbus {
 
