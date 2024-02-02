@@ -20,6 +20,7 @@
 #include <array>
 #include <cstdint>
 #include <span>
+#include <string_view>
 
 namespace org::apache::nifi::minifi::modbus {
 
@@ -33,15 +34,35 @@ inline std::array<std::byte, 2> convertToBigEndian(const uint16_t value) {
 }
 
 template<class T>
-T convertFromBigEndian(std::span<const std::byte, 2> bytes) = delete;
+T convertFromBigEndian(std::span<const std::byte, std::max(sizeof(T), sizeof(uint16_t))> bytes) = delete;
 
 template<>
-uint16_t convertFromBigEndian(std::span<const std::byte, 2> bytes) {
+inline uint16_t convertFromBigEndian(std::span<const std::byte, 2> bytes) {
   uint16_t result = 0;
 
   result |= (static_cast<uint16_t>(bytes[0]) << 8);
   result |= static_cast<uint16_t>(bytes[1]);
 
   return result;
+}
+
+template<>
+inline char convertFromBigEndian(std::span<const std::byte, 2> bytes) {
+  return static_cast<char>(bytes[0]);  // TODO(mzink) which byte cula?
+}
+
+template<class Type>
+bool type_matches(const std::string_view) {
+  return false;
+}
+
+template<>
+inline bool type_matches<uint16_t>(const std::string_view type_str) {
+  return type_str == "UINT";
+}
+
+template<>
+inline bool type_matches<bool>(const std::string_view type_str) {
+  return type_str == "BOOL";
 }
 }  // namespace org::apache::nifi::minifi::modbus

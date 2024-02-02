@@ -70,7 +70,7 @@ class ListedFile : public utils::ListedObject {
 
  private:
   [[nodiscard]] bool matchesRegex(const std::optional<std::regex>& file_regex, const std::optional<std::regex>& path_regex) const {
-    if (file_regex && !std::regex_match(full_file_path_.filename().string(), *file_regex))
+      if (file_regex && !std::regex_match(full_file_path_.filename().string(), *file_regex))
       return false;
     if (path_regex && !std::regex_match(std::filesystem::relative(full_file_path_.parent_path(), input_directory_).string(), *path_regex))
       return false;

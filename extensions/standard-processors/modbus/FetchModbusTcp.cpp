@@ -23,6 +23,7 @@
 #include <range/v3/view/drop.hpp>
 #include <range/v3/view/take.hpp>
 
+#include "core/Resource.h"
 
 #include "core/ProcessSession.h"
 #include "modbus/Error.h"
@@ -73,6 +74,8 @@ void FetchModbusTcp::onSchedule(core::ProcessContext& context, core::ProcessSess
       throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Invalid controller service: " + *context_name);
     }
   }
+
+  readDynamicPropertyKeys(context);
 }
 
 void FetchModbusTcp::onTrigger(core::ProcessContext&  context, core::ProcessSession& session) {
@@ -86,6 +89,7 @@ void FetchModbusTcp::onTrigger(core::ProcessContext&  context, core::ProcessSess
 
   auto hostname = context.getProperty(Hostname, flow_file).value_or(std::string{});
   auto port = context.getProperty(Port, flow_file).value_or(std::string{});
+
   if (hostname.empty() || port.empty()) {
     logger_->log_error("[{}] invalid target endpoint: hostname: {}, port: {}", flow_file->getUUIDStr(),
         hostname.empty() ? "(empty)" : hostname.c_str(),
@@ -134,9 +138,11 @@ std::shared_ptr<core::FlowFile> FetchModbusTcp::getFlowFile(core::ProcessSession
 
 std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>> FetchModbusTcp::getAddressMap(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file) {
   std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>> address_map{};
+  const auto unit_id_str = context.getProperty(UnitIdentifier, flow_file).value_or("0");
+  const uint8_t unit_id = utils::string::parse<uint8_t>(unit_id_str).value_or(1);
   for (const auto& dynamic_property : dynamic_property_keys_) {
     if (std::string dynamic_property_value{}; context.getDynamicProperty(dynamic_property, dynamic_property_value, flow_file)) {
-      if (auto modbus_func = ReadModbusFunction::parse(++transaction_id_, dynamic_property_value); modbus_func)
+      if (auto modbus_func = ReadModbusFunction::parse(++transaction_id_, unit_id, dynamic_property_value); modbus_func)
         address_map.emplace(dynamic_property.getName(), std::move(modbus_func));
     }
   }
@@ -160,16 +166,18 @@ void FetchModbusTcp::processFlowFile(const std::shared_ptr<utils::net::Connectio
   const auto address_map = getAddressMap(context, flow_file);
   if (address_map.empty()) {
     logger_->log_warn("There are no registers to query");
+    session.transfer(flow_file, Failure);
     return;
   }
 
-  std::error_code operation_error{};
-  // TODO(mzink) do shit
-  if (operation_error) {
+  if (auto results = readModbus(connection_handler, address_map); !results) {
     connection_handler->reset();
-    logger_->log_error("{}", operation_error.message());
+    logger_->log_error("{}", results.error().message());
     session.transfer(flow_file, Failure);
   } else {
+    for (auto& [result_name, result_value] : *results) {
+      flow_file->addAttribute(result_name, result_value);
+    }
     session.transfer(flow_file, Success);
   }
 }
@@ -230,7 +238,7 @@ auto FetchModbusTcp::sendRequestAndReadResponse(utils::net::ConnectionHandlerBas
     co_return nonstd::make_unexpected(ModbusExceptionCode::InvalidTransactionId);
   if (received_protocol != 0)
     co_return nonstd::make_unexpected(ModbusExceptionCode::IllegalProtocol);
-  if (unit_id != 0)
+  if (unit_id != read_modbus_function.getUnitId())
     co_return nonstd::make_unexpected(ModbusExceptionCode::InvalidSlaveId);
   if (received_length + 6 > 260 || received_length <= 1)
     co_return nonstd::make_unexpected(ModbusExceptionCode::InvalidResponse);
@@ -244,5 +252,8 @@ auto FetchModbusTcp::sendRequestAndReadResponse(utils::net::ConnectionHandlerBas
   const auto pdu_span = std::span<std::byte>(pdu_buffer.data(), received_length-1);
   co_return read_modbus_function.serializeResponsePdu(pdu_span);
 }
+
+REGISTER_RESOURCE(FetchModbusTcp, Processor);
+
 
 }  // namespace org::apache::nifi::minifi::modbus

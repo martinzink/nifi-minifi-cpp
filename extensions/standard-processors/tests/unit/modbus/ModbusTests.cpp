@@ -25,7 +25,7 @@ std::vector<std::byte> createByteVector(Bytes... bytes) {
 }
 
 TEST_CASE("ReadCoilStatus") {
-  const auto read_coil_status = ReadCoilStatus(280, 19, 19);
+  const auto read_coil_status = ReadCoilStatus(280, 0, 19, 19);
   {
     {
       CHECK(read_coil_status.rawPdu() == createByteVector(0x01, 0x00, 0x13, 0x00, 0x13));
@@ -59,7 +59,7 @@ TEST_CASE("ReadCoilStatus") {
 
 TEST_CASE("ReadHoldingRegisters") {
   {
-    const auto read_holding_registers = ReadHoldingRegisters<uint16_t>(0, 5, 3);
+    const auto read_holding_registers = ReadRegisters<uint16_t>(RegisterType::holding, 0, 0, 5, 3);
     {
       CHECK(read_holding_registers.rawPdu() == createByteVector(0x03, 0x00, 0x05, 0x00, 0x03));
     }
@@ -72,13 +72,67 @@ TEST_CASE("ReadHoldingRegisters") {
 
 TEST_CASE("ReadInputRegisters") {
   {
-    const auto read_input_registers = ReadInputRegisters<uint16_t>(12, 5, 3);
+    const auto read_input_registers = ReadRegisters<uint16_t>(RegisterType::input, 0, 0, 5, 3);
     {
       CHECK(read_input_registers.rawPdu() == createByteVector(0x04, 0x00, 0x05, 0x00, 0x03));
     }
     auto serialized_response = read_input_registers.serializeResponsePdu(createByteVector(0x04, 0x06, 0x3A, 0x98, 0x13, 0x88, 0x00, 0xC8));
     REQUIRE(serialized_response.has_value());
     CHECK(*serialized_response == "15000, 5000, 200");
+  }
+}
+
+TEST_CASE("ParseAddress") {
+  constexpr uint16_t transaction_id = 1;
+  constexpr uint8_t unit_id = 0;
+  {
+    auto expected = ReadRegisters<uint16_t>(RegisterType::holding, transaction_id, unit_id, 20, 10);
+
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "holding-register:20:UINT[10]") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "400020:UINT[10]") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "4x00020:UINT[10]") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "40020:UINT[10]") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "4x0020:UINT[10]") == expected);
+  }
+
+  {
+    auto expected = ReadRegisters<uint16_t>(RegisterType::holding, transaction_id, unit_id, 5678, 1);
+
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "holding-register:5678") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "405678") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "4x05678") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "45678") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "4x5678") == expected);
+  }
+
+  {
+    auto expected = ReadRegisters<uint16_t>(RegisterType::input, transaction_id, unit_id, 5678, 1);
+
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "input-register:5678") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "305678") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "3x05678") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "35678") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "3x5678") == expected);
+  }
+
+  {
+    auto expected = ReadCoilStatus(transaction_id, unit_id, 4234, 1);
+
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "coil:4234") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "104234") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "1x04234") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "14234") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "1x4234") == expected);
+  }
+
+  {
+    auto expected = ReadCoilStatus(transaction_id, unit_id, 222, 12);
+
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "coil:222[12]") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "100222[12]") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "1x00222[12]") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "10222[12]") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "1x0222[12]") == expected);
   }
 }
 

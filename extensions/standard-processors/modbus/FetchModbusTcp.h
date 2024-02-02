@@ -53,7 +53,14 @@ class FetchModbusTcp final : public core::Processor {
       .build();
   EXTENSIONAPI static constexpr auto Port = core::PropertyDefinitionBuilder<>::createProperty("Port")
       .withDescription("The port or service on the destination.")
+      .withDefaultValue("502")
       .isRequired(true)
+      .supportsExpressionLanguage(true)
+      .build();
+  EXTENSIONAPI static constexpr auto UnitIdentifier = core::PropertyDefinitionBuilder<>::createProperty("Unit identifier")
+      .withDescription("The port or service on the destination.")
+      .isRequired(true)
+      .withDefaultValue("0")
       .supportsExpressionLanguage(true)
       .build();
   EXTENSIONAPI static constexpr auto IdleConnectionExpiration = core::PropertyDefinitionBuilder<>::createProperty("Idle Connection Expiration")
@@ -83,9 +90,10 @@ class FetchModbusTcp final : public core::Processor {
       .withAllowedTypes<minifi::controllers::SSLContextService>()
       .build();
 
-  EXTENSIONAPI static constexpr auto Properties = std::array<core::PropertyReference, 8>{
+  EXTENSIONAPI static constexpr auto Properties = std::array<core::PropertyReference, 7>{
     Hostname,
     Port,
+    UnitIdentifier,
     IdleConnectionExpiration,
     ConnectionPerFlowFile,
     Timeout,
@@ -96,9 +104,9 @@ class FetchModbusTcp final : public core::Processor {
   EXTENSIONAPI static constexpr auto Failure = core::RelationshipDefinition{"failure", "An error occurred processing"};
   EXTENSIONAPI static constexpr auto Relationships = std::array{Success, Failure};
 
-  EXTENSIONAPI static constexpr bool SupportsDynamicProperties = false;
-  EXTENSIONAPI static constexpr bool SupportsDynamicRelationships = true;
-  EXTENSIONAPI static constexpr core::annotation::Input InputRequirement = core::annotation::Input::INPUT_REQUIRED;
+  EXTENSIONAPI static constexpr bool SupportsDynamicProperties = true;
+  EXTENSIONAPI static constexpr bool SupportsDynamicRelationships = false;
+  EXTENSIONAPI static constexpr core::annotation::Input InputRequirement = core::annotation::Input::INPUT_ALLOWED;
   EXTENSIONAPI static constexpr bool IsSingleThreaded = true;
 
   ADD_COMMON_VIRTUAL_FUNCTIONS_FOR_PROCESSORS
