@@ -38,6 +38,7 @@ from .containers.MinifiC2ServerContainer import MinifiC2ServerContainer
 from .containers.GrafanaLokiContainer import GrafanaLokiContainer
 from .containers.GrafanaLokiContainer import GrafanaLokiOptions
 from .containers.ReverseProxyContainer import ReverseProxyContainer
+from .containers.DiagSlave import DiagSlave
 from .FeatureContext import FeatureContext
 
 
@@ -285,6 +286,14 @@ class ContainerStore:
         elif engine == "reverse-proxy":
             return self.containers.setdefault(container_name,
                                               ReverseProxyContainer(feature_context=feature_context,
+                                                                    name=container_name,
+                                                                    vols=self.vols,
+                                                                    network=self.network,
+                                                                    image_store=self.image_store,
+                                                                    command=command))
+        elif engine == "diag-slave-tcp":
+            return self.containers.setdefault(container_name,
+                                              DiagSlave(feature_context=feature_context,
                                                                     name=container_name,
                                                                     vols=self.vols,
                                                                     network=self.network,
