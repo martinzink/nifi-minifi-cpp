@@ -21,48 +21,31 @@
 #include <cstdint>
 #include <span>
 #include <string_view>
+#include <bit>
 
 namespace org::apache::nifi::minifi::modbus {
 
-inline std::array<std::byte, 2> convertToBigEndian(const uint16_t value) {
-  std::array<std::byte, 2> result{};
+template<typename T, std::endian to_endianness = std::endian::big>
+std::array<std::byte, std::max(sizeof(T), sizeof(uint16_t))> toBytes(T value) {
+  std::array<std::byte, std::max(sizeof(T), sizeof(uint16_t))> buffer{};
 
-  result[0] = static_cast<std::byte>((value >> 8) & 0xFF);
-  result[1] = static_cast<std::byte>(value & 0xFF);
+  std::copy_n(reinterpret_cast<std::byte*>(&value), sizeof(T), buffer.begin());
 
-  return result;
+  if constexpr (std::endian::native != to_endianness) {
+    std::reverse(buffer.begin(), buffer.end());
+  }
+
+  return buffer;
 }
 
-template<class T>
-T convertFromBigEndian(std::span<const std::byte, std::max(sizeof(T), sizeof(uint16_t))> bytes) = delete;
+template<typename T, std::endian from_endianness = std::endian::big>
+T fromBytes(std::array<std::byte, std::max(sizeof(T), sizeof(uint16_t))> bytes) {
+  if constexpr (std::endian::native != from_endianness) {
+    std::reverse(bytes.begin(), bytes.end());
+  }
 
-template<>
-inline uint16_t convertFromBigEndian(std::span<const std::byte, 2> bytes) {
-  uint16_t result = 0;
+  T* buffer = reinterpret_cast<T*>(bytes.data());
 
-  result |= (static_cast<uint16_t>(bytes[0]) << 8);
-  result |= static_cast<uint16_t>(bytes[1]);
-
-  return result;
-}
-
-template<>
-inline char convertFromBigEndian(std::span<const std::byte, 2> bytes) {
-  return static_cast<char>(bytes[0]);  // TODO(mzink) which byte cula?
-}
-
-template<class Type>
-bool type_matches(const std::string_view) {
-  return false;
-}
-
-template<>
-inline bool type_matches<uint16_t>(const std::string_view type_str) {
-  return type_str == "UINT";
-}
-
-template<>
-inline bool type_matches<bool>(const std::string_view type_str) {
-  return type_str == "BOOL";
+  return *buffer;
 }
 }  // namespace org::apache::nifi::minifi::modbus

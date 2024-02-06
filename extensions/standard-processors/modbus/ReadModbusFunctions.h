@@ -57,9 +57,9 @@ class ReadModbusFunction {
     const uint16_t length = pdu.size() + 1;
 
     std::vector<std::byte> request;
-    ranges::copy(convertToBigEndian(transaction_id_), std::back_inserter(request));
+    ranges::copy(toBytes(transaction_id_), std::back_inserter(request));
     ranges::copy(modbus_service_protocol_identifier, std::back_inserter(request));
-    ranges::copy(convertToBigEndian(length), std::back_inserter(request));
+    ranges::copy(toBytes(length), std::back_inserter(request));
     request.push_back(unit_identifier);
     ranges::copy(pdu, std::back_inserter(request));
     return request;
@@ -72,7 +72,7 @@ class ReadModbusFunction {
   static std::unique_ptr<ReadModbusFunction> parse(uint16_t transaction_id, uint8_t unit_id, const std::string& address);
 
  protected:
-  [[nodiscard]] auto getRespBytes(std::span<const std::byte> resp_pdu) const -> nonstd::expected<ranges::subrange<std::vector<std::byte>::const_iterator>, std::error_code> {
+  [[nodiscard]] auto getRespBytes(std::span<const std::byte> resp_pdu) const -> nonstd::expected<std::span<const std::byte>, std::error_code> {
     if (resp_pdu.size() < 2) {
       return nonstd::make_unexpected(ModbusExceptionCode::InvalidResponse);
     }
@@ -92,7 +92,7 @@ class ReadModbusFunction {
       return nonstd::make_unexpected(ModbusExceptionCode::InvalidResponse);
     }
 
-    return ranges::subrange<std::vector<std::byte>::const_iterator>(resp_pdu.begin() + 2, resp_pdu.end());
+    return resp_pdu.subspan(2, resp_pdu.size()-2);
   }
 
   [[nodiscard]] virtual std::byte getFunctionCode() const = 0;
@@ -114,8 +114,8 @@ class ReadCoilStatus final : public ReadModbusFunction {
   [[nodiscard]] std::vector<std::byte> rawPdu() const override {
     std::vector<std::byte> result;
     result.push_back(getFunctionCode());
-    ranges::copy(convertToBigEndian(starting_address_), std::back_inserter(result));
-    ranges::copy(convertToBigEndian(number_of_points_), std::back_inserter(result));
+    ranges::copy(toBytes(starting_address_), std::back_inserter(result));
+    ranges::copy(toBytes(number_of_points_), std::back_inserter(result));
     return result;
   }
 
@@ -194,8 +194,8 @@ class ReadRegisters final : public ReadModbusFunction {
   [[nodiscard]] std::vector<std::byte> rawPdu() const override {
     std::vector<std::byte> result;
     result.push_back(getFunctionCode());
-    ranges::copy(convertToBigEndian(starting_address_), std::back_inserter(result));
-    ranges::copy(convertToBigEndian(number_of_points_), std::back_inserter(result));
+    ranges::copy(toBytes(starting_address_), std::back_inserter(result));
+    ranges::copy(toBytes(number_of_points_), std::back_inserter(result));
     return result;
   }
 
@@ -209,9 +209,10 @@ class ReadRegisters final : public ReadModbusFunction {
       return nonstd::make_unexpected(resp_bytes.error());
 
     std::vector<T> holding_registers{};
-    for (auto&& register_value : ranges::views::chunk(*resp_bytes, 2)) {
-      auto span = std::span<const std::byte, 2>(register_value);
-      holding_registers.push_back(convertFromBigEndian<T>(span));
+    for (auto&& register_chunk : ranges::views::chunk(*resp_bytes, std::max(sizeof(T), sizeof(uint16_t)))) {
+      std::array<std::byte, std::max(sizeof(T), sizeof(uint16_t))> register_value{};
+      ranges::copy(register_chunk, register_value.begin());
+      holding_registers.push_back(fromBytes<T>(std::move(register_value)));
     }
     return holding_registers;
   }
@@ -236,7 +237,7 @@ class ReadRegisters final : public ReadModbusFunction {
   }
 
   bool operator==(const ReadModbusFunction& rhs) const override {
-    const auto read_holding_registers_rhs = dynamic_cast<const ReadRegisters*>(&rhs);
+    const auto read_holding_registers_rhs = dynamic_cast<const ReadRegisters<T>*>(&rhs);
     if (!read_holding_registers_rhs)
       return false;
 
@@ -262,9 +263,51 @@ inline std::unique_ptr<ReadModbusFunction> parseReadRegister(const RegisterType 
     return nullptr;
   }
   uint16_t length = length_str.empty() ? 1 : utils::string::parse<uint16_t>(length_str).value_or(1);
-  if (type_str.empty() || type_str == "UINT") {
+
+  if (type_str.empty() || type_str == "UINT" || type_str == "WORD") {
     return std::make_unique<ReadRegisters<uint16_t>>(register_type, transaction_id, unit_id, *start_address, length);
   }
+
+  if (type_str == "BOOL") {
+    return std::make_unique<ReadRegisters<bool>>(register_type, transaction_id, unit_id, *start_address, length);
+  }
+
+  if (type_str == "SINT") {
+    return std::make_unique<ReadRegisters<int8_t>>(register_type, transaction_id, unit_id, *start_address, length);
+  }
+
+  if (type_str == "USINT" || type_str == "BYTE") {
+    return std::make_unique<ReadRegisters<uint8_t>>(register_type, transaction_id, unit_id, *start_address, length);
+  }
+
+  if (type_str == "INT") {
+    return std::make_unique<ReadRegisters<int16_t>>(register_type, transaction_id, unit_id, *start_address, length);
+  }
+
+  if (type_str == "DINT") {
+    return std::make_unique<ReadRegisters<int32_t>>(register_type, transaction_id, unit_id, *start_address, length);
+  }
+
+  if (type_str == "UDINT" || type_str == "DWORD") {
+    return std::make_unique<ReadRegisters<uint32_t>>(register_type, transaction_id, unit_id, *start_address, length);
+  }
+
+  if (type_str == "LINT") {
+    return std::make_unique<ReadRegisters<int64_t>>(register_type, transaction_id, unit_id, *start_address, length);
+  }
+
+  if (type_str == "ULINT" || type_str == "LWORD") {
+    return std::make_unique<ReadRegisters<uint64_t>>(register_type, transaction_id, unit_id, *start_address, length);
+  }
+
+  if (type_str == "REAL") {
+    return std::make_unique<ReadRegisters<float>>(register_type, transaction_id, unit_id, *start_address, length);
+  }
+
+  if (type_str == "LREAL") {
+    return std::make_unique<ReadRegisters<double>>(register_type, transaction_id, unit_id, *start_address, length);
+  }
+
   if (type_str == "CHAR") {
     return std::make_unique<ReadRegisters<char>>(register_type, transaction_id, unit_id, *start_address, length);
   }

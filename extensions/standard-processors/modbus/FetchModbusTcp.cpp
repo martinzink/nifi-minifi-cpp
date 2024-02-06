@@ -226,9 +226,9 @@ auto FetchModbusTcp::sendRequestAndReadResponse(utils::net::ConnectionHandlerBas
   if (auto [read_error, bytes_read] = co_await connection_handler.read(response_apu); read_error)
     co_return nonstd::make_unexpected(read_error);
 
-  const auto received_transaction_id = convertFromBigEndian<uint16_t>(std::span<const std::byte, 2>{apu_buffer | ranges::views::take(2)});
-  const auto received_protocol = convertFromBigEndian<uint16_t>(std::span<const std::byte, 2>{apu_buffer | ranges::views::drop(2) | ranges::views::take(2)});
-  const auto received_length = convertFromBigEndian<uint16_t>(std::span<const std::byte, 2>{apu_buffer | ranges::views::drop(4) | ranges::views::take(2)});
+  const auto received_transaction_id = fromBytes<uint16_t>({apu_buffer[0], apu_buffer[1]});
+  const auto received_protocol = fromBytes<uint16_t>({apu_buffer[2], apu_buffer[3]});
+  const auto received_length = fromBytes<uint16_t>({apu_buffer[4], apu_buffer[5]});
   const auto unit_id = static_cast<const uint8_t>(apu_buffer[6]);
 
   if (received_transaction_id != read_modbus_function.getTransactionId())

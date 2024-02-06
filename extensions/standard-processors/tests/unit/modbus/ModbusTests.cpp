@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <numbers>
 
 #include "modbus/ReadModbusFunctions.h"
 #include "Catch.h"
@@ -82,6 +83,42 @@ TEST_CASE("ReadInputRegisters") {
   }
 }
 
+TEST_CASE("ByteConversion") {
+  {
+    constexpr std::array from{std::byte{0x12}, std::byte{0x24}};
+
+    CHECK(4644 == modbus::fromBytes<uint16_t>(from));
+    CHECK(9234 == modbus::fromBytes<uint16_t, std::endian::little>(from));
+  }
+
+  {
+    constexpr std::array from{std::byte{0x00}, std::byte{0x61}};
+    CHECK('a' == modbus::fromBytes<char>(from));
+  }
+
+  {
+    constexpr std::array from{std::byte{0x61}, std::byte{0x00}};
+    CHECK('\0' == modbus::fromBytes<char>(from));
+  }
+
+  {
+    constexpr std::array from{std::byte{0x1A}, std::byte{0x45}, std::byte{0x02}, std::byte{0x3F}};
+    CHECK(440730175 == modbus::fromBytes<uint32_t>(from));
+  }
+
+  {
+    constexpr std::array from{std::byte{0x40}, std::byte{0xD8}, std::byte{0xF5}, std::byte{0xC3}};
+    CHECK(6.78F == modbus::fromBytes<float>(from));
+  }
+
+  {
+    constexpr std::array<std::byte, 8> pi_double{
+      std::byte{0x40}, std::byte{0x09}, std::byte{0x21}, std::byte{0xFB},
+      std::byte{0x54}, std::byte{0x44}, std::byte{0x2d}, std::byte{0x18}};
+    CHECK(std::numbers::pi == modbus::fromBytes<double>(pi_double));
+  }
+}
+
 TEST_CASE("ParseAddress") {
   constexpr uint16_t transaction_id = 1;
   constexpr uint8_t unit_id = 0;
@@ -103,6 +140,36 @@ TEST_CASE("ParseAddress") {
     CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "4x05678") == expected);
     CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "45678") == expected);
     CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "4x5678") == expected);
+  }
+
+  {
+    auto expected = ReadRegisters<uint16_t>(RegisterType::input, transaction_id, unit_id, 5678, 1);
+
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "input-register:5678") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "305678") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "3x05678") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "35678") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "3x5678") == expected);
+  }
+
+  {
+    auto expected = ReadRegisters<char>(RegisterType::holding, transaction_id, unit_id, 5678, 1);
+
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "holding-register:5678:CHAR") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "405678:CHAR") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "4x05678:CHAR") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "45678:CHAR") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "4x5678:CHAR") == expected);
+  }
+
+  {
+    auto expected = ReadRegisters<float>(RegisterType::holding, transaction_id, unit_id, 7777, 2);
+
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "holding-register:7777:REAL[2]") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "407777:REAL[2]") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "4x07777:REAL[2]") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "47777:REAL[2]") == expected);
+    CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "4x7777:REAL[2]") == expected);
   }
 
   {

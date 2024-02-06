@@ -25,15 +25,6 @@
 #include "utils/net/ConnectionHandlerBase.h"
 
 namespace org::apache::nifi::minifi::modbus {
-enum class AddressAccessStrategy {
-  AddressFromProperty,
-  AddressFromText,
-  AddressFromFile
-};
-
-}  // namespace org::apache::nifi::minifi::modbus
-
-namespace org::apache::nifi::minifi::modbus {
 
 class ReadModbusFunction;
 
@@ -47,7 +38,6 @@ class FetchModbusTcp final : public core::Processor {
 
   EXTENSIONAPI static constexpr auto Hostname = core::PropertyDefinitionBuilder<>::createProperty("Hostname")
       .withDescription("The ip address or hostname of the destination.")
-      .withDefaultValue("localhost")
       .isRequired(true)
       .supportsExpressionLanguage(true)
       .build();
