@@ -294,11 +294,11 @@ class ContainerStore:
         elif engine == "diag-slave-tcp":
             return self.containers.setdefault(container_name,
                                               DiagSlave(feature_context=feature_context,
-                                                                    name=container_name,
-                                                                    vols=self.vols,
-                                                                    network=self.network,
-                                                                    image_store=self.image_store,
-                                                                    command=command))
+                                                        name=container_name,
+                                                        vols=self.vols,
+                                                        network=self.network,
+                                                        image_store=self.image_store,
+                                                        command=command))
         else:
             raise Exception('invalid flow engine: \'%s\'' % engine)
 

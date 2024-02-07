@@ -1279,8 +1279,3 @@ def step_impl(context):
 @given(u'PLC register has been set with {modbus_cmd} command')
 def step_impl(context, modbus_cmd):
     context.test.set_value_on_plc_with_modbus(context.test.get_container_name_with_postfix('diag-slave-tcp'), modbus_cmd)
-
-
-@given(u'the PLC has \'M\',\'i\',\'N\',\'i\',\'F\',\'i\' in its input registers starting from 4444')
-def step_impl(context):
-    raise NotImplementedError(u'STEP: Given the PLC has \'M\',\'i\',\'N\',\'i\',\'F\',\'i\' in its input registers starting from 4444')
