@@ -330,6 +330,17 @@ void ProcessSession::appendBuffer(const std::shared_ptr<core::FlowFile>& flow_fi
   });
 }
 
+std::shared_ptr<io::OutputStream> ProcessSession::getFlowFileOutputStream(FlowFile& flow_file) {
+  std::shared_ptr<ResourceClaim> claim = flow_file.getResourceClaim();
+
+  if (!claim)
+    claim = content_session_->create();
+
+  std::shared_ptr<io::OutputStream> stream = content_session_->write(claim);
+  return stream;
+}
+
+
 std::shared_ptr<io::InputStream> ProcessSession::getFlowFileContentStream(const std::shared_ptr<core::FlowFile>& flow_file) {
   if (flow_file->getResourceClaim() == nullptr) {
     logger_->log_debug("For {}, no resource claim but size is {}", flow_file->getUUIDStr(), flow_file->getSize());
