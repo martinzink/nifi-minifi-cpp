@@ -57,6 +57,8 @@ class Record {
     return schema;
   }
 
+  bool operator==(const Record& rhs) const = default;
+
  private:
   std::unordered_map<std::string, RecordField> fields_;
 };

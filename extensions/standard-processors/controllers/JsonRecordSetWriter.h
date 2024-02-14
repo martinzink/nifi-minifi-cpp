@@ -24,7 +24,7 @@
 
 namespace org::apache::nifi::minifi::standard {
 
-class JsonRecordSetWriter : public core::RecordSetWriter {
+class JsonRecordSetWriter final : public core::RecordSetWriter {
  public:
   explicit JsonRecordSetWriter(const std::string& name, const utils::Identifier& uuid = {});
   explicit JsonRecordSetWriter(const std::string& name, const std::shared_ptr<Configure>& configuration);

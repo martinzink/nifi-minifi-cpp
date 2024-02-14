@@ -18,33 +18,16 @@
 
 #include "../Catch.h"
 #include "../TestBase.h"
-#include "core/Record.h"
+#include "../TestRecord.h"
 
 
 namespace org::apache::nifi::minifi::core::test {
 
-Record createSampleRecord() {
-  using namespace date::literals;  // NOLINT(google-build-using-namespace)
-  using namespace std::literals::chrono_literals;
-  Record record;
+TEST_CASE("RecordField tests") {
+  auto record_field_one = RecordField{.value_ = "foo"};
+  auto record_field_two = RecordField{.value_ =  "bar"};
 
-  record["when"] = RecordField{.value_ = date::sys_days(2012_y / 07 / 01) + 9h + 53min + 00s};
-  record["foo"] = RecordField{.value_ = "asd"};
-  record["bar"] = RecordField{.value_ = int64_t{123}};
-  record["baz"] = RecordField{.value_ = 3.14};
-  record["is_test"] = RecordField{.value_ = true};
-  RecordArray qux;
-  qux.push_back(RecordField{.value_ = true});
-  qux.push_back(RecordField{.value_ = false});
-  qux.push_back(RecordField{.value_ = true});
-  RecordObject quux;
-  quux["Apfel"] = RecordField{.value_ = "apple"};
-  quux["Birne"] = RecordField{.value_ = "pear"};
-  quux["Aprikose"] = RecordField{.value_ = "apricot"};
-
-  record["qux"] = RecordField{.value_=qux};
-  record["quux"] = RecordField{.value_=quux};
-  return record;
+  CHECK(record_field_one == record_field_two);
 }
 
 TEST_CASE("RecordSchema test") {

@@ -29,7 +29,7 @@ const rapidjson::Value* getSchemaElement(const rapidjson::Value* const schema, c
   return &(element_schema_itr->value);
 }
 
-nonstd::expected<core::RecordField, std::error_code> parse(rapidjson::Value& json_value, const rapidjson::Value* const schema) {
+nonstd::expected<core::RecordField, std::error_code> parse(const rapidjson::Value& json_value, const rapidjson::Value* const schema) {
   if (json_value.IsDouble()) {
     return core::RecordField{.value_ = json_value.GetDouble()};
   }
@@ -51,11 +51,11 @@ nonstd::expected<core::RecordField, std::error_code> parse(rapidjson::Value& jso
   }
   if (json_value.IsArray()) {
     core::RecordArray record_array;
-    for (auto itr = json_value.Begin(); itr != json_value.End(); ++itr) {
+    for (const auto& element : json_value.GetArray()) {
       const rapidjson::Value* element_schema = nullptr;
       if (schema && schema->IsArray())
         element_schema = schema->Begin();
-      auto element_field = parse(*itr, element_schema);
+      auto element_field = parse(element, element_schema);
       if (!element_field)
         return nonstd::make_unexpected(element_field.error());
       record_array.push_back(*element_field);
@@ -64,10 +64,10 @@ nonstd::expected<core::RecordField, std::error_code> parse(rapidjson::Value& jso
   }
   if (json_value.IsObject()) {
     core::RecordObject record_object;
-    for (auto itr = json_value.MemberBegin(); itr != json_value.MemberEnd(); ++itr) {
-      auto element_key = itr->name.GetString();
+    for (const auto& m : json_value.GetObject()) {
+      auto element_key = m.name.GetString();
       auto schema_element = getSchemaElement(schema, element_key);
-      auto element_field = parse(itr->value, schema_element);
+      auto element_field = parse(m.value, schema_element);
       if (!element_field)
         return nonstd::make_unexpected(element_field.error());
       record_object[element_key] = *element_field;
@@ -83,10 +83,10 @@ nonstd::expected<core::Record, std::error_code> parseDocument(rapidjson::Documen
   if (!document.IsObject()) {
     return nonstd::make_unexpected(std::make_error_code(std::errc::invalid_argument));
   }
-  for (auto itr = document.MemberBegin(); itr != document.MemberEnd(); ++itr) {
-    const auto element_key = itr->name.GetString();
+  for (const auto& member : document.GetObject()) {
+    const auto element_key = member.name.GetString();
     const auto element_schema = getSchemaElement(record_schema, element_key);
-    auto element_field = parse(itr->value, element_schema);
+    auto element_field = parse(member.value, element_schema);
     if (!element_field)
       return nonstd::make_unexpected(element_field.error());
     result[element_key] = *element_field;
@@ -97,7 +97,7 @@ nonstd::expected<core::Record, std::error_code> parseDocument(rapidjson::Documen
 
 nonstd::expected<core::RecordSet, std::error_code> JsonRecordSetReader::read(const std::shared_ptr<core::FlowFile>& flow_file, core::ProcessSession& session, const core::RecordSchema* const record_schema) {
   core::RecordSet record_set{};
-  session.read(flow_file, [&record_set, &record_schema](const std::shared_ptr<io::InputStream>& input_stream) -> int64_t {
+  auto read_result = session.read(flow_file, [&record_set, &record_schema](const std::shared_ptr<io::InputStream>& input_stream) -> int64_t {
     std::string content;
     content.resize(input_stream->size());
     const int64_t read_ret = input_stream->read(as_writable_bytes(std::span(content)));
@@ -108,7 +108,7 @@ nonstd::expected<core::RecordSet, std::error_code> JsonRecordSetReader::read(con
     std::string line;
     while(std::getline(ss, line,'\n')){
       rapidjson::Document document;
-      rapidjson::ParseResult parse_result = document.Parse<rapidjson::kParseStopWhenDoneFlag>(content.data());
+      rapidjson::ParseResult parse_result = document.Parse<rapidjson::kParseStopWhenDoneFlag>(line);
       if (parse_result.IsError())
         return -1;
       auto record = parseDocument(document, record_schema);
@@ -118,6 +118,8 @@ nonstd::expected<core::RecordSet, std::error_code> JsonRecordSetReader::read(con
     }
     return read_ret;
   });
+  if (io::isError(read_result))
+    return nonstd::make_unexpected(std::make_error_code(std::errc::invalid_argument));
   return record_set;
 }
 

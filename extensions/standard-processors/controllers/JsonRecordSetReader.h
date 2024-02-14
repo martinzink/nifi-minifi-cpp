@@ -24,7 +24,7 @@
 
 namespace org::apache::nifi::minifi::standard {
 
-class JsonRecordSetReader : public core::RecordSetReader {
+class JsonRecordSetReader final : public core::RecordSetReader {
  public:
   explicit JsonRecordSetReader(const std::string& name, const utils::Identifier& uuid = {});
   explicit JsonRecordSetReader(const std::string& name, const std::shared_ptr<Configure>& configuration);

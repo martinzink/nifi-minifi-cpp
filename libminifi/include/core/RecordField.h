@@ -32,6 +32,8 @@ using RecordObject = std::unordered_map<std::string, RecordField>;
 
 struct RecordField {
   std::variant<std::string, int64_t, double, bool, std::chrono::system_clock::time_point, RecordArray, RecordObject> value_;
+
+  bool operator==(const RecordField& rhs) const = default;
 };
 
 template<typename RecordFieldType>
