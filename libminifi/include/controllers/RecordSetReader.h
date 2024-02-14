@@ -24,17 +24,11 @@
 
 namespace org::apache::nifi::minifi::core {
 
-enum class RecordSchemaWriteStrategy {
-  DoNotWrite,
-  SetSchemaName,
-  SetSchemaText
-};
-
-class RecordSetWriter : public controller::ControllerService {
- public:
+class RecordSetReader : public controller::ControllerService {
+public:
   using ControllerService::ControllerService;
 
-  virtual void write(const RecordSet& record_set, const std::shared_ptr<FlowFile>& flow_file, ProcessSession& session) = 0;
+  virtual nonstd::expected<RecordSet, std::error_code> read(const std::shared_ptr<FlowFile>& flow_file, ProcessSession& session,  const RecordSchema* record_schema) = 0;
 };
 
 }  // namespace org::apache::nifi::minifi::core

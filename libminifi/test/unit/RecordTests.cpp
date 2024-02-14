@@ -12,143 +12,50 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.
+ * limitations under the License.c
  */
-#include <variant>
 
-#include "core/Record.h"
-#include "controllers/RecordSetWriter.h"
-#include "../TestBase.h"
+
 #include "../Catch.h"
+#include "../TestBase.h"
+#include "core/Record.h"
 
 
 namespace org::apache::nifi::minifi::core::test {
 
-class Fixture {
-public:
-  explicit Fixture(TestController::PlanConfig config = {}): plan_config_(std::move(config)) {}
-
-  minifi::core::ProcessSession &processSession() { return *process_session_; }
-
-private:
-  TestController test_controller_;
-  TestController::PlanConfig plan_config_;
-  std::shared_ptr<TestPlan> test_plan_ = test_controller_.createPlan(plan_config_);
-  std::shared_ptr<minifi::core::Processor> dummy_processor_ = test_plan_->addProcessor("DummyProcessor", "dummyProcessor");
-  std::shared_ptr<minifi::core::ProcessContext> context_ = [this] { test_plan_->runNextProcessor(); return test_plan_->getCurrentContext(); }();
-  std::unique_ptr<minifi::core::ProcessSession> process_session_ = std::make_unique<core::ProcessSession>(context_);
-};
-
-
-template<typename T>
-void templated_func(const std::string& name, T&& t) {
-  fmt::print("{} : {}\n", name, t);
-}
-
-template<>
-void templated_func(const std::string& name, const std::monostate&) {
-  fmt::print("{} : null\n", name);
-}
-
-template<>
-void templated_func(const std::string& name, const RecordObject& ro);
-
-template<>
-void templated_func(const std::string& name, const RecordArray& ra) {
-  size_t counter = 0;
-  for (const auto& element : ra) {
-    std::visit([&name, &counter](auto&& f){ templated_func(name + "." + std::to_string(counter++), f); }, element.value_);
-  }}
-
-template<>
-void templated_func(const std::string& name, const RecordObject& ro) {
-  for (const auto& [element_name, element_val] : ro) {
-    std::visit([&name, &e=element_name](auto&& f){ templated_func(name + "." + e, f); }, element_val.value_);
-  }
-}
-
 Record createSampleRecord() {
+  using namespace date::literals;  // NOLINT(google-build-using-namespace)
+  using namespace std::literals::chrono_literals;
   Record record;
-  record["mono"] = RecordField{.value_ {}};
 
-  record["now"] = RecordField{.value_ = std::chrono::system_clock::now()};
+  record["when"] = RecordField{.value_ = date::sys_days(2012_y / 07 / 01) + 9h + 53min + 00s};
   record["foo"] = RecordField{.value_ = "asd"};
   record["bar"] = RecordField{.value_ = int64_t{123}};
   record["baz"] = RecordField{.value_ = 3.14};
+  record["is_test"] = RecordField{.value_ = true};
   RecordArray qux;
   qux.push_back(RecordField{.value_ = true});
   qux.push_back(RecordField{.value_ = false});
   qux.push_back(RecordField{.value_ = true});
   RecordObject quux;
-  quux["apfel"] = RecordField{.value_ = "apple"};
-  quux["birne"] = RecordField{.value_ = "pear"};
-  quux["aprikose"] = RecordField{.value_ = "apricot"};
+  quux["Apfel"] = RecordField{.value_ = "apple"};
+  quux["Birne"] = RecordField{.value_ = "pear"};
+  quux["Aprikose"] = RecordField{.value_ = "apricot"};
 
   record["qux"] = RecordField{.value_=qux};
   record["quux"] = RecordField{.value_=quux};
   return record;
 }
 
-TEST_CASE("RecordTests") {
-  Record record = createSampleRecord();
+TEST_CASE("RecordSchema test") {
+  auto record = createSampleRecord();
+  auto schema = record.getSchema();
 
-  for (const auto& [name, field] : record) {
-    std::visit([&a = name](auto&& f){ templated_func(a, f); }, field.value_);
-  }
-}
+  rapidjson::StringBuffer buffer;
+  rapidjson::Writer writer(buffer);
+  schema.Accept(writer);
+  std::string schema_str{buffer.GetString()};
 
-class SimpleRecordSetWriter final : public RecordSetWriter {
-public:
-  bool supportsDynamicProperties() const override { return true; }
-  void yield() override {}
-  bool isRunning() const override { return true;}
-  bool isWorkAvailable() override { return true;}
-
-private:
-  template<typename T>
-  void templated_func(const std::string& name, T&& t) {
-    fmt::print("{} : {}\n", name, t);
-  }
-
-  template<>
-  void templated_func(const std::string& name, const std::monostate&) {
-    fmt::print("{} : null\n", name);
-  }
-
-  template<>
-  void templated_func(const std::string& name, const RecordObject& ro);
-
-  template<>
-  void templated_func(const std::string& name, const RecordArray& ra) {
-    size_t counter = 0;
-    for (const auto& element : ra) {
-      std::visit([&name, &counter](auto&& f){ templated_func(name + "." + std::to_string(counter++), f); }, element.value_);
-    }}
-
-  template<>
-  void templated_func(const std::string& name, const RecordObject& ro) {
-    for (const auto& [element_name, element_val] : ro) {
-      std::visit([&name, &e=element_name](auto&& f){ templated_func(name + "." + e, f); }, element_val.value_);
-    }
-  }
-
- public:
-
-  void write(const RecordSet& record_set, FlowFile& flow_file, ProcessSession& session) override {
-
-  }
-};
-
-TEST_CASE("SimpleRecordSetWriter test") {
-  Fixture fixture;
-  ProcessSession& process_session = fixture.processSession();
-
-  const auto flow_file = process_session.create();
-
-  RecordSet record_set;
-  record_set.push_back(createSampleRecord());
-  SimpleRecordSetWriter simple_record_set_writer;
-
-  simple_record_set_writer.write(record_set, *flow_file, process_session);
+  CHECK(schema_str == R"({"baz":"double","qux":["bool","bool","bool"],"is_test":"bool","bar":"int64_t","quux":{"Apfel":"std::string","Birne":"std::string","Aprikose":"std::string"},"foo":"std::string","when":"std::chrono::system_clock::time_point"})");
 }
 }  // namespace org::apache::nifi::minifi::core::test
