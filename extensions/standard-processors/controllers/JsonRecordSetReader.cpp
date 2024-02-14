@@ -41,7 +41,7 @@ nonstd::expected<core::RecordField, std::error_code> parse(const rapidjson::Valu
   }
   if (json_value.IsString()) {
     auto json_str = json_value.GetString();
-    if (schema && schema->IsString() && std::string_view{schema->GetString()} == "std::chrono::system_clock::time_point") {
+    if (schema && schema->IsString() && std::string_view {schema->GetString()} == "std::chrono::system_clock::time_point") {
       if (auto parsed_time = utils::timeutils::parseRfc3339(json_str)) {
         return core::RecordField{.value_ = *parsed_time};
       }
@@ -95,7 +95,9 @@ nonstd::expected<core::Record, std::error_code> parseDocument(rapidjson::Documen
 }
 }  // namespace
 
-nonstd::expected<core::RecordSet, std::error_code> JsonRecordSetReader::read(const std::shared_ptr<core::FlowFile>& flow_file, core::ProcessSession& session, const core::RecordSchema* const record_schema) {
+nonstd::expected<core::RecordSet, std::error_code> JsonRecordSetReader::read(const std::shared_ptr<core::FlowFile>& flow_file,
+    core::ProcessSession& session,
+    const core::RecordSchema* const record_schema) {
   core::RecordSet record_set{};
   auto read_result = session.read(flow_file, [&record_set, &record_schema](const std::shared_ptr<io::InputStream>& input_stream) -> int64_t {
     std::string content;
@@ -106,10 +108,9 @@ nonstd::expected<core::RecordSet, std::error_code> JsonRecordSetReader::read(con
     }
     std::stringstream ss(content);
     std::string line;
-    while(std::getline(ss, line,'\n')){
+    while (std::getline(ss, line, '\n')) {
       rapidjson::Document document;
-      rapidjson::ParseResult parse_result = document.Parse<rapidjson::kParseStopWhenDoneFlag>(line);
-      if (parse_result.IsError())
+      if (rapidjson::ParseResult parse_result = document.Parse<rapidjson::kParseStopWhenDoneFlag>(line); parse_result.IsError())
         return -1;
       auto record = parseDocument(document, record_schema);
       if (!record)

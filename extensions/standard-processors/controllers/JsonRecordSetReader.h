@@ -32,9 +32,11 @@ class JsonRecordSetReader final : public core::RecordSetReader {
   ~JsonRecordSetReader() override = default;
 
   EXTENSIONAPI static constexpr const char* Description = "Parses JSON into individual Record objects. "
-    "While the reader expects each record to be well-formed JSON, the content of a FlowFile may consist of many records, each as a well-formed JSON array or JSON object with optional whitespace between them, such as the common 'JSON-per-line' format. "
+    "While the reader expects each record to be well-formed JSON, the content of a FlowFile may consist of many records, "
+    "each as a well-formed JSON array or JSON object with optional whitespace between them, such as the common 'JSON-per-line' format. "
     "If an array is encountered, each element in that array will be treated as a separate record. "
-    "If the schema that is configured contains a field that is not present in the JSON, a null value will be used. If the JSON contains a field that is not present in the schema, that field will be skipped.";
+    "If the schema that is configured contains a field that is not present in the JSON, a null value will be used. "
+    "If the JSON contains a field that is not present in the schema, that field will be skipped.";
 
   EXTENSIONAPI static constexpr auto SchemaAccessStrategy = core::PropertyDefinitionBuilder<>::createProperty("Schema Access Strategy")
       .withDescription("Specifies how to obtain the schema that is to be used for interpreting the data.")

@@ -31,20 +31,22 @@ class JsonRecordSetWriter final : public core::RecordSetWriter {
 
   ~JsonRecordSetWriter() override = default;
 
-  EXTENSIONAPI static constexpr const char* Description = "Writes the results of a RecordSet as either a JSON Array or one JSON object per line. "
-    "If using Array output, then even if the RecordSet consists of a single row, it will be written as an array with a single element. "
-    "If using One Line Per Object output, the JSON objects cannot be pretty-printed.";
+  EXTENSIONAPI static constexpr const char* Description =
+      "Writes the results of a RecordSet as either a JSON Array or one JSON object per line. "
+      "If using Array output, then even if the RecordSet consists of a single row, it will be written as an array with a single element. "
+      "If using One Line Per Object output, the JSON objects cannot be pretty-printed.";
 
   EXTENSIONAPI static constexpr auto SchemaWriteStrategy = core::PropertyDefinitionBuilder<>::createProperty("Schema Write Strategy")
       .withDescription("Specifies how the schema for a Record should be added to the data.")
       .supportsExpressionLanguage(true)
       .build();
   EXTENSIONAPI static constexpr auto OutputGrouping = core::PropertyDefinitionBuilder<>::createProperty("Output Grouping")
-    .withDescription("Specifies how the writer should output the JSON records (as an array or one object per line, e.g.) Note that if 'One Line Per Object' is selected, then Pretty Print JSON must be false.")
+    .withDescription("Specifies how the writer should output the JSON records (as an array or one object per line, e.g.) "
+                    "Note that if 'One Line Per Object' is selected, then Pretty Print JSON must be false.")
     .supportsExpressionLanguage(true)
     .build();
   EXTENSIONAPI static constexpr auto Properties = std::array<core::PropertyReference, 1>{
-    SchemaWriteStrategy,
+      SchemaWriteStrategy,
   };
 
   EXTENSIONAPI static constexpr bool SupportsDynamicProperties = false;
@@ -59,7 +61,7 @@ class JsonRecordSetWriter final : public core::RecordSetWriter {
 
  public:
   void yield() override {}
-  bool isRunning() const override {    return getState() == core::controller::ControllerServiceState::ENABLED; }
+  bool isRunning() const override { return getState() == core::controller::ControllerServiceState::ENABLED; }
   bool isWorkAvailable() override { return false; }
 };
 

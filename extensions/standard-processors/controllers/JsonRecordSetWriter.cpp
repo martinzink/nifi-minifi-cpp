@@ -63,7 +63,7 @@ rapidjson::Value toJson(const core::RecordObject& record_object, rapidjson::Docu
   }
   return object_json;
 }
-}
+}  // namespace
 
 void JsonRecordSetWriter::write(const core::RecordSet& record_set, const std::shared_ptr<core::FlowFile>& flow_file, core::ProcessSession& session) {
   session.write(flow_file, [this, &record_set](const std::shared_ptr<io::OutputStream>& stream) -> int64_t {

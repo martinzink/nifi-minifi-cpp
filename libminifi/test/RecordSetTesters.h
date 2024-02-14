@@ -17,23 +17,22 @@
  */
 
 #pragma once
-#include <controllers/RecordSetReader.h>
-#include <controllers/RecordSetWriter.h>
 
-#include <numbers>
-
+#include "controllers/RecordSetReader.h"
+#include "controllers/RecordSetWriter.h"
 #include "core/Record.h"
+#include "TestBase.h"
 
 namespace org::apache::nifi::minifi::core::test {
 
 class RecordSetFixture {
-public:
+ public:
   explicit RecordSetFixture(TestController::PlanConfig config = {}): plan_config_(std::move(config)) {}
 
   [[nodiscard]] ProcessSession& processSession() const { return *process_session_; }
 
   [[nodiscard]] const Relationship& getRelationship() const { return relationship_; }
-private:
+ private:
   TestController test_controller_{};
   TestController::PlanConfig plan_config_{};
   std::shared_ptr<TestPlan> test_plan_ = test_controller_.createPlan(plan_config_);
@@ -45,7 +44,7 @@ private:
 };
 
 inline bool testRecordWriter(RecordSetWriter& record_set_writer, const RecordSet& record_set, const std::string_view expected) {
-  RecordSetFixture fixture;
+  const RecordSetFixture fixture;
   ProcessSession& process_session = fixture.processSession();
 
   const auto flow_file = process_session.create();
@@ -62,7 +61,7 @@ inline bool testRecordWriter(RecordSetWriter& record_set_writer, const RecordSet
 }
 
 inline bool testRecordReader(RecordSetReader& record_set_reader, const std::string_view serialized_record_set, const RecordSet& expected_record_set, const RecordSchema* record_schema) {
-  RecordSetFixture fixture;
+  const RecordSetFixture fixture;
   ProcessSession& process_session = fixture.processSession();
 
   const auto flow_file = process_session.create();
@@ -76,4 +75,4 @@ inline bool testRecordReader(RecordSetReader& record_set_reader, const std::stri
   return *record_set == expected_record_set;
 }
 
-}  // namespace org::apache::nifi::minifi::standard::test
+}  // namespace org::apache::nifi::minifi::core::test

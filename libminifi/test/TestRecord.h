@@ -17,8 +17,6 @@
  */
 
 #pragma once
-#include <controllers/RecordSetWriter.h>
-
 #include <numbers>
 
 #include "core/Record.h"
@@ -44,8 +42,8 @@ inline Record createSampleRecord2() {
   quux["Birne"] = RecordField{.value_ = "poire"};
   quux["Aprikose"] = RecordField{.value_ = "abricot"};
 
-  record["qux"] = RecordField{.value_=qux};
-  record["quux"] = RecordField{.value_=quux};
+  record["qux"] = RecordField{.value_ = qux};
+  record["quux"] = RecordField{.value_ = quux};
   return record;
 }
 
@@ -68,9 +66,9 @@ inline Record createSampleRecord() {
   quux["Birne"] = RecordField{.value_ = "pear"};
   quux["Aprikose"] = RecordField{.value_ = "apricot"};
 
-  record["qux"] = RecordField{.value_=qux};
-  record["quux"] = RecordField{.value_=quux};
+  record["qux"] = RecordField{.value_ = qux};
+  record["quux"] = RecordField{.value_ = quux};
   return record;
 }
 
-}  // namespace org::apache::nifi::minifi::standard::test
+}  // namespace org::apache::nifi::minifi::core::test

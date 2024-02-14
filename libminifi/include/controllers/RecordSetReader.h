@@ -25,7 +25,7 @@
 namespace org::apache::nifi::minifi::core {
 
 class RecordSetReader : public controller::ControllerService {
-public:
+ public:
   using ControllerService::ControllerService;
 
   virtual nonstd::expected<RecordSet, std::error_code> read(const std::shared_ptr<FlowFile>& flow_file, ProcessSession& session,  const RecordSchema* record_schema) = 0;

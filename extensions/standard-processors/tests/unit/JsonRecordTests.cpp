@@ -19,11 +19,11 @@
 #include <variant>
 
 #include "Catch.h"
+#include "RecordSetTesters.h"
 #include "TestBase.h"
 #include "TestRecord.h"
-#include "RecordSetTesters.h"
-#include "controllers/JsonRecordSetWriter.h"
 #include "controllers/JsonRecordSetReader.h"
+#include "controllers/JsonRecordSetWriter.h"
 #include "core/Record.h"
 
 namespace org::apache::nifi::minifi::standard::test {
@@ -34,7 +34,7 @@ TEST_CASE("JsonRecordSetWriter test") {
   record_set.push_back(core::test::createSampleRecord2());
 
   constexpr std::string_view expected =
-    R"({"baz":3.14,"qux":[true,false,true],"is_test":true,"bar":123,"quux":{"Apfel":"apple","Birne":"pear","Aprikose":"apricot"},"foo":"asd","when":"2012-07-01T09:53:00Z"}
+      R"({"baz":3.14,"qux":[true,false,true],"is_test":true,"bar":123,"quux":{"Apfel":"apple","Birne":"pear","Aprikose":"apricot"},"foo":"asd","when":"2012-07-01T09:53:00Z"}
 {"baz":3.141592653589793,"qux":[false,false,true],"is_test":true,"bar":98402134,"quux":{"Apfel":"pomme","Birne":"poire","Aprikose":"abricot"},"foo":"Lorem ipsum dolor sit amet, consectetur adipiscing elit.","when":"2022-11-01T19:52:11Z"}
 )";
 
