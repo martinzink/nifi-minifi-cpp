@@ -16,6 +16,7 @@ import tempfile
 
 import argparse
 import pathlib
+import os
 
 from cli import main_menu, do_one_click_build
 from minifi_option import parse_minifi_options
@@ -33,6 +34,8 @@ if __name__ == '__main__':
                             help="Skips the installation of the default compiler")
         parser.add_argument('--noninteractive', action="store_true", default=False,
                             help="Initiates the one click build")
+        parser.add_argument('--build-directory', type=str, help="The directory to build.")
+
         args = parser.parse_args()
         no_confirm = args.noconfirm or args.noninteractive
 
@@ -49,7 +52,9 @@ if __name__ == '__main__':
         minifi_options = parse_minifi_options(str(path.as_posix()), cmake_options_for_parsing, package_manager, cmake_cache_dir)
         minifi_options.no_confirm = no_confirm
         minifi_options.set_cmake_override(cmake_options_for_cmake)
-
+        if args.build_directory:
+            build_dir = pathlib.Path(args.build_directory)
+            minifi_options.build_dir = build_dir
         if args.noninteractive:
             do_one_click_build(minifi_options, package_manager)
         else:
