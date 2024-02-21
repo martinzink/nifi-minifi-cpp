@@ -23,12 +23,18 @@
 
 namespace org::apache::nifi::minifi::core::test {
 
-inline Record createSampleRecord2() {
+inline Record createSampleRecord2(bool timestamp_as_string = false) {
   using namespace date::literals;  // NOLINT(google-build-using-namespace)
   using namespace std::literals::chrono_literals;
   Record record;
 
-  record["when"] = RecordField{.value_ = date::sys_days(2022_y / 11 / 01) + 19h + 52min + 11s};
+  auto tp = date::sys_days(2022_y / 11 / 01) + 19h + 52min + 11s;
+  if (timestamp_as_string) {
+    const std::string serialized_time_point = utils::timeutils::getDateTimeStr(std::chrono::floor<std::chrono::seconds>(tp));
+    record["when"] = RecordField{.value_ = serialized_time_point};
+  } else {
+    record["when"] = RecordField{.value_ = tp};
+  }
   record["foo"] = RecordField{.value_ = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."};
   record["bar"] = RecordField{.value_ = int64_t{98402134}};
   record["baz"] = RecordField{.value_ = std::numbers::pi};
@@ -47,12 +53,18 @@ inline Record createSampleRecord2() {
   return record;
 }
 
-inline Record createSampleRecord() {
+inline Record createSampleRecord(bool timestamp_as_string = false) {
   using namespace date::literals;  // NOLINT(google-build-using-namespace)
   using namespace std::literals::chrono_literals;
   Record record;
 
-  record["when"] = RecordField{.value_ = date::sys_days(2012_y / 07 / 01) + 9h + 53min + 00s};
+  auto tp = date::sys_days(2012_y / 07 / 01) + 9h + 53min + 00s;
+  if (timestamp_as_string) {
+    const std::string serialized_time_point = utils::timeutils::getDateTimeStr(std::chrono::floor<std::chrono::seconds>(tp));
+    record["when"] = RecordField{.value_ = serialized_time_point};
+  } else {
+    record["when"] = RecordField{.value_ = tp};
+  }
   record["foo"] = RecordField{.value_ = "asd"};
   record["bar"] = RecordField{.value_ = int64_t{123}};
   record["baz"] = RecordField{.value_ = 3.14};

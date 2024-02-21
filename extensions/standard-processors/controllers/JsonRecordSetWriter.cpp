@@ -46,8 +46,8 @@ rapidjson::Value toJson(const core::RecordObject& record_object, rapidjson::Docu
 template<>
 rapidjson::Value toJson(const core::RecordArray& record_array, rapidjson::Document::AllocatorType& alloc) {
   auto array_json = rapidjson::Value(rapidjson::kArrayType);
-  for (const auto& record : record_array) {
-    auto json_value = (std::visit([&alloc](auto&& f)-> rapidjson::Value{ return toJson(f, alloc); }, record.value_));
+  for (const auto& [value_] : record_array) {
+    auto json_value = (std::visit([&alloc](auto&& f)-> rapidjson::Value{ return toJson(f, alloc); }, value_));
     array_json.PushBack(json_value, alloc);
   }
   return array_json;

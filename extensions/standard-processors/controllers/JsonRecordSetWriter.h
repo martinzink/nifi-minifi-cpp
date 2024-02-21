@@ -57,7 +57,7 @@ class JsonRecordSetWriter final : public core::RecordSetWriter {
   void write(const core::RecordSet& record_set, const std::shared_ptr<core::FlowFile>& flow_file, core::ProcessSession& session) override;
 
  private:
-  void convertRecord(const core::Record& record, rapidjson::Value& record_json, rapidjson::Document::AllocatorType& alloc);
+  static void convertRecord(const core::Record& record, rapidjson::Value& record_json, rapidjson::Document::AllocatorType& alloc);
 
  public:
   void yield() override {}

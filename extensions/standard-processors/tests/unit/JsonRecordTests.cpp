@@ -42,17 +42,25 @@ TEST_CASE("JsonRecordSetWriter test") {
   CHECK(core::test::testRecordWriter(json_record_set_writer, record_set, expected));
 }
 
-TEST_CASE("JsonRecordSetReader test") {
-  core::RecordSet expected_record_set;
-  expected_record_set.push_back(core::test::createSampleRecord());
-  expected_record_set.push_back(core::test::createSampleRecord2());
-
+TEST_CASE("JsonRecordSetReader test with schema") {
   constexpr std::string_view serialized_record_set = R"({"baz":3.14,"qux":[true,false,true],"is_test":true,"bar":123,"quux":{"Apfel":"apple","Birne":"pear","Aprikose":"apricot"},"foo":"asd","when":"2012-07-01T09:53:00Z"}
 {"baz":3.141592653589793,"qux":[false,false,true],"is_test":true,"bar":98402134,"quux":{"Apfel":"pomme","Birne":"poire","Aprikose":"abricot"},"foo":"Lorem ipsum dolor sit amet, consectetur adipiscing elit.","when":"2022-11-01T19:52:11Z"}
 )";
-
   JsonRecordSetReader json_record_set_reader;
-  const auto record_schema = expected_record_set[0].getSchema();
-  CHECK(core::test::testRecordReader(json_record_set_reader, serialized_record_set, expected_record_set, &record_schema));
+
+  SECTION("With schema") {
+    core::RecordSet expected_record_set;
+    expected_record_set.push_back(core::test::createSampleRecord());
+    expected_record_set.push_back(core::test::createSampleRecord2());
+    const auto record_schema = expected_record_set[0].getSchema();
+    CHECK(core::test::testRecordReader(json_record_set_reader, serialized_record_set, expected_record_set, &record_schema));
+  }
+  SECTION("Without schema") {
+    core::RecordSet expected_record_set;
+    expected_record_set.push_back(core::test::createSampleRecord(true));
+    expected_record_set.push_back(core::test::createSampleRecord2(true));
+
+    CHECK(core::test::testRecordReader(json_record_set_reader, serialized_record_set, expected_record_set, nullptr));
+  }
 }
 }  // namespace org::apache::nifi::minifi::standard::test

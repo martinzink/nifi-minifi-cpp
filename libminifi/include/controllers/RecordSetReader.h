@@ -24,11 +24,29 @@
 
 namespace org::apache::nifi::minifi::core {
 
+enum class RecordSchemaAccessStrategy {
+ InferSchema,
+ UseSchemaText
+};
+
 class RecordSetReader : public controller::ControllerService {
  public:
   using ControllerService::ControllerService;
 
-  virtual nonstd::expected<RecordSet, std::error_code> read(const std::shared_ptr<FlowFile>& flow_file, ProcessSession& session,  const RecordSchema* record_schema) = 0;
+
+  EXTENSIONAPI static constexpr auto SchemaAccessStrategy = PropertyDefinitionBuilder<>::createProperty("Schema Access Strategy")
+     .withDescription("Specifies how to obtain the schema that is to be used for interpreting the data.")
+     .supportsExpressionLanguage(true)
+     .build();
+
+  EXTENSIONAPI static constexpr auto SchemaText = PropertyDefinitionBuilder<>::createProperty("Schema Text")
+    .withDescription("Json formatted text of the schema to be used")
+    .supportsExpressionLanguage(true)
+    .withDefaultValue("${schema.text}")
+    .build();
+
+  virtual nonstd::expected<RecordSet, std::error_code> read(const std::shared_ptr<FlowFile>& flow_file, ProcessSession& session, const RecordSchema* record_schema) = 0;
+  virtual RecordSchema* getSchema(const ProcessContext& context) const = 0;
 };
 
 }  // namespace org::apache::nifi::minifi::core

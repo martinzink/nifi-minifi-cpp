@@ -38,10 +38,6 @@ class JsonRecordSetReader final : public core::RecordSetReader {
     "If the schema that is configured contains a field that is not present in the JSON, a null value will be used. "
     "If the JSON contains a field that is not present in the schema, that field will be skipped.";
 
-  EXTENSIONAPI static constexpr auto SchemaAccessStrategy = core::PropertyDefinitionBuilder<>::createProperty("Schema Access Strategy")
-      .withDescription("Specifies how to obtain the schema that is to be used for interpreting the data.")
-      .supportsExpressionLanguage(true)
-      .build();
   EXTENSIONAPI static constexpr auto Properties = std::array<core::PropertyReference, 1>{
     SchemaAccessStrategy,
   };
@@ -52,6 +48,7 @@ class JsonRecordSetReader final : public core::RecordSetReader {
   using RecordSetReader::RecordSetReader;
 
   nonstd::expected<core::RecordSet, std::error_code> read(const std::shared_ptr<core::FlowFile>& flow_file, core::ProcessSession& session, const core::RecordSchema* record_schema) override;
+  core::RecordSchema* getSchema(const core::ProcessContext& context) const override;
 
   void yield() override {}
   bool isRunning() const override {    return getState() == core::controller::ControllerServiceState::ENABLED; }
