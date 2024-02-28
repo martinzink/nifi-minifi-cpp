@@ -44,8 +44,7 @@ enum class TestEnum {
 
 TEST_CASE("Parse enum property") {
   static constexpr auto prop = PropertyDefinitionBuilder<magic_enum::enum_count<TestEnum>()>::createProperty("prop")
-      .withAllowedValues(magic_enum::enum_names<TestEnum>())
-      .build();
+SchemaAccessStrategy      .build();
   auto proc = std::make_shared<TestProcessor>("test-proc");
   proc->setSupportedProperties(std::array<core::PropertyReference, 1>{prop});
   ProcessContext context(std::make_shared<ProcessorNode>(proc.get()), nullptr, nullptr, nullptr, nullptr, nullptr);

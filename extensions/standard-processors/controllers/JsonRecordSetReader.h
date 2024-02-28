@@ -38,21 +38,28 @@ class JsonRecordSetReader final : public core::RecordSetReader {
     "If the schema that is configured contains a field that is not present in the JSON, a null value will be used. "
     "If the JSON contains a field that is not present in the schema, that field will be skipped.";
 
-  EXTENSIONAPI static constexpr auto Properties = std::array<core::PropertyReference, 1>{
+  EXTENSIONAPI static constexpr auto Properties = std::array<core::PropertyReference, 2>{
     SchemaAccessStrategy,
+    SchemaText
   };
+
+  void initialize() override {
+    setSupportedProperties(Properties);
+  }
 
   EXTENSIONAPI static constexpr bool SupportsDynamicProperties = false;
   ADD_COMMON_VIRTUAL_FUNCTIONS_FOR_CONTROLLER_SERVICES
 
   using RecordSetReader::RecordSetReader;
 
-  nonstd::expected<core::RecordSet, std::error_code> read(const std::shared_ptr<core::FlowFile>& flow_file, core::ProcessSession& session, const core::RecordSchema* record_schema) override;
-  core::RecordSchema* getSchema(const core::ProcessContext& context) const override;
+  nonstd::expected<core::RecordSet, std::error_code> read(const std::shared_ptr<core::FlowFile>& flow_file, core::ProcessSession& session, const core::ProcessContext& context, const core::RecordSchema* record_schema) override;
 
   void yield() override {}
   bool isRunning() const override {    return getState() == core::controller::ControllerServiceState::ENABLED; }
   bool isWorkAvailable() override { return false; }
+
+protected:
+  core::RecordSchema* getSchema(const core::ProcessContext& context, const core::FlowFile* flow_file) const override;
 };
 
 }  // namespace org::apache::nifi::minifi::standard

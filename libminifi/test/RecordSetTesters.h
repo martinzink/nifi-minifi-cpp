@@ -30,6 +30,7 @@ class RecordSetFixture {
   explicit RecordSetFixture(TestController::PlanConfig config = {}): plan_config_(std::move(config)) {}
 
   [[nodiscard]] ProcessSession& processSession() const { return *process_session_; }
+  [[nodiscard]] ProcessContext& processContext() const { return *process_context_; }
 
   [[nodiscard]] const Relationship& getRelationship() const { return relationship_; }
  private:
@@ -37,8 +38,8 @@ class RecordSetFixture {
   TestController::PlanConfig plan_config_{};
   std::shared_ptr<TestPlan> test_plan_ = test_controller_.createPlan(plan_config_);
   std::shared_ptr<Processor> dummy_processor_ = test_plan_->addProcessor("DummyProcessor", "dummyProcessor");
-  std::shared_ptr<ProcessContext> context_ = [this] { test_plan_->runNextProcessor(); return test_plan_->getCurrentContext(); }();
-  std::unique_ptr<ProcessSession> process_session_ = std::make_unique<ProcessSession>(context_);
+  std::shared_ptr<ProcessContext> process_context_ = [this] { test_plan_->runNextProcessor(); return test_plan_->getCurrentContext(); }();
+  std::unique_ptr<ProcessSession> process_session_ = std::make_unique<ProcessSession>(process_context_);
 
   const Relationship relationship_{"success", "description"};
 };
@@ -52,7 +53,7 @@ inline bool testRecordWriter(RecordSetWriter& record_set_writer, const RecordSet
   record_set_writer.write(record_set, flow_file, process_session);
   process_session.transfer(flow_file, fixture.getRelationship());
   process_session.commit();
-  const auto input_stream = process_session.getFlowFileContentStream(flow_file);
+  const auto input_stream = process_session.getFlowFileContentStream(*flow_file);
   std::array<std::byte, 2048> buffer{};
   const auto buffer_size = input_stream->read(buffer);
   const std::string flow_file_content(reinterpret_cast<char*>(buffer.data()), buffer_size);
@@ -62,14 +63,15 @@ inline bool testRecordWriter(RecordSetWriter& record_set_writer, const RecordSet
 
 inline bool testRecordReader(RecordSetReader& record_set_reader, const std::string_view serialized_record_set, const RecordSet& expected_record_set, const RecordSchema* record_schema) {
   const RecordSetFixture fixture;
-  ProcessSession& process_session = fixture.processSession();
+  auto& process_session = fixture.processSession();
+  auto& process_context = fixture.processContext();
 
   const auto flow_file = process_session.create();
   process_session.writeBuffer(flow_file, serialized_record_set);
   process_session.transfer(flow_file, fixture.getRelationship());
   process_session.commit();
 
-  const auto record_set = record_set_reader.read(flow_file, process_session, record_schema);
+  const auto record_set = record_set_reader.read(flow_file, process_session, process_context, record_schema);
   if (!record_set)
     return false;
   return *record_set == expected_record_set;

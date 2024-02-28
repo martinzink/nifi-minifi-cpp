@@ -84,8 +84,8 @@ void FetchModbusTcp::onTrigger(core::ProcessContext&  context, core::ProcessSess
 
   removeExpiredConnections();
 
-  auto hostname = context.getProperty(Hostname, flow_file).value_or(std::string{});
-  auto port = context.getProperty(Port, flow_file).value_or(std::string{});
+  auto hostname = context.getProperty(Hostname, flow_file.get()).value_or(std::string{});
+  auto port = context.getProperty(Port, flow_file.get()).value_or(std::string{});
 
   if (hostname.empty() || port.empty()) {
     logger_->log_error("[{}] invalid target endpoint: hostname: {}, port: {}", flow_file->getUUIDStr(),
@@ -133,12 +133,12 @@ std::shared_ptr<core::FlowFile> FetchModbusTcp::getFlowFile(core::ProcessSession
   return session.create();
 }
 
-std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>> FetchModbusTcp::getAddressMap(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file) {
+std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>> FetchModbusTcp::getAddressMap(core::ProcessContext& context, const core::FlowFile& flow_file) {
   std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>> address_map{};
-  const auto unit_id_str = context.getProperty(UnitIdentifier, flow_file).value_or("0");
+  const auto unit_id_str = context.getProperty(UnitIdentifier, &flow_file).value_or("0");
   const uint8_t unit_id = utils::string::parse<uint8_t>(unit_id_str).value_or(1);
   for (const auto& dynamic_property : dynamic_property_keys_) {
-    if (std::string dynamic_property_value{}; context.getDynamicProperty(dynamic_property, dynamic_property_value, flow_file)) {
+    if (std::string dynamic_property_value{}; context.getDynamicProperty(dynamic_property, dynamic_property_value, &flow_file)) {
       if (auto modbus_func = ReadModbusFunction::parse(++transaction_id_, unit_id, dynamic_property_value); modbus_func)
         address_map.emplace(dynamic_property.getName(), std::move(modbus_func));
     }
@@ -160,7 +160,7 @@ void FetchModbusTcp::processFlowFile(const std::shared_ptr<utils::net::Connectio
     core::ProcessSession& session,
     const std::shared_ptr<core::FlowFile>& flow_file) {
   std::unordered_map<std::string, std::string> result_map{};
-  const auto address_map = getAddressMap(context, flow_file);
+  const auto address_map = getAddressMap(context, *flow_file);
   if (address_map.empty()) {
     logger_->log_warn("There are no registers to query");
     session.transfer(flow_file, Failure);

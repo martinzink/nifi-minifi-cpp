@@ -117,7 +117,7 @@ class FetchModbusTcp final : public core::Processor {
   auto sendRequestsAndReadResponses(utils::net::ConnectionHandlerBase& connection_handler,
       const std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>>& address_map) -> asio::awaitable<nonstd::expected<std::unordered_map<std::string, std::string>, std::error_code>>;
   asio::awaitable<nonstd::expected<std::string, std::error_code>> sendRequestAndReadResponse(utils::net::ConnectionHandlerBase& connection_handler, const ReadModbusFunction& read_modbus_function);
-  std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>> getAddressMap(core::ProcessContext& context, const std::shared_ptr<core::FlowFile>& flow_file);
+  std::unordered_map<std::string, std::unique_ptr<ReadModbusFunction>> getAddressMap(core::ProcessContext& context, const core::FlowFile& flow_file);
   std::shared_ptr<core::FlowFile> getFlowFile(core::ProcessSession& session) const;
   void removeExpiredConnections();
 

@@ -16,11 +16,11 @@
  */
 #pragma once
 
-#include "core/controller/ControllerService.h"
-
+#include "core/Record.h"
 #include "core/FlowFile.h"
 #include "core/ProcessSession.h"
-#include "Record.h"
+#include "core/controller/ControllerService.h"
+
 
 namespace org::apache::nifi::minifi::core {
 
@@ -34,9 +34,11 @@ class RecordSetReader : public controller::ControllerService {
   using ControllerService::ControllerService;
 
 
-  EXTENSIONAPI static constexpr auto SchemaAccessStrategy = PropertyDefinitionBuilder<>::createProperty("Schema Access Strategy")
+  EXTENSIONAPI static constexpr auto SchemaAccessStrategy = PropertyDefinitionBuilder<magic_enum::enum_count<RecordSchemaAccessStrategy>()>::createProperty("Schema Access Strategy")
      .withDescription("Specifies how to obtain the schema that is to be used for interpreting the data.")
-     .supportsExpressionLanguage(true)
+     .withDefaultValue(magic_enum::enum_name(RecordSchemaAccessStrategy::InferSchema))
+     .withAllowedValues(magic_enum::enum_names<RecordSchemaAccessStrategy>())
+     .isRequired(true)
      .build();
 
   EXTENSIONAPI static constexpr auto SchemaText = PropertyDefinitionBuilder<>::createProperty("Schema Text")
@@ -45,8 +47,11 @@ class RecordSetReader : public controller::ControllerService {
     .withDefaultValue("${schema.text}")
     .build();
 
-  virtual nonstd::expected<RecordSet, std::error_code> read(const std::shared_ptr<FlowFile>& flow_file, ProcessSession& session, const RecordSchema* record_schema) = 0;
-  virtual RecordSchema* getSchema(const ProcessContext& context) const = 0;
+  virtual nonstd::expected<RecordSet, std::error_code> read(const std::shared_ptr<FlowFile>& flow_file, ProcessSession& session, const ProcessContext& context, const RecordSchema* record_schema) = 0;
+
+ protected:
+  RecordSchemaAccessStrategy getAccessStrategy() const;
+  virtual RecordSchema* getSchema(const ProcessContext& context, const FlowFile* flow_file) const = 0;
 };
 
 }  // namespace org::apache::nifi::minifi::core

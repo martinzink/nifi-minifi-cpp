@@ -47,6 +47,7 @@ TEST_CASE("JsonRecordSetReader test with schema") {
 {"baz":3.141592653589793,"qux":[false,false,true],"is_test":true,"bar":98402134,"quux":{"Apfel":"pomme","Birne":"poire","Aprikose":"abricot"},"foo":"Lorem ipsum dolor sit amet, consectetur adipiscing elit.","when":"2022-11-01T19:52:11Z"}
 )";
   JsonRecordSetReader json_record_set_reader;
+  json_record_set_reader.initialize();
 
   SECTION("With schema") {
     core::RecordSet expected_record_set;

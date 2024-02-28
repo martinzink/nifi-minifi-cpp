@@ -17,6 +17,8 @@
 
 #include "JsonRecordSetReader.h"
 
+#include <utils/ProcessorConfigUtils.h>
+
 namespace org::apache::nifi::minifi::standard {
 
 namespace {
@@ -97,9 +99,10 @@ nonstd::expected<core::Record, std::error_code> parseDocument(rapidjson::Documen
 
 nonstd::expected<core::RecordSet, std::error_code> JsonRecordSetReader::read(const std::shared_ptr<core::FlowFile>& flow_file,
     core::ProcessSession& session,
+    const core::ProcessContext& context,
     const core::RecordSchema* record_schema = nullptr) {
   if (!record_schema) {
-    record_schema = getSchema();
+    record_schema = getSchema(context, flow_file.get());
   }
   core::RecordSet record_set{};
   auto read_result = session.read(flow_file, [&record_set, &record_schema](const std::shared_ptr<io::InputStream>& input_stream) -> int64_t {
@@ -128,14 +131,13 @@ nonstd::expected<core::RecordSet, std::error_code> JsonRecordSetReader::read(con
 }
 
 core::RecordSchema* JsonRecordSetReader::getSchema(const core::ProcessContext& context, const core::FlowFile* const flow_file) const {
-  if (auto access_strategy = context.getProperty<core::RecordSchemaAccessStrategy>(SchemaAccessStrategy)) {
-    switch (*access_strategy) {
-      case core::RecordSchemaAccessStrategy::InferSchema:
-        return nullptr;
-      case core::RecordSchemaAccessStrategy::UseSchemaText:
-        auto schema_text = context.getProperty(SchemaText, flow_file);
-      break;
-    }
+  auto access_strategy = getAccessStrategy();
+  switch (access_strategy) {
+    case core::RecordSchemaAccessStrategy::InferSchema:
+      return nullptr;
+    case core::RecordSchemaAccessStrategy::UseSchemaText:
+      auto schema_text = context.getProperty(SchemaText);
+    break;
   }
   return nullptr;
 }
