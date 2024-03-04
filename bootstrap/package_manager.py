@@ -232,7 +232,7 @@ class ChocolateyPackageManager(PackageManager):
         return ""
 
     def run_cmd(self, cmd: str) -> bool:
-        cmd_command = f"refreshenv & {_get_vs_dev_cmd()} & set PATH=!PATH:C:\\Strawberry\\c\\bin;=!;C:\\Program Files\\NASM; & {cmd}"
+        cmd_command = f"refreshenv & {_get_vs_dev_cmd()} & set PATH=!PATH:C:\\Strawberry\\c\\bin;=!;C:\\Program Files\\NASM; & set & {cmd}"
         cmd_command_list = f'cmd /V:ON /C {cmd_command}'
         res = subprocess.run(cmd_command_list, check=True, text=True)
 
