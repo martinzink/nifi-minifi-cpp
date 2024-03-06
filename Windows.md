@@ -126,3 +126,16 @@ copy minifi_main\Release\minifi.exe minifi_main\
 cpack
 ctest -C Release
 ```
+
+## Python based bootstrapping (recommended)
+Prerequisites:
+- [python](https://docs.python.org/)
+- [venv](https://docs.python.org/3/library/venv.html)
+- [chocolatey](https://chocolatey.org/)
+```dos
+.\bootstrap\py_bootstrap.bat
+```
+
+This will set up a virtual environment in the bootstrap folder, and guide you through the build process.
+It will also create a batch file (.\bootstrap\build_environment.bat),
+which sets the necessary environment variables for the build, so it can be built without bootstrapping everytime.
