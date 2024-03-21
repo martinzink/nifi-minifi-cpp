@@ -26,7 +26,7 @@ namespace org::apache::nifi::minifi::core {
 struct RecordField;
 
 using RecordArray = std::vector<RecordField>;
-using RecordObject = std::unordered_map<std::string, RecordField>;
+using RecordObject = std::unordered_map<std::string, std::unique_ptr<RecordField>>;
 
 struct RecordField {
   std::variant<std::string, int64_t, double, bool, std::chrono::system_clock::time_point, RecordArray, RecordObject> value_;

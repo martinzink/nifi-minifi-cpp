@@ -16,7 +16,6 @@
  */
 #pragma once
 
-#include "PropertyDefinitionBuilder.h"
 #include "Record.h"
 #include "controllers/RecordSetReader.h"
 #include "core/FlowFile.h"

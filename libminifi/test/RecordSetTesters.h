@@ -52,7 +52,7 @@ inline bool testRecordWriter(RecordSetWriter& record_set_writer, const RecordSet
   record_set_writer.write(record_set, flow_file, process_session);
   process_session.transfer(flow_file, fixture.getRelationship());
   process_session.commit();
-  const auto input_stream = process_session.getFlowFileContentStream(flow_file);
+  const auto input_stream = process_session.getFlowFileContentStream(*flow_file);
   std::array<std::byte, 2048> buffer{};
   const auto buffer_size = input_stream->read(buffer);
   const std::string flow_file_content(reinterpret_cast<char*>(buffer.data()), buffer_size);
