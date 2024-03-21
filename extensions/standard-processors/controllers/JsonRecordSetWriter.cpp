@@ -25,8 +25,8 @@ namespace org::apache::nifi::minifi::standard {
 namespace {
 
 template<typename RecordFieldType>
-rapidjson::Value toJson(RecordFieldType&& field, rapidjson::Document::AllocatorType&) {
-  return rapidjson::Value(std::forward<RecordFieldType>(field));
+rapidjson::Value toJson(const RecordFieldType& field, rapidjson::Document::AllocatorType&) {
+  return rapidjson::Value(field);
 };
 
 template<>
@@ -60,7 +60,7 @@ template<>
 rapidjson::Value toJson(const core::RecordObject& field, rapidjson::Document::AllocatorType& alloc) {
   auto object_json = rapidjson::Value(rapidjson::kObjectType);
   for (const auto& [record_name, record_value] : field) {
-    auto json_value = (std::visit([&alloc](auto&& f)-> rapidjson::Value{ return toJson(f, alloc); }, record_value.value_));
+    auto json_value = (std::visit([&alloc](auto&& f)-> rapidjson::Value{ return toJson(f, alloc); }, record_value->value_));
     rapidjson::Value json_name(record_name.c_str(), record_name.length(), alloc);
     object_json.AddMember(json_name, json_value, alloc);
   }
