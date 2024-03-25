@@ -29,6 +29,16 @@ using RecordArray = std::vector<RecordField>;
 using RecordObject = std::unordered_map<std::string, std::unique_ptr<RecordField>>;
 
 struct RecordField {
+  explicit RecordField(std::variant<std::string, int64_t, double, bool, std::chrono::system_clock::time_point, RecordArray, RecordObject> value) : value_(std::move(value)) {}
+  RecordField(const RecordField& field) = delete;
+  RecordField(RecordField&& field) noexcept : value_(std::move(field.value_)) {}
+
+  RecordField& operator=(const RecordField&) = delete;
+  RecordField& operator=(RecordField&& field) {
+      value_ = std::move(field.value_);
+      return *this;
+  };
+
   std::variant<std::string, int64_t, double, bool, std::chrono::system_clock::time_point, RecordArray, RecordObject> value_;
 
   bool operator==(const RecordField& rhs) const = default;

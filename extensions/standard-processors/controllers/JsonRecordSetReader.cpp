@@ -23,16 +23,16 @@ namespace {
 
 nonstd::expected<core::RecordField, std::error_code> parse(const rapidjson::Value& json_value) {
   if (json_value.IsDouble()) {
-    return core::RecordField{.value_ = json_value.GetDouble()};
+    return core::RecordField{json_value.GetDouble()};
   }
   if (json_value.IsBool()) {
-    return core::RecordField{.value_ = json_value.GetBool()};
+    return core::RecordField{json_value.GetBool()};
   }
   if (json_value.IsInt64()) {
-    return core::RecordField{.value_ = json_value.GetInt64()};
+    return core::RecordField{json_value.GetInt64()};
   }
   if (json_value.IsString()) {
-    return core::RecordField{.value_ = json_value.GetString()};
+    return core::RecordField{json_value.GetString()};
   }
   if (json_value.IsArray()) {
     core::RecordArray record_array;
@@ -40,9 +40,9 @@ nonstd::expected<core::RecordField, std::error_code> parse(const rapidjson::Valu
       auto element_field = parse(element);
       if (!element_field)
         return nonstd::make_unexpected(element_field.error());
-      record_array.push_back(*element_field);
+      record_array.push_back(std::move(*element_field));
     }
-    return core::RecordField{.value_ = record_array};
+    return core::RecordField{std::move(record_array)};
   }
   if (json_value.IsObject()) {
     core::RecordObject record_object;
@@ -53,7 +53,7 @@ nonstd::expected<core::RecordField, std::error_code> parse(const rapidjson::Valu
         return nonstd::make_unexpected(element_field.error());
       record_object[element_key] = std::make_unique<core::RecordField>(std::move(*element_field));
     }
-    return core::RecordField{.value_ = record_object};
+    return core::RecordField{std::move(record_object)};
   }
 
   return nonstd::make_unexpected(std::make_error_code(std::errc::invalid_argument));
@@ -69,7 +69,7 @@ nonstd::expected<core::Record, std::error_code> parseRecord(rapidjson::Value& re
     auto element_field = parse(member.value);
     if (!element_field)
       return nonstd::make_unexpected(element_field.error());
-    result[element_key] = *element_field;
+    result.emplace(element_key, std::move(*element_field));
   }
   return result;
 }

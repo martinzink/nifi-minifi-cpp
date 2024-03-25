@@ -28,11 +28,11 @@ namespace org::apache::nifi::minifi::core {
 
 class Record {
  public:
-  RecordField& operator[](const std::string& key) {
-    return fields_[key];
+  auto emplace(std::string key, RecordField&& field) {
+    return fields_.emplace(std::move(key), std::move(field));
   }
 
-  const RecordField& operator[](const std::string& key) const {
+  [[nodiscard]] const RecordField& at(const std::string& key) const {
     return fields_.at(key);
   }
 
