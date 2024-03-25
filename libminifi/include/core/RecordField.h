@@ -21,6 +21,8 @@
 #include <unordered_map>
 #include <vector>
 #include <memory>
+#include <variant>
+#include <chrono>
 
 namespace org::apache::nifi::minifi::core {
 
