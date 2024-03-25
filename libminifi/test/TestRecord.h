@@ -30,25 +30,25 @@ inline Record createSampleRecord2(bool stringify_date = false) {
 
   auto when = date::sys_days(2022_y / 11 / 01) + 19h + 52min + 11s;
   if (!stringify_date) {
-    record["when"] = RecordField{.value_ = when};
+    record.emplace("when", RecordField{when});
   } else {
-    record["when"] = RecordField{.value_ = utils::timeutils::getDateTimeStr(std::chrono::floor<std::chrono::seconds>(when))};
+    record.emplace("when", RecordField{utils::timeutils::getDateTimeStr(std::chrono::floor<std::chrono::seconds>(when))});
   }
-  record["foo"] = RecordField{.value_ = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."};
-  record["bar"] = RecordField{.value_ = int64_t{98402134}};
-  record["baz"] = RecordField{.value_ = std::numbers::pi};
-  record["is_test"] = RecordField{.value_ = true};
+  record.emplace("foo", RecordField{"Lorem ipsum dolor sit amet, consectetur adipiscing elit."});
+  record.emplace("bar", RecordField{int64_t{98402134}});
+  record.emplace("baz", RecordField{std::numbers::pi});
+  record.emplace("is_test", RecordField{true});
   RecordArray qux;
-  qux.push_back(RecordField{.value_ = false});
-  qux.push_back(RecordField{.value_ = false});
-  qux.push_back(RecordField{.value_ = true});
+  qux.emplace_back(false);
+  qux.emplace_back(false);
+  qux.emplace_back(true);
   RecordObject quux;
-  quux["Apfel"] = std::make_unique<RecordField>(RecordField{.value_ = "pomme"});
-  quux["Birne"] = std::make_unique<RecordField>(RecordField{.value_ = "poire"});
-  quux["Aprikose"] = std::make_unique<RecordField>(RecordField{.value_ = "abricot"});
+  quux["Apfel"] = std::make_unique<RecordField>(RecordField{"pomme"});
+  quux["Birne"] = std::make_unique<RecordField>(RecordField{"poire"});
+  quux["Aprikose"] = std::make_unique<RecordField>(RecordField{"abricot"});
 
-  record["qux"] = RecordField{.value_ = qux};
-  record["quux"] = RecordField{.value_ = quux};
+  record.emplace("qux", RecordField{std::move(qux)});
+  record.emplace("quux", RecordField{std::move(quux)});
   return record;
 }
 
@@ -59,25 +59,25 @@ inline Record createSampleRecord(bool stringify_date = false) {
 
   auto when = date::sys_days(2012_y / 07 / 01) + 9h + 53min + 00s;
   if (!stringify_date) {
-    record["when"] = RecordField{.value_ = when};
+    record.emplace("when", RecordField{when});
   } else {
-    record["when"] = RecordField{.value_ = utils::timeutils::getDateTimeStr(std::chrono::floor<std::chrono::seconds>(when))};
+    record.emplace("when", RecordField{utils::timeutils::getDateTimeStr(std::chrono::floor<std::chrono::seconds>(when))});
   }
-  record["foo"] = RecordField{.value_ = "asd"};
-  record["bar"] = RecordField{.value_ = int64_t{123}};
-  record["baz"] = RecordField{.value_ = 3.14};
-  record["is_test"] = RecordField{.value_ = true};
+  record.emplace("foo", RecordField{"asd"});
+  record.emplace("bar", RecordField{int64_t{123}});
+  record.emplace("baz", RecordField{3.14});
+  record.emplace("is_test", RecordField{true});
   RecordArray qux;
-  qux.push_back(RecordField{.value_ = true});
-  qux.push_back(RecordField{.value_ = false});
-  qux.push_back(RecordField{.value_ = true});
+  qux.emplace_back(true);
+  qux.emplace_back(false);
+  qux.emplace_back(true);
   RecordObject quux;
-  quux["Apfel"] = std::make_unique<RecordField>(RecordField{.value_ = "apple"});
-  quux["Birne"] = std::make_unique<RecordField>(RecordField{.value_ = "pear"});
-  quux["Aprikose"] = std::make_unique<RecordField>(RecordField{.value_ = "apricot"});
+  quux["Apfel"] = std::make_unique<RecordField>(RecordField{"apple"});
+  quux["Birne"] = std::make_unique<RecordField>(RecordField{"pear"});
+  quux["Aprikose"] = std::make_unique<RecordField>(RecordField{"apricot"});
 
-  record["qux"] = RecordField{.value_ = qux};
-  record["quux"] = RecordField{.value_ = quux};
+  record.emplace("qux", RecordField{std::move(qux)});
+  record.emplace("quux", RecordField{std::move(quux)});
   return record;
 }
 
