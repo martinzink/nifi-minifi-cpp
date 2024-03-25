@@ -20,6 +20,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 namespace org::apache::nifi::minifi::core {
 
@@ -34,14 +35,17 @@ struct RecordField {
   RecordField(RecordField&& field) noexcept : value_(std::move(field.value_)) {}
 
   RecordField& operator=(const RecordField&) = delete;
-  RecordField& operator=(RecordField&& field) {
+  RecordField& operator=(RecordField&& field)  noexcept {
       value_ = std::move(field.value_);
       return *this;
   };
 
-  std::variant<std::string, int64_t, double, bool, std::chrono::system_clock::time_point, RecordArray, RecordObject> value_;
+  ~RecordField() = default;
+
 
   bool operator==(const RecordField& rhs) const = default;
+
+  std::variant<std::string, int64_t, double, bool, std::chrono::system_clock::time_point, RecordArray, RecordObject> value_;
 };
 
 }  // namespace org::apache::nifi::minifi::core
