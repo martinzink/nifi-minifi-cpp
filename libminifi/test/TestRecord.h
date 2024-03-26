@@ -43,9 +43,9 @@ inline Record createSampleRecord2(bool stringify_date = false) {
   qux.emplace_back(false);
   qux.emplace_back(true);
   RecordObject quux;
-  quux["Apfel"] = std::make_unique<RecordField>(RecordField{"pomme"});
-  quux["Birne"] = std::make_unique<RecordField>(RecordField{"poire"});
-  quux["Aprikose"] = std::make_unique<RecordField>(RecordField{"abricot"});
+  quux["Apfel"] = BoxedRecordField{std::make_unique<RecordField>(RecordField{"pomme"})};
+  quux["Birne"] = BoxedRecordField{std::make_unique<RecordField>(RecordField{"poire"})};
+  quux["Aprikose"] = BoxedRecordField{std::make_unique<RecordField>(RecordField{"abricot"})};
 
   record.emplace("qux", RecordField{std::move(qux)});
   record.emplace("quux", RecordField{std::move(quux)});
@@ -72,9 +72,9 @@ inline Record createSampleRecord(bool stringify_date = false) {
   qux.emplace_back(false);
   qux.emplace_back(true);
   RecordObject quux;
-  quux["Apfel"] = std::make_unique<RecordField>(RecordField{"apple"});
-  quux["Birne"] = std::make_unique<RecordField>(RecordField{"pear"});
-  quux["Aprikose"] = std::make_unique<RecordField>(RecordField{"apricot"});
+  quux["Apfel"] = BoxedRecordField{std::make_unique<RecordField>(RecordField{"apple"})};
+  quux["Birne"] = BoxedRecordField{std::make_unique<RecordField>(RecordField{"pear"})};
+  quux["Aprikose"] = BoxedRecordField{std::make_unique<RecordField>(RecordField{"apricot"})};
 
   record.emplace("qux", RecordField{std::move(qux)});
   record.emplace("quux", RecordField{std::move(quux)});

@@ -28,8 +28,17 @@ namespace org::apache::nifi::minifi::core {
 
 struct RecordField;
 
+struct BoxedRecordField {
+  BoxedRecordField() = default;
+  explicit BoxedRecordField(std::unique_ptr<RecordField> _field) : field(std::move(_field)) {}
+  bool operator==(const BoxedRecordField&) const;
+  std::unique_ptr<RecordField> field;
+};
+
+
 using RecordArray = std::vector<RecordField>;
-using RecordObject = std::unordered_map<std::string, std::unique_ptr<RecordField>>;
+
+using RecordObject = std::unordered_map<std::string, BoxedRecordField>;
 
 struct RecordField {
   explicit RecordField(std::variant<std::string, int64_t, double, bool, std::chrono::system_clock::time_point, RecordArray, RecordObject> value) : value_(std::move(value)) {}
@@ -49,5 +58,10 @@ struct RecordField {
 
   std::variant<std::string, int64_t, double, bool, std::chrono::system_clock::time_point, RecordArray, RecordObject> value_;
 };
+inline bool BoxedRecordField::operator==(const BoxedRecordField& rhs) const {
+  if (!field || !rhs.field)
+    return field == rhs.field;
+  return *field == *rhs.field;
+}
 
 }  // namespace org::apache::nifi::minifi::core
