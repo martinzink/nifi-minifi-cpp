@@ -17,6 +17,11 @@
 
 #include "JsonRecordSetReader.h"
 
+#ifdef WIN32
+#pragma push_macro("GetObject")
+#undef GetObject  // windows.h #defines GetObject = GetObjectA or GetObjectW, which conflicts with rapidjson
+#endif
+
 namespace org::apache::nifi::minifi::standard {
 
 namespace {
@@ -127,3 +132,7 @@ nonstd::expected<core::RecordSet, std::error_code> JsonRecordSetReader::read(con
 }
 
 }  // namespace org::apache::nifi::minifi::standard
+
+#ifdef WIN32
+#pragma pop_macro("GetObject")
+#endif
