@@ -23,7 +23,7 @@
 
 namespace org::apache::nifi::minifi::core::test {
 
-inline Record createSampleRecord2(bool stringify_date = false) {
+inline Record createSampleRecord2(const bool stringify_date = false) {
   using namespace date::literals;  // NOLINT(google-build-using-namespace)
   using namespace std::literals::chrono_literals;
   Record record;
@@ -52,7 +52,7 @@ inline Record createSampleRecord2(bool stringify_date = false) {
   return record;
 }
 
-inline Record createSampleRecord(bool stringify_date = false) {
+inline Record createSampleRecord(const bool stringify_date = false) {
   using namespace date::literals;  // NOLINT(google-build-using-namespace)
   using namespace std::literals::chrono_literals;
   Record record;
