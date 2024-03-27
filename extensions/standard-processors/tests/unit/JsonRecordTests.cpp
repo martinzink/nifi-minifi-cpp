@@ -69,6 +69,14 @@ constexpr std::string_view array_pretty_str = R"([
     }
 ])";
 
+bool test_json_equality(const std::string_view expected_str, const std::string_view actual_str) {
+  rapidjson::Document expected;
+  expected.Parse(expected_str.data());
+  rapidjson::Document actual;
+  actual.Parse(actual_str.data());
+  return actual == expected;
+}
+
 TEST_CASE("JsonRecordSetWriter test Record Per Line") {
   core::RecordSet record_set;
   record_set.push_back(core::test::createSampleRecord());
@@ -78,7 +86,9 @@ TEST_CASE("JsonRecordSetWriter test Record Per Line") {
   json_record_set_writer.initialize();
   CHECK(json_record_set_writer.setProperty(JsonRecordSetWriter::OutputGrouping, "OneLinePerObject"));
   json_record_set_writer.onEnable();
-  CHECK(core::test::testRecordWriter(json_record_set_writer, record_set, record_per_line_str));
+  CHECK(core::test::testRecordWriter(json_record_set_writer, record_set, [](auto serialized_record_set) -> bool {
+    return test_json_equality(record_per_line_str, serialized_record_set);
+  }));
 }
 
 TEST_CASE("JsonRecordSetWriter test array") {
@@ -87,7 +97,9 @@ TEST_CASE("JsonRecordSetWriter test array") {
   record_set.push_back(core::test::createSampleRecord2());
 
   JsonRecordSetWriter json_record_set_writer;
-  CHECK(core::test::testRecordWriter(json_record_set_writer, record_set, array_compressed_str));
+  CHECK(core::test::testRecordWriter(json_record_set_writer, record_set, [](auto serialized_record_set) -> bool {
+    return test_json_equality(array_compressed_str, serialized_record_set);
+  }));
 }
 
 TEST_CASE("JsonRecordSetWriter test pretty array") {
@@ -99,7 +111,9 @@ TEST_CASE("JsonRecordSetWriter test pretty array") {
   json_record_set_writer.initialize();
   CHECK(json_record_set_writer.setProperty(JsonRecordSetWriter::PrettyPrint, "true"));
   json_record_set_writer.onEnable();
-  CHECK(core::test::testRecordWriter(json_record_set_writer, record_set, array_pretty_str));
+  CHECK(core::test::testRecordWriter(json_record_set_writer, record_set, [](auto serialized_record_set) -> bool {
+    return test_json_equality(array_pretty_str, serialized_record_set);
+  }));
 }
 
 TEST_CASE("JsonRecordSetReader per line") {

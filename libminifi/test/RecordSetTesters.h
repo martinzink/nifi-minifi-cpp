@@ -43,7 +43,7 @@ class RecordSetFixture {
   const Relationship relationship_{"success", "description"};
 };
 
-inline bool testRecordWriter(RecordSetWriter& record_set_writer, const RecordSet& record_set, const std::string_view expected) {
+bool testRecordWriter(RecordSetWriter& record_set_writer, const RecordSet& record_set, auto tester) {
   const RecordSetFixture fixture;
   ProcessSession& process_session = fixture.processSession();
 
@@ -57,7 +57,7 @@ inline bool testRecordWriter(RecordSetWriter& record_set_writer, const RecordSet
   const auto buffer_size = input_stream->read(buffer);
   const std::string flow_file_content(reinterpret_cast<char*>(buffer.data()), buffer_size);
 
-  return flow_file_content == expected;
+  return tester(flow_file_content);
 }
 
 inline bool testRecordReader(RecordSetReader& record_set_reader, const std::string_view serialized_record_set, const RecordSet& expected_record_set) {
