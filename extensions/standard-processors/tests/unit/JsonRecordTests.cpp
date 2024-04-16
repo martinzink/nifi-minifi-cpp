@@ -122,7 +122,7 @@ TEST_CASE("JsonRecordSetReader per line") {
   expected_record_set.push_back(core::test::createSampleRecord2(true));
 
   JsonRecordSetReader json_record_set_reader;
-  CHECK(core::test::testRecordReader(json_record_set_reader, record_per_line_str, expected_record_set));
+  core::test::testRecordReader(json_record_set_reader, record_per_line_str, expected_record_set);
 }
 
 TEST_CASE("JsonRecordSetReader compressed array") {
@@ -131,7 +131,7 @@ TEST_CASE("JsonRecordSetReader compressed array") {
   expected_record_set.push_back(core::test::createSampleRecord2(true));
 
   JsonRecordSetReader json_record_set_reader;
-  CHECK(core::test::testRecordReader(json_record_set_reader, array_compressed_str, expected_record_set));
+  core::test::testRecordReader(json_record_set_reader, array_compressed_str, expected_record_set);
 }
 
 TEST_CASE("JsonRecordSetReader pretty array") {
@@ -140,6 +140,6 @@ TEST_CASE("JsonRecordSetReader pretty array") {
   expected_record_set.push_back(core::test::createSampleRecord2(true));
 
   JsonRecordSetReader json_record_set_reader;
-  CHECK(core::test::testRecordReader(json_record_set_reader, array_pretty_str, expected_record_set));
+  core::test::testRecordReader(json_record_set_reader, array_pretty_str, expected_record_set);
 }
 }  // namespace org::apache::nifi::minifi::standard::test

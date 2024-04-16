@@ -36,6 +36,7 @@
 #include "MergeContent.h"
 #include "processors/LogAttribute.h"
 #include "TestBase.h"
+#include "SingleProcessorTestController.h"
 #include "Catch.h"
 #include "unit/ProvenanceTestHelper.h"
 #include "serialization/FlowFileV3Serializer.h"
@@ -899,3 +900,13 @@ TEST_CASE_METHOD(MergeTestController, "Maximum Group Size is respected", "[testM
   REQUIRE(expiredFlowRecords.empty());
   REQUIRE_FALSE(flow3);
 }
+
+TEST_CASE("Empty MergeContent yields") {
+  const auto merge_content = std::make_shared<minifi::processors::MergeContent>("mergeContent");
+
+  minifi::test::SingleProcessorTestController controller{merge_content};
+  controller.trigger();
+
+  CHECK(merge_content->isYield());
+}
+
