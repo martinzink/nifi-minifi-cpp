@@ -42,10 +42,10 @@ using RecordObject = std::unordered_map<std::string, BoxedRecordField>;
 
 struct RecordField {
   explicit RecordField(std::variant<std::string, int64_t, double, bool, std::chrono::system_clock::time_point, RecordArray, RecordObject> value) : value_(std::move(value)) {}
-  RecordField(const RecordField& field) = delete;
+  RecordField(const RecordField& field) = default;
   RecordField(RecordField&& field) noexcept : value_(std::move(field.value_)) {}
 
-  RecordField& operator=(const RecordField&) = delete;
+  RecordField& operator=(const RecordField&) = default;
   RecordField& operator=(RecordField&& field)  noexcept {
       value_ = std::move(field.value_);
       return *this;

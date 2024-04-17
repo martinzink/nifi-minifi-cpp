@@ -36,11 +36,11 @@ class Record {
     return fields_.at(key);
   }
 
-  [[nodiscard]] auto begin() const {
+  [[nodiscard]] std::unordered_map<std::string, RecordField>::const_iterator begin() const {
     return fields_.begin();
   }
 
-  [[nodiscard]] auto end() const {
+  [[nodiscard]] std::unordered_map<std::string, RecordField>::const_iterator end() const {
     return fields_.end();
   }
 
