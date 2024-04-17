@@ -19,6 +19,7 @@
 
 #include <rapidjson/prettywriter.h>
 #include "utils/ProcessorConfigUtils.h"
+#include "core/Resource.h"
 
 namespace org::apache::nifi::minifi::standard {
 
@@ -127,5 +128,6 @@ void JsonRecordSetWriter::convertRecord(const core::Record& record, rapidjson::V
   }
 }
 
+REGISTER_RESOURCE(JsonRecordSetWriter, ControllerService);
 
 }  // namespace org::apache::nifi::minifi::standard

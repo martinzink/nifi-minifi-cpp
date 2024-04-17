@@ -32,9 +32,6 @@ enum class OutputGroupingType {
 
 class JsonRecordSetWriter final : public core::RecordSetWriter {
  public:
-  explicit JsonRecordSetWriter(const std::string& name, const utils::Identifier& uuid = {});
-  explicit JsonRecordSetWriter(const std::string& name, const std::shared_ptr<Configure>& configuration);
-
   JsonRecordSetWriter(JsonRecordSetWriter&&) = delete;
   JsonRecordSetWriter(const JsonRecordSetWriter&) = delete;
   JsonRecordSetWriter& operator=(JsonRecordSetWriter&&) = delete;
