@@ -30,9 +30,18 @@ struct RecordField;
 
 struct BoxedRecordField {
   BoxedRecordField() = default;
-  explicit BoxedRecordField(std::unique_ptr<RecordField> _field) : field(std::move(_field)) {}
+  BoxedRecordField(const BoxedRecordField&) = delete;
+  BoxedRecordField(BoxedRecordField&& rhs) noexcept : field(std::move(rhs.field)) {}
+  BoxedRecordField& operator=(const BoxedRecordField&) = delete;
+  BoxedRecordField& operator=(BoxedRecordField&& rhs)  noexcept {
+    field = std::move(rhs.field);
+    return *this;
+  };
+  ~BoxedRecordField() = default;
+
+  explicit BoxedRecordField(std::unique_ptr<RecordField>&& _field) : field(std::move(_field)) {}
   bool operator==(const BoxedRecordField&) const;
-  std::unique_ptr<RecordField> field;
+  std::unique_ptr<RecordField> field = nullptr;
 };
 
 
@@ -42,10 +51,10 @@ using RecordObject = std::unordered_map<std::string, BoxedRecordField>;
 
 struct RecordField {
   explicit RecordField(std::variant<std::string, int64_t, double, bool, std::chrono::system_clock::time_point, RecordArray, RecordObject> value) : value_(std::move(value)) {}
-  RecordField(const RecordField& field) = default;
+  RecordField(const RecordField& field) = delete;
   RecordField(RecordField&& field) noexcept : value_(std::move(field.value_)) {}
 
-  RecordField& operator=(const RecordField&) = default;
+  RecordField& operator=(const RecordField&) = delete;
   RecordField& operator=(RecordField&& field)  noexcept {
       value_ = std::move(field.value_);
       return *this;
@@ -58,6 +67,7 @@ struct RecordField {
 
   std::variant<std::string, int64_t, double, bool, std::chrono::system_clock::time_point, RecordArray, RecordObject> value_;
 };
+
 inline bool BoxedRecordField::operator==(const BoxedRecordField& rhs) const {
   if (!field || !rhs.field)
     return field == rhs.field;

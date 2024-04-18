@@ -28,6 +28,8 @@ namespace org::apache::nifi::minifi::core {
 
 class Record {
  public:
+  Record() = default;
+  Record(Record&& rhs) noexcept : fields_(std::move(rhs.fields_)) {}
   auto emplace(std::string key, RecordField&& field) {
     return fields_.emplace(std::move(key), std::move(field));
   }
