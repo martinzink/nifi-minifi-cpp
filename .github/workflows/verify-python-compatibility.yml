@@ -24,9 +24,9 @@ jobs:
       - id: build
         run: |
           if [ -d ~/.ccache ]; then mv ~/.ccache .; fi
-          mkdir build && cd build && cmake -DENABLE_AWS=OFF -DENABLE_LIBRDKAFKA=OFF -DENABLE_KUBERNETES=OFF -DENABLE_SYSTEMD=OFF -DENABLE_SQL=OFF -DENABLE_MQTT=OFF -DENABLE_GCP=OFF \
-              -DENABLE_AZURE=OFF -DENABLE_SPLUNK=OFF -DENABLE_ELASTICSEARCH=OFF -DENABLE_PROMETHEUS=OFF -DDOCKER_BUILD_ONLY=ON -DENABLE_PROCFS=OFF -DENABLE_OPC=OFF \
-              -DDOCKER_CCACHE_DUMP_LOCATION=$HOME/.ccache .. && make rocky
+          mkdir build && cd build && cmake -DDOCKER_VERIFY_THREAD=3 -DUSE_SHARED_LIBS= -DSTRICT_GSL_CHECKS=AUDIT -DCI_BUILD=ON -DENABLE_AWS=ON -DENABLE_LIBRDKAFKA=ON -DENABLE_MQTT=ON -DENABLE_AZURE=ON -DENABLE_SQL=ON \
+              -DENABLE_SPLUNK=ON -DENABLE_GCP=ON -DENABLE_OPC=ON -DENABLE_PYTHON_SCRIPTING=ON -DENABLE_LUA_SCRIPTING=ON -DENABLE_KUBERNETES=ON -DENABLE_TEST_PROCESSORS=ON -DENABLE_PROMETHEUS=ON \
+              -DENABLE_ELASTICSEARCH=OFF -DENABLE_GRAFANA_LOKI=ON -DDOCKER_BUILD_ONLY=ON -DDOCKER_CCACHE_DUMP_LOCATION=$HOME/.ccache .. && make rocky
       - uses: actions/upload-artifact@v3
         with:
           name: minifi-tar
@@ -44,28 +44,28 @@ jobs:
         platform: [
           { name: "Rocky Linux 8",
             id: "rocky8",
-            build_cmd: "make rocky8_docker_from_rocky_build",
-            verify_cmd: "make docker-verify-python-rocky8" },
+            build_cmd: "make rocky8_py_from_rocky_package",
+            verify_cmd: "make docker-verify-rocky8_py" },
           { name: "Rocky Linux 9",
             id: "rocky9",
-            build_cmd: "make rocky9_docker_from_rocky_build",
-            verify_cmd: "make docker-verify-python-rocky9" },
+            build_cmd: "make rocky9_py_from_rocky_package",
+            verify_cmd: "make docker-verify-rocky9_py" },
           { name: "Patchelf-ed Ubuntu 22.04",
             id: "patchelfed_ubuntu22.04",
-            build_cmd: "make patched_jammy_docker_from_rocky_build",
-            verify_cmd: "make docker-verify-python-patched_jammy" },
+            build_cmd: "make patched_jammy_py_from_rocky_package",
+            verify_cmd: "make docker-verify-patched_jammy_py" },
           { name: "Patchelf-ed Debian 11",
             id: "patchelfed_debian11",
-            build_cmd: "make patched_bullseye_docker_from_rocky_build",
-            verify_cmd: "make docker-verify-python-patched_bullseye" },
+            build_cmd: "make patched_bullseye_py_from_rocky_package",
+            verify_cmd: "make docker-verify-patched_bullseye_py" },
           { name: "Ubuntu 22.04 with Anaconda",
             id: "ubuntu22.04_anaconda",
-            build_cmd: "make jammy_docker_from_rocky_build && make conda_jammy_docker_from_rocky_build",
-            verify_cmd: "make docker-verify-python-conda_jammy" },
+            build_cmd: "make jammy_py_from_rocky_package && make conda_jammy_py_docker_from_centos_build",
+            verify_cmd: "make docker-verify-conda_jammy_py" },
           { name: "Rocky Linux 9 in virtualenv",
             id: "rocky9_venv",
-            build_cmd: "make rocky9_docker_from_rocky_build && make venv_rocky9_docker_from_rocky_build",
-            verify_cmd: "make docker-verify-python-venv_rocky9" }
+            build_cmd: "make rocky9_py_from_rocky_package && make venv_rocky9_py_docker_from_centos_build",
+            verify_cmd: "make docker-verify-venv_rocky9_py" }
         ]
 
     steps:
