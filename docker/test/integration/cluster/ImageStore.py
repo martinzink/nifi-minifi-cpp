@@ -73,10 +73,18 @@ class ImageStore:
         return image
 
     def __build_minifi_cpp_sql_image(self):
+        if "rocky" in MinifiContainer.MINIFI_TAG_PREFIX:
+            install_sql_cmd = "dnf -y install postgresql-odbc"
+        elif "bullseye" in MinifiContainer.MINIFI_TAG_PREFIX or "bookworm" in MinifiContainer.MINIFI_TAG_PREFIX:
+            install_sql_cmd = "apt -y install odbc-postgresql"
+        elif "jammy" in MinifiContainer.MINIFI_TAG_PREFIX or "noble" in MinifiContainer.MINIFI_TAG_PREFIX:
+            install_sql_cmd = "apt -y install odbc-postgresql"
+        else:
+            install_sql_cmd = "apk --update --no-cache add psqlodbc"
         dockerfile = dedent("""\
                 FROM {base_image}
                 USER root
-                RUN apk --update --no-cache add psqlodbc
+                RUN {install_sql_cmd}
                 RUN echo "[PostgreSQL ANSI]" > /odbcinst.ini.template && \
                     echo "Description=PostgreSQL ODBC driver (ANSI version)" >> /odbcinst.ini.template && \
                     echo "Driver=psqlodbca.so" >> /odbcinst.ini.template && \
@@ -103,7 +111,8 @@ class ImageStore:
                     echo "Password = password" >> /etc/odbc.ini && \
                     echo "Database = postgres" >> /etc/odbc.ini
                 USER minificpp
-                """.format(base_image='apacheminificpp:' + MinifiContainer.MINIFI_TAG_PREFIX + MinifiContainer.MINIFI_VERSION))
+                """.format(base_image='apacheminificpp:' + MinifiContainer.MINIFI_TAG_PREFIX + MinifiContainer.MINIFI_VERSION,
+                           install_sql_cmd=install_sql_cmd))
 
         return self.__build_image(dockerfile)
 
