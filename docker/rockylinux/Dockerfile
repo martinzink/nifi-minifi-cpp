@@ -40,7 +40,7 @@ COPY . ${MINIFI_BASE_DIR}
 
 # Install the system dependencies needed for a build
 # gpsd-devel and ccache are in EPEL
-RUN dnf -y install epel-release && dnf -y install gcc-toolset-12 sudo git which make libarchive ccache ca-certificates perl patch bison flex libtool cmake && \
+RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && dnf -y install gcc-toolset-12 sudo git which make libarchive ccache ca-certificates perl patch bison flex libtool cmake && \
     if echo "$MINIFI_OPTIONS" | grep -q "ENABLE_ALL=ON"; then dnf -y --enablerepo=devel install gpsd-devel libpng-devel libusbx-devel python3-devel java-1.8.0-openjdk maven libpcap-devel; fi && \
     if echo "$MINIFI_OPTIONS" | grep -q "ENABLE_GPS=ON"; then dnf -y install gpsd-devel; fi && \
     if echo "$MINIFI_OPTIONS" | grep -q "ENABLE_JNI=ON"; then dnf -y install java-1.8.0-openjdk maven; fi && \
