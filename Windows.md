@@ -87,7 +87,6 @@ After the build directory it will take optional parameters modifying the CMake c
 | /NO_ELASTIC          | Disables Elastic extension                                                          |
 | /NO_AZURE            | Disables Azure extension                                                            |
 | /NO_MQTT             | Disables MQTT extension                                                             |
-| /N                   | Enables Nanofi                                                                      |
 | /NO_LUA_SCRIPTING    | Disables Lua scripting extension                                                    |
 | /NO_PYTHON_SCRIPTING | Disables Python scripting extension                                                 |
 | /SENSORS             | Enables the Sensors package                                                         |

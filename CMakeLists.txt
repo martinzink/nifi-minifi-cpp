@@ -371,10 +371,6 @@ endforeach()
 ## NOW WE CAN ADD LIBRARIES AND EXTENSIONS TO MAIN
 add_subdirectory(minifi_main)
 
-if (ENABLE_NANOFI)
-    add_subdirectory(nanofi)
-endif()
-
 if (ENABLE_ENCRYPT_CONFIG)
     add_subdirectory(encrypt-config)
 endif()
