@@ -75,8 +75,8 @@ function(use_bundled_rocksdb SOURCE_DIR BINARY_DIR)
     # Build project
     ExternalProject_Add(
             rocksdb-external
-            URL "https://github.com/facebook/rocksdb/archive/refs/tags/v8.10.2.tar.gz"
-            URL_HASH "SHA256=44b6ec2f4723a0d495762da245d4a59d38704e0d9d3d31c45af4014bee853256"
+            URL "https://github.com/facebook/rocksdb/archive/refs/tags/v9.2.1.tar.gz"
+            URL_HASH "SHA256=bb20fd9a07624e0dc1849a8e65833e5421960184f9c469d508b58ed8f40a780f"
             SOURCE_DIR "${BINARY_DIR}/thirdparty/rocksdb-src"
             CMAKE_ARGS ${ROCKSDB_CMAKE_ARGS}
             PATCH_COMMAND ${PC}

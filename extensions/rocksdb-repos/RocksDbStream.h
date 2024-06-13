@@ -85,6 +85,7 @@ class RocksDbStream : public io::BaseStream {
   bool write_enable_;
   gsl::not_null<minifi::internal::RocksDatabase*> db_;
   std::string value_;
+  rocksdb::PinnableSlice pinnable_slice_;
   bool exists_;
   size_t offset_;
   minifi::internal::WriteBatch* batch_;

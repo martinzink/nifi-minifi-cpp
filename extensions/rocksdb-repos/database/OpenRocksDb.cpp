@@ -39,6 +39,12 @@ rocksdb::Status OpenRocksDb::Get(const rocksdb::ReadOptions& options, const rock
   return result;
 }
 
+rocksdb::Status OpenRocksDb::GetPinnable(const rocksdb::ReadOptions& options, const rocksdb::Slice& key, rocksdb::PinnableSlice* pinnable_slice) {
+  rocksdb::Status result = impl_->Get(options, column_->handle.get(), key, pinnable_slice);
+  handleResult(result);
+  return result;
+}
+
 std::vector<rocksdb::Status> OpenRocksDb::MultiGet(const rocksdb::ReadOptions& options, const std::vector<rocksdb::Slice>& keys, std::vector<std::string>* values) {
   std::vector<rocksdb::Status> results = impl_->MultiGet(
       options, std::vector<rocksdb::ColumnFamilyHandle*>(keys.size(), column_->handle.get()), keys, values);

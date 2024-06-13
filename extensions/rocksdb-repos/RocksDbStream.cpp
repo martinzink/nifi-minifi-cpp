@@ -33,13 +33,14 @@ RocksDbStream::RocksDbStream(std::string path, gsl::not_null<minifi::internal::R
       path_(std::move(path)),
       write_enable_(write_enable),
       db_(db),
+      pinnable_slice_(&value_),
       exists_([this] {
         auto opendb = db_->open();
-        return opendb && opendb->Get(rocksdb::ReadOptions(), path_, &value_).ok();
+        return opendb && opendb->GetPinnable(rocksdb::ReadOptions(), path_, &pinnable_slice_).ok();
       }()),
       offset_(0),
       batch_(batch),
-      size_(value_.size()) {
+      size_(pinnable_slice_.IsPinned() ? pinnable_slice_.size() : value_.size()) {
 }
 
 void RocksDbStream::close() {
@@ -81,12 +82,23 @@ size_t RocksDbStream::read(std::span<std::byte> buf) {
   // The check have to be in this order for RocksDBStreamTest "Read zero bytes" to succeed
   if (!exists_) return STREAM_ERROR;
   if (buf.empty()) return 0;
-  if (offset_ >= value_.size()) return 0;
+  if (pinnable_slice_.IsPinned()) {
+    logger_->log_error("Pinned");
+    if (offset_ >= pinnable_slice_.size()) return 0;
 
-  const auto amtToRead = std::min(buf.size(), value_.size() - offset_);
-  std::memcpy(buf.data(), value_.data() + offset_, amtToRead);
-  offset_ += amtToRead;
-  return amtToRead;
+    const auto amtToRead = std::min(buf.size(), pinnable_slice_.size() - offset_);
+    std::memcpy(buf.data(), pinnable_slice_.data() + offset_, amtToRead);
+    offset_ += amtToRead;
+    return amtToRead;
+  } else {
+    logger_->log_error("Not pinned");
+    if (offset_ >= value_.size()) return 0;
+
+    const auto amtToRead = std::min(buf.size(), value_.size() - offset_);
+    std::memcpy(buf.data(), value_.data() + offset_, amtToRead);
+    offset_ += amtToRead;
+    return amtToRead;
+  }
 }
 
 }  // namespace org::apache::nifi::minifi::io

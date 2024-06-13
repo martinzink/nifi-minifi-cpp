@@ -51,6 +51,7 @@ class OpenRocksDb {
   rocksdb::Status Put(const rocksdb::WriteOptions& options, const rocksdb::Slice& key, const rocksdb::Slice& value);
 
   rocksdb::Status Get(const rocksdb::ReadOptions& options, const rocksdb::Slice& key, std::string* value);
+  rocksdb::Status GetPinnable(const rocksdb::ReadOptions& options, const rocksdb::Slice& key, rocksdb::PinnableSlice* pinnable_slice);
 
   std::vector<rocksdb::Status> MultiGet(const rocksdb::ReadOptions& options, const std::vector<rocksdb::Slice>& keys, std::vector<std::string>* values);
 
