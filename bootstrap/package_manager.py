@@ -133,6 +133,8 @@ class AptPackageManager(PackageManager):
         return set(lines)
 
     def install_compiler(self) -> str:
+        print("Majom")
+        print(distro.major_version())
         if distro.id() == "ubuntu" and int(distro.major_version()) < 22:
             self.install({"compiler_prereq": {"apt-transport-https", "ca-certificates", "software-properties-common"}})
             _run_command_with_confirm("sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test",
