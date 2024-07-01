@@ -75,9 +75,6 @@ bool testJsonEquality(const std::string_view expected_str, const std::string_vie
   expected.Parse(expected_str.data());
   rapidjson::Document actual;
   actual.Parse(actual_str.data());
-  if (actual != expected) {
-    std::cerr << expected_str << std::endl << actual_str << std::endl;
-  }
   return actual == expected;
 }
 

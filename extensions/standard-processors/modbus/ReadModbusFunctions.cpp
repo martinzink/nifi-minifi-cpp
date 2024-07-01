@@ -18,6 +18,8 @@
 
 #include "ReadModbusFunctions.h"
 
+#include <range/v3/view/drop.hpp>
+
 namespace org::apache::nifi::minifi::modbus {
 std::vector<std::byte> ReadModbusFunction::requestBytes() const {
   constexpr std::array modbus_service_protocol_identifier = {std::byte{0}, std::byte{0}};
@@ -57,11 +59,12 @@ std::vector<std::byte> ReadModbusFunction::requestBytes() const {
   return resp_pdu.subspan(2, resp_pdu.size()-2);
 }
 
-[[nodiscard]] std::vector<std::byte> ReadCoilStatus::rawPdu() const {
-  std::vector<std::byte> result;
-  result.push_back(getFunctionCode());
-  ranges::copy(toBytes(starting_address_), std::back_inserter(result));
-  ranges::copy(toBytes(number_of_points_), std::back_inserter(result));
+[[nodiscard]] std::array<std::byte, 5> ReadCoilStatus::rawPdu() const {
+  std::array<std::byte, 5> result{};
+  result[0] = getFunctionCode();
+
+  ranges::copy(toBytes(starting_address_), (result | ranges::views::drop(1) | ranges::views::take(2)).begin());
+  ranges::copy(toBytes(number_of_points_), (result | ranges::views::drop(3) | ranges::views::take(2)).begin());
   return result;
 }
 
