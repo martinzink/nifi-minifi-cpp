@@ -31,15 +31,15 @@ namespace org::apache::nifi::minifi::extensions::lua {
 
 class LuaProcessSession {
  public:
-  explicit LuaProcessSession(std::shared_ptr<core::ProcessSession> session);
+  explicit LuaProcessSession(gsl::not_null<core::ProcessSession*> session);
 
   std::shared_ptr<LuaScriptFlowFile> get();
   std::shared_ptr<LuaScriptFlowFile> create();
-  std::shared_ptr<LuaScriptFlowFile> create(const std::shared_ptr<LuaScriptFlowFile> &flow_file);
-  void transfer(const std::shared_ptr<LuaScriptFlowFile> &flow_file, const core::Relationship& relationship);
-  void read(const std::shared_ptr<LuaScriptFlowFile> &script_flow_file, sol::table input_stream_callback);
-  void write(const std::shared_ptr<LuaScriptFlowFile> &flow_file, sol::table output_stream_callback);
-  void remove(const std::shared_ptr<LuaScriptFlowFile>& flow_file);
+  std::shared_ptr<LuaScriptFlowFile> create(const std::shared_ptr<LuaScriptFlowFile>& script_flow_file);
+  void transfer(const std::shared_ptr<LuaScriptFlowFile>& script_flow_file, const core::Relationship& relationship);
+  void read(const std::shared_ptr<LuaScriptFlowFile>& script_flow_file, sol::table input_stream_callback);
+  void write(const std::shared_ptr<LuaScriptFlowFile>& script_flow_file, sol::table output_stream_callback);
+  void remove(const std::shared_ptr<LuaScriptFlowFile>& script_flow_file);
 
   /**
    * Sometimes we want to release shared pointers to core resources when
@@ -53,7 +53,7 @@ class LuaProcessSession {
 
  private:
   std::vector<std::shared_ptr<LuaScriptFlowFile>> flow_files_;
-  std::shared_ptr<core::ProcessSession> session_;
+  gsl::not_null<core::ProcessSession*> session_;
 };
 
 }  // namespace org::apache::nifi::minifi::extensions::lua
