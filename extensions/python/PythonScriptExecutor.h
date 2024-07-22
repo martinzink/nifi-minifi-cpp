@@ -29,7 +29,7 @@ class PythonScriptExecutor : public script::ScriptExecutor {
  public:
   explicit PythonScriptExecutor(std::string_view name, const utils::Identifier& uuid = {});
 
-  void onTrigger(gsl::not_null<core::ProcessContext*> context, gsl::not_null<core::ProcessSession*> session) override;
+  void onTrigger(core::ProcessContext& context, core::ProcessSession& session) override;
   void initialize(std::filesystem::path script_file,
       std::string script_body,
       std::optional<std::string> module_directory,

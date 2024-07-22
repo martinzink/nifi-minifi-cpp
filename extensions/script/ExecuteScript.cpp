@@ -76,7 +76,7 @@ void ExecuteScript::onSchedule(core::ProcessContext& context, core::ProcessSessi
 
 void ExecuteScript::onTrigger(core::ProcessContext& context, core::ProcessSession& session) {
   gsl_Expects(script_executor_);
-  script_executor_->onTrigger(gsl::make_not_null(&context), gsl::make_not_null(&session));
+  script_executor_->onTrigger(context, session);
 }
 
 REGISTER_RESOURCE(ExecuteScript, Processor);

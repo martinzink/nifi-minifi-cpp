@@ -30,7 +30,7 @@ namespace org::apache::nifi::minifi::extensions::python {
 PythonScriptExecutor::PythonScriptExecutor(std::string_view name, const utils::Identifier& uuid) : script::ScriptExecutor(name, uuid) {}
 
 
-void PythonScriptExecutor::onTrigger(gsl::not_null<core::ProcessContext*> context, gsl::not_null<core::ProcessSession*> session) {
+void PythonScriptExecutor::onTrigger(core::ProcessContext& context, core::ProcessSession& session) {
   gsl_Expects(python_script_engine_);
   gsl_Expects(std::holds_alternative<std::filesystem::path>(script_to_run_) || std::holds_alternative<std::string>(script_to_run_));
 
@@ -43,7 +43,7 @@ void PythonScriptExecutor::onTrigger(gsl::not_null<core::ProcessContext*> contex
   else
     python_script_engine_->eval(std::get<std::string>(script_to_run_));
 
-  python_script_engine_->onTrigger(context, session);
+  python_script_engine_->onTrigger(&context, &session);
 }
 
 void PythonScriptExecutor::initialize(std::filesystem::path script_file,

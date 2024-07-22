@@ -31,7 +31,7 @@ namespace org::apache::nifi::minifi::extensions::lua {
 
 class LuaProcessSession {
  public:
-  explicit LuaProcessSession(gsl::not_null<core::ProcessSession*> session);
+  explicit LuaProcessSession(core::ProcessSession& session);
 
   std::shared_ptr<LuaScriptFlowFile> get();
   std::shared_ptr<LuaScriptFlowFile> create();
@@ -53,7 +53,7 @@ class LuaProcessSession {
 
  private:
   std::vector<std::shared_ptr<LuaScriptFlowFile>> flow_files_;
-  gsl::not_null<core::ProcessSession*> session_;
+  core::ProcessSession& session_;
 };
 
 }  // namespace org::apache::nifi::minifi::extensions::lua

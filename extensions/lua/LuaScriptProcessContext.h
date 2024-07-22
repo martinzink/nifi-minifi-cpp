@@ -28,14 +28,14 @@ namespace org::apache::nifi::minifi::extensions::lua {
 
 class LuaScriptProcessContext {
  public:
-  explicit LuaScriptProcessContext(gsl::not_null<core::ProcessContext*> context_, sol::state& sol_state);
+  explicit LuaScriptProcessContext(core::ProcessContext& context, sol::state& sol_state);
 
   std::string getProperty(const std::string &name);
 
   LuaScriptStateManager getStateManager();
 
  private:
-  gsl::not_null<core::ProcessContext*> context_;
+  core::ProcessContext& context_;
   sol::state& sol_state_;
 };
 
