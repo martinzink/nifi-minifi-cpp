@@ -45,7 +45,7 @@ template<typename T>
 concept NotAFlowFile = !std::convertible_to<T &, const FlowFile &> && !std::convertible_to<T &, const std::shared_ptr<FlowFile> &>;
 }  // namespace detail
 
-class ProcessContext : public virtual core::VariableRegistry, public virtual utils::EnableSharedFromThis {
+class ProcessContext : public virtual controller::ControllerServiceLookup, public virtual core::VariableRegistry, public virtual utils::EnableSharedFromThis {
  public:
   virtual std::shared_ptr<ProcessorNode> getProcessorNode() const = 0;
   virtual std::optional<std::string> getProperty(const Property&, const FlowFile* const) = 0;

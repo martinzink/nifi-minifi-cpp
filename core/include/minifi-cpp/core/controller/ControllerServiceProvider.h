@@ -47,6 +47,7 @@ class ControllerServiceProvider : public virtual CoreComponent, public virtual C
 
   virtual void clearControllerServices() = 0;
   virtual std::vector<std::shared_ptr<core::controller::ControllerServiceNode>> getAllControllerServices() = 0;
+  virtual void putControllerServiceNode(const std::string& identifier, const std::shared_ptr<ControllerServiceNode>& controller_service_node) = 0;
   virtual void enableAllControllerServices() = 0;
   virtual void disableAllControllerServices() = 0;
 };
