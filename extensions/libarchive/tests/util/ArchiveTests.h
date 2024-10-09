@@ -46,8 +46,8 @@ using TAE_MAP_T = std::map<std::string, TestArchiveEntry>;
 using FN_VEC_T = std::vector<std::string>;
 
 struct OrderedTestArchive {
-    TAE_MAP_T map;
-    FN_VEC_T order;
+    TAE_MAP_T map{};
+    FN_VEC_T order{};
 };
 
 TAE_MAP_T build_test_archive_map(int, const char* const*, const char* const*);
