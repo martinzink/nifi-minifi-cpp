@@ -16,6 +16,7 @@
 # specific language governing permissions and limitations
 # under the License.
 #
+return()
 
 if (WIN32 OR NOT (ENABLE_ALL OR ENABLE_GPS))
     return()
