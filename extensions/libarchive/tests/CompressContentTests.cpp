@@ -403,12 +403,6 @@ TEST_CASE_METHOD(CompressTestController, "CompressFileLZMA", "[compressfiletest5
   auto flow = importFlowFile(rawContentPath());
   trigger();
 
-  if (LogTestController::getInstance().contains("compression not supported on this platform", 100ms, 10ms)) {
-    // platform not support LZMA
-    LogTestController::getInstance().reset();
-    return;
-  }
-
   // validate the compress content
   std::set<std::shared_ptr<core::FlowFile>> expiredFlowRecords;
   std::shared_ptr<core::FlowFile> flow1 = output->poll(expiredFlowRecords);
@@ -439,12 +433,6 @@ TEST_CASE_METHOD(DecompressTestController, "DecompressFileLZMA", "[compressfilet
   flow->setAttribute(core::SpecialFlowAttribute::MIME_TYPE, "application/x-lzma");
   trigger();
 
-  if (LogTestController::getInstance().contains("compression not supported on this platform", 100ms, 10ms)) {
-    // platform not support LZMA
-    LogTestController::getInstance().reset();
-    return;
-  }
-
   // validate the compress content
   std::set<std::shared_ptr<core::FlowFile>> expiredFlowRecords;
   std::shared_ptr<core::FlowFile> flow1 = output->poll(expiredFlowRecords);
@@ -468,12 +456,6 @@ TEST_CASE_METHOD(CompressTestController, "CompressFileXYLZMA", "[compressfiletes
 
   auto flow = importFlowFile(rawContentPath());
   trigger();
-
-  if (LogTestController::getInstance().contains("compression not supported on this platform", 100ms, 10ms)) {
-    // platform not support LZMA
-    LogTestController::getInstance().reset();
-    return;
-  }
 
   // validate the compress content
   std::set<std::shared_ptr<core::FlowFile>> expiredFlowRecords;
@@ -504,12 +486,6 @@ TEST_CASE_METHOD(DecompressTestController, "DecompressFileXYLZMA", "[compressfil
   auto flow = importFlowFile(compressedPath());
   flow->setAttribute(core::SpecialFlowAttribute::MIME_TYPE, "application/x-xz");
   trigger();
-
-  if (LogTestController::getInstance().contains("compression not supported on this platform", 100ms, 10ms)) {
-    // platform not support LZMA
-    LogTestController::getInstance().reset();
-    return;
-  }
 
   // validate the compress content
   std::set<std::shared_ptr<core::FlowFile>> expiredFlowRecords;
@@ -707,10 +683,6 @@ TEST_CASE_METHOD(DecompressTestController, "Invalid archive decompression", "[co
 
   importFlowFileFrom(minifi::io::BufferStream(std::string{"banana bread"}));
   trigger();
-
-  if (LogTestController::getInstance().contains("compression not supported on this platform", 100ms, 10ms)) {
-    return;
-  }
 
   // validate the compress content
   std::set<std::shared_ptr<core::FlowFile>> expiredFlowRecords;
