@@ -31,7 +31,9 @@ std::vector<std::byte> createByteVector(Bytes... bytes) {
 }
 
 TEST_CASE("WithoutByteSequence") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
   split_content->setProperty(SplitContent::ByteSequenceFormatProperty, magic_enum::enum_name(SplitContent::ByteSequenceFormat::Text));
   split_content->setProperty(SplitContent::KeepByteSequence, "true");
@@ -41,7 +43,9 @@ TEST_CASE("WithoutByteSequence") {
 }
 
 TEST_CASE("EmptyFlowFile") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
   split_content->setProperty(SplitContent::ByteSequenceFormatProperty, magic_enum::enum_name(SplitContent::ByteSequenceFormat::Text));
   split_content->setProperty(SplitContent::ByteSequence, "ub");
@@ -59,7 +63,9 @@ TEST_CASE("EmptyFlowFile") {
 }
 
 TEST_CASE("TextFormatLeadingPosition", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
   split_content->setProperty(SplitContent::ByteSequenceFormatProperty, magic_enum::enum_name(SplitContent::ByteSequenceFormat::Text));
   split_content->setProperty(SplitContent::ByteSequence, "ub");
@@ -82,7 +88,9 @@ TEST_CASE("TextFormatLeadingPosition", "[NiFi]") {
 }
 
 TEST_CASE("TextFormatTrailingPosition", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
 
   split_content->setProperty(SplitContent::ByteSequenceFormatProperty, magic_enum::enum_name(SplitContent::ByteSequenceFormat::Text));
@@ -106,7 +114,9 @@ TEST_CASE("TextFormatTrailingPosition", "[NiFi]") {
 }
 
 TEST_CASE("TextFormatSplits", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
 
   split_content->setProperty(SplitContent::ByteSequenceFormatProperty, magic_enum::enum_name(SplitContent::ByteSequenceFormat::Text));
@@ -144,7 +154,9 @@ TEST_CASE("TextFormatSplits", "[NiFi]") {
 }
 
 TEST_CASE("SmallSplits", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
 
   split_content->setProperty(SplitContent::KeepByteSequence, "false");
@@ -169,7 +181,9 @@ TEST_CASE("SmallSplits", "[NiFi]") {
 }
 
 TEST_CASE("WithSingleByteSplit", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
 
   split_content->setProperty(SplitContent::KeepByteSequence, "false");
@@ -194,7 +208,9 @@ TEST_CASE("WithSingleByteSplit", "[NiFi]") {
 }
 
 TEST_CASE("WithLargerSplit", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
 
   split_content->setProperty(SplitContent::KeepByteSequence, "false");
@@ -219,7 +235,9 @@ TEST_CASE("WithLargerSplit", "[NiFi]") {
 }
 
 TEST_CASE("KeepingSequence", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
 
   split_content->setProperty(SplitContent::KeepByteSequence, "true");
@@ -244,7 +262,9 @@ TEST_CASE("KeepingSequence", "[NiFi]") {
 }
 
 TEST_CASE("EndsWithSequence", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
 
   split_content->setProperty(SplitContent::KeepByteSequence, "false");
@@ -267,7 +287,9 @@ TEST_CASE("EndsWithSequence", "[NiFi]") {
 }
 
 TEST_CASE("EndsWithSequenceAndKeepSequence", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
 
   split_content->setProperty(SplitContent::KeepByteSequence, "true");
@@ -290,7 +312,9 @@ TEST_CASE("EndsWithSequenceAndKeepSequence", "[NiFi]") {
 }
 
 TEST_CASE("StartsWithSequence", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
 
   split_content->setProperty(SplitContent::KeepByteSequence, "false");
@@ -313,7 +337,9 @@ TEST_CASE("StartsWithSequence", "[NiFi]") {
 }
 
 TEST_CASE("StartsWithSequenceAndKeepTrailingSequence", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
 
   split_content->setProperty(SplitContent::KeepByteSequence, "true");
@@ -339,7 +365,9 @@ TEST_CASE("StartsWithSequenceAndKeepTrailingSequence", "[NiFi]") {
 }
 
 TEST_CASE("StartsWithSequenceAndKeepLeadingSequence") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
 
   split_content->setProperty(SplitContent::KeepByteSequence, "true");
@@ -361,7 +389,9 @@ TEST_CASE("StartsWithSequenceAndKeepLeadingSequence") {
 }
 
 TEST_CASE("StartsWithDoubleSequenceAndKeepLeadingSequence") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
 
   split_content->setProperty(SplitContent::KeepByteSequence, "true");
@@ -387,7 +417,9 @@ TEST_CASE("StartsWithDoubleSequenceAndKeepLeadingSequence") {
 }
 
 TEST_CASE("NoSplitterInString", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
 
   split_content->setProperty(SplitContent::ByteSequenceFormatProperty, magic_enum::enum_name(SplitContent::ByteSequenceFormat::Text));
@@ -415,10 +447,12 @@ TEST_CASE("NoSplitterInString", "[NiFi]") {
 }
 
 TEST_CASE("ByteSequenceAtBufferTargetSize") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
 
-  auto x = SplitContent::BUFFER_TARGET_SIZE-10;
+  auto x = SplitContent::BUFFER_TARGET_SIZE-8;
 
   auto [pre_fix_size, separator_size, post_fix_size] = GENERATE_COPY(
     std::make_tuple(x, x, x),
@@ -456,7 +490,9 @@ TEST_CASE("ByteSequenceAtBufferTargetSize") {
 }
 
 TEST_CASE("TrickyWithLeading", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
   split_content->setProperty(SplitContent::ByteSequenceFormatProperty, magic_enum::enum_name(SplitContent::ByteSequenceFormat::Text));
   split_content->setProperty(SplitContent::ByteSequence, "aab");
@@ -477,7 +513,9 @@ TEST_CASE("TrickyWithLeading", "[NiFi]") {
 }
 
 TEST_CASE("TrickyWithTrailing", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
   split_content->setProperty(SplitContent::ByteSequenceFormatProperty, magic_enum::enum_name(SplitContent::ByteSequenceFormat::Text));
   split_content->setProperty(SplitContent::ByteSequence, "aab");
@@ -498,7 +536,9 @@ TEST_CASE("TrickyWithTrailing", "[NiFi]") {
 }
 
 TEST_CASE("TrickierWithLeading", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
   split_content->setProperty(SplitContent::ByteSequenceFormatProperty, magic_enum::enum_name(SplitContent::ByteSequenceFormat::Text));
   split_content->setProperty(SplitContent::ByteSequence, "abcd");
@@ -519,7 +559,9 @@ TEST_CASE("TrickierWithLeading", "[NiFi]") {
 }
 
 TEST_CASE("TrickierWithTrailing", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
   split_content->setProperty(SplitContent::ByteSequenceFormatProperty, magic_enum::enum_name(SplitContent::ByteSequenceFormat::Text));
   split_content->setProperty(SplitContent::ByteSequence, "abcd");
@@ -540,7 +582,9 @@ TEST_CASE("TrickierWithTrailing", "[NiFi]") {
 }
 
 TEST_CASE("OnlyByteSequencesNoKeep", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
   split_content->setProperty(SplitContent::ByteSequenceFormatProperty, magic_enum::enum_name(SplitContent::ByteSequenceFormat::Text));
   split_content->setProperty(SplitContent::ByteSequence, "ab");
@@ -556,7 +600,9 @@ TEST_CASE("OnlyByteSequencesNoKeep", "[NiFi]") {
 }
 
 TEST_CASE("OnlyByteSequencesTrailing", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
   split_content->setProperty(SplitContent::ByteSequenceFormatProperty, magic_enum::enum_name(SplitContent::ByteSequenceFormat::Text));
   split_content->setProperty(SplitContent::ByteSequence, "ab");
@@ -576,7 +622,9 @@ TEST_CASE("OnlyByteSequencesTrailing", "[NiFi]") {
 }
 
 TEST_CASE("OnlyByteSequencesLeading", "[NiFi]") {
+  const auto max_concurrent_tasks = GENERATE(1, 2);
   const auto split_content = std::make_shared<SplitContent>("SplitContent");
+  split_content->setMaxConcurrentTasks(max_concurrent_tasks);
   minifi::test::SingleProcessorTestController controller{split_content};
   split_content->setProperty(SplitContent::ByteSequenceFormatProperty, magic_enum::enum_name(SplitContent::ByteSequenceFormat::Text));
   split_content->setProperty(SplitContent::ByteSequence, "ab");

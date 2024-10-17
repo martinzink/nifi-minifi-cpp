@@ -45,6 +45,11 @@ void SplitContent::onSchedule(core::ProcessContext& context, core::ProcessSessio
   }
   if (byte_sequence.empty()) { throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Cannot operate without byte sequence"); }
   byte_sequence_matcher_.emplace(ByteSequenceMatcher(std::move(byte_sequence)));
+  if (getMaxConcurrentTasks() > 1) {
+    // it's only threadsafe if we precalculate every possible
+    byte_sequence_matcher_->fullyPopulateCache();
+  }
+
   byte_sequence_location_ = utils::parseEnumProperty<ByteSequenceLocation>(context, ByteSequenceLocationProperty);
   keep_byte_sequence = utils::getRequiredPropertyOrThrow<bool>(context, KeepByteSequence.name);
 }
@@ -52,7 +57,8 @@ void SplitContent::onSchedule(core::ProcessContext& context, core::ProcessSessio
 namespace {
 class Splitter {
  public:
-  explicit Splitter(core::ProcessSession& session, std::optional<std::string> original_filename, SplitContent::ByteSequenceMatcher& byte_sequence_matcher, const bool keep_byte_sequence,
+  explicit Splitter(core::ProcessSession& session, std::optional<std::string> original_filename,
+      std::variant<gsl::not_null<SplitContent::ByteSequenceMatcher*>, gsl::not_null<SplitContent::ByteSequenceMatcher const*>> byte_sequence_matcher, const bool keep_byte_sequence,
       const SplitContent::ByteSequenceLocation byte_sequence_location)
       : session_(session),
         original_filename_(std::move(original_filename)),
@@ -74,7 +80,7 @@ class Splitter {
 
   void digest(const std::byte b) {
     const auto prev_matching_bytes = matching_bytes_;
-    matching_bytes_ = byte_sequence_matcher_.getNumberOfMatchingBytes(matching_bytes_, b);
+    matching_bytes_ = getMatchingBytes(b, matching_bytes_, byte_sequence_matcher_);
     if (matchedByteSequence()) {
       appendDataBeforeByteSequenceToSplit();
       if (keep_trailing_byte_sequence_) { appendByteSequenceToSplit(); }
@@ -122,19 +128,25 @@ class Splitter {
     session_.appendBuffer(current_split_, getByteSequence());
   }
 
-  [[nodiscard]] std::span<const std::byte> getByteSequence() const { return byte_sequence_matcher_.getByteSequence(); }
+  [[nodiscard]] std::span<const std::byte> getByteSequence() const {
+    return std::visit([](auto&& bsm) { return bsm->getByteSequence(); }, byte_sequence_matcher_);
+  }
+
+  [[nodiscard]] static SplitContent::size_type getMatchingBytes(std::byte b, SplitContent::size_type matching_bytes, const std::variant<gsl::not_null<SplitContent::ByteSequenceMatcher*>, gsl::not_null<SplitContent::ByteSequenceMatcher const*>>& byte_sequence_matcher) {
+    return std::visit([b, matching_bytes](auto&& bsm) -> SplitContent::ByteSequenceMatcher::size_type { return bsm->getNumberOfMatchingBytes(matching_bytes, b); }, byte_sequence_matcher);
+  }
 
   void ensureCurrentSplit() {
     if (!current_split_) { current_split_ = session_.create(); }
   }
 
-  [[nodiscard]] bool matchedByteSequence() const { return matching_bytes_ == byte_sequence_matcher_.getByteSequence().size(); }
+  [[nodiscard]] bool matchedByteSequence() const { return matching_bytes_ == getByteSequence().size(); }
 
   void flushRemainingData() {
     if (current_split_ || !data_before_byte_sequence_.empty() || matching_bytes_ > 0) {
       ensureCurrentSplit();
       session_.appendBuffer(current_split_, std::span<const std::byte>(data_before_byte_sequence_.data(), data_before_byte_sequence_.size()));
-      session_.appendBuffer(current_split_, byte_sequence_matcher_.getByteSequence().subspan(0, matching_bytes_));
+      session_.appendBuffer(current_split_, getByteSequence().subspan(0, matching_bytes_));
       completed_splits_.push_back(current_split_);
     }
   }
@@ -153,7 +165,7 @@ class Splitter {
 
   core::ProcessSession& session_;
   const std::optional<std::string> original_filename_;
-  SplitContent::ByteSequenceMatcher& byte_sequence_matcher_;
+  std::variant<gsl::not_null<SplitContent::ByteSequenceMatcher*>, gsl::not_null<SplitContent::ByteSequenceMatcher const*>> byte_sequence_matcher_;
   std::vector<std::byte> data_before_byte_sequence_;
   std::shared_ptr<core::FlowFile> current_split_ = nullptr;
   std::vector<std::shared_ptr<core::FlowFile>> completed_splits_;
@@ -186,6 +198,13 @@ SplitContent::size_type SplitContent::ByteSequenceMatcher::getNumberOfMatchingBy
   return curr_go.at(next_byte);
 }
 
+SplitContent::ByteSequenceMatcher::size_type SplitContent::ByteSequenceMatcher::getNumberOfMatchingBytes(const size_type number_of_currently_matching_bytes, const std::byte next_byte) const {
+  gsl_Assert(number_of_currently_matching_bytes <= byte_sequence_nodes_.size());
+  const auto& curr_go = byte_sequence_nodes_[number_of_currently_matching_bytes].cache;
+  if (curr_go.contains(next_byte)) { return curr_go.at(next_byte); }
+  throw Exception(PROCESSOR_EXCEPTION, "Missing cache in thread safe mode");
+}
+
 SplitContent::size_type SplitContent::ByteSequenceMatcher::getPreviousMaxMatch(const size_type number_of_currently_matching_bytes) {
   gsl_Assert(number_of_currently_matching_bytes <= byte_sequence_nodes_.size());
   auto& prev_max_match = byte_sequence_nodes_[number_of_currently_matching_bytes].previous_max_match;
@@ -196,6 +215,14 @@ SplitContent::size_type SplitContent::ByteSequenceMatcher::getPreviousMaxMatch(c
   }
   prev_max_match = getNumberOfMatchingBytes(getPreviousMaxMatch(number_of_currently_matching_bytes - 1), byte_sequence_nodes_[number_of_currently_matching_bytes].byte);
   return *prev_max_match;
+}
+
+void SplitContent::ByteSequenceMatcher::fullyPopulateCache() {
+  for (size_type i = 0; i < getByteSequence().size(); ++i) {
+    for (uint16_t possible_byte = 0; possible_byte <= std::numeric_limits<uint8_t>::max(); ++possible_byte) {
+      std::ignore = getNumberOfMatchingBytes(i, static_cast<std::byte>(possible_byte));
+    }
+  }
 }
 
 void SplitContent::onTrigger(core::ProcessContext& context, core::ProcessSession& session) {
@@ -209,7 +236,10 @@ void SplitContent::onTrigger(core::ProcessContext& context, core::ProcessSession
   const auto ff_content_stream = session.getFlowFileContentStream(*original);
   if (!ff_content_stream) { throw Exception(PROCESSOR_EXCEPTION, fmt::format("Couldn't access the ContentStream of {}", original->getUUID().to_string())); }
 
-  Splitter splitter{session, original->getAttribute(core::SpecialFlowAttribute::FILENAME), *byte_sequence_matcher_, keep_byte_sequence, byte_sequence_location_};
+  std::variant<gsl::not_null<ByteSequenceMatcher*>, gsl::not_null<ByteSequenceMatcher const*>> byte_sequence_matcher_for_splitter{
+      gsl::make_not_null<ByteSequenceMatcher*>(&*byte_sequence_matcher_)};
+  if (getMaxConcurrentTasks() > 1) { byte_sequence_matcher_for_splitter.emplace<gsl::not_null<ByteSequenceMatcher const*>>(&*byte_sequence_matcher_); }
+  Splitter splitter{session, original->getAttribute(core::SpecialFlowAttribute::FILENAME), byte_sequence_matcher_for_splitter, keep_byte_sequence, byte_sequence_location_};
 
   while (auto latest_byte = ff_content_stream->readByte()) {
     splitter.digest(*latest_byte);

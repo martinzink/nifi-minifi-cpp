@@ -93,7 +93,7 @@ class SplitContent final : public core::Processor {
   EXTENSIONAPI static constexpr bool SupportsDynamicProperties = false;
   EXTENSIONAPI static constexpr bool SupportsDynamicRelationships = false;
   EXTENSIONAPI static constexpr auto InputRequirement = core::annotation::Input::INPUT_REQUIRED;
-  EXTENSIONAPI static constexpr bool IsSingleThreaded = true;
+  EXTENSIONAPI static constexpr bool IsSingleThreaded = false;
   ADD_COMMON_VIRTUAL_FUNCTIONS_FOR_PROCESSORS
 
   static constexpr size_type BUFFER_TARGET_SIZE = 4096;
@@ -106,8 +106,11 @@ class SplitContent final : public core::Processor {
    public:
     using size_type = std::vector<std::byte>::size_type;
     explicit ByteSequenceMatcher(std::vector<std::byte> byte_sequence);
-    size_type getNumberOfMatchingBytes(size_type number_of_currently_matching_bytes, std::byte next_byte);
+    [[nodiscard]] size_type getNumberOfMatchingBytes(size_type number_of_currently_matching_bytes, std::byte next_byte);
+    [[nodiscard]] size_type getNumberOfMatchingBytes(size_type number_of_currently_matching_bytes, std::byte next_byte) const;
     size_type getPreviousMaxMatch(size_type number_of_currently_matching_bytes);
+
+    void fullyPopulateCache();
     [[nodiscard]] std::span<const std::byte> getByteSequence() const { return byte_sequence_; }
 
    private:
