@@ -55,10 +55,11 @@ void SplitContent::onSchedule(core::ProcessContext& context, core::ProcessSessio
 }
 
 namespace {
+template<class T>
 class Splitter {
  public:
   explicit Splitter(core::ProcessSession& session, std::optional<std::string> original_filename,
-      std::variant<gsl::not_null<SplitContent::ByteSequenceMatcher*>, gsl::not_null<SplitContent::ByteSequenceMatcher const*>> byte_sequence_matcher, const bool keep_byte_sequence,
+      T& byte_sequence_matcher, const bool keep_byte_sequence,
       const SplitContent::ByteSequenceLocation byte_sequence_location)
       : session_(session),
         original_filename_(std::move(original_filename)),
@@ -80,7 +81,7 @@ class Splitter {
 
   void digest(const std::byte b) {
     const auto prev_matching_bytes = matching_bytes_;
-    matching_bytes_ = getMatchingBytes(b, matching_bytes_, byte_sequence_matcher_);
+    matching_bytes_ = byte_sequence_matcher_.getNumberOfMatchingBytes(matching_bytes_, b);
     if (matchedByteSequence()) {
       appendDataBeforeByteSequenceToSplit();
       if (keep_trailing_byte_sequence_) { appendByteSequenceToSplit(); }
@@ -129,11 +130,7 @@ class Splitter {
   }
 
   [[nodiscard]] std::span<const std::byte> getByteSequence() const {
-    return std::visit([](auto&& bsm) { return bsm->getByteSequence(); }, byte_sequence_matcher_);
-  }
-
-  [[nodiscard]] static SplitContent::size_type getMatchingBytes(std::byte b, SplitContent::size_type matching_bytes, const std::variant<gsl::not_null<SplitContent::ByteSequenceMatcher*>, gsl::not_null<SplitContent::ByteSequenceMatcher const*>>& byte_sequence_matcher) {
-    return std::visit([b, matching_bytes](auto&& bsm) -> SplitContent::ByteSequenceMatcher::size_type { return bsm->getNumberOfMatchingBytes(matching_bytes, b); }, byte_sequence_matcher);
+    return byte_sequence_matcher_.getByteSequence();
   }
 
   void ensureCurrentSplit() {
@@ -165,7 +162,7 @@ class Splitter {
 
   core::ProcessSession& session_;
   const std::optional<std::string> original_filename_;
-  std::variant<gsl::not_null<SplitContent::ByteSequenceMatcher*>, gsl::not_null<SplitContent::ByteSequenceMatcher const*>> byte_sequence_matcher_;
+  T& byte_sequence_matcher_;
   std::vector<std::byte> data_before_byte_sequence_;
   std::shared_ptr<core::FlowFile> current_split_ = nullptr;
   std::vector<std::shared_ptr<core::FlowFile>> completed_splits_;
@@ -236,14 +233,19 @@ void SplitContent::onTrigger(core::ProcessContext& context, core::ProcessSession
   const auto ff_content_stream = session.getFlowFileContentStream(*original);
   if (!ff_content_stream) { throw Exception(PROCESSOR_EXCEPTION, fmt::format("Couldn't access the ContentStream of {}", original->getUUID().to_string())); }
 
-  std::variant<gsl::not_null<ByteSequenceMatcher*>, gsl::not_null<ByteSequenceMatcher const*>> byte_sequence_matcher_for_splitter{
-      gsl::make_not_null<ByteSequenceMatcher*>(&*byte_sequence_matcher_)};
-  if (getMaxConcurrentTasks() > 1) { byte_sequence_matcher_for_splitter.emplace<gsl::not_null<ByteSequenceMatcher const*>>(&*byte_sequence_matcher_); }
-  Splitter splitter{session, original->getAttribute(core::SpecialFlowAttribute::FILENAME), byte_sequence_matcher_for_splitter, keep_byte_sequence, byte_sequence_location_};
 
-  while (auto latest_byte = ff_content_stream->readByte()) {
-    splitter.digest(*latest_byte);
-    splitter.flushIfBufferTooLarge();
+  if (getMaxConcurrentTasks() > 1) {
+    Splitter<const ByteSequenceMatcher> splitter{session, original->getAttribute(core::SpecialFlowAttribute::FILENAME), *byte_sequence_matcher_, keep_byte_sequence, byte_sequence_location_};
+    while (auto latest_byte = ff_content_stream->readByte()) {
+      splitter.digest(*latest_byte);
+      splitter.flushIfBufferTooLarge();
+    }
+  } else {
+    Splitter<ByteSequenceMatcher> splitter{session, original->getAttribute(core::SpecialFlowAttribute::FILENAME), *byte_sequence_matcher_, keep_byte_sequence, byte_sequence_location_};
+    while (auto latest_byte = ff_content_stream->readByte()) {
+      splitter.digest(*latest_byte);
+      splitter.flushIfBufferTooLarge();
+    }
   }
 
   session.transfer(original, Original);
