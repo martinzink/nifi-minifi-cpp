@@ -17,10 +17,10 @@
 
 include(FetchContent)
 include(Zstd)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/zstd/dummy")
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/zstd/dummy")
 
 include(LZ4)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/lz4/dummy")
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/lz4/dummy")
 
 set(WITH_SSL "ON" CACHE STRING "" FORCE)
 set(WITH_SASL "OFF" CACHE STRING "" FORCE)
@@ -38,7 +38,6 @@ FetchContent_Declare(libkafka
 )
 
 FetchContent_MakeAvailable(libkafka)
-
 
 add_dependencies(rdkafka OpenSSL::SSL OpenSSL::Crypto ZLIB::ZLIB Threads::Threads lz4::lz4 zstd::zstd)
 
