@@ -18,9 +18,11 @@
 include(FetchContent)
 include(Zstd)
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/zstd/dummy")
+find_package(zstd REQUIRED)
 
 include(LZ4)
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/lz4/dummy")
+find_package(lz4 REQUIRED)
 
 set(WITH_SSL "ON" CACHE STRING "" FORCE)
 set(WITH_SASL "OFF" CACHE STRING "" FORCE)
