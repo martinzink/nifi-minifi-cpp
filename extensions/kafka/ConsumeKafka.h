@@ -37,8 +37,6 @@
 
 namespace org::apache::nifi::minifi {
 
-class FlowFileRecord;
-
 namespace core {
 class ConsumeKafkaMaxPollTimePropertyType : public TimePeriodPropertyType {
  public:
@@ -52,7 +50,7 @@ inline constexpr ConsumeKafkaMaxPollTimePropertyType CONSUME_KAFKA_MAX_POLL_TIME
 
 namespace processors {
 
-class ConsumeKafka : public KafkaProcessorBase {
+class ConsumeKafka final : public KafkaProcessorBase {
  public:
   // Security Protocol allowable values
   static constexpr std::string_view SECURITY_PROTOCOL_PLAINTEXT = "plaintext";
@@ -219,9 +217,13 @@ class ConsumeKafka : public KafkaProcessorBase {
 
   ADD_COMMON_VIRTUAL_FUNCTIONS_FOR_PROCESSORS
 
-  explicit ConsumeKafka(std::string_view name, const utils::Identifier& uuid = utils::Identifier()) :
+  explicit ConsumeKafka(const std::string_view name, const utils::Identifier& uuid = utils::Identifier()) :
       KafkaProcessorBase(name, uuid, core::logging::LoggerFactory<ConsumeKafka>::getLogger(uuid)) {}
 
+  ConsumeKafka(const ConsumeKafka&) = delete;
+  ConsumeKafka(ConsumeKafka&&) = delete;
+  ConsumeKafka& operator=(const ConsumeKafka&) = delete;
+  ConsumeKafka& operator=(ConsumeKafka&&) = delete;
   ~ConsumeKafka() override = default;
 
   void onSchedule(core::ProcessContext& context, core::ProcessSessionFactory& session_factory) override;
@@ -239,8 +241,8 @@ class ConsumeKafka : public KafkaProcessorBase {
   std::string resolve_duplicate_headers(const std::vector<std::string>& matching_headers) const;
   std::vector<std::string> get_matching_headers(const rd_kafka_message_t& message, const std::string& header_name) const;
   std::vector<std::pair<std::string, std::string>> get_flowfile_attributes_from_message_header(const rd_kafka_message_t& message) const;
-  void add_kafka_attributes_to_flowfile(std::shared_ptr<FlowFileRecord>& flow_file, const rd_kafka_message_t& message) const;
-  std::optional<std::vector<std::shared_ptr<FlowFileRecord>>> transform_pending_messages_into_flowfiles(core::ProcessSession& session) const;
+  void add_kafka_attributes_to_flowfile(core::FlowFile& flow_file, const rd_kafka_message_t& message) const;
+  std::optional<std::vector<std::shared_ptr<core::FlowFile>>> transform_pending_messages_into_flowfiles(core::ProcessSession& session) const;
   void process_pending_messages(core::ProcessSession& session);
 
   std::string kafka_brokers_;
@@ -263,7 +265,7 @@ class ConsumeKafka : public KafkaProcessorBase {
   std::unique_ptr<rd_kafka_topic_partition_list_t, utils::rd_kafka_topic_partition_list_deleter> kf_topic_partition_list_;
 
   // Intermediate container type for messages that have been processed, but are
-  // not yet persisted (eg. in case of I/O error)
+  // not yet persisted (e.g. in case of I/O error)
   std::vector<std::unique_ptr<rd_kafka_message_t, utils::rd_kafka_message_deleter>> pending_messages_;
 
   std::mutex do_not_call_on_trigger_concurrently_;

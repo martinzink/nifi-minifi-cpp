@@ -18,12 +18,11 @@
 #include "ConsumeKafka.h"
 
 #include <algorithm>
-#include <limits>
 
 #include "core/ProcessSession.h"
 #include "core/PropertyType.h"
 #include "core/Resource.h"
-#include "FlowFileRecord.h"
+#include "core/FlowFile.h"
 #include "utils/ProcessorConfigUtils.h"
 #include "utils/gsl.h"
 
@@ -34,8 +33,8 @@ namespace core {
 // The upper limit for Max Poll Time is 4 seconds. This is because Watchdog would potentially start
 // reporting issues with the processor health otherwise
 ValidationResult ConsumeKafkaMaxPollTimePropertyType::validate(const std::string& subject, const std::string& input) const {
-  auto parsed_value = utils::timeutils::StringToDuration<std::chrono::milliseconds>(input);
-  bool is_valid = parsed_value.has_value() && 0ms < *parsed_value && *parsed_value <= 4s;
+  const auto parsed_value = utils::timeutils::StringToDuration<std::chrono::milliseconds>(input);
+  const bool is_valid = parsed_value.has_value() && 0ms < *parsed_value && *parsed_value <= 4s;
   return ValidationResult{.valid = is_valid, .subject = subject, .input = input};
 }
 }  // namespace core
@@ -218,7 +217,7 @@ std::string ConsumeKafka::extract_message(const rd_kafka_message_t& rkmessage) {
   if (RD_KAFKA_RESP_ERR_NO_ERROR != rkmessage.err) {
     throw minifi::Exception(ExceptionType::PROCESSOR_EXCEPTION, "ConsumeKafka: received error message from broker: " + std::to_string(rkmessage.err) + " " + rd_kafka_err2str(rkmessage.err));
   }
-  return { reinterpret_cast<char*>(rkmessage.payload), rkmessage.len };
+  return { static_cast<char*>(rkmessage.payload), rkmessage.len };
 }
 
 std::vector<std::unique_ptr<rd_kafka_message_t, utils::rd_kafka_message_deleter>> ConsumeKafka::poll_kafka_messages() {
@@ -316,20 +315,19 @@ std::vector<std::pair<std::string, std::string>> ConsumeKafka::get_flowfile_attr
   return attributes_from_headers;
 }
 
-void ConsumeKafka::add_kafka_attributes_to_flowfile(std::shared_ptr<FlowFileRecord>& flow_file, const rd_kafka_message_t& message) const {
+void ConsumeKafka::add_kafka_attributes_to_flowfile(core::FlowFile& flow_file, const rd_kafka_message_t& message) const {
   // We do not currently support batching messages into a single flowfile
-  flow_file->setAttribute(KAFKA_COUNT_ATTR, "1");
-  const std::optional<std::string> message_key = utils::get_encoded_message_key(message, key_attr_encoding_attr_to_enum());
-  if (message_key) {
-    flow_file->setAttribute(KAFKA_MESSAGE_KEY_ATTR, message_key.value());
+  flow_file.setAttribute(KAFKA_COUNT_ATTR, "1");
+  if (const auto message_key = utils::get_encoded_message_key(message, key_attr_encoding_attr_to_enum())) {
+    flow_file.setAttribute(KAFKA_MESSAGE_KEY_ATTR, *message_key);
   }
-  flow_file->setAttribute(KAFKA_OFFSET_ATTR, std::to_string(message.offset));
-  flow_file->setAttribute(KAFKA_PARTITION_ATTR, std::to_string(message.partition));
-  flow_file->setAttribute(KAFKA_TOPIC_ATTR, rd_kafka_topic_name(message.rkt));
+  flow_file.setAttribute(KAFKA_OFFSET_ATTR, std::to_string(message.offset));
+  flow_file.setAttribute(KAFKA_PARTITION_ATTR, std::to_string(message.partition));
+  flow_file.setAttribute(KAFKA_TOPIC_ATTR, rd_kafka_topic_name(message.rkt));
 }
 
-std::optional<std::vector<std::shared_ptr<FlowFileRecord>>> ConsumeKafka::transform_pending_messages_into_flowfiles(core::ProcessSession& session) const {
-  std::vector<std::shared_ptr<FlowFileRecord>> flow_files_created;
+std::optional<std::vector<std::shared_ptr<core::FlowFile>>> ConsumeKafka::transform_pending_messages_into_flowfiles(core::ProcessSession& session) const {
+  std::vector<std::shared_ptr<core::FlowFile>> flow_files_created;
   for (const auto& message : pending_messages_) {
     std::string message_content = extract_message(*message);
     std::vector<std::pair<std::string, std::string>> attributes_from_headers = get_flowfile_attributes_from_message_header(*message);
@@ -337,7 +335,7 @@ std::optional<std::vector<std::shared_ptr<FlowFileRecord>>> ConsumeKafka::transf
       utils::string::split(message_content, message_demarcator_) :
       std::vector<std::string>{ message_content }};
     for (auto& flowfile_content : split_message) {
-      std::shared_ptr<FlowFileRecord> flow_file = std::static_pointer_cast<FlowFileRecord>(session.create());
+      auto flow_file = session.create();
       if (flow_file == nullptr) {
         logger_->log_error("Failed to create flowfile.");
         // Either transform all flowfiles or none
@@ -348,7 +346,7 @@ std::optional<std::vector<std::shared_ptr<FlowFileRecord>>> ConsumeKafka::transf
       for (const auto& kv : attributes_from_headers) {
         flow_file->setAttribute(kv.first, kv.second);
       }
-      add_kafka_attributes_to_flowfile(flow_file, *message);
+      add_kafka_attributes_to_flowfile(*flow_file, *message);
       flow_files_created.emplace_back(std::move(flow_file));
     }
   }
@@ -357,7 +355,7 @@ std::optional<std::vector<std::shared_ptr<FlowFileRecord>>> ConsumeKafka::transf
 
 
 void ConsumeKafka::process_pending_messages(core::ProcessSession& session) {
-  std::optional<std::vector<std::shared_ptr<FlowFileRecord>>> flow_files_created = transform_pending_messages_into_flowfiles(session);
+  std::optional<std::vector<std::shared_ptr<core::FlowFile>>> flow_files_created = transform_pending_messages_into_flowfiles(session);
   if (!flow_files_created) {
     return;
   }

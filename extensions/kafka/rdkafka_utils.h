@@ -17,9 +17,7 @@
 
 #pragma once
 
-#include <algorithm>
 #include <chrono>
-#include <memory>
 #include <optional>
 #include <string>
 #include <thread>
@@ -27,20 +25,12 @@
 #include <vector>
 
 #include "core/logging/LoggerConfiguration.h"
-#include "utils/gsl.h"
 #include "rdkafka.h"
 #include "utils/net/Ssl.h"
 
-namespace org {
-namespace apache {
-namespace nifi {
-namespace minifi {
-namespace utils {
+namespace org::apache::nifi::minifi::utils {
 
-enum class KafkaEncoding {
-  UTF8,
-  HEX
-};
+enum class KafkaEncoding { UTF8, HEX };
 
 struct rd_kafka_conf_deleter {
   void operator()(rd_kafka_conf_t* ptr) const noexcept { rd_kafka_conf_destroy(ptr); }
@@ -83,10 +73,10 @@ struct rd_kafka_headers_deleter {
   void operator()(rd_kafka_headers_t* ptr) const noexcept { rd_kafka_headers_destroy(ptr); }
 };
 
-template <typename T>
+template<typename T>
 void kafka_headers_for_each(const rd_kafka_headers_t& headers, T key_value_handle) {
-  const char *key;  // Null terminated, not to be freed
-  const void *value;
+  const char* key = nullptr;  // Null terminated, not to be freed
+  const void* value = nullptr;
   std::size_t size;
   for (std::size_t i = 0; RD_KAFKA_RESP_ERR_NO_ERROR == rd_kafka_header_get_all(&headers, i, &key, &value, &size); ++i) {
     key_value_handle(std::string(key), std::span<const char>(static_cast<const char*>(value), size));
@@ -94,13 +84,9 @@ void kafka_headers_for_each(const rd_kafka_headers_t& headers, T key_value_handl
 }
 
 void setKafkaConfigurationField(rd_kafka_conf_t& configuration, const std::string& field_name, const std::string& value);
-void print_topics_list(core::logging::Logger& logger, rd_kafka_topic_partition_list_t& kf_topic_partition_list);
+void print_topics_list(core::logging::Logger& logger, const rd_kafka_topic_partition_list_t& kf_topic_partition_list);
 void print_kafka_message(const rd_kafka_message_t& rkmessage, core::logging::Logger& logger);
 std::string get_encoded_string(const std::string& input, KafkaEncoding encoding);
 std::optional<std::string> get_encoded_message_key(const rd_kafka_message_t& message, KafkaEncoding encoding);
 
-}  // namespace utils
-}  // namespace minifi
-}  // namespace nifi
-}  // namespace apache
-}  // namespace org
+}  // namespace org::apache::nifi::minifi::utils

@@ -57,17 +57,17 @@ class KafkaConnection {
 
   void removeConnection();
 
-  bool initialized() const;
+  [[nodiscard]] bool initialized() const;
 
-  void setConnection(gsl::owner<rd_kafka_t*> producer);
+  void setConnection(gsl::owner<rd_kafka_t*>& producer);
 
-  rd_kafka_t* getConnection() const;
+  [[nodiscard]] rd_kafka_t* getConnection() const;
 
-  bool hasTopic(const std::string &topic) const;
+  [[nodiscard]] bool hasTopic(const std::string &topic) const;
 
-  std::shared_ptr<KafkaTopic> getTopic(const std::string &topic) const;
+  [[nodiscard]] std::shared_ptr<KafkaTopic> getTopic(const std::string &topic) const;
 
-  KafkaConnectionKey const* getKey() const;
+  [[nodiscard]] KafkaConnectionKey const* getKey() const;
 
   void putTopic(const std::string &topicName, const std::shared_ptr<KafkaTopic> &topic);
 
@@ -80,9 +80,9 @@ class KafkaConnection {
 
   KafkaConnectionKey key_;
 
-  std::map<std::string, std::shared_ptr<KafkaTopic>> topics_;
+  std::map<std::string, std::shared_ptr<KafkaTopic>> topics_{};
 
-  gsl::owner<rd_kafka_t*> kafka_connection_;
+  gsl::owner<rd_kafka_t*> kafka_connection_{};
 
   std::atomic<bool> poll_;
   std::thread thread_kafka_poll_;
