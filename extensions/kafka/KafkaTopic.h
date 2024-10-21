@@ -15,8 +15,7 @@
  * limitations under the License.
  */
 
-#ifndef EXTENSIONS_LIBRDKAFKA_KAFKATOPIC_H_
-#define EXTENSIONS_LIBRDKAFKA_KAFKATOPIC_H_
+#pragma once
 
 #include "rdkafka.h"
 #include "utils/gsl.h"
@@ -38,5 +37,3 @@ class KafkaTopic {
 };
 
 }  // namespace org::apache::nifi::minifi::processors
-
-#endif  // EXTENSIONS_LIBRDKAFKA_KAFKATOPIC_H_
