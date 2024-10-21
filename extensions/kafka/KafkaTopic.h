@@ -19,39 +19,24 @@
 #define EXTENSIONS_LIBRDKAFKA_KAFKATOPIC_H_
 
 #include "rdkafka.h"
-
 #include "utils/gsl.h"
 
-namespace org {
-namespace apache {
-namespace nifi {
-namespace minifi {
-namespace processors {
+namespace org::apache::nifi::minifi::processors {
 
 class KafkaTopic {
  public:
-  explicit KafkaTopic(gsl::owner<rd_kafka_topic_t*> topic_reference)
-      : topic_reference_(topic_reference) {
-  }
+  explicit KafkaTopic(gsl::owner<rd_kafka_topic_t *> topic_reference) : topic_reference_(topic_reference) {}
 
   ~KafkaTopic() {
-    if (topic_reference_) {
-      rd_kafka_topic_destroy(topic_reference_);
-    }
+    if (topic_reference_) { rd_kafka_topic_destroy(topic_reference_); }
   }
 
-  rd_kafka_topic_t *getTopic() const {
-    return topic_reference_;
-  }
+  rd_kafka_topic_t *getTopic() const { return topic_reference_; }
 
  private:
-  gsl::owner<rd_kafka_topic_t*> topic_reference_;
+  gsl::owner<rd_kafka_topic_t *> topic_reference_;
 };
 
-}  // namespace processors
-}  // namespace minifi
-}  // namespace nifi
-}  // namespace apache
-}  // namespace org
+}  // namespace org::apache::nifi::minifi::processors
 
 #endif  // EXTENSIONS_LIBRDKAFKA_KAFKATOPIC_H_

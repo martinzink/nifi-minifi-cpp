@@ -52,7 +52,7 @@ inline constexpr ConsumeKafkaMaxPollTimePropertyType CONSUME_KAFKA_MAX_POLL_TIME
 
 namespace processors {
 
-class ConsumeKafka : public KafkaProcessorBase {
+class ConsumeKafka final : public KafkaProcessorBase {
  public:
   // Security Protocol allowable values
   static constexpr std::string_view SECURITY_PROTOCOL_PLAINTEXT = "plaintext";

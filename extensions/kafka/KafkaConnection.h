@@ -80,9 +80,9 @@ class KafkaConnection {
 
   KafkaConnectionKey key_;
 
-  std::map<std::string, std::shared_ptr<KafkaTopic>> topics_;
+  std::map<std::string, std::shared_ptr<KafkaTopic>> topics_{};
 
-  gsl::owner<rd_kafka_t*> kafka_connection_;
+  gsl::owner<rd_kafka_t*> kafka_connection_{};
 
   std::atomic<bool> poll_;
   std::thread thread_kafka_poll_;

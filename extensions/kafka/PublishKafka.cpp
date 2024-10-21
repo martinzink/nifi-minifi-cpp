@@ -16,13 +16,9 @@
  */
 #include "PublishKafka.h"
 
-#include <cstdio>
-#include <algorithm>
-#include <memory>
 #include <string>
 #include <map>
 #include <set>
-#include <type_traits>
 #include <vector>
 
 #include "utils/gsl.h"
@@ -30,6 +26,7 @@
 #include "core/ProcessContext.h"
 #include "core/ProcessSession.h"
 #include "core/Resource.h"
+#include "range/v3/algorithm/all_of.hpp"
 
 namespace org::apache::nifi::minifi::processors {
 
@@ -83,18 +80,18 @@ class PublishKafka::Messages {
     std::ostringstream oss;
     if (interrupted_) { oss << "interrupted, "; }
     for (size_t ffi = 0; ffi < flow_files_.size(); ++ffi) {
-      const auto& flow_file = flow_files_[ffi];
-      if (!flow_file.flow_file_error && std::all_of(std::begin(flow_file.messages), std::end(flow_file.messages), messageresult_ok)) {
+      const auto& [flow_file_error, messages] = flow_files_[ffi];
+      if (!flow_file_error && ranges::all_of(messages, messageresult_ok)) {
         continue;  // don't log the happy path to reduce log spam
       }
-      if (!flow_file.flow_file_error && std::all_of(std::begin(flow_file.messages), std::end(flow_file.messages), messageresult_inflight)) {
+      if (!flow_file_error && ranges::all_of(messages, messageresult_inflight)) {
         flow_files_in_flight.push_back(ffi);
         continue;  // don't log fully in-flight flow files here, log them at the end instead
       }
       oss << '[' << ffi << "]: {";
-      if (flow_file.flow_file_error) { oss << "error, "; }
-      for (size_t msgi = 0; msgi < flow_file.messages.size(); ++msgi) {
-        const auto& msg = flow_file.messages[msgi];
+      if (flow_file_error) { oss << "error, "; }
+      for (size_t msgi = 0; msgi < messages.size(); ++msgi) {
+        const auto& msg = messages[msgi];
         if (messageresult_ok(msg)) {
           continue;
         }
@@ -115,8 +112,8 @@ class PublishKafka::Messages {
       if (logger_->should_log(core::logging::LOG_LEVEL::trace)) {
         logger_->log_trace("{}", logStatus(lock));
       }
-      return interrupted_ || std::all_of(std::begin(this->flow_files_), std::end(this->flow_files_), [](const FlowFileResult& flow_file) {
-        return flow_file.flow_file_error || std::all_of(std::begin(flow_file.messages), std::end(flow_file.messages), [](const MessageResult& message) {
+      return interrupted_ || ranges::all_of(this->flow_files_, [](const FlowFileResult& flow_file) {
+        return flow_file.flow_file_error || ranges::all_of(flow_file.messages, [](const MessageResult& message) {
           return message.status != MessageStatus::InFlight;
         });
       });
@@ -295,12 +292,11 @@ class ReadCallback {
       }
       if (readRet == 0) { break; }
 
-      const auto err = produce(segment_num, buffer, readRet);
-      if (err) {
+      if (const auto err = produce(segment_num, buffer, readRet)) {
         messages_->modifyResult(flow_file_index_, [segment_num, err](FlowFileResult& flow_file) {
-          auto& message = flow_file.messages.at(segment_num);
-          message.status = MessageStatus::Error;
-          message.err_code = err;
+          auto& [status, err_code] = flow_file.messages.at(segment_num);
+          status = MessageStatus::Error;
+          err_code = err;
         });
         status_ = -1;
         error_ = rd_kafka_err2str(err);
@@ -335,7 +331,7 @@ void messageDeliveryCallback(rd_kafka_t* rk, const rd_kafka_message_t* rkmessage
     return;
   }
   // allocated in ReadCallback::produce
-  auto* const func = reinterpret_cast<std::function<void(rd_kafka_t*, const rd_kafka_message_t*)>*>(rkmessage->_private);
+  const auto* const func = static_cast<std::function<void(rd_kafka_t*, const rd_kafka_message_t*)>*>(rkmessage->_private);
   try {
     (*func)(rk, rkmessage);
   } catch (...) { }
@@ -564,7 +560,7 @@ bool PublishKafka::configureNewConnection(core::ProcessContext& context) {
   return true;
 }
 
-bool PublishKafka::createNewTopic(core::ProcessContext& context, const std::string& topic_name, const std::shared_ptr<core::FlowFile>& flow_file) {
+bool PublishKafka::createNewTopic(core::ProcessContext& context, const std::string& topic_name, const std::shared_ptr<core::FlowFile>& flow_file) const {
   std::unique_ptr<rd_kafka_topic_conf_t, rd_kafka_topic_conf_deleter> topic_conf_{ rd_kafka_topic_conf_new() };
   if (topic_conf_ == nullptr) {
     logger_->log_error("Failed to create rd_kafka_topic_conf_t object");

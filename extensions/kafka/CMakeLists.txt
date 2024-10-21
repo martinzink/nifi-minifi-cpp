@@ -1,3 +1,4 @@
+#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -14,20 +15,26 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+#
 
-# Dummy zstd find for when we use bundled version
-if(NOT zstd_FOUND)
-    set(zstd_FOUND "YES" CACHE STRING "" FORCE)
-    set(ZSTD_INCLUDE_DIR "${EXPORTED_ZSTD_INCLUDE_DIRS}" CACHE STRING "" FORCE)
-    set(ZSTD_INCLUDE_DIRS "${EXPORTED_ZSTD_INCLUDE_DIRS}" CACHE STRING "" FORCE)
-    set(ZSTD_LIBRARIES "${EXPORTED_ZSTD_LIBRARIES}" CACHE STRING "" FORCE)
+if (NOT (ENABLE_ALL OR ENABLE_KAFKA))
+    return()
 endif()
 
-if(NOT TARGET zstd::zstd)
-    add_library(zstd::zstd STATIC IMPORTED)
-    set_target_properties(zstd::zstd PROPERTIES
-            INTERFACE_INCLUDE_DIRECTORIES "${ZSTD_INCLUDE_DIRS}")
-    set_target_properties(zstd::zstd PROPERTIES
-            IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-            IMPORTED_LOCATION "${ZSTD_LIBRARIES}")
-endif()
+include(FetchLibKafka)
+
+include(${CMAKE_SOURCE_DIR}/extensions/ExtensionHeader.txt)
+
+file(GLOB SOURCES  "*.cpp")
+
+add_minifi_library(minifi-rdkafka-extensions SHARED ${SOURCES})
+
+target_link_libraries(minifi-rdkafka-extensions ${LIBMINIFI} Threads::Threads)
+
+get_target_property(RDKAFKA_INCLUDE_DIRS rdkafka INCLUDE_DIRECTORIES)
+target_include_directories(minifi-rdkafka-extensions SYSTEM PUBLIC ${RDKAFKA_INCLUDE_DIRS})
+target_link_libraries(minifi-rdkafka-extensions rdkafka)
+
+register_extension(minifi-rdkafka-extensions "RDKAFKA EXTENSIONS" RDKAFKA-EXTENSIONS "This Enables librdkafka functionality including PublishKafka" "extensions/kafka/tests")
+
+register_extension_linter(minifi-rdkafka-extensions-linter)
