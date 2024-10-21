@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+
 include(FetchContent)
 
 set(ZSTD_BUILD_SHARED OFF CACHE BOOL "" FORCE)
@@ -29,7 +30,6 @@ FetchContent_Declare(zstd
     URL_HASH       SHA256=f7de13462f7a82c29ab865820149e778cbfe01087b3a55b5332707abf9db4a6e
     PATCH_COMMAND  "${PC}"
     SOURCE_SUBDIR  build/cmake
-    OVERRIDE_FIND_PACKAGE
 )
 
 FetchContent_MakeAvailable(zstd)
@@ -37,3 +37,16 @@ FetchContent_MakeAvailable(zstd)
 if (NOT TARGET zstd::zstd)
     add_library(zstd::zstd ALIAS libzstd_static)
 endif()
+
+# Set variables
+set(ZSTD_FOUND "YES" CACHE STRING "" FORCE)
+set(ZSTD_INCLUDE_DIRS "${zstd_SOURCE_DIR}/lib" CACHE STRING "" FORCE)
+if (WIN32)
+    set(ZSTD_LIBRARIES "${zstd_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}/zstd_static.lib" CACHE STRING "" FORCE)
+else()
+    set(ZSTD_LIBRARIES "${zstd_BINARY_DIR}/lib/libzstd.a" CACHE STRING "" FORCE)
+endif()
+
+# Set exported variables for FindPackage.cmake
+set(PASSTHROUGH_VARIABLES ${PASSTHROUGH_VARIABLES} "-DEXPORTED_ZSTD_INCLUDE_DIRS=${ZSTD_INCLUDE_DIRS}" CACHE STRING "" FORCE)
+set(PASSTHROUGH_VARIABLES ${PASSTHROUGH_VARIABLES} "-DEXPORTED_ZSTD_LIBRARIES=${ZSTD_LIBRARIES}" CACHE STRING "" FORCE)
