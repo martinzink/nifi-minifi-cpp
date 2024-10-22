@@ -35,6 +35,7 @@ if(NOT TARGET lz4::lz4)
     add_library(lz4::lz4 ALIAS lz4_static)
     add_library(LZ4::LZ4 ALIAS lz4_static)
 
+    # Install the LZ4 static library and add it to an export set
     install(TARGETS lz4_static
             EXPORT Lz4Targets          # Add to Lz4Targets export set
             ARCHIVE DESTINATION lib
@@ -49,16 +50,3 @@ if(NOT TARGET lz4::lz4)
             DESTINATION lib/cmake/Lz4   # Where to install the CMake config
     )
 endif()
-
-# Set variables
-set(LZ4_FOUND "YES" CACHE STRING "" FORCE)
-set(LZ4_INCLUDE_DIRS "${lz4_SOURCE_DIR}/lib" CACHE STRING "" FORCE)
-if (WIN32)
-    set(LZ4_LIBRARIES "${lz4_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}/lz4_static.lib" CACHE STRING "" FORCE)
-else()
-    set(LZ4_LIBRARIES "${lz4_BINARY_DIR}/liblz4.a" CACHE STRING "" FORCE)
-endif()
-
-# Set exported variables for FindPackage.cmake
-set(PASSTHROUGH_VARIABLES ${PASSTHROUGH_VARIABLES} "-DEXPORTED_LZ4_INCLUDE_DIRS=${LZ4_INCLUDE_DIRS}" CACHE STRING "" FORCE)
-set(PASSTHROUGH_VARIABLES ${PASSTHROUGH_VARIABLES} "-DEXPORTED_LZ4_LIBRARIES=${LZ4_LIBRARIES}" CACHE STRING "" FORCE)
