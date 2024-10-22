@@ -18,11 +18,9 @@
 include(FetchContent)
 include(Zstd)
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/zstd/dummy")
-find_package(zstd REQUIRED)
 
 include(LZ4)
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/lz4/dummy")
-find_package(lz4 REQUIRED)
 
 set(WITH_SSL "ON" CACHE STRING "" FORCE)
 set(WITH_SASL "OFF" CACHE STRING "" FORCE)
@@ -34,9 +32,13 @@ set(RDKAFKA_BUILD_EXAMPLES "OFF" CACHE STRING "" FORCE)
 set(RDKAFKA_BUILD_TESTS "OFF" CACHE STRING "" FORCE)
 set(LIBRDKAFKA_STATICLIB "1" CACHE STRING "" FORCE)
 
+set(PATCH_FILE "${CMAKE_SOURCE_DIR}/thirdparty/librdkafka/0001-remove-findLZ4-and-findZSTD.patch")
+set(PC "${Patch_EXECUTABLE}" -p1 -i "${PATCH_FILE}")
+
 FetchContent_Declare(libkafka
-        URL      https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.6.0.tar.gz
+        URL https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.6.0.tar.gz
         URL_HASH SHA256=abe0212ecd3e7ed3c4818a4f2baf7bf916e845e902bb15ae48834ca2d36ac745
+        PATCH_COMMAND "${PC}"
 )
 
 FetchContent_MakeAvailable(libkafka)
