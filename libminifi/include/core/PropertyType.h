@@ -26,6 +26,7 @@
 #include "core/state/Value.h"
 #include "TypedValues.h"
 #include "utils/Export.h"
+#include "utils/RegexUtils.h"
 #include "utils/StringUtils.h"
 #include "ValidationResult.h"
 
@@ -43,6 +44,7 @@ class PropertyValidator {
   virtual constexpr ~PropertyValidator() {}  // NOLINT can't use = default because of gcc bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93413
 
   [[nodiscard]] virtual std::string_view getValidatorName() const = 0;
+  [[nodiscard]] virtual std::string_view serializeValidator() const { return getValidatorName(); }
 
   [[nodiscard]] virtual ValidationResult validate(const std::string &subject, const std::shared_ptr<minifi::state::response::Value> &input) const = 0;
 
@@ -335,6 +337,33 @@ class DataTransferSpeedPropertyType : public PropertyType {
     uint64_t out;
     return ValidationResult{.valid = core::DataTransferSpeedValue::StringToInt(input, out), .subject = subject, .input = input};
   }
+};
+
+class RegexValidatedPropertyType final : public PropertyType {
+ public:
+  explicit constexpr RegexValidatedPropertyType(const std::string_view regex_str) : regex_str_(regex_str) {}
+  RegexValidatedPropertyType(const RegexValidatedPropertyType&) = delete;
+  RegexValidatedPropertyType(RegexValidatedPropertyType&&) = delete;
+  RegexValidatedPropertyType& operator=(const RegexValidatedPropertyType&) = delete;
+  RegexValidatedPropertyType& operator=(RegexValidatedPropertyType&&) = delete;
+
+  constexpr ~RegexValidatedPropertyType() override {}  // NOLINT see comment at parent
+
+  [[nodiscard]] std::string_view getValidatorName() const override { return "REGEX_VALIDATED"; }
+  [[nodiscard]] std::string_view serializeValidator() const override { return regex_str_; }
+  [[nodiscard]] PropertyValue parse(std::string_view input) const override;
+
+  [[nodiscard]] ValidationResult validate(const std::string& subject, const std::shared_ptr<state::response::Value>& input) const override {
+    return validate(subject, input->getStringValue());
+  }
+
+  [[nodiscard]] ValidationResult validate(const std::string& subject, const std::string& input) const override {
+    static utils::Regex pattern(regex_str_.data());
+    const auto is_valid = utils::regexMatch(input, pattern);
+    return ValidationResult{.valid = is_valid, .subject = subject, .input = input};
+  }
+ private:
+  std::string_view regex_str_;
 };
 
 namespace StandardPropertyTypes {

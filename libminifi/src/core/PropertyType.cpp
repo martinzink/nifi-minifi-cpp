@@ -56,6 +56,10 @@ PropertyValue DataTransferSpeedPropertyType::parse(std::string_view input) const
   return PropertyValue::parse<core::DataTransferSpeedValue>(input, *this);
 }
 
+PropertyValue RegexValidatedPropertyType::parse(const std::string_view input) const {
+  return PropertyValue::parse<state::response::Value>(input, *this);
+}
+
 namespace StandardPropertyTypes {
 
 const core::PropertyType& translateCodeToPropertyType(const PropertyTypeCode& code) {

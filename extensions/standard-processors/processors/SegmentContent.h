@@ -43,6 +43,7 @@ class SegmentContent final : public core::Processor {
         .withDescription("The maximum data size in bytes for each segment")
         .isRequired(true)
         .supportsExpressionLanguage(true)
+        .withPropertyType(core::StandardPropertyTypes::DATA_SIZE_TYPE)
         .build();
 
   EXTENSIONAPI static constexpr auto Properties = std::to_array<core::PropertyReference>({SegmentSize});

@@ -339,4 +339,17 @@ TEST_CASE("Validating data transfer speed property without default value") {
   REQUIRE_THROWS_AS(component.setProperty(property.getName(), "1KB"), utils::internal::ValueException);
 }
 
+TEST_CASE("RegexValidated Property") {
+  using namespace std::literals::chrono_literals;
+  static constexpr auto comma_separated_foo_bar_baz_type = core::RegexValidatedPropertyType{R"(^(?:\s*(foo|bar|baz)\s*,?){0,3}\s*$)"};
+  static constexpr auto property_definition = PropertyDefinitionBuilder<>::createProperty("prop").withPropertyType(comma_separated_foo_bar_baz_type).build();
+  const Property property{property_definition};
+  TestConfigurableComponent component;
+  component.setSupportedProperties(std::array<PropertyReference, 1>{property_definition});
+
+  REQUIRE_NOTHROW(component.setProperty(property.getName(), ""));
+  REQUIRE_THROWS_AS(component.setProperty(property.getName(), "20"), utils::internal::ParseException);
+  REQUIRE_NOTHROW(component.setProperty(property.getName(), "foo,bar"));
+}
+
 }  // namespace org::apache::nifi::minifi::core
