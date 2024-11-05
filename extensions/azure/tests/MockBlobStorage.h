@@ -26,9 +26,11 @@
 #include "storage/BlobStorageClient.h"
 #include "azure/core/io/body_stream.hpp"
 #include "utils/span.h"
+#include "BufferStream.h"
 
-class MockBlobStorage : public minifi::azure::storage::BlobStorageClient {
- public:
+namespace org::apache::nifi::minifi::azure::test {
+class MockBlobStorage : public storage::BlobStorageClient {
+public:
   const std::string ETAG = "test-etag";
   const std::string PRIMARY_URI = "http://test-uri/file";
   const std::string TEST_TIMESTAMP = "Sun, 21 Oct 2018 12:16:24 GMT";
@@ -36,13 +38,13 @@ class MockBlobStorage : public minifi::azure::storage::BlobStorageClient {
   const std::string ITEM1_LAST_MODIFIED = "1631292120000";
   const std::string ITEM2_LAST_MODIFIED = "1634127120000";
 
-  bool createContainerIfNotExists(const minifi::azure::storage::PutAzureBlobStorageParameters& params) override {
+  bool createContainerIfNotExists(const storage::PutAzureBlobStorageParameters& params) override {
     put_params_ = params;
     container_created_ = true;
     return true;
   }
 
-  Azure::Storage::Blobs::Models::UploadBlockBlobResult uploadBlob(const minifi::azure::storage::PutAzureBlobStorageParameters& params, std::span<const std::byte> buffer) override {
+  Azure::Storage::Blobs::Models::UploadBlockBlobResult uploadBlob(const storage::PutAzureBlobStorageParameters& params, std::span<const std::byte> buffer) override {
     put_params_ = params;
     if (upload_fails_) {
       throw std::runtime_error("error");
@@ -56,11 +58,11 @@ class MockBlobStorage : public minifi::azure::storage::BlobStorageClient {
     return result;
   }
 
-  std::string getUrl(const minifi::azure::storage::AzureBlobStorageParameters& /*params*/) override {
+  std::string getUrl(const storage::AzureBlobStorageParameters& /*params*/) override {
     return RETURNED_PRIMARY_URI;
   }
 
-  bool deleteBlob(const minifi::azure::storage::DeleteAzureBlobStorageParameters& params) override {
+  bool deleteBlob(const storage::DeleteAzureBlobStorageParameters& params) override {
     delete_params_ = params;
 
     if (delete_fails_) {
@@ -70,7 +72,7 @@ class MockBlobStorage : public minifi::azure::storage::BlobStorageClient {
     return true;
   }
 
-  std::unique_ptr<org::apache::nifi::minifi::io::InputStream> fetchBlob(const minifi::azure::storage::FetchAzureBlobStorageParameters& params) override {
+  std::unique_ptr<io::InputStream> fetchBlob(const storage::FetchAzureBlobStorageParameters& params) override {
     if (fetch_fails_) {
       throw std::runtime_error("error");
     }
@@ -88,10 +90,10 @@ class MockBlobStorage : public minifi::azure::storage::BlobStorageClient {
     }
 
     buffer_.assign(FETCHED_DATA.begin() + range_start, FETCHED_DATA.begin() + range_start + size);
-    return std::make_unique<org::apache::nifi::minifi::io::BufferStream>(gsl::make_span(buffer_).as_span<const std::byte>());
+    return std::make_unique<io::BufferStream>(gsl::make_span(buffer_).as_span<const std::byte>());
   }
 
-  std::vector<Azure::Storage::Blobs::Models::BlobItem> listContainer(const minifi::azure::storage::ListAzureBlobStorageParameters& params) override {
+  std::vector<Azure::Storage::Blobs::Models::BlobItem> listContainer(const storage::ListAzureBlobStorageParameters& params) override {
     list_params_ = params;
     std::vector<Azure::Storage::Blobs::Models::BlobItem> result;
 
@@ -118,19 +120,19 @@ class MockBlobStorage : public minifi::azure::storage::BlobStorageClient {
     return result;
   }
 
-  minifi::azure::storage::PutAzureBlobStorageParameters getPassedPutParams() const {
+  storage::PutAzureBlobStorageParameters getPassedPutParams() const {
     return put_params_;
   }
 
-  minifi::azure::storage::DeleteAzureBlobStorageParameters getPassedDeleteParams() const {
+  storage::DeleteAzureBlobStorageParameters getPassedDeleteParams() const {
     return delete_params_;
   }
 
-  minifi::azure::storage::FetchAzureBlobStorageParameters getPassedFetchParams() const {
+  storage::FetchAzureBlobStorageParameters getPassedFetchParams() const {
     return fetch_params_;
   }
 
-  minifi::azure::storage::ListAzureBlobStorageParameters getPassedListParams() const {
+  storage::ListAzureBlobStorageParameters getPassedListParams() const {
     return list_params_;
   }
 
@@ -154,12 +156,12 @@ class MockBlobStorage : public minifi::azure::storage::BlobStorageClient {
     fetch_fails_ = fetch_fails;
   }
 
- private:
+private:
   const std::string RETURNED_PRIMARY_URI = "http://test-uri/file?secret-sas";
-  minifi::azure::storage::PutAzureBlobStorageParameters put_params_;
-  minifi::azure::storage::DeleteAzureBlobStorageParameters delete_params_;
-  minifi::azure::storage::FetchAzureBlobStorageParameters fetch_params_;
-  minifi::azure::storage::ListAzureBlobStorageParameters list_params_;
+  storage::PutAzureBlobStorageParameters put_params_;
+  storage::DeleteAzureBlobStorageParameters delete_params_;
+  storage::FetchAzureBlobStorageParameters fetch_params_;
+  storage::ListAzureBlobStorageParameters list_params_;
   bool container_created_ = false;
   bool upload_fails_ = false;
   bool delete_fails_ = false;
@@ -167,3 +169,4 @@ class MockBlobStorage : public minifi::azure::storage::BlobStorageClient {
   std::string input_data_;
   std::vector<uint8_t> buffer_;
 };
+}  // namespace org::apache::nifi::minifi::azure::test {

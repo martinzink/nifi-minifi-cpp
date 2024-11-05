@@ -26,9 +26,10 @@
 #include "io/StreamPipe.h"
 #include "utils/ArrayUtils.h"
 #include "AzureDataLakeStorageFileProcessorBase.h"
-
+namespace org::apache::nifi::minifi::azure::test {
 template<typename AzureDataLakeStorageProcessor>
 class AzureDataLakeStorageTestsFixture;
+}
 
 namespace org::apache::nifi::minifi::azure::processors {
 
@@ -79,7 +80,7 @@ class FetchAzureDataLakeStorage final : public AzureDataLakeStorageFileProcessor
   void onTrigger(core::ProcessContext& context, core::ProcessSession& session) override;
 
  private:
-  friend class ::AzureDataLakeStorageTestsFixture<FetchAzureDataLakeStorage>;
+  friend class test::AzureDataLakeStorageTestsFixture<FetchAzureDataLakeStorage>;
 
   explicit FetchAzureDataLakeStorage(std::string_view name, const minifi::utils::Identifier& uuid, std::unique_ptr<storage::DataLakeStorageClient> data_lake_storage_client)
     : AzureDataLakeStorageFileProcessorBase(name, uuid, core::logging::LoggerFactory<FetchAzureDataLakeStorage>::getLogger(), std::move(data_lake_storage_client)) {

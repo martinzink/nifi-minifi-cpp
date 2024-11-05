@@ -26,27 +26,26 @@
 
 namespace org::apache::nifi::minifi::core {
 
-std::string Property::getName() const {
+std::string_view Property::getName() const {
   return name_;
 }
 
-std::string Property::getDisplayName() const {
+std::string_view Property::getDisplayName() const {
   return display_name_.empty() ? name_ : display_name_;
 }
 
-std::string Property::getDescription() const {
+std::string_view Property::getDescription() const {
   return description_;
 }
 
-std::vector<std::string> Property::getAllowedTypes() const {
+std::span<const std::string> Property::getAllowedTypes() const {
   return types_;
 }
 
-const PropertyValue &Property::getValue() const {
+const PropertyValue& Property::getValue() const {
   if (!values_.empty())
     return values_.front();
-  else
-    return default_value_;
+  return default_value_;
 }
 
 bool Property::getRequired() const {
@@ -86,11 +85,11 @@ bool Property::operator<(const Property &right) const {
 }
 
 
-std::vector<std::string> Property::getDependentProperties() const {
+const std::vector<std::string>& Property::getDependentProperties() const {
   return dependent_properties_;
 }
 
-std::vector<std::pair<std::string, std::string>> Property::getExclusiveOfProperties() const {
+const std::vector<std::pair<std::string, std::string>>& Property::getExclusiveOfProperties() const {
   return exclusive_of_properties_;
 }
 

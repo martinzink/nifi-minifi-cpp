@@ -20,10 +20,11 @@
 
 #include "S3TestsFixture.h"
 #include "processors/FetchS3Object.h"
+#include "processors/PutFile.h"
 #include "unit/TestUtils.h"
 #include "utils/file/FileUtils.h"
 
-namespace {
+namespace org::apache::nifi::minifi::aws::test {
 
 using org::apache::nifi::minifi::test::utils::verifyLogLinePresenceInPollTime;
 using org::apache::nifi::minifi::utils::file::get_content;
@@ -37,7 +38,7 @@ class FetchS3ObjectTestsFixture : public FlowProcessorS3TestsFixture<minifi::aws
       core::Relationship("success", "d"),
       true);
     output_dir = test_controller.createTempDirectory();
-    plan->setProperty(putfile, "Directory", output_dir.string());
+    plan->setProperty(putfile, minifi::processors::PutFile::Directory, output_dir.string());
   }
 
   std::filesystem::path output_dir;
@@ -93,7 +94,7 @@ TEST_CASE_METHOD(FetchS3ObjectTestsFixture, "Test required property not set", "[
 
   SECTION("Test region is empty") {
     setRequiredProperties();
-    plan->setProperty(s3_processor, "Region", "");
+    plan->setProperty(s3_processor, processors::FetchS3Object::Region, "");
   }
 
   REQUIRE_THROWS_AS(test_controller.runSession(plan, true), minifi::Exception);
@@ -127,7 +128,7 @@ TEST_CASE_METHOD(FetchS3ObjectTestsFixture, "Test default properties", "[awsS3Co
 
 TEST_CASE_METHOD(FetchS3ObjectTestsFixture, "Test subdirectories on AWS", "[awsS3Config]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Object Key", "dir1/dir2/logs.txt");
+  plan->setProperty(s3_processor, processors::FetchS3Object::ObjectKey, "dir1/dir2/logs.txt");
   test_controller.runSession(plan, true);
   REQUIRE(verifyLogLinePresenceInPollTime(std::chrono::seconds(3), "key:filename value:logs.txt"));
   REQUIRE(verifyLogLinePresenceInPollTime(std::chrono::seconds(3), "key:path value:dir1/dir2"));
@@ -137,8 +138,8 @@ TEST_CASE_METHOD(FetchS3ObjectTestsFixture, "Test subdirectories on AWS", "[awsS
 
 TEST_CASE_METHOD(FetchS3ObjectTestsFixture, "Test optional values are set in request", "[awsS3Config]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Version", S3_VERSION_1);
-  plan->setProperty(s3_processor, "Requester Pays", "true");
+  plan->setProperty(s3_processor, processors::FetchS3Object::Version, S3_VERSION_1);
+  plan->setProperty(s3_processor, processors::FetchS3Object::RequesterPays, "true");
   test_controller.runSession(plan, true);
   REQUIRE(mock_s3_request_sender_ptr->get_object_request.GetVersionId() == S3_VERSION_1);
   REQUIRE(mock_s3_request_sender_ptr->get_object_request.GetRequestPayer() == Aws::S3::Model::RequestPayer::requester);
@@ -146,14 +147,14 @@ TEST_CASE_METHOD(FetchS3ObjectTestsFixture, "Test optional values are set in req
 
 TEST_CASE_METHOD(FetchS3ObjectTestsFixture, "Test non-default client configuration values", "[awsS3Config]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Region", minifi::aws::processors::region::US_EAST_1);
-  plan->setProperty(s3_processor, "Communications Timeout", "10 Sec");
+  plan->setProperty(s3_processor, processors::FetchS3Object::Region, minifi::aws::processors::region::US_EAST_1);
+  plan->setProperty(s3_processor, processors::FetchS3Object::CommunicationsTimeout, "10 Sec");
   plan->setDynamicProperty(update_attribute, "test.endpoint", "http://localhost:1234");
-  plan->setProperty(s3_processor, "Endpoint Override URL", "${test.endpoint}");
+  plan->setProperty(s3_processor, processors::FetchS3Object::EndpointOverrideURL, "${test.endpoint}");
   test_controller.runSession(plan, true);
   REQUIRE(mock_s3_request_sender_ptr->getClientConfig().region == minifi::aws::processors::region::US_EAST_1);
   REQUIRE(mock_s3_request_sender_ptr->getClientConfig().connectTimeoutMs == 10000);
   REQUIRE(mock_s3_request_sender_ptr->getClientConfig().endpointOverride == "http://localhost:1234");
 }
 
-}  // namespace
+}  // namespace org::apache::nifi::minifi::aws::test

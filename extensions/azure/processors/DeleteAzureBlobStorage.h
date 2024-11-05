@@ -32,9 +32,10 @@
 #include "AzureBlobStorageSingleBlobProcessorBase.h"
 #include "core/logging/LoggerConfiguration.h"
 #include "utils/ArrayUtils.h"
-
+namespace org::apache::nifi::minifi::azure::test {
 template<typename T>
 class AzureBlobStorageTestsFixture;
+}  // namespace org::apache::nifi::minifi::azure::test
 
 namespace org::apache::nifi::minifi::azure::processors {
 
@@ -71,7 +72,7 @@ class DeleteAzureBlobStorage final : public AzureBlobStorageSingleBlobProcessorB
   void onTrigger(core::ProcessContext& context, core::ProcessSession& session) override;
 
  private:
-  friend class ::AzureBlobStorageTestsFixture<DeleteAzureBlobStorage>;
+  friend class test::AzureBlobStorageTestsFixture<DeleteAzureBlobStorage>;
 
   explicit DeleteAzureBlobStorage(std::string_view name, const minifi::utils::Identifier& uuid, std::unique_ptr<storage::BlobStorageClient> blob_storage_client)
     : AzureBlobStorageSingleBlobProcessorBase(name, uuid, core::logging::LoggerFactory<DeleteAzureBlobStorage>::getLogger(), std::move(blob_storage_client)) {

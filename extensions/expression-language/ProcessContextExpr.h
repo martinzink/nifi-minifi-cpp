@@ -32,40 +32,40 @@ namespace org::apache::nifi::minifi::core {
  * state. With this case, we can rely on instantiation of a builder to create the necessary
  * ProcessContext. *
  */
-class ProcessContextExpr final : public core::ProcessContext {
+class ProcessContextExpr final : public ProcessContext {
  public:
   ProcessContextExpr(const std::shared_ptr<ProcessorNode> &processor, controller::ControllerServiceProvider* controller_service_provider,
-                     const std::shared_ptr<core::Repository> &repo, const std::shared_ptr<core::Repository> &flow_repo,
-                     const std::shared_ptr<core::ContentRepository> &content_repo = std::make_shared<core::repository::FileSystemRepository>())
-      : core::ProcessContext(processor, controller_service_provider, repo, flow_repo, content_repo),
+                     const std::shared_ptr<Repository> &repo, const std::shared_ptr<Repository> &flow_repo,
+                     const std::shared_ptr<ContentRepository> &content_repo = std::make_shared<repository::FileSystemRepository>())
+      : ProcessContext(processor, controller_service_provider, repo, flow_repo, content_repo),
         logger_(logging::LoggerFactory<ProcessContextExpr>::getLogger()) {
   }
 
   ProcessContextExpr(const std::shared_ptr<ProcessorNode> &processor, controller::ControllerServiceProvider* controller_service_provider,
-                     const std::shared_ptr<core::Repository> &repo, const std::shared_ptr<core::Repository> &flow_repo, const std::shared_ptr<minifi::Configure> &configuration,
-                     const std::shared_ptr<core::ContentRepository> &content_repo = std::make_shared<core::repository::FileSystemRepository>())
-      : core::ProcessContext(processor, controller_service_provider, repo, flow_repo, configuration, content_repo),
+                     const std::shared_ptr<Repository> &repo, const std::shared_ptr<Repository> &flow_repo, const std::shared_ptr<minifi::Configure> &configuration,
+                     const std::shared_ptr<ContentRepository> &content_repo = std::make_shared<repository::FileSystemRepository>())
+      : ProcessContext(processor, controller_service_provider, repo, flow_repo, configuration, content_repo),
         logger_(logging::LoggerFactory<ProcessContextExpr>::getLogger()) {
   }
 
   ~ProcessContextExpr() override = default;
 
-  bool getProperty(const Property& property, std::string &value, const FlowFile* const flow_file) override;
+  bool getProperty(const Property& property, std::string &value, const FlowFile* flow_file) override;
 
-  bool getProperty(const PropertyReference& property, std::string &value, const FlowFile* const flow_file) override;
+  bool getProperty(const PropertyReference& property, std::string &value, const FlowFile* flow_file) override;
 
-  bool getDynamicProperty(const Property &property, std::string &value, const FlowFile* const flow_file) override;
+  bool getDynamicProperty(const Property &property, std::string &value, const FlowFile* flow_file) override;
 
-  bool setProperty(const std::string& property, std::string value) override;
+  bool setProperty(std::string_view property, const std::string& value) override;
 
-  bool setDynamicProperty(const std::string& property, std::string value) override;
+  bool setDynamicProperty(std::string_view property, const std::string& value) override;
 
  private:
   bool getProperty(bool supports_expression_language, std::string_view property_name, std::string& value, const FlowFile* const flow_file);
 
-  std::unordered_map<std::string, org::apache::nifi::minifi::expression::Expression> expressions_;
-  std::unordered_map<std::string, org::apache::nifi::minifi::expression::Expression> dynamic_property_expressions_;
-  std::unordered_map<std::string, std::string> expression_strs_;
+  std::unordered_map<std::string, expression::Expression, utils::string::string_hash, std::equal_to<>> expressions_;
+  std::unordered_map<std::string, expression::Expression, utils::string::string_hash, std::equal_to<>> dynamic_property_expressions_;
+  std::unordered_map<std::string, std::string, utils::string::string_hash, std::equal_to<>> expression_strs_;
   std::shared_ptr<logging::Logger> logger_;
 };
 

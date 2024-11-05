@@ -89,7 +89,7 @@ TEST_CASE("Test GetFileMultiple", "[getfileCreate3]") {
   processor->addConnection(connection.get());
   REQUIRE(!dir.empty());
 
-  auto node = std::make_shared<core::ProcessorNode>(processor.get());
+  auto node = std::make_shared<core::ProcessorNode>(*processor);
   auto context = std::make_shared<core::ProcessContext>(node, nullptr, repo, repo, content_repo);
 
   context->setProperty(org::apache::nifi::minifi::processors::GetFile::Directory, dir.string());
@@ -172,7 +172,7 @@ TEST_CASE("Test GetFile Ignore", "[getfileCreate3]") {
   processor->addConnection(connection.get());
   REQUIRE(!dir.empty());
 
-  auto node = std::make_shared<core::ProcessorNode>(processor.get());
+  auto node = std::make_shared<core::ProcessorNode>(*processor);
   auto context = std::make_shared<core::ProcessContext>(node, nullptr, repo, repo, content_repo);
 
   context->setProperty(org::apache::nifi::minifi::processors::GetFile::Directory, dir.string());
@@ -258,7 +258,7 @@ TEST_CASE("TestConnectionFull", "[ConnectionFull]") {
   processor->addConnection(connection.get());
   processor->setScheduledState(core::ScheduledState::RUNNING);
 
-  auto node = std::make_shared<core::ProcessorNode>(processor.get());
+  auto node = std::make_shared<core::ProcessorNode>(*processor);
   auto context = std::make_shared<core::ProcessContext>(node, nullptr, repo, repo, content_repo);
 
   auto factory = std::make_shared<core::ProcessSessionFactory>(context);
@@ -552,7 +552,7 @@ void testRPGBypass(const std::string &host, const std::string &port, bool has_er
   rpg->initialize();
   REQUIRE(rpg->setProperty(minifi::RemoteProcessorGroupPort::hostName, host));
   rpg->setProperty(minifi::RemoteProcessorGroupPort::port, port);
-  auto node = std::make_shared<core::ProcessorNode>(rpg.get());
+  auto node = std::make_shared<core::ProcessorNode>(*rpg);
   auto context = std::make_shared<core::ProcessContext>(node, nullptr, repo, repo, content_repo);
   auto psf = std::make_shared<core::ProcessSessionFactory>(context);
   if (has_error) {
@@ -618,7 +618,7 @@ ProcessorWithIncomingConnectionTest::ProcessorWithIncomingConnectionTest() {
   processor_->addConnection(incoming_connection_.get());
   processor_->initialize();
 
-  const auto processor_node = std::make_shared<core::ProcessorNode>(processor_.get());
+  const auto processor_node = std::make_shared<core::ProcessorNode>(*processor_);
   const auto context = std::make_shared<core::ProcessContext>(processor_node, nullptr, repo, repo, content_repo);
   const auto session_factory = std::make_shared<core::ProcessSessionFactory>(context);
   session_ = session_factory->createSession();

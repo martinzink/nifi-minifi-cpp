@@ -21,9 +21,9 @@
 #include "processors/DeleteS3Object.h"
 #include "unit/TestUtils.h"
 
-namespace {
+namespace org::apache::nifi::minifi::aws::test {
 
-using DeleteS3ObjectTestsFixture = FlowProcessorS3TestsFixture<minifi::aws::processors::DeleteS3Object>;
+using DeleteS3ObjectTestsFixture = FlowProcessorS3TestsFixture<processors::DeleteS3Object>;
 using org::apache::nifi::minifi::test::utils::verifyLogLinePresenceInPollTime;
 
 TEST_CASE_METHOD(DeleteS3ObjectTestsFixture, "Test AWS credential setting", "[awsCredentials]") {
@@ -76,7 +76,7 @@ TEST_CASE_METHOD(DeleteS3ObjectTestsFixture, "Test required property not set", "
 
   SECTION("Test region is empty") {
     setRequiredProperties();
-    plan->setProperty(s3_processor, "Region", "");
+    plan->setProperty(s3_processor, processors::DeleteS3Object::Region, "");
   }
 
   REQUIRE_THROWS_AS(test_controller.runSession(plan, true), minifi::Exception);
@@ -101,7 +101,7 @@ TEST_CASE_METHOD(DeleteS3ObjectTestsFixture, "Test success case with default val
 TEST_CASE_METHOD(DeleteS3ObjectTestsFixture, "Test version setting", "[awsS3DeleteWithVersion]") {
   setRequiredProperties();
   plan->setDynamicProperty(update_attribute, "s3.version", "v1");
-  plan->setProperty(s3_processor, "Version", "${s3.version}");
+  plan->setProperty(s3_processor, processors::DeleteS3Object::Version, "${s3.version}");
   test_controller.runSession(plan, true);
   REQUIRE(mock_s3_request_sender_ptr->delete_object_request.GetVersionId() == "v1");
   REQUIRE(mock_s3_request_sender_ptr->delete_object_request.VersionIdHasBeenSet());
@@ -110,10 +110,10 @@ TEST_CASE_METHOD(DeleteS3ObjectTestsFixture, "Test version setting", "[awsS3Dele
 
 TEST_CASE_METHOD(DeleteS3ObjectTestsFixture, "Test optional client configuration values", "[awsS3DeleteOptionalClientConfig]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Region", minifi::aws::processors::region::US_EAST_1);
-  plan->setProperty(s3_processor, "Communications Timeout", "10 Sec");
+  plan->setProperty(s3_processor, processors::DeleteS3Object::Region, minifi::aws::processors::region::US_EAST_1);
+  plan->setProperty(s3_processor, processors::DeleteS3Object::CommunicationsTimeout, "10 Sec");
   plan->setDynamicProperty(update_attribute, "test.endpoint", "http://localhost:1234");
-  plan->setProperty(s3_processor, "Endpoint Override URL", "${test.endpoint}");
+  plan->setProperty(s3_processor, processors::DeleteS3Object::EndpointOverrideURL, "${test.endpoint}");
   test_controller.runSession(plan, true);
   REQUIRE(mock_s3_request_sender_ptr->getClientConfig().region == minifi::aws::processors::region::US_EAST_1);
   REQUIRE(mock_s3_request_sender_ptr->getClientConfig().connectTimeoutMs == 10000);
@@ -127,7 +127,7 @@ TEST_CASE_METHOD(DeleteS3ObjectTestsFixture, "Test failure case", "[awsS3DeleteF
       core::Relationship("failure", "d"));
   plan->addConnection(s3_processor, core::Relationship("failure", "d"), log_failure);
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Version", "v1");
+  plan->setProperty(s3_processor, processors::DeleteS3Object::Version, "v1");
   log_failure->setAutoTerminatedRelationships(std::array{core::Relationship("success", "d")});
   mock_s3_request_sender_ptr->setDeleteObjectResult(false);
   test_controller.runSession(plan, true);
@@ -137,4 +137,4 @@ TEST_CASE_METHOD(DeleteS3ObjectTestsFixture, "Test failure case", "[awsS3DeleteF
   REQUIRE(verifyLogLinePresenceInPollTime(std::chrono::seconds(3), "Failed to delete S3 object"));
 }
 
-}  // namespace
+}  // namespace org::apache::nifi::minifi::aws::test

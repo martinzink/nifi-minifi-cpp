@@ -20,7 +20,7 @@
 #include "processors/PutAzureDataLakeStorage.h"
 #include "controllerservices/AzureStorageCredentialsService.h"
 
-namespace {
+namespace org::apache::nifi::minifi::azure::test {
 
 using namespace std::literals::chrono_literals;
 
@@ -161,8 +161,7 @@ TEST_CASE_METHOD(PutAzureDataLakeStorageTestsFixture, "Upload to Azure Data Lake
   auto passed_params = mock_data_lake_storage_client_ptr_->getPassedPutParams();
   CHECK(passed_params.directory_name.empty());
   REQUIRE(getFailedFlowFileContents().empty());
-  using org::apache::nifi::minifi::test::utils::verifyLogLinePresenceInPollTime;
-  CHECK(verifyLogLinePresenceInPollTime(1s, "key:azure.directory value:\n"));
+  CHECK(minifi::test::utils::verifyLogLinePresenceInPollTime(1s, "key:azure.directory value:\n"));
 }
 
-}  // namespace
+}  // namespace org::apache::nifi::minifi::azure::test

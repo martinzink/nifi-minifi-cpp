@@ -62,14 +62,14 @@ struct TestFlow{
     auto processor = processorGenerator(mainProcUUID());
     {
       processor_ = processor.get();
-      auto node = std::make_shared<core::ProcessorNode>(processor_);
+      auto node = std::make_shared<core::ProcessorNode>(*processor_);
       processorContext = std::make_shared<core::ProcessContext>(node, nullptr, prov_repo, ff_repository, content_repo);
     }
 
     // setup INPUT processor
     {
       inputProcessor = std::make_shared<TestProcessor>("source", inputProcUUID());
-      auto node = std::make_shared<core::ProcessorNode>(inputProcessor.get());
+      auto node = std::make_shared<core::ProcessorNode>(*inputProcessor);
       inputContext = std::make_shared<core::ProcessContext>(node, nullptr, prov_repo,
                                                             ff_repository, content_repo);
     }

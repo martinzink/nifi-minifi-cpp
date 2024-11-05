@@ -19,6 +19,7 @@
 #include "S3TestsFixture.h"
 #include "processors/ListS3.h"
 
+namespace org::apache::nifi::minifi::aws::test {
 using ListS3TestsFixture = FlowProducerS3TestsFixture<minifi::aws::processors::ListS3>;
 
 TEST_CASE_METHOD(ListS3TestsFixture, "Test AWS credential setting", "[awsCredentials]") {
@@ -66,7 +67,7 @@ TEST_CASE_METHOD(ListS3TestsFixture, "Test required property not set", "[awsS3Er
 
   SECTION("Test region is empty") {
     setRequiredProperties();
-    plan->setProperty(s3_processor, "Region", "");
+    plan->setProperty(s3_processor, processors::ListS3::Region, "");
   }
 
   REQUIRE_THROWS_AS(test_controller.runSession(plan, true), minifi::Exception);
@@ -81,9 +82,9 @@ TEST_CASE_METHOD(ListS3TestsFixture, "Test proxy setting", "[awsS3Proxy]") {
 
 TEST_CASE_METHOD(ListS3TestsFixture, "Test listing without versioning", "[awsS3ListObjects]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Region", minifi::aws::processors::region::US_EAST_1);
-  plan->setProperty(s3_processor, "Communications Timeout", "10 Sec");
-  plan->setProperty(s3_processor, "Endpoint Override URL", "http://localhost:1234");
+  plan->setProperty(s3_processor, processors::ListS3::Region, minifi::aws::processors::region::US_EAST_1);
+  plan->setProperty(s3_processor, processors::ListS3::CommunicationsTimeout, "10 Sec");
+  plan->setProperty(s3_processor, processors::ListS3::EndpointOverrideURL, "http://localhost:1234");
   test_controller.runSession(plan, true);
 
   for (std::size_t i = 0; i < S3_OBJECT_COUNT; ++i) {
@@ -107,7 +108,7 @@ TEST_CASE_METHOD(ListS3TestsFixture, "Test listing without versioning", "[awsS3L
 
 TEST_CASE_METHOD(ListS3TestsFixture, "Test listing with versioning", "[awsS3ListVersions]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Use Versions", "true");
+  plan->setProperty(s3_processor, processors::ListS3::UseVersions, "true");
   test_controller.runSession(plan, true);
 
   for (std::size_t i = 0; i < S3_OBJECT_COUNT; ++i) {
@@ -133,8 +134,8 @@ TEST_CASE_METHOD(ListS3TestsFixture, "Test listing with versioning", "[awsS3List
 
 TEST_CASE_METHOD(ListS3TestsFixture, "Test if optional request values are set without versioning", "[awsS3ListOptionalValues]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Delimiter", "/");
-  plan->setProperty(s3_processor, "Prefix", "test/");
+  plan->setProperty(s3_processor, processors::ListS3::Delimiter, "/");
+  plan->setProperty(s3_processor, processors::ListS3::Prefix, "test/");
   test_controller.runSession(plan, true);
   REQUIRE(mock_s3_request_sender_ptr->list_object_request.GetDelimiter() == "/");
   REQUIRE(mock_s3_request_sender_ptr->list_object_request.GetPrefix() == "test/");
@@ -142,9 +143,9 @@ TEST_CASE_METHOD(ListS3TestsFixture, "Test if optional request values are set wi
 
 TEST_CASE_METHOD(ListS3TestsFixture, "Test if optional request values are set with versioning", "[awsS3ListOptionalValues]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Delimiter", "/");
-  plan->setProperty(s3_processor, "Prefix", "test/");
-  plan->setProperty(s3_processor, "Use Versions", "true");
+  plan->setProperty(s3_processor, processors::ListS3::Delimiter, "/");
+  plan->setProperty(s3_processor, processors::ListS3::Prefix, "test/");
+  plan->setProperty(s3_processor, processors::ListS3::UseVersions, "true");
   test_controller.runSession(plan, true);
   REQUIRE(mock_s3_request_sender_ptr->list_version_request.GetDelimiter() == "/");
   REQUIRE(mock_s3_request_sender_ptr->list_version_request.GetPrefix() == "test/");
@@ -152,15 +153,15 @@ TEST_CASE_METHOD(ListS3TestsFixture, "Test if optional request values are set wi
 
 TEST_CASE_METHOD(ListS3TestsFixture, "Test minimum age property handling with non-versioned objects", "[awsS3ListMinAge]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Minimum Object Age", "120 days");
+  plan->setProperty(s3_processor, processors::ListS3::MinimumObjectAge, "120 days");
   test_controller.runSession(plan, true);
   REQUIRE(LogTestController::getInstance().countOccurrences("key:s3.lastModified value:") == S3_OBJECT_COUNT / 2);
 }
 
 TEST_CASE_METHOD(ListS3TestsFixture, "Test minimum age property handling with versioned objects", "[awsS3ListMinAge]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Minimum Object Age", "120 days");
-  plan->setProperty(s3_processor, "Use Versions", "true");
+  plan->setProperty(s3_processor, processors::ListS3::MinimumObjectAge, "120 days");
+  plan->setProperty(s3_processor, processors::ListS3::UseVersions, "true");
   test_controller.runSession(plan, true);
   REQUIRE(LogTestController::getInstance().countOccurrences("key:s3.lastModified value:") == S3_OBJECT_COUNT);
   REQUIRE(LogTestController::getInstance().countOccurrences("key:s3.version value:" + S3_VERSION_1) == S3_OBJECT_COUNT);
@@ -169,10 +170,10 @@ TEST_CASE_METHOD(ListS3TestsFixture, "Test minimum age property handling with ve
 
 TEST_CASE_METHOD(ListS3TestsFixture, "Test write object tags", "[awsS3ListTags]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Region", minifi::aws::processors::region::US_EAST_1);
-  plan->setProperty(s3_processor, "Communications Timeout", "10 Sec");
-  plan->setProperty(s3_processor, "Endpoint Override URL", "http://localhost:1234");
-  plan->setProperty(s3_processor, "Write Object Tags", "true");
+  plan->setProperty(s3_processor, processors::ListS3::Region, minifi::aws::processors::region::US_EAST_1);
+  plan->setProperty(s3_processor, processors::ListS3::CommunicationsTimeout, "10 Sec");
+  plan->setProperty(s3_processor, processors::ListS3::EndpointOverrideURL, "http://localhost:1234");
+  plan->setProperty(s3_processor, processors::ListS3::WriteObjectTags, "true");
   test_controller.runSession(plan, true);
   for (const auto& tag : S3_OBJECT_TAGS) {
     REQUIRE(LogTestController::getInstance().countOccurrences("key:s3.tag." + tag.first + " value:" + tag.second) == S3_OBJECT_COUNT);
@@ -186,11 +187,11 @@ TEST_CASE_METHOD(ListS3TestsFixture, "Test write object tags", "[awsS3ListTags]"
 
 TEST_CASE_METHOD(ListS3TestsFixture, "Test write user metadata", "[awsS3ListMetadata]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Region", minifi::aws::processors::region::US_EAST_1);
-  plan->setProperty(s3_processor, "Communications Timeout", "10 Sec");
-  plan->setProperty(s3_processor, "Endpoint Override URL", "http://localhost:1234");
-  plan->setProperty(s3_processor, "Write User Metadata", "true");
-  plan->setProperty(s3_processor, "Requester Pays", "true");
+  plan->setProperty(s3_processor, processors::ListS3::Region, minifi::aws::processors::region::US_EAST_1);
+  plan->setProperty(s3_processor, processors::ListS3::CommunicationsTimeout, "10 Sec");
+  plan->setProperty(s3_processor, processors::ListS3::EndpointOverrideURL, "http://localhost:1234");
+  plan->setProperty(s3_processor, processors::ListS3::WriteUserMetadata, "true");
+  plan->setProperty(s3_processor, processors::ListS3::RequesterPays, "true");
   test_controller.runSession(plan, true);
   for (const auto& metadata : S3_OBJECT_USER_METADATA) {
     REQUIRE(LogTestController::getInstance().countOccurrences("key:s3.user.metadata." + metadata.first + " value:" + metadata.second) == S3_OBJECT_COUNT);
@@ -226,7 +227,7 @@ TEST_CASE_METHOD(ListS3TestsFixture, "Test truncated listing without versioning"
 
 TEST_CASE_METHOD(ListS3TestsFixture, "Test truncated listing with versioning", "[awsS3ListVersions]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Use Versions", "true");
+  plan->setProperty(s3_processor, processors::ListS3::UseVersions, "true");
   mock_s3_request_sender_ptr->setListingTruncated(true);
   test_controller.runSession(plan, true);
   for (std::size_t i = 0; i < S3_OBJECT_COUNT; ++i) {
@@ -251,3 +252,4 @@ TEST_CASE_METHOD(ListS3TestsFixture, "Test truncated listing with versioning", "
   REQUIRE(mock_s3_request_sender_ptr->list_version_request.VersionIdMarkerHasBeenSet());
   REQUIRE(mock_s3_request_sender_ptr->list_version_request.GetVersionIdMarker() == S3_VERSION_ID_MARKER);
 }
+}  // namespace org::apache::nifi::minifi::aws::test

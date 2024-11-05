@@ -18,21 +18,25 @@
 
 #pragma once
 
+
 #include <array>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include <memory>
 
-#include "unit/TestBase.h"
-#include "unit/Catch.h"
+#include "MockBlobStorage.h"
 #include "core/Processor.h"
 #include "processors/GetFile.h"
-#include "processors/PutFile.h"
 #include "processors/LogAttribute.h"
+#include "processors/PutFile.h"
 #include "processors/UpdateAttribute.h"
+#include "processors/AzureBlobStorageProcessorBase.h"
+#include "unit/Catch.h"
+#include "unit/TestBase.h"
 #include "utils/file/FileUtils.h"
-#include "MockBlobStorage.h"
+
+namespace org::apache::nifi::minifi::azure::test {
 
 const std::string CONTAINER_NAME = "test-container";
 const std::string STORAGE_ACCOUNT_NAME = "test-account";
@@ -46,7 +50,7 @@ const std::string GET_FILE_NAME = "input_data.log";
 
 template<typename ProcessorType>
 class AzureBlobStorageTestsFixture {
- public:
+public:
   AzureBlobStorageTestsFixture() {
     LogTestController::getInstance().setDebug<TestPlan>();
     LogTestController::getInstance().setDebug<minifi::core::Processor>();
@@ -88,9 +92,9 @@ class AzureBlobStorageTestsFixture {
 
   void setDefaultCredentials() {
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Name", "${test.account_name}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountName, "${test.account_name}");
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_key", STORAGE_ACCOUNT_KEY);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Key", "${test.account_key}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountKey, "${test.account_key}");
   }
 
   std::vector<std::string> getFileContents(const std::filesystem::path& dir) {
@@ -118,7 +122,7 @@ class AzureBlobStorageTestsFixture {
     LogTestController::getInstance().reset();
   }
 
- protected:
+protected:
   TestController test_controller_;
   std::shared_ptr<TestPlan> plan_;
   MockBlobStorage* mock_blob_storage_ptr_;
@@ -130,3 +134,4 @@ class AzureBlobStorageTestsFixture {
   std::filesystem::path failure_output_dir_;
   std::filesystem::path success_output_dir_;
 };
+}  // namespace org::apache::nifi::minifi::azure::test

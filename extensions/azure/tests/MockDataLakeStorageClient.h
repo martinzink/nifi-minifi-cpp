@@ -28,22 +28,22 @@
 #include "io/BufferStream.h"
 #include "utils/span.h"
 
-class MockDataLakeStorageClient : public org::apache::nifi::minifi::azure::storage::DataLakeStorageClient {
- public:
+namespace org::apache::nifi::minifi::azure::test {
+class MockDataLakeStorageClient : public storage::DataLakeStorageClient {
+public:
   const std::string PRIMARY_URI = "http://test-uri/file";
   const std::string FETCHED_DATA = "test azure data for stream";
   const std::string ITEM1_LAST_MODIFIED = "1631292120000";
   const std::string ITEM2_LAST_MODIFIED = "1634127120000";
 
-  bool createFile(const org::apache::nifi::minifi::azure::storage::PutAzureDataLakeStorageParameters& /*params*/) override {
+  bool createFile(const storage::PutAzureDataLakeStorageParameters& /*params*/) override {
     if (file_creation_error_) {
       throw std::runtime_error("error");
     }
     return create_file_;
   }
 
-  std::string uploadFile(const org::apache::nifi::minifi::azure::storage::PutAzureDataLakeStorageParameters& params, std::span<const std::byte> buffer) override {
-    namespace utils = org::apache::nifi::minifi::utils;
+  std::string uploadFile(const storage::PutAzureDataLakeStorageParameters& params, std::span<const std::byte> buffer) override {
     input_data_ = utils::span_to<std::string>(utils::as_span<const char>(buffer));
     put_params_ = params;
 
@@ -54,7 +54,7 @@ class MockDataLakeStorageClient : public org::apache::nifi::minifi::azure::stora
     return RETURNED_PRIMARY_URI;
   }
 
-  bool deleteFile(const org::apache::nifi::minifi::azure::storage::DeleteAzureDataLakeStorageParameters& params) override {
+  bool deleteFile(const storage::DeleteAzureDataLakeStorageParameters& params) override {
     delete_params_ = params;
 
     if (delete_fails_) {
@@ -64,7 +64,7 @@ class MockDataLakeStorageClient : public org::apache::nifi::minifi::azure::stora
     return delete_result_;
   }
 
-  std::unique_ptr<org::apache::nifi::minifi::io::InputStream> fetchFile(const org::apache::nifi::minifi::azure::storage::FetchAzureDataLakeStorageParameters& params) override {
+  std::unique_ptr<io::InputStream> fetchFile(const storage::FetchAzureDataLakeStorageParameters& params) override {
     if (fetch_fails_) {
       throw std::runtime_error("error");
     }
@@ -83,10 +83,10 @@ class MockDataLakeStorageClient : public org::apache::nifi::minifi::azure::stora
 
     const auto range = gsl::make_span(FETCHED_DATA).subspan(range_start, size).as_span<const std::byte>();
     buffer_.assign(std::begin(range), std::end(range));
-    return std::make_unique<org::apache::nifi::minifi::io::BufferStream>(buffer_);
+    return std::make_unique<io::BufferStream>(buffer_);
   }
 
-  std::vector<Azure::Storage::Files::DataLake::Models::PathItem> listDirectory(const org::apache::nifi::minifi::azure::storage::ListAzureDataLakeStorageParameters& params) override {
+  std::vector<Azure::Storage::Files::DataLake::Models::PathItem> listDirectory(const storage::ListAzureDataLakeStorageParameters& params) override {
     list_params_ = params;
     std::vector<Azure::Storage::Files::DataLake::Models::PathItem> result;
     Azure::Storage::Files::DataLake::Models::PathItem diritem;
@@ -137,23 +137,23 @@ class MockDataLakeStorageClient : public org::apache::nifi::minifi::azure::stora
     fetch_fails_ = fetch_fails;
   }
 
-  org::apache::nifi::minifi::azure::storage::PutAzureDataLakeStorageParameters getPassedPutParams() const {
+  storage::PutAzureDataLakeStorageParameters getPassedPutParams() const {
     return put_params_;
   }
 
-  org::apache::nifi::minifi::azure::storage::DeleteAzureDataLakeStorageParameters getPassedDeleteParams() const {
+  storage::DeleteAzureDataLakeStorageParameters getPassedDeleteParams() const {
     return delete_params_;
   }
 
-  org::apache::nifi::minifi::azure::storage::FetchAzureDataLakeStorageParameters getPassedFetchParams() const {
+  storage::FetchAzureDataLakeStorageParameters getPassedFetchParams() const {
     return fetch_params_;
   }
 
-  org::apache::nifi::minifi::azure::storage::ListAzureDataLakeStorageParameters getPassedListParams() const {
+  storage::ListAzureDataLakeStorageParameters getPassedListParams() const {
     return list_params_;
   }
 
- private:
+private:
   const std::string RETURNED_PRIMARY_URI = "http://test-uri/file?secret-sas";
   bool create_file_ = true;
   bool file_creation_error_ = false;
@@ -163,8 +163,9 @@ class MockDataLakeStorageClient : public org::apache::nifi::minifi::azure::stora
   bool fetch_fails_ = false;
   std::string input_data_;
   std::vector<std::byte> buffer_;
-  org::apache::nifi::minifi::azure::storage::PutAzureDataLakeStorageParameters put_params_;
-  org::apache::nifi::minifi::azure::storage::DeleteAzureDataLakeStorageParameters delete_params_;
-  org::apache::nifi::minifi::azure::storage::FetchAzureDataLakeStorageParameters fetch_params_;
-  org::apache::nifi::minifi::azure::storage::ListAzureDataLakeStorageParameters list_params_;
+  storage::PutAzureDataLakeStorageParameters put_params_;
+  storage::DeleteAzureDataLakeStorageParameters delete_params_;
+  storage::FetchAzureDataLakeStorageParameters fetch_params_;
+  storage::ListAzureDataLakeStorageParameters list_params_;
 };
+}  // namespace org::apache::nifi::minifi::azure::test

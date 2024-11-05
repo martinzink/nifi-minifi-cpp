@@ -35,6 +35,9 @@
 #include "processors/PutFile.h"
 #include "tools/SFTPTestServer.h"
 
+using org::apache::nifi::minifi::processors::FetchSFTP;
+using org::apache::nifi::minifi::processors::PutFile;
+using org::apache::nifi::minifi::processors::GenerateFlowFile;
 class FetchSFTPTestsFixture {
  public:
   FetchSFTPTestsFixture() {
@@ -86,24 +89,24 @@ class FetchSFTPTestsFixture {
          true);
 
     // Configure GenerateFlowFile processor
-    plan->setProperty(generate_flow_file, "File Size", "1B");
+    plan->setProperty(generate_flow_file, GenerateFlowFile::FileSize, "1B");
 
     // Configure FetchSFTP processor
-    plan->setProperty(fetch_sftp, "Hostname", "localhost");
-    plan->setProperty(fetch_sftp, "Port", std::to_string(sftp_server->getPort()));
-    plan->setProperty(fetch_sftp, "Username", "nifiuser");
-    plan->setProperty(fetch_sftp, "Password", "nifipassword");
-    plan->setProperty(fetch_sftp, "Completion Strategy", minifi::processors::FetchSFTP::COMPLETION_STRATEGY_NONE);
-    plan->setProperty(fetch_sftp, "Connection Timeout", "30 sec");
-    plan->setProperty(fetch_sftp, "Data Timeout", "30 sec");
-    plan->setProperty(fetch_sftp, "Strict Host Key Checking", "false");
-    plan->setProperty(fetch_sftp, "Send Keep Alive On Timeout", "true");
-    plan->setProperty(fetch_sftp, "Use Compression", "false");
+    plan->setProperty(fetch_sftp, FetchSFTP::Hostname, "localhost");
+    plan->setProperty(fetch_sftp, FetchSFTP::Port, std::to_string(sftp_server->getPort()));
+    plan->setProperty(fetch_sftp, FetchSFTP::Username, "nifiuser");
+    plan->setProperty(fetch_sftp, FetchSFTP::Password, "nifipassword");
+    plan->setProperty(fetch_sftp, FetchSFTP::CompletionStrategy, minifi::processors::FetchSFTP::COMPLETION_STRATEGY_NONE);
+    plan->setProperty(fetch_sftp, FetchSFTP::ConnectionTimeout, "30 sec");
+    plan->setProperty(fetch_sftp, FetchSFTP::DataTimeout, "30 sec");
+    plan->setProperty(fetch_sftp, FetchSFTP::StrictHostKeyChecking, "false");
+    plan->setProperty(fetch_sftp, FetchSFTP::SendKeepaliveOnTimeout, "true");
+    plan->setProperty(fetch_sftp, FetchSFTP::UseCompression, "false");
 
     // Configure PutFile processor
-    plan->setProperty(put_file, "Directory", (dst_dir / "${path}").string());
-    plan->setProperty(put_file, "Conflict Resolution Strategy", magic_enum::enum_name(minifi::processors::PutFile::FileExistsResolutionStrategy::fail));
-    plan->setProperty(put_file, "Create Missing Directories", "true");
+    plan->setProperty(put_file, PutFile::Directory, (dst_dir / "${path}").string());
+    plan->setProperty(put_file, PutFile::ConflictResolution, magic_enum::enum_name(minifi::processors::PutFile::FileExistsResolutionStrategy::fail));
+    plan->setProperty(put_file, PutFile::CreateDirs, "true");
   }
 
   FetchSFTPTestsFixture(FetchSFTPTestsFixture&&) = delete;
@@ -163,7 +166,7 @@ class FetchSFTPTestsFixture {
 };
 
 TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP fetch one file", "[FetchSFTP][basic]") {
-  plan->setProperty(fetch_sftp, "Remote File", "nifi_test/tstFile.ext");
+  plan->setProperty(fetch_sftp, FetchSFTP::RemoteFile, "nifi_test/tstFile.ext");
 
   createFile("nifi_test/tstFile.ext", "Test content 1");
 
@@ -181,9 +184,9 @@ TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP fetch one file", "[FetchSFTP]
 }
 
 TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP public key authentication", "[FetchSFTP][basic]") {
-  plan->setProperty(fetch_sftp, "Remote File", "nifi_test/tstFile.ext");
-  plan->setProperty(fetch_sftp, "Private Key Path", (get_sftp_test_dir() / "resources" / "id_rsa").generic_string());
-  plan->setProperty(fetch_sftp, "Private Key Passphrase", "privatekeypassword");
+  plan->setProperty(fetch_sftp, FetchSFTP::RemoteFile, "nifi_test/tstFile.ext");
+  plan->setProperty(fetch_sftp, FetchSFTP::PrivateKeyPath, (get_sftp_test_dir() / "resources" / "id_rsa").generic_string());
+  plan->setProperty(fetch_sftp, FetchSFTP::PrivateKeyPassphrase, "privatekeypassword");
 
   createFile("nifi_test/tstFile.ext", "Test content 1");
 
@@ -203,7 +206,7 @@ TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP public key authentication", "
 }
 
 TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP fetch non-existing file", "[FetchSFTP][basic]") {
-  plan->setProperty(fetch_sftp, "Remote File", "nifi_test/tstFile.ext");
+  plan->setProperty(fetch_sftp, FetchSFTP::RemoteFile, "nifi_test/tstFile.ext");
 
   testController.runSession(plan, true);
 
@@ -218,7 +221,7 @@ TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP fetch non-readable file", "[F
     return;
   }
 
-  plan->setProperty(fetch_sftp, "Remote File", "nifi_test/tstFile.ext");
+  plan->setProperty(fetch_sftp, FetchSFTP::RemoteFile, "nifi_test/tstFile.ext");
 
   createFile("nifi_test/tstFile.ext", "Test content 1");
   std::filesystem::permissions(src_dir / "vfs" / "nifi_test" / "tstFile.ext", static_cast<std::filesystem::perms>(0000));
@@ -231,7 +234,7 @@ TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP fetch non-readable file", "[F
 #endif
 
 TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP fetch connection error", "[FetchSFTP][basic]") {
-  plan->setProperty(fetch_sftp, "Remote File", "nifi_test/tstFile.ext");
+  plan->setProperty(fetch_sftp, FetchSFTP::RemoteFile, "nifi_test/tstFile.ext");
 
   createFile("nifi_test/tstFile.ext", "Test content 1");
 
@@ -248,8 +251,8 @@ TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP fetch connection error", "[Fe
 }
 
 TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP Completion Strategy Delete File success", "[FetchSFTP][completion-strategy]") {
-  plan->setProperty(fetch_sftp, "Remote File", "nifi_test/tstFile.ext");
-  plan->setProperty(fetch_sftp, "Completion Strategy", minifi::processors::FetchSFTP::COMPLETION_STRATEGY_DELETE_FILE);
+  plan->setProperty(fetch_sftp, FetchSFTP::RemoteFile, "nifi_test/tstFile.ext");
+  plan->setProperty(fetch_sftp, FetchSFTP::CompletionStrategy, minifi::processors::FetchSFTP::COMPLETION_STRATEGY_DELETE_FILE);
 
   createFile("nifi_test/tstFile.ext", "Test content 1");
 
@@ -271,8 +274,8 @@ TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP Completion Strategy Delete Fi
     std::cerr << "!!!! This test does NOT work as root. Exiting. !!!!" << std::endl;
     return;
   }
-  plan->setProperty(fetch_sftp, "Remote File", "nifi_test/tstFile.ext");
-  plan->setProperty(fetch_sftp, "Completion Strategy", minifi::processors::FetchSFTP::COMPLETION_STRATEGY_DELETE_FILE);
+  plan->setProperty(fetch_sftp, FetchSFTP::RemoteFile, "nifi_test/tstFile.ext");
+  plan->setProperty(fetch_sftp, FetchSFTP::CompletionStrategy, minifi::processors::FetchSFTP::COMPLETION_STRATEGY_DELETE_FILE);
 
   createFile("nifi_test/tstFile.ext", "Test content 1");
   /* By making the parent directory non-writable we make it impossible do delete the source file */
@@ -297,10 +300,10 @@ TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP Completion Strategy Delete Fi
 #endif
 
 TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP Completion Strategy Move File success", "[FetchSFTP][completion-strategy]") {
-  plan->setProperty(fetch_sftp, "Remote File", "nifi_test/tstFile.ext");
-  plan->setProperty(fetch_sftp, "Completion Strategy", minifi::processors::FetchSFTP::COMPLETION_STRATEGY_MOVE_FILE);
-  plan->setProperty(fetch_sftp, "Move Destination Directory", "nifi_done/");
-  plan->setProperty(fetch_sftp, "Create Directory", "true");
+  plan->setProperty(fetch_sftp, FetchSFTP::RemoteFile, "nifi_test/tstFile.ext");
+  plan->setProperty(fetch_sftp, FetchSFTP::CompletionStrategy, minifi::processors::FetchSFTP::COMPLETION_STRATEGY_MOVE_FILE);
+  plan->setProperty(fetch_sftp, FetchSFTP::MoveDestinationDirectory, "nifi_done/");
+  plan->setProperty(fetch_sftp, FetchSFTP::CreateDirectory, "true");
 
   createFile("nifi_test/tstFile.ext", "Test content 1");
 
@@ -318,12 +321,12 @@ TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP Completion Strategy Move File
 }
 
 TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP Completion Strategy Move File fail", "[FetchSFTP][completion-strategy]") {
-  plan->setProperty(fetch_sftp, "Remote File", "nifi_test/tstFile.ext");
-  plan->setProperty(fetch_sftp, "Completion Strategy", minifi::processors::FetchSFTP::COMPLETION_STRATEGY_MOVE_FILE);
-  plan->setProperty(fetch_sftp, "Move Destination Directory", "nifi_done/");
+  plan->setProperty(fetch_sftp, FetchSFTP::RemoteFile, "nifi_test/tstFile.ext");
+  plan->setProperty(fetch_sftp, FetchSFTP::CompletionStrategy, minifi::processors::FetchSFTP::COMPLETION_STRATEGY_MOVE_FILE);
+  plan->setProperty(fetch_sftp, FetchSFTP::MoveDestinationDirectory, "nifi_done/");
 
   /* The completion strategy should fail because the target directory does not exist and we don't create it */
-  plan->setProperty(fetch_sftp, "Create Directory", "false");
+  plan->setProperty(fetch_sftp, FetchSFTP::CreateDirectory, "false");
 
   createFile("nifi_test/tstFile.ext", "Test content 1");
 
@@ -354,17 +357,17 @@ TEST_CASE_METHOD(FetchSFTPTestsFixture, "FetchSFTP expression language test", "[
   plan->setDynamicProperty(update_attribute, "attr_Remote File", "nifi_test/tstFile.ext");
   plan->setDynamicProperty(update_attribute, "attr_Move Destination Directory", "nifi_done/");
 
-  plan->setProperty(fetch_sftp, "Hostname", "${'attr_Hostname'}");
-  plan->setProperty(fetch_sftp, "Port", "${'attr_Port'}");
-  plan->setProperty(fetch_sftp, "Username", "${'attr_Username'}");
-  plan->setProperty(fetch_sftp, "Password", "${'attr_Password'}");
-  plan->setProperty(fetch_sftp, "Private Key Path", "${'attr_Private Key Path'}");
-  plan->setProperty(fetch_sftp, "Private Key Passphrase", "${'attr_Private Key Passphrase'}");
-  plan->setProperty(fetch_sftp, "Remote File", "${'attr_Remote File'}");
-  plan->setProperty(fetch_sftp, "Move Destination Directory", "${'attr_Move Destination Directory'}");
+  plan->setProperty(fetch_sftp, FetchSFTP::Hostname, "${'attr_Hostname'}");
+  plan->setProperty(fetch_sftp, FetchSFTP::Port, "${'attr_Port'}");
+  plan->setProperty(fetch_sftp, FetchSFTP::Username, "${'attr_Username'}");
+  plan->setProperty(fetch_sftp, FetchSFTP::Password, "${'attr_Password'}");
+  plan->setProperty(fetch_sftp, FetchSFTP::PrivateKeyPath, "${'attr_Private Key Path'}");
+  plan->setProperty(fetch_sftp, FetchSFTP::PrivateKeyPassphrase, "${'attr_Private Key Passphrase'}");
+  plan->setProperty(fetch_sftp, FetchSFTP::RemoteFile, "${'attr_Remote File'}");
+  plan->setProperty(fetch_sftp, FetchSFTP::MoveDestinationDirectory, "${'attr_Move Destination Directory'}");
 
-  plan->setProperty(fetch_sftp, "Completion Strategy", minifi::processors::FetchSFTP::COMPLETION_STRATEGY_MOVE_FILE);
-  plan->setProperty(fetch_sftp, "Create Directory", "true");
+  plan->setProperty(fetch_sftp, FetchSFTP::CompletionStrategy, minifi::processors::FetchSFTP::COMPLETION_STRATEGY_MOVE_FILE);
+  plan->setProperty(fetch_sftp, FetchSFTP::CreateDirectory, "true");
 
   createFile("nifi_test/tstFile.ext", "Test content 1");
 

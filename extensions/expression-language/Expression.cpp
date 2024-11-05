@@ -81,6 +81,14 @@ Expression compile(const std::string &expr_str) {
   return driver.result;
 }
 
+nonstd::expected<Expression, std::exception_ptr> compileNoThrow(const std::string& expr_str) {
+  try {
+    return compile(expr_str);
+  } catch(std::runtime_error& e) {
+    return nonstd::make_unexpected(std::current_exception());
+  }
+}
+
 Expression make_static(std::string val) {
   return Expression(Value(std::move(val)));
 }

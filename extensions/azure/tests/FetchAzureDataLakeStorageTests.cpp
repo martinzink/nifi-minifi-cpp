@@ -20,23 +20,23 @@
 #include "processors/FetchAzureDataLakeStorage.h"
 #include "controllerservices/AzureStorageCredentialsService.h"
 
-namespace {
+namespace org::apache::nifi::minifi::azure::test {
 
 using namespace std::literals::chrono_literals;
 
-using FetchAzureDataLakeStorageTestsFixture = AzureDataLakeStorageTestsFixture<minifi::azure::processors::FetchAzureDataLakeStorage>;
+using FetchAzureDataLakeStorageTestsFixture = AzureDataLakeStorageTestsFixture<processors::FetchAzureDataLakeStorage>;
 
 TEST_CASE_METHOD(FetchAzureDataLakeStorageTestsFixture, "Azure storage credentials service is empty", "[azureDataLakeStorageParameters]") {
-  plan_->setProperty(azure_data_lake_storage_, minifi::azure::processors::FetchAzureDataLakeStorage::AzureStorageCredentialsService, "");
+  plan_->setProperty(azure_data_lake_storage_, processors::FetchAzureDataLakeStorage::AzureStorageCredentialsService, "");
   REQUIRE_THROWS_AS(test_controller_.runSession(plan_, true), minifi::Exception);
   REQUIRE(getFailedFlowFileContents().empty());
 }
 
 TEST_CASE_METHOD(FetchAzureDataLakeStorageTestsFixture, "Test Azure credentials with account name and SAS token set", "[azureDataLakeStorageParameters]") {
   setDefaultProperties();
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::SASToken, "token");
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::StorageAccountName, "TEST_ACCOUNT");
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::ConnectionString, "");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::SASToken, "token");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::StorageAccountName, "TEST_ACCOUNT");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::ConnectionString, "");
   test_controller_.runSession(plan_, true);
   auto passed_params = mock_data_lake_storage_client_ptr_->getPassedFetchParams();
   CHECK(passed_params.credentials.buildConnectionString() == "AccountName=TEST_ACCOUNT;SharedAccessSignature=token");
@@ -45,9 +45,9 @@ TEST_CASE_METHOD(FetchAzureDataLakeStorageTestsFixture, "Test Azure credentials 
 
 TEST_CASE_METHOD(FetchAzureDataLakeStorageTestsFixture, "Test Azure credentials with connection string override", "[azureDataLakeStorageParameters]") {
   setDefaultProperties();
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::ConnectionString, CONNECTION_STRING);
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::SASToken, "token");
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::StorageAccountName, "TEST_ACCOUNT");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::ConnectionString, CONNECTION_STRING);
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::SASToken, "token");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::StorageAccountName, "TEST_ACCOUNT");
   test_controller_.runSession(plan_, true);
   auto passed_params = mock_data_lake_storage_client_ptr_->getPassedFetchParams();
   CHECK(passed_params.credentials.buildConnectionString() == CONNECTION_STRING);
@@ -56,9 +56,9 @@ TEST_CASE_METHOD(FetchAzureDataLakeStorageTestsFixture, "Test Azure credentials 
 
 TEST_CASE_METHOD(FetchAzureDataLakeStorageTestsFixture, "Test Azure credentials with managed identity use", "[azureDataLakeStorageParameters]") {
   setDefaultProperties();
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::ConnectionString, "test");
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::UseManagedIdentityCredentials, "true");
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::StorageAccountName, "TEST_ACCOUNT");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::ConnectionString, "test");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::UseManagedIdentityCredentials, "true");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::StorageAccountName, "TEST_ACCOUNT");
   test_controller_.runSession(plan_, true);
   auto passed_params = mock_data_lake_storage_client_ptr_->getPassedFetchParams();
   CHECK(passed_params.credentials.buildConnectionString().empty());
@@ -78,7 +78,7 @@ TEST_CASE_METHOD(FetchAzureDataLakeStorageTestsFixture, "Filesystem name is not 
 }
 
 TEST_CASE_METHOD(FetchAzureDataLakeStorageTestsFixture, "Connection String is empty", "[azureDataLakeStorageParameters]") {
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::ConnectionString, "");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::ConnectionString, "");
   REQUIRE_THROWS_AS(test_controller_.runSession(plan_, true), minifi::Exception);
   REQUIRE(getFailedFlowFileContents().empty());
 }
@@ -99,8 +99,8 @@ TEST_CASE_METHOD(FetchAzureDataLakeStorageTestsFixture, "Fetch full file succeed
 }
 
 TEST_CASE_METHOD(FetchAzureDataLakeStorageTestsFixture, "Fetch a range of the file succeeds", "[azureDataLakeStorageFetch]") {
-  plan_->setProperty(azure_data_lake_storage_, minifi::azure::processors::FetchAzureDataLakeStorage::RangeStart, "5");
-  plan_->setProperty(azure_data_lake_storage_, minifi::azure::processors::FetchAzureDataLakeStorage::RangeLength, "10");
+  plan_->setProperty(azure_data_lake_storage_, processors::FetchAzureDataLakeStorage::RangeStart, "5");
+  plan_->setProperty(azure_data_lake_storage_, processors::FetchAzureDataLakeStorage::RangeLength, "10");
   test_controller_.runSession(plan_, true);
   REQUIRE(getFailedFlowFileContents().empty());
   auto passed_params = mock_data_lake_storage_client_ptr_->getPassedFetchParams();
@@ -116,7 +116,7 @@ TEST_CASE_METHOD(FetchAzureDataLakeStorageTestsFixture, "Fetch a range of the fi
 }
 
 TEST_CASE_METHOD(FetchAzureDataLakeStorageTestsFixture, "Number of Retries is set", "[azureDataLakeStorageFetch]") {
-  plan_->setProperty(azure_data_lake_storage_, minifi::azure::processors::FetchAzureDataLakeStorage::NumberOfRetries, "1");
+  plan_->setProperty(azure_data_lake_storage_, processors::FetchAzureDataLakeStorage::NumberOfRetries, "1");
   test_controller_.runSession(plan_, true);
   REQUIRE(mock_data_lake_storage_client_ptr_->getPassedFetchParams().number_of_retries == 1);
 }
@@ -130,4 +130,4 @@ TEST_CASE_METHOD(FetchAzureDataLakeStorageTestsFixture, "Fetch full file fails",
   REQUIRE(failed_contents[0] == TEST_DATA);
 }
 
-}  // namespace
+}  // namespace org::apache::nifi::minifi::azure::test

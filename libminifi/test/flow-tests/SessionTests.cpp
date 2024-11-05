@@ -86,7 +86,7 @@ TEST_CASE("Import null data") {
   output->addRelationship({"out", ""});
   output->setSourceUUID(uuid);
   processor->addConnection(output.get());
-  auto node = std::make_shared<core::ProcessorNode>(processor.get());
+  auto node = std::make_shared<core::ProcessorNode>(*processor);
   auto context = std::make_shared<core::ProcessContext>(node, nullptr, prov_repo, ff_repository, content_repo);
   core::ProcessSession session(context);
 

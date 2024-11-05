@@ -82,7 +82,7 @@ class SchedulingAgentTestFixture {
   utils::ThreadPool thread_pool_;
 
   std::shared_ptr<CountOnTriggersProcessor> count_proc_ = std::make_shared<CountOnTriggersProcessor>("count_proc");
-  std::shared_ptr<core::ProcessorNode> node_ = std::make_shared<core::ProcessorNode>(count_proc_.get());
+  std::shared_ptr<core::ProcessorNode> node_ = std::make_shared<core::ProcessorNode>(*count_proc_);
   std::shared_ptr<core::ProcessContext> context_ = std::make_shared<core::ProcessContext>(node_, nullptr, test_repo_, test_repo_, content_repo_);
   std::shared_ptr<core::ProcessSessionFactory> factory_ = std::make_shared<core::ProcessSessionFactory>(context_);
 };

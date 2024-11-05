@@ -37,8 +37,10 @@
 #include "utils/gsl.h"
 #include "utils/Id.h"
 
+namespace org::apache::nifi::minifi::aws::test {
 template<typename T>
 class S3TestsFixture;
+}  // namespace org::apache::nifi::minifi::aws::test
 
 namespace org::apache::nifi::minifi::aws::processors {
 
@@ -181,7 +183,7 @@ class PutS3Object : public S3Processor {
   static constexpr uint64_t MIN_PART_SIZE = 5_MiB;
   static constexpr uint64_t MAX_UPLOAD_SIZE = 5_GiB;
 
-  friend class ::S3TestsFixture<PutS3Object>;
+  friend class test::S3TestsFixture<PutS3Object>;
 
   explicit PutS3Object(const std::string& name, const minifi::utils::Identifier& uuid, std::unique_ptr<aws::s3::S3RequestSender> s3_request_sender)
     : S3Processor(name, uuid, core::logging::LoggerFactory<PutS3Object>::getLogger(uuid), std::move(s3_request_sender)) {

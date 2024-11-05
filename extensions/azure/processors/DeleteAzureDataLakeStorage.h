@@ -26,8 +26,10 @@
 
 #include "AzureDataLakeStorageFileProcessorBase.h"
 
+namespace org::apache::nifi::minifi::azure::test {
 template<typename AzureDataLakeStorageProcessorBase>
 class AzureDataLakeStorageTestsFixture;
+}  // namespace org::apache::nifi::minifi::azure::test
 
 namespace org::apache::nifi::minifi::azure::processors {
 
@@ -58,7 +60,7 @@ class DeleteAzureDataLakeStorage final : public AzureDataLakeStorageFileProcesso
   void onTrigger(core::ProcessContext& context, core::ProcessSession& session) override;
 
  private:
-  friend class ::AzureDataLakeStorageTestsFixture<DeleteAzureDataLakeStorage>;
+  friend class test::AzureDataLakeStorageTestsFixture<DeleteAzureDataLakeStorage>;
 
   explicit DeleteAzureDataLakeStorage(std::string_view name, const minifi::utils::Identifier& uuid, std::unique_ptr<storage::DataLakeStorageClient> data_lake_storage_client)
     : AzureDataLakeStorageFileProcessorBase(name, uuid, core::logging::LoggerFactory<DeleteAzureDataLakeStorage>::getLogger(), std::move(data_lake_storage_client)) {

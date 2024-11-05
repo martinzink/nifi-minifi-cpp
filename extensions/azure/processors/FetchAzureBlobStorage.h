@@ -32,8 +32,10 @@
 #include "core/logging/LoggerConfiguration.h"
 #include "utils/ArrayUtils.h"
 
+namespace org::apache::nifi::minifi::azure::test {
 template<typename T>
 class AzureBlobStorageTestsFixture;
+}  // namespace org::apache::nifi::minifi::azure::test
 
 namespace org::apache::nifi::minifi::azure::processors {
 
@@ -76,7 +78,7 @@ class FetchAzureBlobStorage final : public AzureBlobStorageSingleBlobProcessorBa
   void onTrigger(core::ProcessContext& context, core::ProcessSession& session) override;
 
  private:
-  friend class ::AzureBlobStorageTestsFixture<FetchAzureBlobStorage>;
+  friend class test::AzureBlobStorageTestsFixture<FetchAzureBlobStorage>;
 
   explicit FetchAzureBlobStorage(std::string_view name, const minifi::utils::Identifier& uuid, std::unique_ptr<storage::BlobStorageClient> blob_storage_client)
     : AzureBlobStorageSingleBlobProcessorBase(name, uuid, core::logging::LoggerFactory<FetchAzureBlobStorage>::getLogger(), std::move(blob_storage_client)) {

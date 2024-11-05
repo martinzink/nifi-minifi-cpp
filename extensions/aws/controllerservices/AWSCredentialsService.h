@@ -33,7 +33,9 @@
 #include "core/PropertyType.h"
 #include "AWSCredentialsProvider.h"
 
+namespace org::apache::nifi::minifi::aws::test {
 class AWSCredentialsServiceTestAccessor;
+}
 
 namespace org::apache::nifi::minifi::aws::controllers {
 
@@ -96,7 +98,7 @@ class AWSCredentialsService : public core::controller::ControllerService {
   std::optional<Aws::Auth::AWSCredentials> getAWSCredentials();
 
  private:
-  friend class ::AWSCredentialsServiceTestAccessor;
+  friend class test::AWSCredentialsServiceTestAccessor;
 
   const utils::AWSInitializer& AWS_INITIALIZER = utils::AWSInitializer::get();
   std::optional<Aws::Auth::AWSCredentials> aws_credentials_;

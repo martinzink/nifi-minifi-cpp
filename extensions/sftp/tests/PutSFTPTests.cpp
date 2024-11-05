@@ -36,24 +36,30 @@
 #include <unistd.h>
 #endif
 
-#include "unit/TestBase.h"
-#include "unit/Catch.h"
+
+
 #include "Exception.h"
-#include "date/date.h"
-#include "utils/file/FileUtils.h"
-#include "core/Core.h"
-#include "core/logging/Logger.h"
-#include "core/ProcessGroup.h"
 #include "FlowController.h"
-#include "unit/ProvenanceTestHelper.h"
-#include "processors/PutSFTP.h"
-#include "processors/GetFile.h"
-#include "processors/LogAttribute.h"
+#include "core/Core.h"
+#include "core/ProcessGroup.h"
+#include "core/logging/Logger.h"
+#include "date/date.h"
 #include "processors/ExtractText.h"
+#include "processors/GetFile.h"
+#include "processors/GenerateFlowFile.h"
+#include "processors/LogAttribute.h"
+#include "processors/PutSFTP.h"
 #include "tools/SFTPTestServer.h"
+#include "unit/Catch.h"
+#include "unit/ProvenanceTestHelper.h"
+#include "unit/TestBase.h"
+#include "utils/file/FileUtils.h"
 
 constexpr const char* PUBLIC_KEY_AUTH_ERROR_MESSAGE = "Failed to authenticate with publickey, error: Unable to extract public key from private key file: Wrong passphrase or invalid/unrecognized private key file format";  // NOLINT(whitespace/line_length)
 using namespace std::literals::chrono_literals;
+
+using org::apache::nifi::minifi::processors::PutSFTP;
+using org::apache::nifi::minifi::processors::GetFile;
 
 class PutSFTPTestsFixture {
  public:
@@ -97,23 +103,23 @@ class PutSFTPTestsFixture {
           true);
 
     // Configure GetFile processor
-    plan->setProperty(get_file, "Input Directory", src_dir.string());
+    plan->setProperty(get_file, minifi::processors::GetFile::Directory, src_dir.string());
 
     // Configure PutSFTP processor
-    plan->setProperty(put, "Hostname", "localhost");
-    plan->setProperty(put, "Port", std::to_string(sftp_server->getPort()));
-    plan->setProperty(put, "Username", "nifiuser");
-    plan->setProperty(put, "Password", "nifipassword");
-    plan->setProperty(put, "Remote Path", "nifi_test/");
-    plan->setProperty(put, "Create Directory", "true");
-    plan->setProperty(put, "Batch Size", "2");
-    plan->setProperty(put, "Connection Timeout", "30 sec");
-    plan->setProperty(put, "Data Timeout", "30 sec");
-    plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_RENAME);
-    plan->setProperty(put, "Strict Host Key Checking", "false");
-    plan->setProperty(put, "Send Keep Alive On Timeout", "true");
-    plan->setProperty(put, "Use Compression", "false");
-    plan->setProperty(put, "Reject Zero-Byte Files", "true");
+    plan->setProperty(put, PutSFTP::Hostname, "localhost");
+    plan->setProperty(put, PutSFTP::Port, std::to_string(sftp_server->getPort()));
+    plan->setProperty(put, PutSFTP::Username, "nifiuser");
+    plan->setProperty(put, PutSFTP::Password, "nifipassword");
+    plan->setProperty(put, PutSFTP::RemotePath, "nifi_test/");
+    plan->setProperty(put, PutSFTP::CreateDirectory, "true");
+    plan->setProperty(put, PutSFTP::BatchSize, "2");
+    plan->setProperty(put, PutSFTP::ConnectionTimeout, "30 sec");
+    plan->setProperty(put, PutSFTP::DataTimeout, "30 sec");
+    plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_RENAME);
+    plan->setProperty(put, PutSFTP::StrictHostKeyChecking, "false");
+    plan->setProperty(put, PutSFTP::SendKeepaliveOnTimeout, "true");
+    plan->setProperty(put, PutSFTP::UseCompression, "false");
+    plan->setProperty(put, PutSFTP::RejectZeroByte, "true");
   }
 
   PutSFTPTestsFixture(PutSFTPTestsFixture&&) = delete;
@@ -219,7 +225,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP put two files", "[PutSFTP][basic]
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP bad password", "[PutSFTP][authentication]") {
-  plan->setProperty(put, "Password", "badpassword");
+  plan->setProperty(put, PutSFTP::Password, "badpassword");
   createFile(src_dir, "tstFile.ext", "tempFile");
 
   try {
@@ -234,8 +240,8 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP bad password", "[PutSFTP][authent
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP public key authentication success", "[PutSFTP][authentication]") {
-  plan->setProperty(put, "Private Key Path", (get_sftp_test_dir() / "resources" / "id_rsa").string());
-  plan->setProperty(put, "Private Key Passphrase", "privatekeypassword");
+  plan->setProperty(put, PutSFTP::PrivateKeyPath, (get_sftp_test_dir() / "resources" / "id_rsa").string());
+  plan->setProperty(put, PutSFTP::PrivateKeyPassphrase, "privatekeypassword");
 
   createFile(src_dir, "tstFile.ext", "tempFile");
 
@@ -246,9 +252,9 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP public key authentication success
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP public key authentication bad passphrase", "[PutSFTP][authentication]") {
-  plan->setProperty(put, "Password", "");
-  plan->setProperty(put, "Private Key Path", (get_sftp_test_dir() / "resources" / "id_rsa").string());
-  plan->setProperty(put, "Private Key Passphrase", "badpassword");
+  plan->setProperty(put, PutSFTP::Password, "");
+  plan->setProperty(put, PutSFTP::PrivateKeyPath, (get_sftp_test_dir() / "resources" / "id_rsa").string());
+  plan->setProperty(put, PutSFTP::PrivateKeyPassphrase, "badpassword");
 
   createFile(src_dir, "tstFile.ext", "tempFile");
 
@@ -263,8 +269,8 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP public key authentication bad pas
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP public key authentication bad passphrase fallback to password", "[PutSFTP][authentication]") {
-  plan->setProperty(put, "Private Key Path", (get_sftp_test_dir() / "resources" / "id_rsa").string());
-  plan->setProperty(put, "Private Key Passphrase", "badpassword");
+  plan->setProperty(put, PutSFTP::PrivateKeyPath, (get_sftp_test_dir() / "resources" / "id_rsa").string());
+  plan->setProperty(put, PutSFTP::PrivateKeyPassphrase, "badpassword");
 
   createFile(src_dir, "tstFile.ext", "tempFile");
 
@@ -276,8 +282,8 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP public key authentication bad pas
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP host key checking success", "[PutSFTP][hostkey]") {
-  plan->setProperty(put, "Host Key File", (get_sftp_test_dir() / "resources" / "known_hosts").string());
-  plan->setProperty(put, "Strict Host Key Checking", "true");
+  plan->setProperty(put, PutSFTP::HostKeyFile, (get_sftp_test_dir() / "resources" / "known_hosts").string());
+  plan->setProperty(put, PutSFTP::StrictHostKeyChecking, "true");
 
   createFile(src_dir, "tstFile.ext", "tempFile");
 
@@ -288,10 +294,10 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP host key checking success", "[Put
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP host key checking missing strict", "[PutSFTP][hostkey]") {
-  plan->setProperty(put, "Hostname", "127.0.0.1");
+  plan->setProperty(put, PutSFTP::Hostname, "127.0.0.1");
 
-  plan->setProperty(put, "Host Key File", (get_sftp_test_dir() / "resources" / "known_hosts").string());
-  plan->setProperty(put, "Strict Host Key Checking", "true");
+  plan->setProperty(put, PutSFTP::HostKeyFile, (get_sftp_test_dir() / "resources" / "known_hosts").string());
+  plan->setProperty(put, PutSFTP::StrictHostKeyChecking, "true");
 
   createFile(src_dir, "tstFile.ext", "tempFile");
 
@@ -306,10 +312,10 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP host key checking missing strict"
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP host key checking missing non-strict", "[PutSFTP][hostkey]") {
-  plan->setProperty(put, "Hostname", "127.0.0.1");
+  plan->setProperty(put, PutSFTP::Hostname, "127.0.0.1");
 
-  plan->setProperty(put, "Host Key File", (get_sftp_test_dir() / "resources" / "known_hosts").string());
-  plan->setProperty(put, "Strict Host Key Checking", "false");
+  plan->setProperty(put, PutSFTP::HostKeyFile, (get_sftp_test_dir() / "resources" / "known_hosts").string());
+  plan->setProperty(put, PutSFTP::StrictHostKeyChecking, "false");
 
   createFile(src_dir, "tstFile.ext", "tempFile");
 
@@ -320,8 +326,8 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP host key checking missing non-str
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP host key checking mismatch strict", "[PutSFTP][hostkey]") {
-  plan->setProperty(put, "Host Key File", (get_sftp_test_dir() / "resources" / "known_hosts_mismatch").string());
-  plan->setProperty(put, "Strict Host Key Checking", "true");
+  plan->setProperty(put, PutSFTP::HostKeyFile, (get_sftp_test_dir() / "resources" / "known_hosts_mismatch").string());
+  plan->setProperty(put, PutSFTP::StrictHostKeyChecking, "true");
 
   createFile(src_dir, "tstFile.ext", "tempFile");
 
@@ -349,7 +355,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP host key checking mismatch strict
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP conflict resolution rename", "[PutSFTP][conflict-resolution]") {
-  plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_RENAME);
+  plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_RENAME);
 
   createFile(src_dir, "tstFile1.ext", "content 1");
   REQUIRE(0 == utils::file::create_dir(dst_dir / "vfs" / "nifi_test"));
@@ -363,7 +369,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP conflict resolution rename", "[Pu
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP conflict resolution reject", "[PutSFTP][conflict-resolution]") {
-  plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_REJECT);
+  plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_REJECT);
 
   createFile(src_dir, "tstFile1.ext", "content 1");
   REQUIRE(0 == utils::file::create_dir(dst_dir / "vfs" / "nifi_test"));
@@ -376,7 +382,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP conflict resolution reject", "[Pu
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP conflict resolution fail", "[PutSFTP][conflict-resolution]") {
-  plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_FAIL);
+  plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_FAIL);
 
   createFile(src_dir, "tstFile1.ext", "content 1");
   REQUIRE(0 == utils::file::FileUtils::create_dir(dst_dir / "vfs" / "nifi_test"));
@@ -389,7 +395,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP conflict resolution fail", "[PutS
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP conflict resolution ignore", "[PutSFTP][conflict-resolution]") {
-  plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_IGNORE);
+  plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_IGNORE);
 
   createFile(src_dir, "tstFile1.ext", "content 1");
   REQUIRE(0 == utils::file::FileUtils::create_dir(dst_dir / "vfs" / "nifi_test"));
@@ -403,7 +409,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP conflict resolution ignore", "[Pu
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP conflict resolution replace", "[PutSFTP][conflict-resolution]") {
-  plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_REPLACE);
+  plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_REPLACE);
 
   createFile(src_dir, "tstFile1.ext", "content 1");
   REQUIRE(0 == utils::file::FileUtils::create_dir(dst_dir / "vfs" / "nifi_test"));
@@ -416,7 +422,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP conflict resolution replace", "[P
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP conflict resolution none", "[PutSFTP][conflict-resolution]") {
-  plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_NONE);
+  plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_NONE);
 
   createFile(src_dir, "tstFile1.ext", "content 1");
   REQUIRE(0 == utils::file::FileUtils::create_dir(dst_dir / "vfs" / "nifi_test"));
@@ -431,22 +437,22 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP conflict resolution none", "[PutS
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP conflict resolution with directory existing at target", "[PutSFTP][conflict-resolution]") {
   bool should_predetect_failure = true;
   SECTION("with conflict resolution rename") {
-    plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_RENAME);
+    plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_RENAME);
   }
   SECTION("with conflict resolution reject") {
-    plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_REJECT);
+    plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_REJECT);
   }
   SECTION("with conflict resolution fail") {
-    plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_FAIL);
+    plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_FAIL);
   }
   SECTION("with conflict resolution ignore") {
-    plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_IGNORE);
+    plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_IGNORE);
   }
   SECTION("with conflict resolution replace") {
-    plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_REPLACE);
+    plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_REPLACE);
   }
   SECTION("with conflict resolution none") {
-    plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_NONE);
+    plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_NONE);
     should_predetect_failure = false;
   }
 
@@ -466,7 +472,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP conflict resolution with director
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP reject zero-byte false", "[PutSFTP]") {
-  plan->setProperty(put, "Reject Zero-Byte Files", "false");
+  plan->setProperty(put, PutSFTP::RejectZeroByte, "false");
 
   createFile(src_dir, "tstFile1.ext", "");
 
@@ -477,7 +483,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP reject zero-byte false", "[PutSFT
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP reject zero-byte true", "[PutSFTP]") {
-  plan->setProperty(put, "Reject Zero-Byte Files", "true");
+  plan->setProperty(put, PutSFTP::RejectZeroByte, "true");
 
   createFile(src_dir, "tstFile1.ext", "");
 
@@ -489,7 +495,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP reject zero-byte true", "[PutSFTP
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP set mtime", "[PutSFTP]") {
-  plan->setProperty(put, "Last Modified Time", "2065-01-24T05:20:00Z");
+  plan->setProperty(put, PutSFTP::LastModifiedTime, "2065-01-24T05:20:00Z");
 
   createFile(src_dir, "tstFile1.ext", "content 1");
 
@@ -502,7 +508,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP set mtime", "[PutSFTP]") {
 
 #ifndef WIN32
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP set permissions", "[PutSFTP]") {
-  plan->setProperty(put, "Permissions", "0613");
+  plan->setProperty(put, PutSFTP::Permissions, "0613");
 
   createFile(src_dir, "tstFile1.ext", "content 1");
 
@@ -519,8 +525,8 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP set uid and gid", "[PutSFTP]") {
     std::cerr << "!!!! This test ONLY works as root, because it needs to chown. Exiting. !!!!" << std::endl;
     return;
   }
-  plan->setProperty(put, "Remote Owner", "1234");
-  plan->setProperty(put, "Remote Group", "4567");
+  plan->setProperty(put, PutSFTP::RemoteOwner, "1234");
+  plan->setProperty(put, PutSFTP::RemoteGroup, "4567");
 
   createFile(src_dir, "tstFile1.ext", "content 1");
 
@@ -533,7 +539,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP set uid and gid", "[PutSFTP]") {
 #endif
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP disable directory creation", "[PutSFTP]") {
-  plan->setProperty(put, "Create Directory", "false");
+  plan->setProperty(put, PutSFTP::CreateDirectory, "false");
 
   createFile(src_dir, "tstFile1.ext", "content 1");
 
@@ -546,11 +552,11 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP disable directory creation", "[Pu
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP test dot rename", "[PutSFTP]") {
   bool should_fail = false;
   SECTION("with dot rename enabled") {
-    plan->setProperty(put, "Dot Rename", "true");
+    plan->setProperty(put, PutSFTP::DotRename, "true");
     should_fail = true;
   }
   SECTION("with dot rename disabled") {
-    plan->setProperty(put, "Dot Rename", "false");
+    plan->setProperty(put, PutSFTP::DotRename, "false");
     should_fail = false;
   }
 
@@ -578,11 +584,11 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP test temporary filename", "[PutSF
   bool should_fail = false;
   SECTION("with temporary filename set") {
     /* Also test expression language */
-    plan->setProperty(put, "Temporary Filename", "${ filename:append('.temp') }");
+    plan->setProperty(put, PutSFTP::TempFilename, "${ filename:append('.temp') }");
     should_fail = true;
   }
   SECTION("with temporary filename not set and dot rename disabled") {
-    plan->setProperty(put, "Dot Rename", "false");
+    plan->setProperty(put, PutSFTP::DotRename, "false");
     should_fail = false;
   }
 
@@ -607,7 +613,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP test temporary filename", "[PutSF
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP test temporary file cleanup", "[PutSFTP]") {
-  plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_NONE);
+  plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_NONE);
 
   createFile(src_dir, "tstFile1.ext", "content 1");
   REQUIRE(0 == utils::file::FileUtils::create_dir(dst_dir / "vfs" / "nifi_test"));
@@ -623,11 +629,11 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP test temporary file cleanup", "[P
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP test disable directory listing", "[PutSFTP]") {
   bool should_list = false;
   SECTION("with directory listing enabled") {
-    plan->setProperty(put, "Disable Directory Listing", "false");
+    plan->setProperty(put, PutSFTP::DisableDirectoryListing, "false");
     should_list = true;
   }
   SECTION("with directory listing disabled") {
-    plan->setProperty(put, "Disable Directory Listing", "true");
+    plan->setProperty(put, PutSFTP::DisableDirectoryListing, "true");
     should_list = false;
   }
 
@@ -697,27 +703,27 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP connection caching reaches limit"
       true);
 
   // Configure GetFile processor
-  plan->setProperty(get_file, "Batch Size", "1");
-  plan->setProperty(get_file, "Input Directory", src_dir.string());
+  plan->setProperty(get_file, GetFile::BatchSize, "1");
+  plan->setProperty(get_file, GetFile::Directory, src_dir.string());
 
   // Configure ExtractText processor
-  plan->setProperty(extract_text, "Attribute", "port_num");
+  plan->setProperty(extract_text, minifi::processors::ExtractText::Attribute, "port_num");
 
   // Configure PutSFTP processor
-  plan->setProperty(put, "Hostname", "localhost");
-  plan->setProperty(put, "Port", "${'port_num'}");
-  plan->setProperty(put, "Username", "nifiuser");
-  plan->setProperty(put, "Password", "nifipassword");
-  plan->setProperty(put, "Remote Path", "nifi_test/");
-  plan->setProperty(put, "Create Directory", "true");
-  plan->setProperty(put, "Batch Size", "2");
-  plan->setProperty(put, "Connection Timeout", "30 sec");
-  plan->setProperty(put, "Data Timeout", "30 sec");
-  plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_RENAME);
-  plan->setProperty(put, "Strict Host Key Checking", "false");
-  plan->setProperty(put, "Send Keep Alive On Timeout", "true");
-  plan->setProperty(put, "Use Compression", "false");
-  plan->setProperty(put, "Reject Zero-Byte Files", "true");
+  plan->setProperty(put, PutSFTP::Hostname, "localhost");
+  plan->setProperty(put, PutSFTP::Port, "${'port_num'}");
+  plan->setProperty(put, PutSFTP::Username, "nifiuser");
+  plan->setProperty(put, PutSFTP::Password, "nifipassword");
+  plan->setProperty(put, PutSFTP::RemotePath, "nifi_test/");
+  plan->setProperty(put, PutSFTP::CreateDirectory, "true");
+  plan->setProperty(put, PutSFTP::BatchSize, "2");
+  plan->setProperty(put, PutSFTP::ConnectionTimeout, "30 sec");
+  plan->setProperty(put, PutSFTP::DataTimeout, "30 sec");
+  plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_RENAME);
+  plan->setProperty(put, PutSFTP::StrictHostKeyChecking, "false");
+  plan->setProperty(put, PutSFTP::SendKeepaliveOnTimeout, "true");
+  plan->setProperty(put, PutSFTP::UseCompression, "false");
+  plan->setProperty(put, PutSFTP::RejectZeroByte, "true");
 
   sftp_server.reset();
 
@@ -745,7 +751,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP connection caching reaches limit"
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP batching two files in one batch", "[PutSFTP][batching]") {
-  plan->setProperty(put, "Batch Size", "2");
+  plan->setProperty(put, PutSFTP::BatchSize, "2");
 
   createFile(src_dir, "tstFile1.ext", "content 1");
   createFile(src_dir, "tstFile2.ext", "content 2");
@@ -756,7 +762,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP batching two files in one batch",
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP batching two files in two batches", "[PutSFTP][batching]") {
-  plan->setProperty(put, "Batch Size", "1");
+  plan->setProperty(put, PutSFTP::BatchSize, "1");
 
   createFile(src_dir, "tstFile1.ext", "content 1");
   createFile(src_dir, "tstFile2.ext", "content 2");
@@ -774,8 +780,8 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP batching two files in two batches
 }
 
 TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP batching does not fail even if one is routed to Failure", "[PutSFTP][batching]") {
-  plan->setProperty(put, "Batch Size", "3");
-  plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_FAIL);
+  plan->setProperty(put, PutSFTP::BatchSize, "3");
+  plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_FAIL);
 
   createFile(src_dir, "tstFile1.ext", "content 1");
   createFile(src_dir, "tstFile2.ext", "content 2");
@@ -828,7 +834,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP expression language test", "[PutS
       true);
 
   // Configure GetFile processor
-  plan->setProperty(get_file, "Input Directory", src_dir.string());
+  plan->setProperty(get_file, minifi::processors::GetFile::Directory, src_dir.string());
 
   // Configure UpdateAttribute processor
   plan->setDynamicProperty(update_attribute, "attr_Hostname", "localhost");
@@ -845,27 +851,27 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP expression language test", "[PutS
   plan->setDynamicProperty(update_attribute, "attr_Remote Group", "5678");
 
   // Configure PutSFTP processor
-  plan->setProperty(put, "Hostname", "${'attr_Hostname'}");
-  plan->setProperty(put, "Port", "${'attr_Port'}");
-  plan->setProperty(put, "Username", "${'attr_Username'}");
-  plan->setProperty(put, "Password", "${'attr_Password'}");
-  plan->setProperty(put, "Private Key Path", "${'attr_Private Key Path'}");
-  plan->setProperty(put, "Private Key Passphrase", "${'attr_Private Key Passphrase'}");
-  plan->setProperty(put, "Remote Path", "${'attr_Remote Path'}");
-  plan->setProperty(put, "Temporary Filename", "${'attr_Temporary Filename'}");
-  plan->setProperty(put, "Last Modified Time", "${'attr_Last Modified Time'}");
-  plan->setProperty(put, "Permissions", "${'attr_Permissions'}");
-  plan->setProperty(put, "Remote Owner", "${'attr_Remote Owner'}");
-  plan->setProperty(put, "Remote Group", "${'attr_Remote Group'}");
-  plan->setProperty(put, "Create Directory", "true");
-  plan->setProperty(put, "Batch Size", "2");
-  plan->setProperty(put, "Connection Timeout", "30 sec");
-  plan->setProperty(put, "Data Timeout", "30 sec");
-  plan->setProperty(put, "Conflict Resolution", minifi::processors::PutSFTP::CONFLICT_RESOLUTION_RENAME);
-  plan->setProperty(put, "Strict Host Key Checking", "false");
-  plan->setProperty(put, "Send Keep Alive On Timeout", "true");
-  plan->setProperty(put, "Use Compression", "false");
-  plan->setProperty(put, "Reject Zero-Byte Files", "true");
+  plan->setProperty(put, PutSFTP::Hostname, "${'attr_Hostname'}");
+  plan->setProperty(put, PutSFTP::Port, "${'attr_Port'}");
+  plan->setProperty(put, PutSFTP::Username, "${'attr_Username'}");
+  plan->setProperty(put, PutSFTP::Password, "${'attr_Password'}");
+  plan->setProperty(put, PutSFTP::PrivateKeyPath, "${'attr_Private Key Path'}");
+  plan->setProperty(put, PutSFTP::PrivateKeyPassphrase, "${'attr_Private Key Passphrase'}");
+  plan->setProperty(put, PutSFTP::RemotePath, "${'attr_Remote Path'}");
+  plan->setProperty(put, PutSFTP::TempFilename, "${'attr_Temporary Filename'}");
+  plan->setProperty(put, PutSFTP::LastModifiedTime, "${'attr_Last Modified Time'}");
+  plan->setProperty(put, PutSFTP::Permissions, "${'attr_Permissions'}");
+  plan->setProperty(put, PutSFTP::RemoteOwner, "${'attr_Remote Owner'}");
+  plan->setProperty(put, PutSFTP::RemoteGroup, "${'attr_Remote Group'}");
+  plan->setProperty(put, PutSFTP::CreateDirectory, "true");
+  plan->setProperty(put, PutSFTP::BatchSize, "2");
+  plan->setProperty(put, PutSFTP::ConnectionTimeout, "30 sec");
+  plan->setProperty(put, PutSFTP::DataTimeout, "30 sec");
+  plan->setProperty(put, PutSFTP::ConflictResolution, minifi::processors::PutSFTP::CONFLICT_RESOLUTION_RENAME);
+  plan->setProperty(put, PutSFTP::StrictHostKeyChecking, "false");
+  plan->setProperty(put, PutSFTP::SendKeepaliveOnTimeout, "true");
+  plan->setProperty(put, PutSFTP::UseCompression, "false");
+  plan->setProperty(put, PutSFTP::RejectZeroByte, "true");
 
   createFile(src_dir, "tstFile.ext", "some content");
 

@@ -39,9 +39,10 @@
 #include "s3/MultipartUploadStateStorage.h"
 #include "s3/S3Wrapper.h"
 
+namespace org::apache::nifi::minifi::aws::test {
 template<typename T>
 class S3TestsFixture {
- public:
+public:
   const std::string INPUT_FILENAME = "input_data.log";
   const std::string INPUT_DATA = "input_data";
   const std::string S3_BUCKET = "testBucket";
@@ -60,7 +61,7 @@ class S3TestsFixture {
     plan = test_controller.createPlan();
     mock_s3_request_sender_ptr = new MockS3RequestSender();
     std::unique_ptr<minifi::aws::s3::S3RequestSender> mock_s3_request_sender(mock_s3_request_sender_ptr);
-    s3_processor = std::shared_ptr<T>(new T("S3Processor", utils::Identifier(), std::move(mock_s3_request_sender)));
+    s3_processor = std::shared_ptr<T>(new T("S3Processor", minifi::utils::Identifier(), std::move(mock_s3_request_sender)));
     aws_credentials_service = plan->addController("AWSCredentialsService", "AWSCredentialsService");
   }
 
@@ -83,14 +84,14 @@ class S3TestsFixture {
 
   template<typename Component>
   void setUseDefaultCredentialsChain(const Component &component) {
-    #ifdef WIN32
+#ifdef WIN32
     _putenv_s("AWS_ACCESS_KEY_ID", "key");
     _putenv_s("AWS_SECRET_ACCESS_KEY", "secret");
-    #else
+#else
     setenv("AWS_ACCESS_KEY_ID", "key", 1);
     setenv("AWS_SECRET_ACCESS_KEY", "secret", 1);
-    #endif
-    plan->setProperty(component, "Use Default Credentials", "true");
+#endif
+    plan->setProperty(component, processors::S3Processor::UseDefaultCredentials, "true");
   }
 
   void setCredentialsService() {
@@ -117,18 +118,18 @@ class S3TestsFixture {
     LogTestController::getInstance().reset();
   }
 
- protected:
+protected:
   TestController test_controller;
   std::shared_ptr<TestPlan> plan;
   MockS3RequestSender* mock_s3_request_sender_ptr;
-  std::shared_ptr<core::Processor> s3_processor;
-  std::shared_ptr<core::Processor> update_attribute;
+  std::shared_ptr<T> s3_processor;
+  std::shared_ptr<minifi::processors::UpdateAttribute> update_attribute;
   std::shared_ptr<core::controller::ControllerServiceNode> aws_credentials_service;
 };
 
 template<typename T>
 class FlowProcessorS3TestsFixture : public S3TestsFixture<T> {
- public:
+public:
   const std::string INPUT_FILENAME = "input_data.log";
   const std::string INPUT_DATA = "This data is has a length of 37 bytes";
 
@@ -164,34 +165,34 @@ class FlowProcessorS3TestsFixture : public S3TestsFixture<T> {
 
   void setAccesKeyCredentialsInProcessor() override {
     this->plan->setDynamicProperty(update_attribute, "s3.accessKey", "key");
-    this->plan->setProperty(this->s3_processor, "Access Key", "${s3.accessKey}");
+    this->plan->setProperty(this->s3_processor, T::AccessKey, "${s3.accessKey}");
     this->plan->setDynamicProperty(update_attribute, "s3.secretKey", "secret");
-    this->plan->setProperty(this->s3_processor, "Secret Key", "${s3.secretKey}");
+    this->plan->setProperty(this->s3_processor, T::SecretKey, "${s3.secretKey}");
   }
 
   void setBucket() override {
     this->plan->setDynamicProperty(update_attribute, "test.bucket", this->S3_BUCKET);
-    this->plan->setProperty(this->s3_processor, "Bucket", "${test.bucket}");
+    this->plan->setProperty(this->s3_processor, T::Bucket, "${test.bucket}");
   }
 
   void setProxy() override {
     this->plan->setDynamicProperty(update_attribute, "test.proxyHost", "host");
-    this->plan->setProperty(this->s3_processor, "Proxy Host", "${test.proxyHost}");
+    this->plan->setProperty(this->s3_processor, T::ProxyHost, "${test.proxyHost}");
     this->plan->setDynamicProperty(update_attribute, "test.proxyPort", "1234");
-    this->plan->setProperty(this->s3_processor, "Proxy Port", "${test.proxyPort}");
+    this->plan->setProperty(this->s3_processor, T::ProxyPort, "${test.proxyPort}");
     this->plan->setDynamicProperty(update_attribute, "test.proxyUsername", "username");
-    this->plan->setProperty(this->s3_processor, "Proxy Username", "${test.proxyUsername}");
+    this->plan->setProperty(this->s3_processor, T::ProxyUsername, "${test.proxyUsername}");
     this->plan->setDynamicProperty(update_attribute, "test.proxyPassword", "password");
-    this->plan->setProperty(this->s3_processor, "Proxy Password", "${test.proxyPassword}");
+    this->plan->setProperty(this->s3_processor, T::ProxyPassword, "${test.proxyPassword}");
   }
 
- protected:
+protected:
   std::shared_ptr<core::Processor> update_attribute;
 };
 
 template<typename T>
 class FlowProducerS3TestsFixture : public S3TestsFixture<T> {
- public:
+public:
   FlowProducerS3TestsFixture() {
     this->plan->addProcessor(
       this->s3_processor,
@@ -205,18 +206,19 @@ class FlowProducerS3TestsFixture : public S3TestsFixture<T> {
   }
 
   void setAccesKeyCredentialsInProcessor() override {
-    this->plan->setProperty(this->s3_processor, "Access Key", "key");
-    this->plan->setProperty(this->s3_processor, "Secret Key", "secret");
+    this->plan->setProperty(this->s3_processor, T::AccessKey, "key");
+    this->plan->setProperty(this->s3_processor, T::SecretKey, "secret");
   }
 
   void setBucket() override {
-    this->plan->setProperty(this->s3_processor, "Bucket", this->S3_BUCKET);
+    this->plan->setProperty(this->s3_processor, T::Bucket, this->S3_BUCKET);
   }
 
   void setProxy() override {
-    this->plan->setProperty(this->s3_processor, "Proxy Host", "host");
-    this->plan->setProperty(this->s3_processor, "Proxy Port", "1234");
-    this->plan->setProperty(this->s3_processor, "Proxy Username", "username");
-    this->plan->setProperty(this->s3_processor, "Proxy Password", "password");
+    this->plan->setProperty(this->s3_processor, T::ProxyHost, "host");
+    this->plan->setProperty(this->s3_processor, T::ProxyPort, "1234");
+    this->plan->setProperty(this->s3_processor, T::ProxyUsername, "username");
+    this->plan->setProperty(this->s3_processor, T::ProxyPassword, "password");
   }
 };
+}  // namespace org::apache::nifi::minifi::aws::test

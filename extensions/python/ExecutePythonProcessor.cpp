@@ -186,14 +186,14 @@ void ExecutePythonProcessor::addProperty(const std::string &name, const std::str
   python_properties_.emplace_back(property);
 }
 
-const core::Property* ExecutePythonProcessor::findProperty(const std::string& name) const {
-  if (auto prop_ptr = core::ConfigurableComponent::findProperty(name)) {
+const core::Property* ExecutePythonProcessor::findProperty(const std::string_view name) const {
+  if (const auto prop_ptr = core::ConfigurableComponent::findProperty(name)) {
     return prop_ptr;
   }
 
   std::lock_guard<std::mutex> lock(python_properties_mutex_);
 
-  auto it = ranges::find_if(python_properties_, [&name](const auto& item){
+  const auto it = ranges::find_if(python_properties_, [&name](const auto& item){
     return item.getName() == name;
   });
   if (it != python_properties_.end()) {
@@ -209,7 +209,7 @@ std::map<std::string, core::Property> ExecutePythonProcessor::getProperties() co
   std::lock_guard<std::mutex> lock(python_properties_mutex_);
 
   for (const auto &property : python_properties_) {
-    result.insert({ property.getName(), property });
+    result.insert({ std::string{property.getName()}, property });
   }
 
   return result;

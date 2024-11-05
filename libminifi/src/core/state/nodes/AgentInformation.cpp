@@ -52,7 +52,7 @@ void ComponentManifest::serializeClassDescription(const std::vector<ClassDescrip
     if (!group.class_properties_.empty()) {
       SerializedResponseNode props{.name = "propertyDescriptors"};
       for (auto&& prop : group.class_properties_) {
-        SerializedResponseNode child = {.name = prop.getName()};
+        SerializedResponseNode child = {.name = std::string{prop.getName()}};
         SerializedResponseNode descriptorDependentProperties{.name = "dependentProperties"};
         for (const auto &propName : prop.getDependentProperties()) {
           SerializedResponseNode descriptorDependentProperty{.name = propName};
@@ -81,14 +81,14 @@ void ComponentManifest::serializeClassDescription(const std::vector<ClassDescrip
           child.children.push_back(allowed_type);
         }
 
-        child.children.push_back({.name = "name", .value = prop.getName()});
+        child.children.push_back({.name = "name", .value = std::string{prop.getName()}});
 
         if (prop.getName() != prop.getDisplayName()) {
-          SerializedResponseNode displayName{.name = "displayName", .value = prop.getDisplayName()};
+          SerializedResponseNode displayName{.name = "displayName", .value = std::string{prop.getDisplayName()}};
           child.children.push_back(displayName);
         }
 
-        child.children.push_back({.name = "description", .value = prop.getDescription()});
+        child.children.push_back({.name = "description", .value = std::string{prop.getDescription()}});
         child.children.push_back({.name = "validator", .value = std::string{prop.getValidator().serializeValidator()}});
         child.children.push_back({.name = "required", .value = prop.getRequired()});
         child.children.push_back({.name = "sensitive", .value = prop.isSensitive()});

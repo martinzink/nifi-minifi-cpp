@@ -85,7 +85,7 @@ TEST_CASE("HTTPTestsWithNoResourceClaimPOST", "[httptest1]") {
   minifi::utils::Identifier invokehttp_uuid = invokehttp->getUUID();
   REQUIRE(invokehttp_uuid);
 
-  auto node = std::make_shared<core::ProcessorNode>(invokehttp.get());
+  auto node = std::make_shared<core::ProcessorNode>(*invokehttp);
   auto context = std::make_shared<core::ProcessContext>(node, nullptr, repo, repo, content_repo);
 
   context->setProperty(org::apache::nifi::minifi::processors::InvokeHTTP::Method, "POST");
@@ -164,8 +164,8 @@ TEST_CASE("HTTPTestsWithResourceClaimPOST", "[httptest1]") {
   invokehttp->addConnection(connection.get());
   invokehttp->addConnection(connection2.get());
 
-  auto node = std::make_shared<core::ProcessorNode>(listenhttp.get());
-  auto node2 = std::make_shared<core::ProcessorNode>(invokehttp.get());
+  auto node = std::make_shared<core::ProcessorNode>(*listenhttp);
+  auto node2 = std::make_shared<core::ProcessorNode>(*invokehttp);
   auto context = std::make_shared<core::ProcessContext>(node, nullptr, repo, repo, content_repo);
   auto context2 = std::make_shared<core::ProcessContext>(node2, nullptr, repo, repo, content_repo);
   context->setProperty(org::apache::nifi::minifi::processors::ListenHTTP::Port, "8680");

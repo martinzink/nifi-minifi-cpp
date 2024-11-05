@@ -131,6 +131,8 @@ class Expression {
  */
 Expression compile(const std::string &expr_str);
 
+nonstd::expected<Expression, std::exception_ptr> compileNoThrow(const std::string& expr_str);
+
 /**
  * Creates a string expression that is not dynamic.
  *

@@ -91,17 +91,17 @@ class Property {
   bool isTransient() const {
     return is_transient_;
   }
-  std::string getName() const;
-  std::string getDisplayName() const;
-  std::vector<std::string> getAllowedTypes() const;
-  std::string getDescription() const;
+  std::string_view getName() const;
+  std::string_view getDisplayName() const;
+  std::span<const std::string> getAllowedTypes() const;
+  std::string_view getDescription() const;
   const PropertyValidator& getValidator() const;
-  const PropertyValue &getValue() const;
+  const PropertyValue& getValue() const;
   bool getRequired() const;
   bool isSensitive() const;
   bool supportsExpressionLanguage() const;
-  std::vector<std::string> getDependentProperties() const;
-  std::vector<std::pair<std::string, std::string>> getExclusiveOfProperties() const;
+  const std::vector<std::string>& getDependentProperties() const;
+  const std::vector<std::pair<std::string, std::string>>& getExclusiveOfProperties() const;
   std::vector<std::string> getValues();
 
   const PropertyValue &getDefaultValue() const {
@@ -109,7 +109,7 @@ class Property {
   }
 
   template<typename T = std::string>
-  void setValue(const T &value) {
+  void setValue(const T& value, const bool validate = true) {
     if (!is_collection_) {
       values_.clear();
       values_.push_back(default_value_);
@@ -119,24 +119,28 @@ class Property {
     PropertyValue& vn = values_.back();
     vn.setValidator(*validator_);
     vn = value;
-    ValidationResult result = vn.validate(name_);
-    if (!result.valid) {
-      throw utils::internal::InvalidValueException(name_ + " value validation failed");
+    if (validate) {
+      ValidationResult result = vn.validate(name_);
+      if (!result.valid) {
+        throw utils::internal::InvalidValueException(name_ + " value validation failed");
+      }
     }
   }
 
-  void setValue(PropertyValue &newValue) {
+  void setValue(const PropertyValue& new_value, const bool validate = true) {
     if (!is_collection_) {
       values_.clear();
-      values_.push_back(newValue);
+      values_.push_back(new_value);
     } else {
-      values_.push_back(newValue);
+      values_.push_back(new_value);
     }
-    PropertyValue& vn = values_.back();
-    vn.setValidator(*validator_);
-    ValidationResult result = vn.validate(name_);
-    if (!result.valid) {
-      throw utils::internal::InvalidValueException(name_ + " value validation failed");
+    if (validate) {
+      PropertyValue& vn = values_.back();
+      vn.setValidator(*validator_);
+      ValidationResult result = vn.validate(name_);
+      if (!result.valid) {
+        throw utils::internal::InvalidValueException(name_ + " value validation failed");
+      }
     }
   }
   void setSupportsExpressionLanguage(bool supportEl);

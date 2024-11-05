@@ -20,23 +20,23 @@
 #include "processors/DeleteAzureDataLakeStorage.h"
 #include "controllerservices/AzureStorageCredentialsService.h"
 
-namespace {
+namespace org::apache::nifi::minifi::azure::test {
 
 using namespace std::literals::chrono_literals;
 
-using DeleteAzureDataLakeStorageTestsFixture = AzureDataLakeStorageTestsFixture<minifi::azure::processors::DeleteAzureDataLakeStorage>;
+using DeleteAzureDataLakeStorageTestsFixture = AzureDataLakeStorageTestsFixture<processors::DeleteAzureDataLakeStorage>;
 
 TEST_CASE_METHOD(DeleteAzureDataLakeStorageTestsFixture, "Azure storage credentials service is empty", "[azureDataLakeStorageParameters]") {
-  plan_->setProperty(azure_data_lake_storage_, minifi::azure::processors::DeleteAzureDataLakeStorage::AzureStorageCredentialsService, "");
+  plan_->setProperty(azure_data_lake_storage_, processors::DeleteAzureDataLakeStorage::AzureStorageCredentialsService, "");
   REQUIRE_THROWS_AS(test_controller_.runSession(plan_, true), minifi::Exception);
   REQUIRE(getFailedFlowFileContents().empty());
 }
 
 TEST_CASE_METHOD(DeleteAzureDataLakeStorageTestsFixture, "Test Azure credentials with account name and SAS token set", "[azureDataLakeStorageParameters]") {
   setDefaultProperties();
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::SASToken, "token");
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::StorageAccountName, "TEST_ACCOUNT");
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::ConnectionString, "");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::SASToken, "token");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::StorageAccountName, "TEST_ACCOUNT");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::ConnectionString, "");
   test_controller_.runSession(plan_, true);
   auto passed_params = mock_data_lake_storage_client_ptr_->getPassedDeleteParams();
   CHECK(passed_params.credentials.buildConnectionString() == "AccountName=TEST_ACCOUNT;SharedAccessSignature=token");
@@ -45,9 +45,9 @@ TEST_CASE_METHOD(DeleteAzureDataLakeStorageTestsFixture, "Test Azure credentials
 
 TEST_CASE_METHOD(DeleteAzureDataLakeStorageTestsFixture, "Test Azure credentials with connection string override", "[azureDataLakeStorageParameters]") {
   setDefaultProperties();
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::ConnectionString, CONNECTION_STRING);
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::SASToken, "token");
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::StorageAccountName, "TEST_ACCOUNT");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::ConnectionString, CONNECTION_STRING);
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::SASToken, "token");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::StorageAccountName, "TEST_ACCOUNT");
   test_controller_.runSession(plan_, true);
   auto passed_params = mock_data_lake_storage_client_ptr_->getPassedDeleteParams();
   CHECK(passed_params.credentials.buildConnectionString() == CONNECTION_STRING);
@@ -56,9 +56,9 @@ TEST_CASE_METHOD(DeleteAzureDataLakeStorageTestsFixture, "Test Azure credentials
 
 TEST_CASE_METHOD(DeleteAzureDataLakeStorageTestsFixture, "Test Azure credentials with managed identity use", "[azureDataLakeStorageParameters]") {
   setDefaultProperties();
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::ConnectionString, "test");
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::UseManagedIdentityCredentials, "true");
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::StorageAccountName, "TEST_ACCOUNT");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::ConnectionString, "test");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::UseManagedIdentityCredentials, "true");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::StorageAccountName, "TEST_ACCOUNT");
   test_controller_.runSession(plan_, true);
   auto passed_params = mock_data_lake_storage_client_ptr_->getPassedDeleteParams();
   CHECK(passed_params.credentials.buildConnectionString().empty());
@@ -78,7 +78,7 @@ TEST_CASE_METHOD(DeleteAzureDataLakeStorageTestsFixture, "Filesystem name is not
 }
 
 TEST_CASE_METHOD(DeleteAzureDataLakeStorageTestsFixture, "Connection String is empty", "[azureDataLakeStorageParameters]") {
-  plan_->setProperty(azure_storage_cred_service_, minifi::azure::controllers::AzureStorageCredentialsService::ConnectionString, "");
+  plan_->setProperty(azure_storage_cred_service_, controllers::AzureStorageCredentialsService::ConnectionString, "");
   REQUIRE_THROWS_AS(test_controller_.runSession(plan_, true), minifi::Exception);
   REQUIRE(getFailedFlowFileContents().empty());
 }
@@ -125,4 +125,4 @@ TEST_CASE_METHOD(DeleteAzureDataLakeStorageTestsFixture, "Delete result is false
   REQUIRE(failed_flowfiles[0] == TEST_DATA);
 }
 
-}  // namespace
+}  // namespace org::apache::nifi::minifi::azure::test

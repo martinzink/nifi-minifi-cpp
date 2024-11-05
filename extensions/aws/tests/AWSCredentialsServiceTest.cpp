@@ -24,16 +24,16 @@
 #include "controllerservices/AWSCredentialsService.h"
 #include "unit/TestUtils.h"
 #include "core/controller/ControllerServiceNode.h"
-
+namespace org::apache::nifi::minifi::aws::test {
 class AWSCredentialsServiceTestAccessor {
- public:
+public:
   AWSCredentialsServiceTestAccessor() {
     // Disable retrieving AWS metadata for tests
-    #ifdef WIN32
+#ifdef WIN32
     _putenv_s("AWS_EC2_METADATA_DISABLED", "true");
-    #else
+#else
     setenv("AWS_EC2_METADATA_DISABLED", "true", 1);
-    #endif
+#endif
 
     plan = test_controller.createPlan();
     aws_credentials_service = plan->addController("AWSCredentialsService", "AWSCredentialsService");
@@ -41,7 +41,7 @@ class AWSCredentialsServiceTestAccessor {
 
   FIELD_ACCESSOR(aws_credentials_);
 
- protected:
+protected:
   TestController test_controller;
   std::shared_ptr<TestPlan> plan;
   std::shared_ptr<core::controller::ControllerServiceNode> aws_credentials_service;
@@ -50,13 +50,13 @@ class AWSCredentialsServiceTestAccessor {
 namespace {
 
 void setEnvironmentCredentials(const std::string& key, const std::string& secret_key) {
-  #ifdef WIN32
+#ifdef WIN32
   _putenv_s("AWS_ACCESS_KEY_ID", key.c_str());
   _putenv_s("AWS_SECRET_ACCESS_KEY", secret_key.c_str());
-  #else
+#else
   setenv("AWS_ACCESS_KEY_ID", key.c_str(), 1);
   setenv("AWS_SECRET_ACCESS_KEY", secret_key.c_str(), 1);
-  #endif
+#endif
 }
 
 TEST_CASE_METHOD(AWSCredentialsServiceTestAccessor, "Test expired credentials are refreshed", "[credentialRefresh]") {
@@ -104,3 +104,4 @@ TEST_CASE_METHOD(AWSCredentialsServiceTestAccessor, "Test credentials from defau
 }
 
 }  // namespace
+}  // namespace org::apache::nifi::minifi::aws::test

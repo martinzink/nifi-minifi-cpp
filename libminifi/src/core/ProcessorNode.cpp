@@ -20,20 +20,10 @@
 #include <utility>
 namespace org::apache::nifi::minifi::core {
 
-ProcessorNode::ProcessorNode(Connectable* processor)
-    : Connectable(processor->getName()),
-      processor_(processor) {
-  setUUID(processor->getUUID());
+ProcessorNode::ProcessorNode(Processor& processor)
+    : processor_(processor) {
 }
 
 ProcessorNode::~ProcessorNode() = default;
-
-bool ProcessorNode::isWorkAvailable() {
-  return processor_->isWorkAvailable();
-}
-
-bool ProcessorNode::isRunning() const {
-  return processor_->isRunning();
-}
 
 }  // namespace org::apache::nifi::minifi::core

@@ -35,8 +35,10 @@
 #include "io/StreamPipe.h"
 #include "utils/ArrayUtils.h"
 
+namespace org::apache::nifi::minifi::azure::test {
 template<typename T>
 class AzureBlobStorageTestsFixture;
+}  // namespace org::apache::nifi::minifi::azure::test
 
 namespace org::apache::nifi::minifi::azure::processors {
 
@@ -105,7 +107,7 @@ class PutAzureBlobStorage final : public AzureBlobStorageSingleBlobProcessorBase
   };
 
  private:
-  friend class ::AzureBlobStorageTestsFixture<PutAzureBlobStorage>;
+  friend class test::AzureBlobStorageTestsFixture<PutAzureBlobStorage>;
 
   explicit PutAzureBlobStorage(std::string_view name, const minifi::utils::Identifier& uuid, std::unique_ptr<storage::BlobStorageClient> blob_storage_client)
     : AzureBlobStorageSingleBlobProcessorBase(name, uuid, core::logging::LoggerFactory<PutAzureBlobStorage>::getLogger(), std::move(blob_storage_client)) {

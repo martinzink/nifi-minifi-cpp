@@ -22,6 +22,7 @@
 #include "unit/TestBase.h"
 #include "utils/AWSSdkLogger.h"
 
+namespace org::apache::nifi::minifi::aws::test {
 using AWSSdkLogger = minifi::aws::utils::AWSSdkLogger;
 using AwsLogLevel = Aws::Utils::Logging::LogLevel;
 
@@ -62,3 +63,4 @@ TEST_CASE("We can log to the MiNiFi log via the AWS SDK logger") {
   CHECK(LogTestController::getInstance().contains("[org::apache::nifi::minifi::aws::utils::AWSSdkLogger] [info] [test] On the second day of Christmas my true love gave to me 2 turtle doves"));
   CHECK(LogTestController::getInstance().contains("[org::apache::nifi::minifi::aws::utils::AWSSdkLogger] [error] [test] On the third day of Christmas my true love gave to me 4 German shepherds"));
 }
+}  // namespace org::apache::nifi::minifi::aws::test

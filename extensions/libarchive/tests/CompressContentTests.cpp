@@ -146,7 +146,7 @@ class CompressDecompressionTestController : public TestController {
     processor->incrementActiveTasks();
     processor->setScheduledState(core::ScheduledState::RUNNING);
 
-    context = std::make_shared<core::ProcessContext>(std::make_shared<core::ProcessorNode>(processor.get()), nullptr, repo, repo, content_repo);
+    context = std::make_shared<core::ProcessContext>(std::make_shared<core::ProcessorNode>(*processor), nullptr, repo, repo, content_repo);
     helper_session = std::make_shared<core::ProcessSession>(context);
   }
 

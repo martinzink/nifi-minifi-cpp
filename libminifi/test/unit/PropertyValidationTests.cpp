@@ -21,6 +21,7 @@
 #include "core/PropertyDefinitionBuilder.h"
 #include "utils/PropertyErrors.h"
 #include "core/PropertyType.h"
+#include "unit/DummyProcessor.h"
 
 namespace org::apache::nifi::minifi::core {
 
@@ -265,12 +266,18 @@ TEST_CASE("TimePeriodValue Property") {
       .withDefaultValue("10 minutes")
       .build();
   Property property{property_definition};
-  TestConfigurableComponent component;
-  component.setSupportedProperties(std::array<PropertyReference, 1>{property_definition});
+  auto component = std::make_shared<test::DummyProcessor>("dummy_processor");
+  component->setSupportedProperties(std::array<PropertyReference, 1>{property_definition});
   TimePeriodValue time_period_value;
-  REQUIRE(component.getProperty(property.getName(), time_period_value));
+  REQUIRE(component->getProperty(property.getName(), time_period_value));
   CHECK(time_period_value.getMilliseconds() == 10min);
-  REQUIRE_THROWS_AS(component.setProperty(property.getName(), "20"), utils::internal::ParseException);
+  REQUIRE_THROWS_AS(component->setProperty(property.getName(), "20"), utils::internal::ParseException);
+
+  TestController test_controller;
+  auto plan = test_controller.createPlan();
+  auto asd = plan->getProperty(component, property_definition);
+  auto got = component->getProperty(property.getName(), time_period_value);
+  //CHECK(got);
 }
 
 TEST_CASE("TimePeriodValue Property without validator") {

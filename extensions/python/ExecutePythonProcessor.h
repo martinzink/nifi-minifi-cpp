@@ -141,7 +141,7 @@ class ExecutePythonProcessor : public core::Processor {
   std::vector<core::Relationship> getPythonRelationships();
 
  protected:
-  const core::Property* findProperty(const std::string& name) const override;
+  const core::Property* findProperty(std::string_view name) const override;
 
  private:
   mutable std::mutex python_properties_mutex_;

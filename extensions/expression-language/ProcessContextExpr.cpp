@@ -21,22 +21,20 @@
 
 namespace org::apache::nifi::minifi::core {
 
-bool ProcessContextExpr::getProperty(bool supports_expression_language, std::string_view property_name, std::string& value, const FlowFile* const flow_file) {
+bool ProcessContextExpr::getProperty(const bool supports_expression_language, const std::string_view property_name, std::string& value, const FlowFile* const flow_file) {
   if (!supports_expression_language) {
     return ProcessContext::getProperty(property_name, value);
   }
   std::string name{property_name};
-  if (expressions_.find(name) == expressions_.end()) {
-    std::string expression_str;
-    if (!ProcessContext::getProperty(name, expression_str)) {
-      return false;
-    }
-    logger_->log_debug("Compiling expression for {}/{}: {}", getProcessorNode()->getName(), name, expression_str);
-    expressions_.emplace(name, expression::compile(expression_str));
-    expression_strs_.insert_or_assign(name, expression_str);
+  if (!expressions_.contains(name)) {
+    auto expression_str = processor_node_->getPropertyString(property_name);
+    if (!expression_str) { return false; }
+    logger_->log_debug("Compiling expression for {}/{}: {}", getProcessorNode()->getName(), name, *expression_str);
+    expressions_.emplace(name, expression::compile(*expression_str));
+    expression_strs_.insert_or_assign(name, *expression_str);
   }
 
-  minifi::expression::Parameters p(shared_from_this(), flow_file);
+  const expression::Parameters p(shared_from_this(), flow_file);
   value = expressions_[name](p).asString();
   logger_->log_debug(R"(expression "{}" of property "{}" evaluated to: {})", expression_strs_[name], name, value);
   return true;
@@ -60,22 +58,22 @@ bool ProcessContextExpr::getDynamicProperty(const Property &property, std::strin
     ProcessContext::getDynamicProperty(name, expression_str);
     logger_->log_debug("Compiling expression for {}/{}: {}", getProcessorNode()->getName(), name, expression_str);
     dynamic_property_expressions_.emplace(name, expression::compile(expression_str));
-    expression_strs_.insert_or_assign(name, expression_str);
+    expression_strs_.insert_or_assign(std::string{name}, expression_str);
   }
   minifi::expression::Parameters p(shared_from_this(), flow_file);
-  value = dynamic_property_expressions_[name](p).asString();
-  logger_->log_debug(R"(expression "{}" of dynamic property "{}" evaluated to: {})", expression_strs_[name], name, value);
+  value = dynamic_property_expressions_[std::string{name}](p).asString();
+  logger_->log_debug(R"(expression "{}" of dynamic property "{}" evaluated to: {})", expression_strs_[std::string{name}], name, value);
   return true;
 }
 
 
-bool ProcessContextExpr::setProperty(const std::string& property, std::string value) {
-  expressions_.erase(property);
+bool ProcessContextExpr::setProperty(const std::string_view property, const std::string& value) {
+  expressions_.erase(expressions_.find(property));
   return ProcessContext::setProperty(property, value);
 }
 
-bool ProcessContextExpr::setDynamicProperty(const std::string& property, std::string value) {
-  dynamic_property_expressions_.erase(property);
+bool ProcessContextExpr::setDynamicProperty(const std::string_view property, const std::string& value) {
+  dynamic_property_expressions_.erase(expressions_.find(property));
   return ProcessContext::setDynamicProperty(property, value);
 }
 

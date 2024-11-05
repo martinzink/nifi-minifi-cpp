@@ -48,6 +48,11 @@
 
 using namespace std::literals::chrono_literals;
 
+using minifi::processors::ListSFTP;
+using minifi::processors::FetchSFTP;
+using minifi::processors::LogAttribute;
+using minifi::processors::PutFile;
+
 class ListThenFetchSFTPTestsFixture {
  public:
   ListThenFetchSFTPTestsFixture() {
@@ -96,45 +101,44 @@ class ListThenFetchSFTPTestsFixture {
          true);
 
     // Configure ListSFTP processor
-    plan->setProperty(list_sftp, "Listing Strategy", minifi::processors::ListSFTP::LISTING_STRATEGY_TRACKING_TIMESTAMPS);
-    plan->setProperty(list_sftp, "Hostname", "localhost");
-    plan->setProperty(list_sftp, "Port", std::to_string(sftp_server->getPort()));
-    plan->setProperty(list_sftp, "Username", "nifiuser");
-    plan->setProperty(list_sftp, "Password", "nifipassword");
-    plan->setProperty(list_sftp, "Search Recursively", "false");
-    plan->setProperty(list_sftp, "Follow symlink", "false");
-    plan->setProperty(list_sftp, "Ignore Dotted Files", "false");
-    plan->setProperty(list_sftp, "Strict Host Key Checking", "false");
-    plan->setProperty(list_sftp, "Connection Timeout", "30 sec");
-    plan->setProperty(list_sftp, "Data Timeout", "30 sec");
-    plan->setProperty(list_sftp, "Send Keep Alive On Timeout", "true");
-    plan->setProperty(list_sftp, "Target System Timestamp Precision", minifi::processors::ListSFTP::TARGET_SYSTEM_TIMESTAMP_PRECISION_AUTO_DETECT);
-    plan->setProperty(list_sftp, "Minimum File Age", "0 sec");
-    plan->setProperty(list_sftp, "Minimum File Size", "0 B");
-    plan->setProperty(list_sftp, "Target System Timestamp Precision", "Seconds");
-    plan->setProperty(list_sftp, "Remote Path", "nifi_test/");
-    plan->setProperty(list_sftp, "State File", (src_dir / "state").string());
+    plan->setProperty(list_sftp, ListSFTP::ListingStrategy, minifi::processors::ListSFTP::LISTING_STRATEGY_TRACKING_TIMESTAMPS);
+    plan->setProperty(list_sftp, ListSFTP::Hostname, "localhost");
+    plan->setProperty(list_sftp, ListSFTP::Port, std::to_string(sftp_server->getPort()));
+    plan->setProperty(list_sftp, ListSFTP::Username, "nifiuser");
+    plan->setProperty(list_sftp, ListSFTP::Password, "nifipassword");
+    plan->setProperty(list_sftp, ListSFTP::SearchRecursively, "false");
+    plan->setProperty(list_sftp, ListSFTP::FollowSymlink, "false");
+    plan->setProperty(list_sftp, ListSFTP::IgnoreDottedFiles, "false");
+    plan->setProperty(list_sftp, ListSFTP::StrictHostKeyChecking, "false");
+    plan->setProperty(list_sftp, ListSFTP::ConnectionTimeout, "30 sec");
+    plan->setProperty(list_sftp, ListSFTP::DataTimeout, "30 sec");
+    plan->setProperty(list_sftp, ListSFTP::SendKeepaliveOnTimeout, "true");
+    plan->setProperty(list_sftp, ListSFTP::TargetSystemTimestampPrecision, minifi::processors::ListSFTP::TARGET_SYSTEM_TIMESTAMP_PRECISION_AUTO_DETECT);
+    plan->setProperty(list_sftp, ListSFTP::MinimumFileAge, "0 sec");
+    plan->setProperty(list_sftp, ListSFTP::MinimumFileSize, "0 B");
+    plan->setProperty(list_sftp, ListSFTP::TargetSystemTimestampPrecision, "Seconds");
+    plan->setProperty(list_sftp, ListSFTP::RemotePath, "nifi_test/");
 
     // Configure FetchSFTP processor
-    plan->setProperty(fetch_sftp, "Hostname", "localhost");
-    plan->setProperty(fetch_sftp, "Port", std::to_string(sftp_server->getPort()));
-    plan->setProperty(fetch_sftp, "Username", "nifiuser");
-    plan->setProperty(fetch_sftp, "Password", "nifipassword");
-    plan->setProperty(fetch_sftp, "Completion Strategy", minifi::processors::FetchSFTP::COMPLETION_STRATEGY_NONE);
-    plan->setProperty(fetch_sftp, "Connection Timeout", "30 sec");
-    plan->setProperty(fetch_sftp, "Data Timeout", "30 sec");
-    plan->setProperty(fetch_sftp, "Strict Host Key Checking", "false");
-    plan->setProperty(fetch_sftp, "Send Keep Alive On Timeout", "true");
-    plan->setProperty(fetch_sftp, "Use Compression", "false");
-    plan->setProperty(fetch_sftp, "Remote File", "${path}/${filename}");
+    plan->setProperty(fetch_sftp, FetchSFTP::Hostname, "localhost");
+    plan->setProperty(fetch_sftp, FetchSFTP::Port, std::to_string(sftp_server->getPort()));
+    plan->setProperty(fetch_sftp, FetchSFTP::Username, "nifiuser");
+    plan->setProperty(fetch_sftp, FetchSFTP::Password, "nifipassword");
+    plan->setProperty(fetch_sftp, FetchSFTP::CompletionStrategy, minifi::processors::FetchSFTP::COMPLETION_STRATEGY_NONE);
+    plan->setProperty(fetch_sftp, FetchSFTP::ConnectionTimeout, "30 sec");
+    plan->setProperty(fetch_sftp, FetchSFTP::DataTimeout, "30 sec");
+    plan->setProperty(fetch_sftp, FetchSFTP::StrictHostKeyChecking, "false");
+    plan->setProperty(fetch_sftp, FetchSFTP::SendKeepaliveOnTimeout, "true");
+    plan->setProperty(fetch_sftp, FetchSFTP::UseCompression, "false");
+    plan->setProperty(fetch_sftp, FetchSFTP::RemoteFile, "${path}/${filename}");
 
     // Configure LogAttribute processor
-    plan->setProperty(log_attribute, "FlowFiles To Log", "0");
+    plan->setProperty(log_attribute, LogAttribute::FlowFilesToLog, "0");
 
     // Configure PutFile processor
-    plan->setProperty(put_file, "Directory", (dst_dir / "${path}").string());
-    plan->setProperty(put_file, "Conflict Resolution Strategy", magic_enum::enum_name(minifi::processors::PutFile::FileExistsResolutionStrategy::fail));
-    plan->setProperty(put_file, "Create Missing Directories", "true");
+    plan->setProperty(put_file, PutFile::Directory, (dst_dir / "${path}").string());
+    plan->setProperty(put_file, PutFile::ConflictResolution, magic_enum::enum_name(minifi::processors::PutFile::FileExistsResolutionStrategy::fail));
+    plan->setProperty(put_file, PutFile::CreateDirs, "true");
   }
 
   ListThenFetchSFTPTestsFixture(ListThenFetchSFTPTestsFixture&&) = delete;

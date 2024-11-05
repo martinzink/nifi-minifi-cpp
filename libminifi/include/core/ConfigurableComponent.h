@@ -47,69 +47,32 @@ class ConfigurableComponent {
   ConfigurableComponent& operator=(const ConfigurableComponent &other) = delete;
   ConfigurableComponent& operator=(ConfigurableComponent &&other) = delete;
 
-  /**
-   * Get property using the provided name.
-   * @param name property name.
-   * @param value value passed in by reference
-   * @return result of getting property.
-   */
-  template<typename T>
-  bool getProperty(const std::string& name, T &value) const;
 
   template<typename T>
-  bool getProperty(const core::PropertyReference& property, T& value) const { return getProperty(std::string{property.name}, value); }
+  bool getProperty(std::string_view name, T &value) const;
+
+  template<typename T>
+  bool getProperty(const core::PropertyReference& property, T& value) const { return getProperty(property.name, value); }
 
   template<typename T = std::string> requires(std::is_default_constructible_v<T>)
-  std::optional<T> getProperty(const std::string& property_name) const {
-    T value;
-    try {
-      if (!getProperty(property_name, value)) return std::nullopt;
-    } catch (const utils::internal::ValueException&) {
-      return std::nullopt;
-    }
-    return value;
-  }
+  std::optional<T> getProperty(std::string_view property_name) const;
 
   template<typename T = std::string> requires(std::is_default_constructible_v<T>)
-  std::optional<T> getProperty(const core::PropertyReference& property) const { return getProperty<T>(std::string(property.name)); }
+  std::optional<T> getProperty(const core::PropertyReference& property) const { return getProperty<T>(property.name); }
 
-  /**
-   * Provides a reference for the property.
-   */
-  bool getProperty(const std::string &name, Property &prop) const;
-  /**
-   * Sets the property using the provided name
-   * @param property name
-   * @param value property value.
-   * @return result of setting property.
-   */
-  bool setProperty(const std::string& name, const std::string& value);
+  bool getProperty(std::string_view name, Property &prop) const;
 
-  /**
-   * Updates the Property from the key (name), adding value
-   * to the collection of values within the Property.
-   */
-  bool updateProperty(const std::string &name, const std::string &value);
+  virtual std::optional<std::string> getPropertyString(std::string_view name) const;
 
+  bool setProperty(std::string_view name, const std::string& value);
+  bool setProperty(const Property& prop, const std::string& value);
+  bool setProperty(const PropertyReference& property, std::string_view value);
+  bool setProperty(const Property& prop, PropertyValue &value);
+
+
+  bool updateProperty(std::string_view name, const std::string &value);
   bool updateProperty(const PropertyReference& property, std::string_view value);
 
-  /**
-   * Sets the property using the provided name
-   * @param property name
-   * @param value property value.
-   * @return whether property was set or not
-   */
-  bool setProperty(const Property& prop, const std::string& value);
-
-  bool setProperty(const PropertyReference& property, std::string_view value);
-
-  /**
-     * Sets the property using the provided name
-     * @param property name
-     * @param value property value.
-     * @return whether property was set or not
-     */
-  bool setProperty(const Property& prop, PropertyValue &value);
 
   void setSupportedProperties(std::span<const core::PropertyReference> properties);
 
@@ -127,34 +90,11 @@ class ConfigurableComponent {
    */
   virtual bool supportsDynamicRelationships() const = 0;
 
-  /**
-   * Gets the value of a dynamic property (if it was set).
-   *
-   * @param name
-   * @param value
-   * @return
-   */
-  bool getDynamicProperty(const std::string& name, std::string &value) const;
+  bool getDynamicProperty(std::string_view name, std::string &value) const;
+  bool getDynamicProperty(std::string_view name, Property &item) const;
+  bool setDynamicProperty(std::string_view name, const std::string& value);
 
-  bool getDynamicProperty(const std::string& name, core::Property &item) const;
-
-  /**
-   * Sets the value of a new dynamic property.
-   *
-   * @param name
-   * @param value
-   * @return
-   */
-  bool setDynamicProperty(const std::string& name, const std::string& value);
-
-  /**
-   * Updates the value of an existing dynamic property.
-   *
-   * @param name
-   * @param value
-   * @return
-   */
-  bool updateDynamicProperty(const std::string &name, const std::string &value);
+  bool updateDynamicProperty(std::string_view name, const std::string &value);
 
   /**
    * Invoked anytime a static property is modified
@@ -168,23 +108,10 @@ class ConfigurableComponent {
   virtual void onDynamicPropertyModified(const Property& /*old_property*/, const Property& /*new_property*/) {
   }
 
-  /**
-   * Provides all dynamic property keys that have been set.
-   *
-   * @return vector of property keys
-   */
   std::vector<std::string> getDynamicPropertyKeys() const;
 
-  /**
-   * Returns a vector all properties
-   *
-   * @return map of property keys to Property instances.
-   */
   virtual std::map<std::string, Property> getProperties() const;
 
-  /**
-   * @return if property exists and is explicitly set, not just falling back to default value
-   */
   bool isPropertyExplicitlySet(const Property&) const;
   bool isPropertyExplicitlySet(const PropertyReference&) const;
 
@@ -209,48 +136,60 @@ class ConfigurableComponent {
   bool accept_all_properties_;
 
   // Supported properties
-  std::map<std::string, Property> properties_;
+  std::map<std::string, Property, std::less<>> properties_;
 
   // Dynamic properties
-  std::map<std::string, Property> dynamic_properties_;
+  std::map<std::string, Property, std::less<>> dynamic_properties_;
 
-  virtual const Property* findProperty(const std::string& name) const;
+  virtual const Property* findProperty(std::string_view name) const;
 
  private:
-  Property* findProperty(const std::string& name);
+  Property* findProperty(std::string_view name);
   std::shared_ptr<logging::Logger> logger_;
 
-  bool createDynamicProperty(const std::string &name, const std::string &value);
+  bool createDynamicProperty(std::string name, const std::string &value);
+
+  template<class T>
+  bool setTransientProperty(const Property& prop, T& value);
 };
 
 template<typename T>
-bool ConfigurableComponent::getProperty(const std::string& name, T &value) const {
+bool ConfigurableComponent::getProperty(const std::string_view name, T &value) const {
   std::lock_guard<std::mutex> lock(configuration_mutex_);
 
-  const auto prop_ptr = findProperty(name);
-  if (prop_ptr != nullptr) {
+  if (const auto prop_ptr = findProperty(name)) {
     const Property& property = *prop_ptr;
     if (property.getValue().getValue() == nullptr) {
       // empty value
       if (property.getRequired()) {
         logger_->log_error("Component {} required property {} is empty", name, property.getName());
-        throw utils::internal::RequiredPropertyMissingException("Required property is empty: " + property.getName());
+        throw utils::internal::RequiredPropertyMissingException(fmt::format("Required property is empty: {}", property.getName()));
       }
       logger_->log_debug("Component {} property name {}, empty value", name, property.getName());
       return false;
     }
     logger_->log_debug("Component {} property name {} value {}", name, property.getName(), property.getValue().to_string());
 
-    if constexpr (std::is_base_of<TransformableValue, T>::value) {
+    if constexpr (std::is_base_of_v<TransformableValue, T>) {
       value = T(property.getValue().operator std::string());
     } else {
       value = static_cast<T>(property.getValue());  // cast throws if the value is invalid
     }
     return true;
-  } else {
-    logger_->log_warn("Could not find property {}", name);
-    return false;
   }
+  logger_->log_warn("Could not find property {}", name);
+  return false;
+}
+
+template<typename T> requires(std::is_default_constructible_v<T>)
+std::optional<T> ConfigurableComponent::getProperty(const std::string_view property_name) const {
+  T value;
+  try {
+    if (!getProperty(property_name, value)) { return std::nullopt; }
+  } catch (const utils::internal::ValueException&) {
+    return std::nullopt;
+  }
+  return value;
 }
 
 }  // namespace org::apache::nifi::minifi::core

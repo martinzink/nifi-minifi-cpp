@@ -20,9 +20,9 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 #include <utility>
-#include <memory>
 
 #include "AzureDataLakeStorageProcessorBase.h"
 #include "core/PropertyDefinitionBuilder.h"
@@ -30,7 +30,9 @@
 #include "utils/ArrayUtils.h"
 #include "utils/AzureEnums.h"
 
+namespace org::apache::nifi::minifi::azure::test {
 class ListAzureDataLakeStorageTestsFixture;
+}
 
 namespace org::apache::nifi::minifi::azure::processors {
 
@@ -84,7 +86,7 @@ class ListAzureDataLakeStorage final : public AzureDataLakeStorageProcessorBase 
   void onTrigger(core::ProcessContext& context, core::ProcessSession& session) override;
 
  private:
-  friend class ::ListAzureDataLakeStorageTestsFixture;
+  friend class test::ListAzureDataLakeStorageTestsFixture;
 
   explicit ListAzureDataLakeStorage(std::string_view name, const minifi::utils::Identifier &uuid, std::unique_ptr<storage::DataLakeStorageClient> data_lake_storage_client)
       : AzureDataLakeStorageProcessorBase(name, uuid, core::logging::LoggerFactory<ListAzureDataLakeStorage>::getLogger(uuid), std::move(data_lake_storage_client)) {

@@ -99,8 +99,7 @@ class ProcessContext : public controller::ControllerServiceLookup, public core::
 
   template<std::default_initializable T = std::string>
   std::optional<T> getProperty(const Property& property) const {
-    T value;
-    if (getProperty(property.getName(), value)) {
+    if (T value; getProperty(property.getName(), value)) {
       return value;
     }
     return std::nullopt;
@@ -108,34 +107,35 @@ class ProcessContext : public controller::ControllerServiceLookup, public core::
 
   template<std::default_initializable T = std::string>
   std::optional<T> getProperty(const PropertyReference& property) const {
-    T value;
-    if (getProperty(property.name, value)) {
+    if (T value; getProperty(property.name, value)) {
       return value;
     }
     return std::nullopt;
   }
 
-  bool getProperty(std::string_view name, detail::NotAFlowFile auto& value) const {
-    return getPropertyImp(std::string{name}, value);
-  }
-
   bool getProperty(const PropertyReference& property, detail::NotAFlowFile auto& value) const {
-    return getPropertyImp(std::string{property.name}, value);
+    return getProperty(property.name, value);
   }
 
-  std::optional<std::string> getProperty(const Property&, const FlowFile* const);
+  bool getProperty(const std::string_view name, detail::NotAFlowFile auto& value) const {
+    return getPropertyImp(name, value);
+  }
 
-  std::optional<std::string> getProperty(const PropertyReference&, const FlowFile* const);
+  std::optional<std::string> getProperty(const Property&, const FlowFile*);
+
+  std::optional<std::string> getProperty(const PropertyReference&, const FlowFile*);
 
   virtual bool getProperty(const Property &property, std::string &value, const FlowFile* const) {
+    // No Expr language, ignoring FlowFile
     return getProperty(property.getName(), value);
   }
 
   virtual bool getProperty(const PropertyReference& property, std::string &value, const FlowFile* const) {
+    // No Expr language, ignoring FlowFile
     return getProperty(property.name, value);
   }
 
-  bool getDynamicProperty(const std::string &name, std::string &value) const {
+  bool getDynamicProperty(const std::string_view name, std::string &value) const {
     return processor_node_->getDynamicProperty(name, value);
   }
   virtual bool getDynamicProperty(const Property &property, std::string &value, const FlowFile* const) {
@@ -145,22 +145,25 @@ class ProcessContext : public controller::ControllerServiceLookup, public core::
   std::vector<std::string> getDynamicPropertyKeys() const {
     return processor_node_->getDynamicPropertyKeys();
   }
-  // Sets the property value using the property's string name
-  virtual bool setProperty(const std::string &name, std::string value) {
+
+ protected:
+  virtual bool setProperty(const std::string_view name, const std::string& value) {
     return processor_node_->setProperty(name, value);
-  }  // Sets the dynamic property value using the property's string name
-  virtual bool setDynamicProperty(const std::string &name, std::string value) {
+  }
+
+public:
+  virtual bool setDynamicProperty(const std::string_view name, const std::string& value) {
     return processor_node_->setDynamicProperty(name, value);
   }
-  // Sets the property value using the Property object
-  bool setProperty(const Property& property, std::string value) {
+
+  bool setProperty(const Property& property, const std::string& value) {
     return setProperty(property.getName(), value);
   }
-  bool setProperty(const PropertyReference& property, std::string_view value) {
-    return setProperty(std::string{property.name}, std::string{value});
+  bool setProperty(const PropertyReference& property, const std::string_view value) {
+    return setProperty(property.name, std::string{value});
   }
   // Check whether the relationship is auto terminated
-  bool isAutoTerminated(Relationship relationship) const {
+  bool isAutoTerminated(const Relationship& relationship) const {
     return processor_node_->isAutoTerminated(relationship);
   }
   // Get ProcessContext Maximum Concurrent Tasks
@@ -252,7 +255,7 @@ class ProcessContext : public controller::ControllerServiceLookup, public core::
       return nullptr;
     }
     if (!state_manager_) {
-      state_manager_ = state_storage_->getStateManager(*processor_node_);
+      state_manager_ = state_storage_->getStateManager(processor_node_->getProcessor());
     }
     return state_manager_.get();
   }
@@ -377,9 +380,9 @@ class ProcessContext : public controller::ControllerServiceLookup, public core::
     return configure_;
   }
 
- private:
+ protected:
   template<typename T>
-  bool getPropertyImp(const std::string &name, T &value) const {
+  bool getPropertyImp(const std::string_view name, T &value) const {
     return processor_node_->getProperty<typename std::common_type<T>::type>(name, value);
   }
 

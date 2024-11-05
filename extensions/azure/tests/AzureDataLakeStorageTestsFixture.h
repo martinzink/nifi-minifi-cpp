@@ -36,6 +36,7 @@
 #include "utils/file/FileUtils.h"
 #include "controllerservices/AzureStorageCredentialsService.h"
 
+namespace org::apache::nifi::minifi::azure::test {
 const std::string FILESYSTEM_NAME = "testfilesystem";
 const std::string DIRECTORY_NAME = "testdir";
 const std::string FILE_NAME = "testfile.txt";
@@ -48,12 +49,12 @@ class AzureDataLakeStorageTestsFixture {
  public:
   AzureDataLakeStorageTestsFixture() {
     LogTestController::getInstance().setDebug<TestPlan>();
-    LogTestController::getInstance().setDebug<minifi::core::Processor>();
-    LogTestController::getInstance().setTrace<minifi::core::ProcessSession>();
-    LogTestController::getInstance().setTrace<minifi::processors::GetFile>();
-    LogTestController::getInstance().setTrace<minifi::processors::PutFile>();
-    LogTestController::getInstance().setDebug<minifi::processors::UpdateAttribute>();
-    LogTestController::getInstance().setDebug<minifi::processors::LogAttribute>();
+    LogTestController::getInstance().setDebug<core::Processor>();
+    LogTestController::getInstance().setTrace<core::ProcessSession>();
+    LogTestController::getInstance().setTrace<processors::GetFile>();
+    LogTestController::getInstance().setTrace<processors::PutFile>();
+    LogTestController::getInstance().setDebug<processors::UpdateAttribute>();
+    LogTestController::getInstance().setDebug<processors::LogAttribute>();
     LogTestController::getInstance().setTrace<AzureDataLakeStorageProcessor>();
 
     // Build MiNiFi processing graph
@@ -66,8 +67,8 @@ class AzureDataLakeStorageTestsFixture {
     minifi::test::utils::putFileToDir(input_dir, GETFILE_FILE_NAME, TEST_DATA);
 
     get_file_ = plan_->addProcessor("GetFile", "GetFile");
-    plan_->setProperty(get_file_, minifi::processors::GetFile::Directory, input_dir.string());
-    plan_->setProperty(get_file_, minifi::processors::GetFile::KeepSourceFile, "false");
+    plan_->setProperty(get_file_, processors::GetFile::Directory, input_dir.string());
+    plan_->setProperty(get_file_, processors::GetFile::KeepSourceFile, "false");
 
     update_attribute_ = plan_->addProcessor("UpdateAttribute", "UpdateAttribute", { {"success", "d"} },  true);
     plan_->addProcessor(azure_data_lake_storage_, "AzureDataLakeStorageProcessor", { {"success", "d"}, {"failure", "d"} }, true);
@@ -77,13 +78,13 @@ class AzureDataLakeStorageTestsFixture {
     plan_->addConnection(logattribute, {"success", "d"}, success_putfile_);
     success_putfile_->setAutoTerminatedRelationships(std::array{core::Relationship{"success", "d"}, core::Relationship{"failure", "d"}});
     success_output_dir_ = test_controller_.createTempDirectory();
-    plan_->setProperty(success_putfile_, org::apache::nifi::minifi::processors::PutFile::Directory, success_output_dir_.string());
+    plan_->setProperty(success_putfile_, processors::PutFile::Directory, success_output_dir_.string());
 
     failure_putfile_ = plan_->addProcessor("PutFile", "FailurePutFile", { {"success", "d"} }, false);
     plan_->addConnection(azure_data_lake_storage_, {"failure", "d"}, failure_putfile_);
     failure_putfile_->setAutoTerminatedRelationships(std::array{core::Relationship{"success", "d"}, core::Relationship{"failure", "d"}});
     failure_output_dir_ = test_controller_.createTempDirectory();
-    plan_->setProperty(failure_putfile_, org::apache::nifi::minifi::processors::PutFile::Directory, failure_output_dir_.string());
+    plan_->setProperty(failure_putfile_, processors::PutFile::Directory, failure_output_dir_.string());
 
     azure_storage_cred_service_ = plan_->addController("AzureStorageCredentialsService", "AzureStorageCredentialsService");
     setDefaultProperties();
@@ -123,7 +124,7 @@ class AzureDataLakeStorageTestsFixture {
     LogTestController::getInstance().reset();
   }
 
- protected:
+protected:
   TestController test_controller_;
   std::shared_ptr<TestPlan> plan_;
   MockDataLakeStorageClient* mock_data_lake_storage_client_ptr_;
@@ -136,3 +137,4 @@ class AzureDataLakeStorageTestsFixture {
   std::filesystem::path failure_output_dir_;
   std::filesystem::path success_output_dir_;
 };
+}  // namespace org::apache::nifi::minifi::azure::test

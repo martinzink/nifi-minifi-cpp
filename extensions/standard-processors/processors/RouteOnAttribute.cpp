@@ -35,7 +35,7 @@ void RouteOnAttribute::initialize() {
 
 void RouteOnAttribute::onDynamicPropertyModified(const core::Property& /*orig_property*/, const core::Property &new_property) {
   // Update the routing table when routes are added via dynamic properties.
-  route_properties_[new_property.getName()] = new_property;
+  route_properties_[std::string{new_property.getName()}] = new_property;
 
   const auto static_relationships = RouteOnAttribute::Relationships;
   std::vector<core::RelationshipDefinition> relationships(static_relationships.begin(), static_relationships.end());

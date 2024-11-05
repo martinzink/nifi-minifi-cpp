@@ -28,6 +28,7 @@
 #include "s3/S3RequestSender.h"
 #include "aws/core/utils/DateTime.h"
 
+namespace org::apache::nifi::minifi::aws::test {
 const std::string S3_VERSION_1 = "1.2.3";
 const std::string S3_VERSION_2 = "1.2.4";
 const std::string S3_ETAG = "\"tag-123\"";
@@ -59,7 +60,7 @@ const std::string S3_CONTINUATION_TOKEN = "continue";
 const std::string S3_UPLOAD_ID = "test_upload_id";
 
 class MockS3RequestSender : public minifi::aws::s3::S3RequestSender {
- public:
+public:
   MockS3RequestSender() {
     for (std::size_t i = 0; i < S3_OBJECT_COUNT; ++i) {
       Aws::S3::Model::ObjectVersion version;
@@ -395,7 +396,7 @@ class MockS3RequestSender : public minifi::aws::s3::S3RequestSender {
   Aws::S3::Model::ListMultipartUploadsRequest list_multipart_upload_request;
   std::vector<Aws::S3::Model::AbortMultipartUploadRequest> abort_multipart_upload_requests;
 
- private:
+private:
   std::vector<Aws::S3::Model::ObjectVersion> listed_versions_;
   std::vector<Aws::S3::Model::Object> listed_objects_;
   bool delete_object_result_ = true;
@@ -407,3 +408,4 @@ class MockS3RequestSender : public minifi::aws::s3::S3RequestSender {
   uint32_t etag_counter_ = 1;
   uint32_t fail_on_part_ = 0;
 };
+}  // namespace org::apache::nifi::minifi::aws::test

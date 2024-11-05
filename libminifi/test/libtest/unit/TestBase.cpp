@@ -280,7 +280,7 @@ std::shared_ptr<minifi::core::Processor> TestPlan::addProcessor(const std::share
     }
     relationships_.push_back(std::move(connection));
   }
-  std::shared_ptr<minifi::core::ProcessorNode> node = std::make_shared<minifi::core::ProcessorNode>(processor.get());
+  std::shared_ptr<minifi::core::ProcessorNode> node = std::make_shared<core::ProcessorNode>(*processor);
   processor_nodes_.push_back(node);
   std::shared_ptr<minifi::core::ProcessContextBuilder> contextBuilder =
     minifi::core::ClassLoader::getDefaultClassLoader().instantiate<minifi::core::ProcessContextBuilder>("ProcessContextBuilder", "ProcessContextBuilder");
@@ -375,7 +375,40 @@ std::shared_ptr<minifi::core::controller::ControllerServiceNode> TestPlan::addCo
   return controller_service_node;
 }
 
-bool TestPlan::setProperty(const std::shared_ptr<minifi::core::Processor>& processor, const std::string& property, const std::string& value, bool dynamic) {
+bool TestPlan::setProperty(const std::shared_ptr<minifi::core::Processor>& processor, const core::PropertyReference& property, std::string_view value) {
+  std::lock_guard<std::recursive_mutex> guard(mutex);
+
+  size_t i = 0;
+  logger_->log_info("Attempting to set property {} to {} for {}", property.name, value, processor->getName());
+  for (i = 0; i < processor_queue_.size(); i++) {
+    if (processor_queue_.at(i) == processor) {
+      break;
+    }
+  }
+
+  if (i >= processor_queue_.size() || i >= processor_contexts_.size()) {
+    return false;
+  }
+  return processor_contexts_.at(i)->setProperty(property, std::string{value});
+}
+
+std::optional<std::string> TestPlan::getProperty(const std::shared_ptr<core::Processor>& processor, const core::PropertyReference& property) {
+  std::lock_guard<std::recursive_mutex> guard(mutex);
+
+  size_t i = 0;
+  for (i = 0; i < processor_queue_.size(); i++) {
+    if (processor_queue_.at(i) == processor) {
+      break;
+    }
+  }
+
+  if (i >= processor_queue_.size() || i >= processor_contexts_.size()) {
+    return std::nullopt;
+  }
+  return processor_contexts_.at(i)->getProperty(property);
+}
+
+bool TestPlan::setDynamicProperty(const std::shared_ptr<core::Processor>& processor, std::string_view property, std::string_view value) {
   std::lock_guard<std::recursive_mutex> guard(mutex);
 
   size_t i = 0;
@@ -389,24 +422,7 @@ bool TestPlan::setProperty(const std::shared_ptr<minifi::core::Processor>& proce
   if (i >= processor_queue_.size() || i >= processor_contexts_.size()) {
     return false;
   }
-
-  if (dynamic) {
-    return processor_contexts_.at(i)->setDynamicProperty(property, value);
-  } else {
-    return processor_contexts_.at(i)->setProperty(property, value);
-  }
-}
-
-bool TestPlan::setProperty(const std::shared_ptr<minifi::core::Processor>& processor, const core::PropertyReference& property, std::string_view value) {
-  return setProperty(processor, std::string(property.name), std::string(value), false);
-}
-
-bool TestPlan::setProperty(const std::shared_ptr<minifi::core::Processor>& processor, std::string_view property, std::string_view value) {
-  return setProperty(processor, std::string(property), std::string(value), false);
-}
-
-bool TestPlan::setDynamicProperty(const std::shared_ptr<minifi::core::Processor>& processor, std::string_view property, std::string_view value) {
-  return setProperty(processor, std::string(property), std::string(value), true);
+  return processor_contexts_.at(i)->setDynamicProperty(std::string(property), std::string(value));
 }
 
 bool TestPlan::setProperty(const std::shared_ptr<minifi::core::controller::ControllerServiceNode>& controller_service_node, const std::string& property, const std::string& value, bool dynamic) {

@@ -88,8 +88,8 @@ std::vector<SensitiveItem> listSensitiveItems(const minifi::core::ProcessGroup &
             .component_type = ComponentType::Processor,
             .component_id = processor->getUUID(),
             .component_name = processor->getName(),
-            .item_name = property.getName(),
-            .item_display_name = property.getDisplayName(),
+            .item_name = std::string{property.getName()},
+            .item_display_name = std::string{property.getDisplayName()},
             .item_value = property.getValue().to_string()});
       }
     }
@@ -110,8 +110,8 @@ std::vector<SensitiveItem> listSensitiveItems(const minifi::core::ProcessGroup &
             .component_type = ComponentType::ControllerService,
             .component_id = controller_service->getUUID(),
             .component_name = controller_service->getName(),
-            .item_name = property.getName(),
-            .item_display_name = property.getDisplayName(),
+            .item_name = std::string{property.getName()},
+            .item_display_name = std::string{property.getDisplayName()},
             .item_value = property.getValue().to_string()});
       }
     }

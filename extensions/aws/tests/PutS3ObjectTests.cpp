@@ -20,11 +20,11 @@
 #include "processors/PutS3Object.h"
 #include "unit/TestUtils.h"
 
-namespace {
+namespace org::apache::nifi::minifi::aws::test {
 
-using org::apache::nifi::minifi::test::utils::verifyLogLinePresenceInPollTime;
+using nifi::minifi::test::utils::verifyLogLinePresenceInPollTime;
 
-class PutS3ObjectTestsFixture : public FlowProcessorS3TestsFixture<minifi::aws::processors::PutS3Object> {
+class PutS3ObjectTestsFixture : public FlowProcessorS3TestsFixture<processors::PutS3Object> {
  public:
   static void checkPutObjectResults() {
     CHECK(verifyLogLinePresenceInPollTime(std::chrono::seconds(3), "key:s3.version value:" + S3_VERSION_1));
@@ -43,7 +43,7 @@ class PutS3ObjectTestsFixture : public FlowProcessorS3TestsFixture<minifi::aws::
 
 class PutS3ObjectLimitChanged : public minifi::aws::processors::PutS3Object {
  protected:
-  friend class ::S3TestsFixture<PutS3ObjectLimitChanged>;
+  friend class S3TestsFixture<PutS3ObjectLimitChanged>;
 
   explicit PutS3ObjectLimitChanged(const std::string& name, const minifi::utils::Identifier& uuid, std::unique_ptr<minifi::aws::s3::S3RequestSender> s3_request_sender)
     : PutS3Object(name, uuid, std::move(s3_request_sender)) {
@@ -107,17 +107,17 @@ TEST_CASE_METHOD(PutS3ObjectTestsFixture, "Test required property not set", "[aw
 
   SECTION("Test storage class is empty") {
     setRequiredProperties();
-    plan->setProperty(s3_processor, "Storage Class", "");
+    plan->setProperty(s3_processor, processors::PutS3Object::StorageClass, "");
   }
 
   SECTION("Test region is empty") {
     setRequiredProperties();
-    plan->setProperty(s3_processor, "Region", "");
+    plan->setProperty(s3_processor, processors::PutS3Object::Region, "");
   }
 
   SECTION("Test no server side encryption is set") {
     setRequiredProperties();
-    plan->setProperty(s3_processor, "Server Side Encryption", "");
+    plan->setProperty(s3_processor, processors::PutS3Object::ServerSideEncryption, "");
   }
 
   REQUIRE_THROWS_AS(test_controller.runSession(plan), minifi::Exception);
@@ -167,15 +167,15 @@ TEST_CASE_METHOD(PutS3ObjectTestsFixture, "Check default client configuration wi
 
 TEST_CASE_METHOD(PutS3ObjectTestsFixture, "Set non-default client configuration", "[awsS3ClientConfig]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Object Key", "custom_key");
+  plan->setProperty(s3_processor, processors::PutS3Object::ObjectKey, "custom_key");
   plan->setDynamicProperty(update_attribute, "test.contentType", "application/tar");
-  plan->setProperty(s3_processor, "Content Type", "${test.contentType}");
-  plan->setProperty(s3_processor, "Storage Class", "ReducedRedundancy");
-  plan->setProperty(s3_processor, "Region", minifi::aws::processors::region::AP_SOUTHEAST_3);
-  plan->setProperty(s3_processor, "Communications Timeout", "10 Sec");
+  plan->setProperty(s3_processor, processors::PutS3Object::ContentType, "${test.contentType}");
+  plan->setProperty(s3_processor, processors::PutS3Object::StorageClass, "ReducedRedundancy");
+  plan->setProperty(s3_processor, processors::PutS3Object::Region, minifi::aws::processors::region::AP_SOUTHEAST_3);
+  plan->setProperty(s3_processor, processors::PutS3Object::CommunicationsTimeout, "10 Sec");
   plan->setDynamicProperty(update_attribute, "test.endpoint", "http://localhost:1234");
-  plan->setProperty(s3_processor, "Endpoint Override URL", "${test.endpoint}");
-  plan->setProperty(s3_processor, "Server Side Encryption", "AES256");
+  plan->setProperty(s3_processor, processors::PutS3Object::EndpointOverrideURL, "${test.endpoint}");
+  plan->setProperty(s3_processor, processors::PutS3Object::ServerSideEncryption, "AES256");
   test_controller.runSession(plan);
   checkPutObjectResults();
   CHECK(verifyLogLinePresenceInPollTime(std::chrono::seconds(3), "key:s3.bucket value:testBucket"));
@@ -219,15 +219,15 @@ TEST_CASE_METHOD(PutS3ObjectTestsFixture, "Test proxy setting", "[awsS3Proxy]") 
 TEST_CASE_METHOD(PutS3ObjectTestsFixture, "Test access control setting", "[awsS3ACL]") {
   setRequiredProperties();
   plan->setDynamicProperty(update_attribute, "s3.permissions.full.users", "myuserid123, myuser@example.com");
-  plan->setProperty(s3_processor, "FullControl User List", "${s3.permissions.full.users}");
+  plan->setProperty(s3_processor, processors::PutS3Object::FullControlUserList, "${s3.permissions.full.users}");
   plan->setDynamicProperty(update_attribute, "s3.permissions.read.users", "myuserid456,myuser2@example.com");
-  plan->setProperty(s3_processor, "Read Permission User List", "${s3.permissions.read.users}");
+  plan->setProperty(s3_processor, processors::PutS3Object::ReadPermissionUserList, "${s3.permissions.read.users}");
   plan->setDynamicProperty(update_attribute, "s3.permissions.readacl.users", "myuserid789, otheruser");
-  plan->setProperty(s3_processor, "Read ACL User List", "${s3.permissions.readacl.users}");
+  plan->setProperty(s3_processor, processors::PutS3Object::ReadACLUserList, "${s3.permissions.readacl.users}");
   plan->setDynamicProperty(update_attribute, "s3.permissions.writeacl.users", "myuser3@example.com");
-  plan->setProperty(s3_processor, "Write ACL User List", "${s3.permissions.writeacl.users}");
+  plan->setProperty(s3_processor, processors::PutS3Object::WriteACLUserList, "${s3.permissions.writeacl.users}");
   plan->setDynamicProperty(update_attribute, "s3.permissions.cannedacl", "PublicReadWrite");
-  plan->setProperty(s3_processor, "Canned ACL", "${s3.permissions.cannedacl}");
+  plan->setProperty(s3_processor, processors::PutS3Object::CannedACL, "${s3.permissions.cannedacl}");
   test_controller.runSession(plan);
   CHECK(mock_s3_request_sender_ptr->put_object_request.GetGrantFullControl() == "id=myuserid123, emailAddress=\"myuser@example.com\"");
   CHECK(mock_s3_request_sender_ptr->put_object_request.GetGrantRead() == "id=myuserid456, emailAddress=\"myuser2@example.com\"");
@@ -238,7 +238,7 @@ TEST_CASE_METHOD(PutS3ObjectTestsFixture, "Test access control setting", "[awsS3
 
 TEST_CASE_METHOD(PutS3ObjectTestsFixture, "Test path style access property", "[awsS3PathStyleAccess]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Use Path Style Access", "true");
+  plan->setProperty(s3_processor, processors::PutS3Object::UsePathStyleAccess, "true");
   test_controller.runSession(plan);
   REQUIRE(!mock_s3_request_sender_ptr->getUseVirtualAddressing());
 }
@@ -246,19 +246,19 @@ TEST_CASE_METHOD(PutS3ObjectTestsFixture, "Test path style access property", "[a
 TEST_CASE_METHOD(PutS3ObjectTestsFixture, "Test multipart upload limits", "[awsS3MultipartUpload]") {
   setRequiredProperties();
   SECTION("Multipart Threshold is below limit") {
-    plan->setProperty(s3_processor, "Multipart Threshold", "4 MB");
+    plan->setProperty(s3_processor, processors::PutS3Object::MultipartThreshold, "4 MB");
   }
 
   SECTION("Multipart Threshold is above limit") {
-    plan->setProperty(s3_processor, "Multipart Threshold", "51 GB");
+    plan->setProperty(s3_processor, processors::PutS3Object::MultipartThreshold, "51 GB");
   }
 
   SECTION("Multipart Part Size is below limit") {
-    plan->setProperty(s3_processor, "Multipart Part Size", "4 MB");
+    plan->setProperty(s3_processor, processors::PutS3Object::MultipartPartSize, "4 MB");
   }
 
   SECTION("Multipart Part Size is above limit") {
-    plan->setProperty(s3_processor, "Multipart Part Size", "51 GB");
+    plan->setProperty(s3_processor, processors::PutS3Object::MultipartPartSize, "51 GB");
   }
 
   REQUIRE_THROWS_AS(test_controller.runSession(plan), minifi::Exception);
@@ -266,31 +266,31 @@ TEST_CASE_METHOD(PutS3ObjectTestsFixture, "Test multipart upload limits", "[awsS
 
 TEST_CASE_METHOD(PutS3ObjectUploadLimitChangedTestsFixture, "Test multipart upload", "[awsS3MultipartUpload]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Multipart Threshold", "35 B");
-  plan->setProperty(s3_processor, "Multipart Part Size", "10 B");
+  plan->setProperty(s3_processor, processors::PutS3Object::MultipartThreshold, "35 B");
+  plan->setProperty(s3_processor, processors::PutS3Object::MultipartPartSize, "10 B");
   auto temp_dir = test_controller.createTempDirectory();
-  plan->setProperty(s3_processor, "Temporary Directory Multipart State", temp_dir.string());
+  plan->setDynamicProperty(s3_processor, "Temporary Directory Multipart State", temp_dir.string());
 
   plan->setDynamicProperty(update_attribute, "s3.permissions.full.users", "myuserid123, myuser@example.com");
-  plan->setProperty(s3_processor, "FullControl User List", "${s3.permissions.full.users}");
+  plan->setProperty(s3_processor, processors::PutS3Object::FullControlUserList, "${s3.permissions.full.users}");
   plan->setDynamicProperty(update_attribute, "s3.permissions.read.users", "myuserid456,myuser2@example.com");
-  plan->setProperty(s3_processor, "Read Permission User List", "${s3.permissions.read.users}");
+  plan->setProperty(s3_processor, processors::PutS3Object::ReadPermissionUserList, "${s3.permissions.read.users}");
   plan->setDynamicProperty(update_attribute, "s3.permissions.readacl.users", "myuserid789, otheruser");
-  plan->setProperty(s3_processor, "Read ACL User List", "${s3.permissions.readacl.users}");
+  plan->setProperty(s3_processor, processors::PutS3Object::ReadACLUserList, "${s3.permissions.readacl.users}");
   plan->setDynamicProperty(update_attribute, "s3.permissions.writeacl.users", "myuser3@example.com");
-  plan->setProperty(s3_processor, "Write ACL User List", "${s3.permissions.writeacl.users}");
+  plan->setProperty(s3_processor, processors::PutS3Object::WriteACLUserList, "${s3.permissions.writeacl.users}");
   plan->setDynamicProperty(update_attribute, "s3.permissions.cannedacl", "PublicReadWrite");
-  plan->setProperty(s3_processor, "Canned ACL", "${s3.permissions.cannedacl}");
+  plan->setProperty(s3_processor, processors::PutS3Object::CannedACL, "${s3.permissions.cannedacl}");
   plan->setDynamicProperty(s3_processor, "meta_key1", "meta_value1");
   plan->setDynamicProperty(s3_processor, "meta_key2", "meta_value2");
   plan->setDynamicProperty(update_attribute, "test.contentType", "application/tar");
-  plan->setProperty(s3_processor, "Content Type", "${test.contentType}");
-  plan->setProperty(s3_processor, "Storage Class", "ReducedRedundancy");
-  plan->setProperty(s3_processor, "Region", minifi::aws::processors::region::AP_SOUTHEAST_3);
-  plan->setProperty(s3_processor, "Communications Timeout", "10 Sec");
+  plan->setProperty(s3_processor, processors::PutS3Object::ContentType, "${test.contentType}");
+  plan->setProperty(s3_processor, processors::PutS3Object::StorageClass, "ReducedRedundancy");
+  plan->setProperty(s3_processor, processors::PutS3Object::Region, minifi::aws::processors::region::AP_SOUTHEAST_3);
+  plan->setProperty(s3_processor, processors::PutS3Object::CommunicationsTimeout, "10 Sec");
   plan->setDynamicProperty(update_attribute, "test.endpoint", "http://localhost:1234");
-  plan->setProperty(s3_processor, "Endpoint Override URL", "${test.endpoint}");
-  plan->setProperty(s3_processor, "Server Side Encryption", "AES256");
+  plan->setProperty(s3_processor, processors::PutS3Object::EndpointOverrideURL, "${test.endpoint}");
+  plan->setProperty(s3_processor, processors::PutS3Object::ServerSideEncryption, "AES256");
 
   std::string object_key;
   SECTION("Successful upload on first try") {
@@ -299,7 +299,7 @@ TEST_CASE_METHOD(PutS3ObjectUploadLimitChangedTestsFixture, "Test multipart uplo
   }
 
   SECTION("Successful upload on second try continuing the first multipart upload") {
-    plan->setProperty(s3_processor, "Object Key", "resumable_key");
+    plan->setProperty(s3_processor, processors::PutS3Object::ObjectKey, "resumable_key");
     object_key = "resumable_key";
     auto log_failure = plan->addProcessor(
       "LogAttribute",
@@ -373,10 +373,10 @@ TEST_CASE_METHOD(PutS3ObjectUploadLimitChangedTestsFixture, "Test multipart uplo
 
 TEST_CASE_METHOD(PutS3ObjectTestsFixture, "Test ageoff functionality aborting obselete multipart uploads", "[awsS3MultipartUpload]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Multipart Upload AgeOff Interval", "1 sec");
-  plan->setProperty(s3_processor, "Multipart Upload Max Age Threshold", "2 years");
+  plan->setProperty(s3_processor, processors::PutS3Object::MultipartUploadAgeOffInterval, "1 sec");
+  plan->setProperty(s3_processor, processors::PutS3Object::MultipartUploadMaxAgeThreshold, "2 years");
   auto temp_dir = test_controller.createTempDirectory();
-  plan->setProperty(s3_processor, "Temporary Directory Multipart State", temp_dir.string());
+  plan->setDynamicProperty(s3_processor, "Temporary Directory Multipart State", temp_dir.string());
   test_controller.runSession(plan);
   REQUIRE(mock_s3_request_sender_ptr->abort_multipart_upload_requests.size() == 1);
   CHECK(mock_s3_request_sender_ptr->abort_multipart_upload_requests[0].GetBucket() == S3_BUCKET);
@@ -386,11 +386,11 @@ TEST_CASE_METHOD(PutS3ObjectTestsFixture, "Test ageoff functionality aborting ob
 
 TEST_CASE_METHOD(PutS3ObjectUploadLimitChangedTestsFixture, "Local state is not kept after successful upload", "[awsS3MultipartUpload]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Multipart Threshold", "35 B");
-  plan->setProperty(s3_processor, "Multipart Part Size", "10 B");
-  plan->setProperty(s3_processor, "Object Key", "resumable_key");
+  plan->setProperty(s3_processor, processors::PutS3Object::MultipartThreshold, "35 B");
+  plan->setProperty(s3_processor, processors::PutS3Object::MultipartPartSize, "10 B");
+  plan->setProperty(s3_processor, processors::PutS3Object::ObjectKey, "resumable_key");
   auto temp_dir = test_controller.createTempDirectory();
-  plan->setProperty(s3_processor, "Temporary Directory Multipart State", temp_dir.string());
+  plan->setDynamicProperty(s3_processor, "Temporary Directory Multipart State", temp_dir.string());
   auto log_failure = plan->addProcessor(
     "LogAttribute",
     "LogFailure",
@@ -417,11 +417,11 @@ TEST_CASE_METHOD(PutS3ObjectUploadLimitChangedTestsFixture, "Local state is not 
 
 TEST_CASE_METHOD(PutS3ObjectUploadLimitChangedTestsFixture, "Do not continue multipart upload that only exists in local cache but not in S3", "[awsS3MultipartUpload]") {
   setRequiredProperties();
-  plan->setProperty(s3_processor, "Multipart Threshold", "35 B");
-  plan->setProperty(s3_processor, "Multipart Part Size", "10 B");
-  plan->setProperty(s3_processor, "Object Key", "non_resumable_key");
+  plan->setProperty(s3_processor, processors::PutS3Object::MultipartThreshold, "35 B");
+  plan->setProperty(s3_processor, processors::PutS3Object::MultipartPartSize, "10 B");
+  plan->setProperty(s3_processor, processors::PutS3Object::ObjectKey, "non_resumable_key");
   auto temp_dir = test_controller.createTempDirectory();
-  plan->setProperty(s3_processor, "Temporary Directory Multipart State", temp_dir.string());
+  plan->setDynamicProperty(s3_processor, "Temporary Directory Multipart State", temp_dir.string());
   auto log_failure = plan->addProcessor(
     "LogAttribute",
     "LogFailure",
@@ -443,4 +443,4 @@ TEST_CASE_METHOD(PutS3ObjectUploadLimitChangedTestsFixture, "Do not continue mul
   }
 }
 
-}  // namespace
+}  // namespace org::apache::nifi::minifi::aws::test

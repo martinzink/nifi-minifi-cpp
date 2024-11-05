@@ -16,10 +16,12 @@
  * limitations under the License.
  */
 
+#include <controllerservices/AzureStorageCredentialsService.h>
+
 #include "AzureBlobStorageTestsFixture.h"
 #include "processors/DeleteAzureBlobStorage.h"
 
-namespace {
+namespace org::apache::nifi::minifi::azure::test {
 
 using DeleteAzureBlobStorageTestsFixture = AzureBlobStorageTestsFixture<minifi::azure::processors::DeleteAzureBlobStorage>;
 
@@ -29,24 +31,24 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Container name not set", "
 
 TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings", "[azureStorageCredentials]") {
   plan_->setDynamicProperty(update_attribute_processor_, "test.container", CONTAINER_NAME);
-  plan_->setProperty(azure_blob_storage_processor_, "Container Name", "${test.container}");
+  plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::ContainerName, "${test.container}");
   plan_->setDynamicProperty(update_attribute_processor_, "test.blob", BLOB_NAME);
-  plan_->setProperty(azure_blob_storage_processor_, "Blob", "${test.blob}");
+  plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageSingleBlobProcessorBase::Blob, "${test.blob}");
 
   SECTION("No credentials are set") {
     REQUIRE_THROWS_AS(test_controller_.runSession(plan_, true), minifi::Exception);
   }
 
   SECTION("No account key or SAS is set") {
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Name", STORAGE_ACCOUNT_NAME);
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountName, STORAGE_ACCOUNT_NAME);
     REQUIRE_THROWS_AS(test_controller_.runSession(plan_, true), minifi::Exception);
   }
 
   SECTION("Credentials set in Azure Storage Credentials Service") {
     auto azure_storage_cred_service = plan_->addController("AzureStorageCredentialsService", "AzureStorageCredentialsService");
-    plan_->setProperty(azure_storage_cred_service, "Storage Account Name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_storage_cred_service, "Storage Account Key", STORAGE_ACCOUNT_KEY);
-    plan_->setProperty(azure_blob_storage_processor_, "Azure Storage Credentials Service", "AzureStorageCredentialsService");
+    plan_->setProperty(azure_storage_cred_service, controllers::AzureStorageCredentialsService::StorageAccountName, STORAGE_ACCOUNT_NAME);
+    plan_->setProperty(azure_storage_cred_service, controllers::AzureStorageCredentialsService::StorageAccountKey, STORAGE_ACCOUNT_KEY);
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureStorageProcessorBase::AzureStorageCredentialsService, "AzureStorageCredentialsService");
     test_controller_.runSession(plan_, true);
     auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
     REQUIRE(passed_params.credentials.buildConnectionString() == "AccountName=" + STORAGE_ACCOUNT_NAME + ";AccountKey=" + STORAGE_ACCOUNT_KEY);
@@ -54,10 +56,10 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings"
 
   SECTION("Overriding credentials set in Azure Storage Credentials Service with connection string") {
     auto azure_storage_cred_service = plan_->addController("AzureStorageCredentialsService", "AzureStorageCredentialsService");
-    plan_->setProperty(azure_storage_cred_service, "Storage Account Name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_storage_cred_service, "Storage Account Key", STORAGE_ACCOUNT_KEY);
-    plan_->setProperty(azure_storage_cred_service, "Connection String", CONNECTION_STRING);
-    plan_->setProperty(azure_blob_storage_processor_, "Azure Storage Credentials Service", "AzureStorageCredentialsService");
+    plan_->setProperty(azure_storage_cred_service, controllers::AzureStorageCredentialsService::StorageAccountName, STORAGE_ACCOUNT_NAME);
+    plan_->setProperty(azure_storage_cred_service, controllers::AzureStorageCredentialsService::StorageAccountKey, STORAGE_ACCOUNT_KEY);
+    plan_->setProperty(azure_storage_cred_service, controllers::AzureStorageCredentialsService::ConnectionString, CONNECTION_STRING);
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureStorageProcessorBase::AzureStorageCredentialsService, "AzureStorageCredentialsService");
     test_controller_.runSession(plan_, true);
     auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
     REQUIRE(passed_params.credentials.buildConnectionString() == CONNECTION_STRING);
@@ -65,9 +67,9 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings"
 
   SECTION("Account name and key set in properties") {
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Name", "${test.account_name}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountName, "${test.account_name}");
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_key", STORAGE_ACCOUNT_KEY);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Key", "${test.account_key}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountKey, "${test.account_key}");
     test_controller_.runSession(plan_, true);
     auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
     REQUIRE(passed_params.credentials.buildConnectionString() == "AccountName=" + STORAGE_ACCOUNT_NAME + ";AccountKey=" + STORAGE_ACCOUNT_KEY);
@@ -75,9 +77,9 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings"
 
   SECTION("Account name and SAS token set in properties") {
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Name", "${test.account_name}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountName, "${test.account_name}");
     plan_->setDynamicProperty(update_attribute_processor_, "test.sas_token", SAS_TOKEN);
-    plan_->setProperty(azure_blob_storage_processor_, "SAS Token", "${test.sas_token}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::SASToken, "${test.sas_token}");
     test_controller_.runSession(plan_, true);
     auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
     REQUIRE(passed_params.credentials.buildConnectionString() == "AccountName=" + STORAGE_ACCOUNT_NAME + ";SharedAccessSignature=" + SAS_TOKEN);
@@ -85,9 +87,9 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings"
 
   SECTION("Account name and SAS token with question mark set in properties") {
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Name", "${test.account_name}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountName, "${test.account_name}");
     plan_->setDynamicProperty(update_attribute_processor_, "test.sas_token", "?" + SAS_TOKEN);
-    plan_->setProperty(azure_blob_storage_processor_, "SAS Token", "${test.sas_token}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::SASToken, "${test.sas_token}");
     test_controller_.runSession(plan_, true);
     auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
     REQUIRE(passed_params.credentials.buildConnectionString() == "AccountName=" + STORAGE_ACCOUNT_NAME + ";SharedAccessSignature=" + SAS_TOKEN);
@@ -95,11 +97,11 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings"
 
   SECTION("Endpoint suffix overriden") {
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Name", "${test.account_name}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountName, "${test.account_name}");
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_key", STORAGE_ACCOUNT_KEY);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Key", "${test.account_key}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountKey, "${test.account_key}");
     plan_->setDynamicProperty(update_attribute_processor_, "test.endpoint_suffix", ENDPOINT_SUFFIX);
-    plan_->setProperty(azure_blob_storage_processor_, "Common Storage Account Endpoint Suffix", "${test.endpoint_suffix}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::CommonStorageAccountEndpointSuffix, "${test.endpoint_suffix}");
     test_controller_.runSession(plan_, true);
     auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
     REQUIRE(passed_params.credentials.buildConnectionString() == "AccountName=" + STORAGE_ACCOUNT_NAME + ";AccountKey=" + STORAGE_ACCOUNT_KEY + ";EndpointSuffix=" + ENDPOINT_SUFFIX);
@@ -107,7 +109,7 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings"
 
   SECTION("Use connection string") {
     plan_->setDynamicProperty(update_attribute_processor_, "test.connection_string", CONNECTION_STRING);
-    plan_->setProperty(azure_blob_storage_processor_, "Connection String", "${test.connection_string}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::ConnectionString, "${test.connection_string}");
     test_controller_.runSession(plan_, true);
     auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
     REQUIRE(passed_params.credentials.buildConnectionString() == CONNECTION_STRING);
@@ -115,11 +117,11 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings"
 
   SECTION("Overriding credentials with connection string") {
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Name", "${test.account_name}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountName, "${test.account_name}");
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_key", STORAGE_ACCOUNT_KEY);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Key", "${test.account_key}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountKey, "${test.account_key}");
     plan_->setDynamicProperty(update_attribute_processor_, "test.connection_string", CONNECTION_STRING);
-    plan_->setProperty(azure_blob_storage_processor_, "Connection String", "${test.connection_string}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::ConnectionString, "${test.connection_string}");
     test_controller_.runSession(plan_, true);
     auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
     REQUIRE(passed_params.credentials.buildConnectionString() == CONNECTION_STRING);
@@ -127,7 +129,7 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings"
 
   SECTION("Connection string is empty after substituting it from expression language") {
     plan_->setDynamicProperty(update_attribute_processor_, "test.connection_string", "");
-    plan_->setProperty(azure_blob_storage_processor_, "Connection String", "${test.connection_string}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::ConnectionString, "${test.connection_string}");
     test_controller_.runSession(plan_, true);
     auto failed_flowfiles = getFailedFlowFileContents();
     REQUIRE(failed_flowfiles.size() == 1);
@@ -135,8 +137,8 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings"
   }
 
   SECTION("Account name and managed identity are used in properties") {
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_blob_storage_processor_, "Use Managed Identity Credentials", "true");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountName, STORAGE_ACCOUNT_NAME);
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::UseManagedIdentityCredentials, "true");
     test_controller_.runSession(plan_, true);
     CHECK(getFailedFlowFileContents().empty());
     auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
@@ -148,10 +150,10 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings"
 
   SECTION("Account name and managed identity are used from Azure Storage Credentials Service") {
     auto azure_storage_cred_service = plan_->addController("AzureStorageCredentialsService", "AzureStorageCredentialsService");
-    plan_->setProperty(azure_storage_cred_service, "Storage Account Name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_storage_cred_service, "Use Managed Identity Credentials", "true");
-    plan_->setProperty(azure_storage_cred_service, "Common Storage Account Endpoint Suffix", "core.chinacloudapi.cn");
-    plan_->setProperty(azure_blob_storage_processor_, "Azure Storage Credentials Service", "AzureStorageCredentialsService");
+    plan_->setProperty(azure_storage_cred_service, controllers::AzureStorageCredentialsService::StorageAccountName, STORAGE_ACCOUNT_NAME);
+    plan_->setProperty(azure_storage_cred_service, controllers::AzureStorageCredentialsService::UseManagedIdentityCredentials, "true");
+    plan_->setProperty(azure_storage_cred_service, controllers::AzureStorageCredentialsService::CommonStorageAccountEndpointSuffix, "core.chinacloudapi.cn");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureStorageProcessorBase::AzureStorageCredentialsService, "AzureStorageCredentialsService");
     test_controller_.runSession(plan_, true);
     CHECK(getFailedFlowFileContents().empty());
     auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
@@ -163,15 +165,15 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings"
 
   SECTION("Azure Storage Credentials Service overrides properties") {
     auto azure_storage_cred_service = plan_->addController("AzureStorageCredentialsService", "AzureStorageCredentialsService");
-    plan_->setProperty(azure_storage_cred_service, "Storage Account Name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_storage_cred_service, "Storage Account Key", STORAGE_ACCOUNT_KEY);
-    plan_->setProperty(azure_blob_storage_processor_, "Azure Storage Credentials Service", "AzureStorageCredentialsService");
+    plan_->setProperty(azure_storage_cred_service, controllers::AzureStorageCredentialsService::StorageAccountName, STORAGE_ACCOUNT_NAME);
+    plan_->setProperty(azure_storage_cred_service, controllers::AzureStorageCredentialsService::StorageAccountKey, STORAGE_ACCOUNT_KEY);
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureStorageProcessorBase::AzureStorageCredentialsService, "AzureStorageCredentialsService");
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Name", "${test.account_name}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountName, "${test.account_name}");
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_key", STORAGE_ACCOUNT_KEY);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Key", "${test.account_key}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountKey, "${test.account_key}");
     plan_->setDynamicProperty(update_attribute_processor_, "test.connection_string", CONNECTION_STRING);
-    plan_->setProperty(azure_blob_storage_processor_, "Connection String", "${test.connection_string}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::ConnectionString, "${test.connection_string}");
     test_controller_.runSession(plan_, true);
     auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
     REQUIRE(passed_params.credentials.buildConnectionString() == "AccountName=" + STORAGE_ACCOUNT_NAME + ";AccountKey=" + STORAGE_ACCOUNT_KEY);
@@ -179,12 +181,12 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings"
 
   SECTION("Azure Storage Credentials Service is set with invalid parameters") {
     auto azure_storage_cred_service = plan_->addController("AzureStorageCredentialsService", "AzureStorageCredentialsService");
-    plan_->setProperty(azure_storage_cred_service, "Storage Account Name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_blob_storage_processor_, "Azure Storage Credentials Service", "AzureStorageCredentialsService");
+    plan_->setProperty(azure_storage_cred_service, controllers::AzureStorageCredentialsService::StorageAccountName, STORAGE_ACCOUNT_NAME);
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureStorageProcessorBase::AzureStorageCredentialsService, "AzureStorageCredentialsService");
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Name", "${test.account_name}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountName, "${test.account_name}");
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_key", STORAGE_ACCOUNT_KEY);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Key", "${test.account_key}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountKey, "${test.account_key}");
     test_controller_.runSession(plan_, true);
     auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
     REQUIRE(passed_params.credentials.buildConnectionString().empty());
@@ -195,13 +197,13 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings"
 
   SECTION("Azure Storage Credentials Service name is invalid") {
     auto azure_storage_cred_service = plan_->addController("AzureStorageCredentialsService", "AzureStorageCredentialsService");
-    plan_->setProperty(azure_storage_cred_service, "Storage Account Name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_storage_cred_service, "Storage Account Key", STORAGE_ACCOUNT_KEY);
-    plan_->setProperty(azure_blob_storage_processor_, "Azure Storage Credentials Service", "invalid_name");
+    plan_->setProperty(azure_storage_cred_service, controllers::AzureStorageCredentialsService::StorageAccountName, STORAGE_ACCOUNT_NAME);
+    plan_->setProperty(azure_storage_cred_service, controllers::AzureStorageCredentialsService::StorageAccountKey, STORAGE_ACCOUNT_KEY);
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureStorageProcessorBase::AzureStorageCredentialsService, "invalid_name");
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_name", STORAGE_ACCOUNT_NAME);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Name", "${test.account_name}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountName, "${test.account_name}");
     plan_->setDynamicProperty(update_attribute_processor_, "test.account_key", STORAGE_ACCOUNT_KEY);
-    plan_->setProperty(azure_blob_storage_processor_, "Storage Account Key", "${test.account_key}");
+    plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::StorageAccountKey, "${test.account_key}");
     test_controller_.runSession(plan_, true);
     auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
     REQUIRE(passed_params.credentials.buildConnectionString().empty());
@@ -213,7 +215,7 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test credentials settings"
 
 TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test Azure blob delete failure in case Blob is not set and filename is empty", "[azureBlobStorageDelete]") {
   plan_->setDynamicProperty(update_attribute_processor_, "test.container", CONTAINER_NAME);
-  plan_->setProperty(azure_blob_storage_processor_, "Container Name", "${test.container}");
+  plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::ContainerName, "${test.container}");
   plan_->setDynamicProperty(update_attribute_processor_, "filename", "");
   setDefaultCredentials();
   test_controller_.runSession(plan_, true);
@@ -222,7 +224,7 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test Azure blob delete fai
 
 TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test Azure blob delete with default blob name", "[azureBlobStorageDelete]") {
   plan_->setDynamicProperty(update_attribute_processor_, "test.container", CONTAINER_NAME);
-  plan_->setProperty(azure_blob_storage_processor_, "Container Name", "${test.container}");
+  plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::ContainerName, "${test.container}");
   setDefaultCredentials();
   test_controller_.runSession(plan_, true);
   auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
@@ -234,10 +236,10 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test Azure blob delete wit
 
 TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test Azure blob delete including snapshots", "[azureBlobStorageDelete]") {
   plan_->setDynamicProperty(update_attribute_processor_, "test.container", CONTAINER_NAME);
-  plan_->setProperty(azure_blob_storage_processor_, "Container Name", "${test.container}");
+  plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::ContainerName, "${test.container}");
   plan_->setDynamicProperty(update_attribute_processor_, "test.blob", BLOB_NAME);
-  plan_->setProperty(azure_blob_storage_processor_, "Blob", "${test.blob}");
-  plan_->setProperty(azure_blob_storage_processor_, "Delete Snapshots Option", "Include Snapshots");
+  plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageSingleBlobProcessorBase::Blob, "${test.blob}");
+  plan_->setProperty(azure_blob_storage_processor_, processors::DeleteAzureBlobStorage::DeleteSnapshotsOption, "Include Snapshots");
   setDefaultCredentials();
   test_controller_.runSession(plan_, true);
   auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
@@ -249,10 +251,10 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test Azure blob delete inc
 
 TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test Azure blob delete with snapshots only", "[azureBlobStorageDelete]") {
   plan_->setDynamicProperty(update_attribute_processor_, "test.container", CONTAINER_NAME);
-  plan_->setProperty(azure_blob_storage_processor_, "Container Name", "${test.container}");
+  plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::ContainerName, "${test.container}");
   plan_->setDynamicProperty(update_attribute_processor_, "test.blob", BLOB_NAME);
-  plan_->setProperty(azure_blob_storage_processor_, "Blob", "${test.blob}");
-  plan_->setProperty(azure_blob_storage_processor_, "Delete Snapshots Option", "Delete Snapshots Only");
+  plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageSingleBlobProcessorBase::Blob, "${test.blob}");
+  plan_->setProperty(azure_blob_storage_processor_, processors::DeleteAzureBlobStorage::DeleteSnapshotsOption, "Delete Snapshots Only");
   setDefaultCredentials();
   test_controller_.runSession(plan_, true);
   auto passed_params = mock_blob_storage_ptr_->getPassedDeleteParams();
@@ -264,7 +266,7 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test Azure blob delete wit
 
 TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test Azure blob delete with remote failure", "[azureBlobStorageDelete]") {
   plan_->setDynamicProperty(update_attribute_processor_, "test.container", CONTAINER_NAME);
-  plan_->setProperty(azure_blob_storage_processor_, "Container Name", "${test.container}");
+  plan_->setProperty(azure_blob_storage_processor_, processors::AzureBlobStorageProcessorBase::ContainerName, "${test.container}");
   mock_blob_storage_ptr_->setDeleteFailure(true);
   setDefaultCredentials();
   test_controller_.runSession(plan_, true);
@@ -273,4 +275,4 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test Azure blob delete wit
   REQUIRE(failed_flowfiles[0] == TEST_DATA);
 }
 
-}  // namespace
+}  // namespace org::apache::nifi::minifi::azure::processors::tests

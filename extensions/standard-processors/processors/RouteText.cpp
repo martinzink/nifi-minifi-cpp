@@ -147,13 +147,13 @@ class RouteText::MatchingContext {
     }
     std::string value;
     if (!process_context_.getDynamicProperty(prop, value, flow_file_.get())) {
-      throw Exception(PROCESSOR_EXCEPTION, "Missing dynamic property: '" + prop.getName() + "'");
+      throw Exception(PROCESSOR_EXCEPTION, fmt::format("Missing dynamic property: '{}'", prop.getName()));
     }
     std::vector<utils::Regex::Mode> flags;
     if (case_policy_ == route_text::CasePolicy::IGNORE_CASE) {
       flags.push_back(utils::Regex::Mode::ICASE);
     }
-    return (regex_values_[prop.getName()] = utils::Regex(value, flags));
+    return (regex_values_[std::string{prop.getName()}] = utils::Regex(value, flags));
   }
 
   const std::string& getStringProperty(const core::Property& prop) {
@@ -163,19 +163,19 @@ class RouteText::MatchingContext {
     }
     std::string value;
     if (!process_context_.getDynamicProperty(prop, value, flow_file_.get())) {
-      throw Exception(PROCESSOR_EXCEPTION, "Missing dynamic property: '" + prop.getName() + "'");
+      throw Exception(PROCESSOR_EXCEPTION, fmt::format("Missing dynamic property: '{}'", prop.getName()));
     }
-    return (string_values_[prop.getName()] = value);
+    return (string_values_[std::string{prop.getName()}] = value);
   }
 
   const auto& getSearcher(const core::Property& prop) {
-    auto it = searcher_values_.find(prop.getName());
+    auto it = searcher_values_.find(std::string{prop.getName()});
     if (it != searcher_values_.end()) {
       return it->second.searcher_;
     }
     std::string value;
     if (!process_context_.getDynamicProperty(prop, value, flow_file_.get())) {
-      throw Exception(PROCESSOR_EXCEPTION, "Missing dynamic property: '" + prop.getName() + "'");
+      throw Exception(PROCESSOR_EXCEPTION, fmt::format("Missing dynamic property: '{}'", prop.getName()));
     }
 
     return searcher_values_.emplace(
@@ -187,8 +187,8 @@ class RouteText::MatchingContext {
   std::shared_ptr<core::FlowFile> flow_file_;
   route_text::CasePolicy case_policy_;
 
-  std::map<std::string, std::string> string_values_;
-  std::map<std::string, utils::Regex> regex_values_;
+  std::map<std::string, std::string, std::less<>> string_values_;
+  std::map<std::string, utils::Regex, std::less<>> regex_values_;
 
   struct OwningSearcher {
     OwningSearcher(std::string str, route_text::CasePolicy case_policy)
@@ -304,7 +304,7 @@ std::string_view RouteText::preprocess(std::string_view str) const {
   if (trim_) {
     str = utils::string::trim(str);
   }
-  return str;
+  return str;  // TODO(mzink) is this legal?
 }
 
 namespace {
@@ -346,7 +346,7 @@ bool RouteText::matchSegment(MatchingContext& context, const Segment& segment, c
       if (getDynamicPropertyWithOverrides(context.process_context_, prop, result, *context.flow_file_, variables)) {
         return utils::string::toBool(result).value_or(false);
       } else {
-        throw Exception(PROCESSOR_EXCEPTION, "Missing dynamic property: '" + prop.getName() + "'");
+        throw Exception(PROCESSOR_EXCEPTION, fmt::format("Missing dynamic property: '{}'", prop.getName()));
       }
     }
     case route_text::Matching::STARTS_WITH: {
@@ -391,9 +391,9 @@ std::optional<std::string> RouteText::getGroup(const std::string_view& segment) 
 }
 
 void RouteText::onDynamicPropertyModified(const core::Property& /*orig_property*/, const core::Property& new_property) {
-  dynamic_properties_[new_property.getName()] = new_property;
+  dynamic_properties_[std::string{new_property.getName()}] = new_property;
 
-  const auto static_relationships = RouteText::Relationships;
+  constexpr auto static_relationships = RouteText::Relationships;
   std::vector<core::RelationshipDefinition> relationships(static_relationships.begin(), static_relationships.end());
 
   for (const auto& [property_name, prop] : dynamic_properties_) {

@@ -56,8 +56,8 @@ static std::string prettifyJson(const std::string& str) {
 }
 
 void writePropertySchema(const core::Property& prop, std::ostream& out) {
-  out << "\"" << escape(prop.getName()) << "\" : {";
-  out << R"("description": ")" << escape(prop.getDescription()) << "\"";
+  out << "\"" << escape(std::string{prop.getName()}) << "\" : {";
+  out << R"("description": ")" << escape(std::string{prop.getDescription()}) << "\"";
   if (const auto& values = prop.getAllowedValues(); !values.empty()) {
     out << R"(, "enum": [)"
         << (values
@@ -100,7 +100,7 @@ void writeProperties(const PropertyContainer& props, bool supports_dynamic, std:
         << R"("required": [)"
         << (props
             | ranges::views::filter([] (auto& prop) {return prop.getRequired() && prop.getDefaultValue().empty();})
-            | ranges::views::transform([] (auto& prop) {return '"' + escape(prop.getName()) + '"';})
+            | ranges::views::transform([] (auto& prop) {return '"' + escape(std::string{prop.getName()}) + '"';})
             | ranges::views::join(',')
             | ranges::to<std::string>())
         << "]";
