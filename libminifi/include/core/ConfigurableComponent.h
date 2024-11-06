@@ -64,14 +64,14 @@ class ConfigurableComponent {
 
   virtual std::optional<std::string> getPropertyString(std::string_view name) const;
 
-  bool setProperty(std::string_view name, const std::string& value);
-  bool setProperty(const Property& prop, const std::string& value);
-  bool setProperty(const PropertyReference& property, std::string_view value);
-  bool setProperty(const Property& prop, PropertyValue &value);
+  bool setProperty(std::string_view name, const std::string& value, bool validate = true);
+  bool setProperty(const Property& prop, const std::string& value, bool validate = true);
+  bool setProperty(const PropertyReference& property, std::string_view value, bool validate = true);
+  bool setProperty(const Property& prop, PropertyValue &value, bool validate = true);
 
 
-  bool updateProperty(std::string_view name, const std::string &value);
-  bool updateProperty(const PropertyReference& property, std::string_view value);
+  bool updateProperty(std::string_view name, const std::string &value, bool validate = true);
+  bool updateProperty(const PropertyReference& property, std::string_view value, bool validate = true);
 
 
   void setSupportedProperties(std::span<const core::PropertyReference> properties);

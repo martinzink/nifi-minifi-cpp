@@ -124,7 +124,7 @@ class AzureDataLakeStorageTestsFixture {
     LogTestController::getInstance().reset();
   }
 
-protected:
+ protected:
   TestController test_controller_;
   std::shared_ptr<TestPlan> plan_;
   MockDataLakeStorageClient* mock_data_lake_storage_client_ptr_;

@@ -42,14 +42,13 @@ class CachedValueValidator {
   };
 
   CachedValueValidator();
+  explicit CachedValueValidator(const gsl::not_null<const PropertyValidator *> validator) : validator_(validator) {};
 
   CachedValueValidator(const CachedValueValidator& other) : validator_(other.validator_) {}
 
   CachedValueValidator& operator=(const CachedValueValidator& other) {
-    if (this == &other) {
-      return *this;
-    }
-    setValidator(*other.validator_);
+    validator_ = other.validator_;
+    validation_result_ = other.validation_result_;
     return *this;
   }
 
@@ -72,6 +71,12 @@ class CachedValueValidator {
 
   gsl::not_null<const PropertyValidator*> validator_;
   mutable Result validation_result_{Result::RECOMPUTE};
+};
+
+enum class ValidationState {
+  VALID,
+  INVALID,
+  RECOMPUTE
 };
 
 }  // namespace internal

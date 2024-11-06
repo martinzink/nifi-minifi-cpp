@@ -388,16 +388,6 @@ TEST_CASE("Substring Before No Args", "[expressionLanguageSubstringBeforeNoArgs]
   REQUIRE_THROWS_WITH(expression::compile("${attr:substringBefore()}"), "Expression language function substringBefore called with 1 argument(s), but 2 are required");
 }
 
-TEST_CASE("SAJT") {
-  auto exprs = expression::compile("foo");
-  auto expr2 = expression::compile("foo${attr");
-  auto flow_file_a = std::make_shared<core::FlowFile>();
-  flow_file_a->addAttribute("attr", "xyz");
-
-  CHECK("foo" == exprs(expression::Parameters{ flow_file_a.get() }).asString());
-  CHECK("fooxyz" == expr2(expression::Parameters{ flow_file_a.get() }).asString());
-}
-
 TEST_CASE("Substring After No Args", "[expressionLanguageSubstringAfterNoArgs]") {
   REQUIRE_THROWS_WITH(expression::compile("${attr:substringAfter()}"), "Expression language function substringAfter called with 1 argument(s), but 2 are required");
 }

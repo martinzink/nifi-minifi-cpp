@@ -68,12 +68,12 @@ bool ProcessContextExpr::getDynamicProperty(const Property &property, std::strin
 
 
 bool ProcessContextExpr::setProperty(const std::string_view property, const std::string& value) {
-  expressions_.erase(expressions_.find(property));
-  return ProcessContext::setProperty(property, value);
+  expressions_.erase(std::string{property});
+  return processor_node_->setProperty(property, value, false);
 }
 
 bool ProcessContextExpr::setDynamicProperty(const std::string_view property, const std::string& value) {
-  dynamic_property_expressions_.erase(expressions_.find(property));
+  dynamic_property_expressions_.erase(std::string{property});
   return ProcessContext::setDynamicProperty(property, value);
 }
 

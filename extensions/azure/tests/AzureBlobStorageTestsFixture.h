@@ -50,7 +50,7 @@ const std::string GET_FILE_NAME = "input_data.log";
 
 template<typename ProcessorType>
 class AzureBlobStorageTestsFixture {
-public:
+ public:
   AzureBlobStorageTestsFixture() {
     LogTestController::getInstance().setDebug<TestPlan>();
     LogTestController::getInstance().setDebug<minifi::core::Processor>();
@@ -122,7 +122,7 @@ public:
     LogTestController::getInstance().reset();
   }
 
-protected:
+ protected:
   TestController test_controller_;
   std::shared_ptr<TestPlan> plan_;
   MockBlobStorage* mock_blob_storage_ptr_;

@@ -43,6 +43,7 @@ namespace org::apache::nifi::minifi::state::response {
  * Extensions can be more strongly typed and can be used anywhere where an abstract
  * representation is needed.
  */
+
 class Value {
   using ParseException = utils::internal::ParseException;
 
@@ -504,6 +505,7 @@ class ValueNode {
 
  public:
   ValueNode() = default;
+  virtual ~ValueNode() = default;
 
   template<typename T>
   requires (supported_types::contains<T>())  // NOLINT

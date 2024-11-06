@@ -275,4 +275,4 @@ TEST_CASE_METHOD(DeleteAzureBlobStorageTestsFixture, "Test Azure blob delete wit
   REQUIRE(failed_flowfiles[0] == TEST_DATA);
 }
 
-}  // namespace org::apache::nifi::minifi::azure::processors::tests
+}  // namespace org::apache::nifi::minifi::azure::test

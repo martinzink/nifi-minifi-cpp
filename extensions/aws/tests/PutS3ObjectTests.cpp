@@ -268,8 +268,6 @@ TEST_CASE_METHOD(PutS3ObjectUploadLimitChangedTestsFixture, "Test multipart uplo
   setRequiredProperties();
   plan->setProperty(s3_processor, processors::PutS3Object::MultipartThreshold, "35 B");
   plan->setProperty(s3_processor, processors::PutS3Object::MultipartPartSize, "10 B");
-  auto temp_dir = test_controller.createTempDirectory();
-  plan->setDynamicProperty(s3_processor, "Temporary Directory Multipart State", temp_dir.string());
 
   plan->setDynamicProperty(update_attribute, "s3.permissions.full.users", "myuserid123, myuser@example.com");
   plan->setProperty(s3_processor, processors::PutS3Object::FullControlUserList, "${s3.permissions.full.users}");
@@ -375,8 +373,6 @@ TEST_CASE_METHOD(PutS3ObjectTestsFixture, "Test ageoff functionality aborting ob
   setRequiredProperties();
   plan->setProperty(s3_processor, processors::PutS3Object::MultipartUploadAgeOffInterval, "1 sec");
   plan->setProperty(s3_processor, processors::PutS3Object::MultipartUploadMaxAgeThreshold, "2 years");
-  auto temp_dir = test_controller.createTempDirectory();
-  plan->setDynamicProperty(s3_processor, "Temporary Directory Multipart State", temp_dir.string());
   test_controller.runSession(plan);
   REQUIRE(mock_s3_request_sender_ptr->abort_multipart_upload_requests.size() == 1);
   CHECK(mock_s3_request_sender_ptr->abort_multipart_upload_requests[0].GetBucket() == S3_BUCKET);
@@ -389,8 +385,6 @@ TEST_CASE_METHOD(PutS3ObjectUploadLimitChangedTestsFixture, "Local state is not 
   plan->setProperty(s3_processor, processors::PutS3Object::MultipartThreshold, "35 B");
   plan->setProperty(s3_processor, processors::PutS3Object::MultipartPartSize, "10 B");
   plan->setProperty(s3_processor, processors::PutS3Object::ObjectKey, "resumable_key");
-  auto temp_dir = test_controller.createTempDirectory();
-  plan->setDynamicProperty(s3_processor, "Temporary Directory Multipart State", temp_dir.string());
   auto log_failure = plan->addProcessor(
     "LogAttribute",
     "LogFailure",
@@ -420,8 +414,6 @@ TEST_CASE_METHOD(PutS3ObjectUploadLimitChangedTestsFixture, "Do not continue mul
   plan->setProperty(s3_processor, processors::PutS3Object::MultipartThreshold, "35 B");
   plan->setProperty(s3_processor, processors::PutS3Object::MultipartPartSize, "10 B");
   plan->setProperty(s3_processor, processors::PutS3Object::ObjectKey, "non_resumable_key");
-  auto temp_dir = test_controller.createTempDirectory();
-  plan->setDynamicProperty(s3_processor, "Temporary Directory Multipart State", temp_dir.string());
   auto log_failure = plan->addProcessor(
     "LogAttribute",
     "LogFailure",

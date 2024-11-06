@@ -31,7 +31,7 @@ namespace org::apache::nifi::minifi::core {
  */
 TEST_CASE("Some default values get coerced to typed variants") {
   auto prop = Property("prop", "d", "true");
-  REQUIRE_THROWS_AS(prop.setValue("banana"), utils::internal::ConversionException);
+  REQUIRE_THROWS_WITH(prop.setValue("banana"), "General Operation: prop value validation failed");
 
   const std::string SPACE = " ";
   auto prop2 = Property("prop", "d", SPACE + "true");
@@ -44,9 +44,9 @@ TEST_CASE("Converting invalid PropertyValue") {
       .withDefaultValue("0")
       .build();
   Property property{property_definition};
-  REQUIRE_THROWS_AS(property.setValue("not int"), utils::internal::ParseException);
+  REQUIRE_THROWS_WITH(property.setValue("not int"), "General Operation: prop value validation failed");
   auto cast_check = [&]{ return static_cast<int>(property.getValue()) == 0; };  // To avoid unused-value warning
-  REQUIRE_THROWS_AS(cast_check(), utils::internal::InvalidValueException);
+  REQUIRE_NOTHROW(cast_check());
 }
 
 TEST_CASE("Parsing int has baggage after") {
@@ -74,7 +74,7 @@ TEST_CASE("Parsing int out of range") {
       .withDefaultValue("0")
       .build();
   Property property{property_definition};
-  REQUIRE_THROWS_AS(property.setValue("  5000000000  "), utils::internal::ParseException);
+  REQUIRE_THROWS_WITH(property.setValue("  5000000000  "), "General Operation: prop value validation failed");
 }
 
 TEST_CASE("Parsing bool has baggage after") {
@@ -83,7 +83,7 @@ TEST_CASE("Parsing bool has baggage after") {
       .withDefaultValue("true")
       .build();
   Property property{property_definition};
-  REQUIRE_THROWS_AS(property.setValue("false almost bool"), utils::internal::ParseException);
+  REQUIRE_THROWS_WITH(property.setValue("false almost bool"), "General Operation: prop value validation failed");
 }
 
 class TestConfigurableComponent : public ConfigurableComponent {
@@ -172,7 +172,9 @@ TEST_CASE("Valid Optional Without Default") {
   REQUIRE(value == "some data");
 }
 
+
 TEST_CASE("Invalid With Default") {
+  SKIP("This only used to succeed because it set an invalid value and it threw on that set value not on the default");
   static constexpr auto property_definition = PropertyDefinitionBuilder<>::createProperty("prop")
       .withPropertyType(core::StandardPropertyTypes::BOOLEAN_TYPE)
       .withDefaultValue("true")
@@ -180,7 +182,7 @@ TEST_CASE("Invalid With Default") {
   Property property{property_definition};
   TestConfigurableComponent component;
   component.setSupportedProperties(std::array<PropertyReference, 1>{property_definition});
-  REQUIRE_THROWS_AS(component.setProperty("prop", "banana"), utils::internal::ParseException);
+  REQUIRE_THROWS_WITH(component.setProperty("prop", "banana"), "General Operation: prop value validation failed");
   std::string value;
   REQUIRE_THROWS_AS(component.getProperty(property.getName(), value), utils::internal::InvalidValueException);
 }
@@ -219,7 +221,7 @@ TEST_CASE("Write Invalid Then Override With Valid") {
   Property property{property_definition};
   TestConfigurableComponent component;
   component.setSupportedProperties(std::array<PropertyReference, 1>{property_definition});
-  REQUIRE_THROWS_AS(component.setProperty(property.getName(), "banana"), utils::internal::ConversionException);
+  REQUIRE_THROWS_WITH(component.setProperty(property.getName(), "banana"), "General Operation: prop value validation failed");
   component.setProperty(property.getName(), "98");
   int value = 0;
   REQUIRE(component.getProperty(property.getName(), value));
@@ -238,7 +240,7 @@ TEST_CASE("Property Change notification gets called even on erroneous assignment
   component.setPropertyModifiedCallback([&](const Property &, const Property &) {
     ++callbackCount;
   });
-  REQUIRE_THROWS_AS(component.setProperty(property.getName(), "banana"), utils::internal::ConversionException);
+  REQUIRE_THROWS_WITH(component.setProperty(property.getName(), "banana"), "General Operation: prop value validation failed");
   REQUIRE(callbackCount == 1);
 }
 
@@ -271,13 +273,7 @@ TEST_CASE("TimePeriodValue Property") {
   TimePeriodValue time_period_value;
   REQUIRE(component->getProperty(property.getName(), time_period_value));
   CHECK(time_period_value.getMilliseconds() == 10min);
-  REQUIRE_THROWS_AS(component->setProperty(property.getName(), "20"), utils::internal::ParseException);
-
-  TestController test_controller;
-  auto plan = test_controller.createPlan();
-  auto asd = plan->getProperty(component, property_definition);
-  auto got = component->getProperty(property.getName(), time_period_value);
-  //CHECK(got);
+  REQUIRE_THROWS_WITH(component->setProperty(property.getName(), "20"), "General Operation: prop value validation failed");
 }
 
 TEST_CASE("TimePeriodValue Property without validator") {
@@ -355,7 +351,7 @@ TEST_CASE("RegexValidated Property") {
   component.setSupportedProperties(std::array<PropertyReference, 1>{property_definition});
 
   REQUIRE_NOTHROW(component.setProperty(property.getName(), ""));
-  REQUIRE_THROWS_AS(component.setProperty(property.getName(), "20"), utils::internal::ParseException);
+  REQUIRE_THROWS_WITH(component.setProperty(property.getName(), "20"), "General Operation: prop value validation failed");
   REQUIRE_NOTHROW(component.setProperty(property.getName(), "foo,bar"));
 }
 

@@ -110,6 +110,13 @@ class Property {
 
   template<typename T = std::string>
   void setValue(const T& value, const bool validate = true) {
+    auto validation_state = ValidationState::RECOMPUTE;
+    if (validate) {
+      if (const auto validation_result = validator_->validate(name_, value); !validation_result.valid) {
+        throw utils::internal::InvalidValueException(name_ + " value validation failed");
+      }
+      validation_state = ValidationState::VALID;
+    }
     if (!is_collection_) {
       values_.clear();
       values_.push_back(default_value_);
@@ -117,31 +124,27 @@ class Property {
       values_.push_back(default_value_);
     }
     PropertyValue& vn = values_.back();
-    vn.setValidator(*validator_);
+    vn.setValidator(*validator_, validation_state);
     vn = value;
-    if (validate) {
-      ValidationResult result = vn.validate(name_);
-      if (!result.valid) {
-        throw utils::internal::InvalidValueException(name_ + " value validation failed");
-      }
-    }
   }
 
   void setValue(const PropertyValue& new_value, const bool validate = true) {
+    auto validation_state = ValidationState::RECOMPUTE;
+    if (validate) {
+      if (const auto validation_result = validator_->validate(name_, new_value.getValue()); !validation_result.valid) {
+        throw utils::internal::InvalidValueException(name_ + " value validation failed");
+      }
+      validation_state = ValidationState::VALID;
+    }
+
     if (!is_collection_) {
       values_.clear();
       values_.push_back(new_value);
     } else {
       values_.push_back(new_value);
     }
-    if (validate) {
-      PropertyValue& vn = values_.back();
-      vn.setValidator(*validator_);
-      ValidationResult result = vn.validate(name_);
-      if (!result.valid) {
-        throw utils::internal::InvalidValueException(name_ + " value validation failed");
-      }
-    }
+    PropertyValue& vn = values_.back();
+    vn.setValidator(*validator_, validation_state);
   }
   void setSupportsExpressionLanguage(bool supportEl);
 

@@ -60,8 +60,9 @@ TEST_CASE("Invalid segmentSize tests") {
   minifi::test::SingleProcessorTestController controller{segment_content};
 
   SECTION("foo") {
+    REQUIRE_NOTHROW(segment_content->setProperty(SegmentContent::SegmentSize, "10 MB"));
     REQUIRE_THROWS_WITH(segment_content->setProperty(SegmentContent::SegmentSize, "foo"), "General Operation: Segment Size value validation failed");
-    REQUIRE_THROWS_WITH(controller.trigger("bar"), "Processor Operation: Invalid Segment Size: 'foo'");
+    REQUIRE_NOTHROW(controller.trigger("bar"));
   }
   SECTION("10 foo") {
     REQUIRE_NOTHROW(segment_content->setProperty(SegmentContent::SegmentSize, "10 foo"), "General Operation: Segment Size value validation failed");
@@ -237,11 +238,7 @@ TEST_CASE("ExpressionLanguageSupport", "[NiFi]") {
   const auto segment_content = std::make_shared<SegmentContent>("SegmentContent");
   minifi::test::SingleProcessorTestController controller{segment_content};
 
-  try {
-    controller.plan->setProperty(segment_content, SegmentContent::SegmentSize, "${segmentSize}");
-  } catch (const std::exception& e) {
-
-  }
+  controller.plan->setProperty(segment_content, SegmentContent::SegmentSize, "${segmentSize}");
 
   const auto input_data = createByteVector(1, 2, 3, 4, 5, 6, 7, 8, 9);
   std::string_view input(reinterpret_cast<const char*>(input_data.data()), input_data.size());

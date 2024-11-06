@@ -676,7 +676,7 @@ TEST_CASE_METHOD(PutSFTPTestsFixture, "PutSFTP connection caching does not reuse
 
   testController.runSession(plan, true);
 
-  REQUIRE(false == LogTestController::getInstance().contains("Adding nifiuser@localhost:" + std::to_string(port) + " to SFTP connection pool"));
+  CHECK_FALSE(LogTestController::getInstance().contains("Adding nifiuser@localhost:" + std::to_string(port) + " to SFTP connection pool", 0s, 0ms));
   REQUIRE(LogTestController::getInstance().contains("Cannot connect to SFTP server"));
 }
 

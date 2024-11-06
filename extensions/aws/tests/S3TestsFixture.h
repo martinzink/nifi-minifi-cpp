@@ -42,7 +42,7 @@
 namespace org::apache::nifi::minifi::aws::test {
 template<typename T>
 class S3TestsFixture {
-public:
+ public:
   const std::string INPUT_FILENAME = "input_data.log";
   const std::string INPUT_DATA = "input_data";
   const std::string S3_BUCKET = "testBucket";
@@ -118,7 +118,7 @@ public:
     LogTestController::getInstance().reset();
   }
 
-protected:
+ protected:
   TestController test_controller;
   std::shared_ptr<TestPlan> plan;
   MockS3RequestSender* mock_s3_request_sender_ptr;
@@ -129,7 +129,7 @@ protected:
 
 template<typename T>
 class FlowProcessorS3TestsFixture : public S3TestsFixture<T> {
-public:
+ public:
   const std::string INPUT_FILENAME = "input_data.log";
   const std::string INPUT_DATA = "This data is has a length of 37 bytes";
 
@@ -186,13 +186,13 @@ public:
     this->plan->setProperty(this->s3_processor, T::ProxyPassword, "${test.proxyPassword}");
   }
 
-protected:
+ protected:
   std::shared_ptr<core::Processor> update_attribute;
 };
 
 template<typename T>
 class FlowProducerS3TestsFixture : public S3TestsFixture<T> {
-public:
+ public:
   FlowProducerS3TestsFixture() {
     this->plan->addProcessor(
       this->s3_processor,

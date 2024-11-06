@@ -60,7 +60,7 @@ const std::string S3_CONTINUATION_TOKEN = "continue";
 const std::string S3_UPLOAD_ID = "test_upload_id";
 
 class MockS3RequestSender : public minifi::aws::s3::S3RequestSender {
-public:
+ public:
   MockS3RequestSender() {
     for (std::size_t i = 0; i < S3_OBJECT_COUNT; ++i) {
       Aws::S3::Model::ObjectVersion version;
@@ -396,7 +396,7 @@ public:
   Aws::S3::Model::ListMultipartUploadsRequest list_multipart_upload_request;
   std::vector<Aws::S3::Model::AbortMultipartUploadRequest> abort_multipart_upload_requests;
 
-private:
+ private:
   std::vector<Aws::S3::Model::ObjectVersion> listed_versions_;
   std::vector<Aws::S3::Model::Object> listed_objects_;
   bool delete_object_result_ = true;

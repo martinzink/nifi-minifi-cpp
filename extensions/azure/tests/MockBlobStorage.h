@@ -30,7 +30,7 @@
 
 namespace org::apache::nifi::minifi::azure::test {
 class MockBlobStorage : public storage::BlobStorageClient {
-public:
+ public:
   const std::string ETAG = "test-etag";
   const std::string PRIMARY_URI = "http://test-uri/file";
   const std::string TEST_TIMESTAMP = "Sun, 21 Oct 2018 12:16:24 GMT";
@@ -156,7 +156,7 @@ public:
     fetch_fails_ = fetch_fails;
   }
 
-private:
+ private:
   const std::string RETURNED_PRIMARY_URI = "http://test-uri/file?secret-sas";
   storage::PutAzureBlobStorageParameters put_params_;
   storage::DeleteAzureBlobStorageParameters delete_params_;
@@ -169,4 +169,4 @@ private:
   std::string input_data_;
   std::vector<uint8_t> buffer_;
 };
-}  // namespace org::apache::nifi::minifi::azure::test {
+}  // namespace org::apache::nifi::minifi::azure::test

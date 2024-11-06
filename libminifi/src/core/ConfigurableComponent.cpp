@@ -60,7 +60,7 @@ bool ConfigurableComponent::getProperty(const std::string_view name, Property &p
 }
 
 
-bool ConfigurableComponent::setProperty(const std::string_view name, const std::string& value) {
+bool ConfigurableComponent::setProperty(const std::string_view name, const std::string& value, const bool validate) {
   std::lock_guard<std::mutex> lock(configuration_mutex_);
 
   if (const auto prop_ptr = findProperty(name)) {
@@ -70,14 +70,14 @@ bool ConfigurableComponent::setProperty(const std::string_view name, const std::
       onPropertyModified(orig_property, new_property);
       logger_->log_debug("Component {} property name {} value {}", name, new_property.getName(), value);
     });
-    new_property.setValue(std::move(value));
+    new_property.setValue(value, validate);
     return true;
   }
   if (accept_all_properties_) {
     static const std::string STAR_PROPERTIES = "Property";
     Property new_property(std::string{name}, STAR_PROPERTIES, value, false, { }, { });
     new_property.setTransient();
-    new_property.setValue(std::move(value));
+    new_property.setValue(value, validate);
     properties_.insert(std::pair<std::string, Property>(name, new_property));
     return true;
   }
@@ -85,7 +85,7 @@ bool ConfigurableComponent::setProperty(const std::string_view name, const std::
   return false;
 }
 
-bool ConfigurableComponent::updateProperty(const std::string_view name, const std::string &value) {
+bool ConfigurableComponent::updateProperty(const std::string_view name, const std::string &value, bool validate) {
   std::lock_guard<std::mutex> lock(configuration_mutex_);
 
   if (const auto prop_ptr = findProperty(name)) {
@@ -97,17 +97,16 @@ bool ConfigurableComponent::updateProperty(const std::string_view name, const st
     });
     new_property.addValue(value);
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
-bool ConfigurableComponent::updateProperty(const PropertyReference& property, std::string_view value) {
-  return updateProperty(std::string{property.name}, std::string{value});
+bool ConfigurableComponent::updateProperty(const PropertyReference& property, std::string_view value, bool validate) {
+  return updateProperty(std::string{property.name}, std::string{value}, validate);
 }
 
 
-bool ConfigurableComponent::setProperty(const Property& prop, const std::string& value) {
+bool ConfigurableComponent::setProperty(const Property& prop, const std::string& value, bool validate) {
   std::lock_guard<std::mutex> lock(configuration_mutex_);
   if (const auto prop_ptr = findProperty(prop.getName())) {
     const Property orig_property = *prop_ptr;
@@ -120,14 +119,14 @@ bool ConfigurableComponent::setProperty(const Property& prop, const std::string&
         logger_->log_debug("property name {} value {} and new value is {}", prop_ptr->getName(), value, new_property.getValue().to_string());
       }
     });
-    new_property.setValue(value);
+    new_property.setValue(value, validate);
     return true;
   }
 
   if (accept_all_properties_) {
     Property new_property(prop);
     new_property.setTransient();
-    new_property.setValue(value);
+    new_property.setValue(value, validate);
     properties_.insert(std::pair<std::string, Property>(prop.getName(), new_property));
     if (prop.isSensitive()) {
       logger_->log_debug("Adding transient sensitive property name {}", prop.getName());
@@ -141,11 +140,11 @@ bool ConfigurableComponent::setProperty(const Property& prop, const std::string&
   return false;
 }
 
-bool ConfigurableComponent::setProperty(const PropertyReference& property, std::string_view value) {
-  return setProperty(std::string{property.name}, std::string{value});
+bool ConfigurableComponent::setProperty(const PropertyReference& property, std::string_view value, bool validate) {
+  return setProperty(std::string{property.name}, std::string{value}, validate);
 }
 
-bool ConfigurableComponent::setProperty(const Property& prop, PropertyValue &value) {
+bool ConfigurableComponent::setProperty(const Property& prop, PropertyValue &value, bool validate) {
   std::lock_guard<std::mutex> lock(configuration_mutex_);
 
   if (const auto prop_ptr = findProperty(prop.getName())) {
@@ -159,13 +158,13 @@ bool ConfigurableComponent::setProperty(const Property& prop, PropertyValue &val
         logger_->log_debug("property name {} value {} and new value is {}", prop.getName(), value.to_string(), new_property.getValue().to_string());
       }
     });
-    new_property.setValue(value);
+    new_property.setValue(value, validate);
     return true;
   }
   if (accept_all_properties_) {
     Property new_property(prop);
     new_property.setTransient();
-    new_property.setValue(value);
+    new_property.setValue(value, validate);
     properties_.insert(std::pair<std::string, Property>(prop.getName(), new_property));
     if (prop.isSensitive()) {
       logger_->log_debug("Adding transient sensitive property name {}", prop.getName());
@@ -278,11 +277,11 @@ bool ConfigurableComponent::setDynamicProperty(const std::string_view name, cons
       onDynamicPropertyModified(orig_property, new_property);
       logger_->log_debug("Component {} dynamic property name {} value {}", name, new_property.getName(), value);
     });
-    new_property.setValue(std::move(value));
+    new_property.setValue(value);
     new_property.setSupportsExpressionLanguage(true);
     return true;
   } else {
-    return createDynamicProperty(std::string{name}, std::move(value));
+    return createDynamicProperty(std::string{name}, value);
   }
 }
 
@@ -340,7 +339,10 @@ bool ConfigurableComponent::isPropertyExplicitlySet(const PropertyReference& sea
 
 std::optional<std::string> ConfigurableComponent::getPropertyString(const std::string_view name) const {
   if (const auto prop_ptr = findProperty(std::string{name})) {
-    return prop_ptr->getValue().getValue()->getStringValue();
+    if (const auto value = prop_ptr->getValue().getValue()) {
+      return value->getStringValue();
+    }
+    return std::nullopt;
   }
   logger_->log_warn("Could not find property {}", name);
   return std::nullopt;

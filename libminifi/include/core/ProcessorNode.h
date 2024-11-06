@@ -55,12 +55,12 @@ class ProcessorNode {
     return processor_.getProperty<T>(name, value);
   }
 
-  bool setProperty(const Property &prop, const std::string& value) {
-    return processor_.setProperty(prop, value);
+  bool setProperty(const Property &prop, const std::string& value, const bool validate) {
+    return processor_.setProperty(prop, value, validate);
   }
 
-  bool setProperty(const std::string_view name, const std::string& value) {
-    return processor_.setProperty(name, value);
+  bool setProperty(const std::string_view name, const std::string& value, const bool validate) {
+    return processor_.setProperty(name, value, validate);
   }
 
   bool getDynamicProperty(const std::string_view name, std::string &value) const {
@@ -83,7 +83,7 @@ class ProcessorNode {
     return processor_.getPropertyString(name);
   }
 
-  [[nodiscard]] std::shared_ptr<state::FlowIdentifier> getFlowIdentifier() const{
+  [[nodiscard]] std::shared_ptr<state::FlowIdentifier> getFlowIdentifier() const {
     return processor_.getFlowIdentifier();
   }
 
@@ -111,7 +111,7 @@ class ProcessorNode {
     return processor_.pickIncomingConnection();
   }
 
-private:
+ private:
   Processor& processor_;
 };
 

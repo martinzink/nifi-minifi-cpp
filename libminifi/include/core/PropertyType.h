@@ -362,6 +362,7 @@ class RegexValidatedPropertyType final : public PropertyType {
     const auto is_valid = utils::regexMatch(input, pattern);
     return ValidationResult{.valid = is_valid, .subject = subject, .input = input};
   }
+
  private:
   std::string_view regex_str_;
 };

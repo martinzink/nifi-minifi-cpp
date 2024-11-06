@@ -148,10 +148,10 @@ class ProcessContext : public controller::ControllerServiceLookup, public core::
 
  protected:
   virtual bool setProperty(const std::string_view name, const std::string& value) {
-    return processor_node_->setProperty(name, value);
+    return processor_node_->setProperty(name, value, true);
   }
 
-public:
+ public:
   virtual bool setDynamicProperty(const std::string_view name, const std::string& value) {
     return processor_node_->setDynamicProperty(name, value);
   }
@@ -298,14 +298,14 @@ public:
       if (storage == nullptr) {
         return nullptr;
       }
-      if (!always_persist.empty() && !storage->setProperty(controllers::ALWAYS_PERSIST_PROPERTY_NAME, always_persist)) {
+      if (!always_persist.empty() && !storage->setProperty(controllers::ALWAYS_PERSIST_PROPERTY_NAME, always_persist, true)) {
         return nullptr;
       }
-      if (!auto_persistence_interval.empty() && !storage->setProperty(controllers::AUTO_PERSISTENCE_INTERVAL_PROPERTY_NAME, auto_persistence_interval)) {
+      if (!auto_persistence_interval.empty() && !storage->setProperty(controllers::AUTO_PERSISTENCE_INTERVAL_PROPERTY_NAME, auto_persistence_interval, true)) {
         return nullptr;
       }
       for (const auto& extraProperty : extraProperties) {
-        if (!storage->setProperty(extraProperty.first, extraProperty.second)) {
+        if (!storage->setProperty(extraProperty.first, extraProperty.second, true)) {
           return nullptr;
         }
       }

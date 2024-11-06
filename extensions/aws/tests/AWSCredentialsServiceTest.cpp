@@ -19,14 +19,14 @@
 #include <cstdlib>
 #include <memory>
 
-#include "unit/TestBase.h"
-#include "unit/Catch.h"
 #include "controllerservices/AWSCredentialsService.h"
-#include "unit/TestUtils.h"
 #include "core/controller/ControllerServiceNode.h"
+#include "unit/Catch.h"
+#include "unit/TestBase.h"
+#include "unit/TestUtils.h"
 namespace org::apache::nifi::minifi::aws::test {
 class AWSCredentialsServiceTestAccessor {
-public:
+ public:
   AWSCredentialsServiceTestAccessor() {
     // Disable retrieving AWS metadata for tests
 #ifdef WIN32
@@ -41,7 +41,7 @@ public:
 
   FIELD_ACCESSOR(aws_credentials_);
 
-protected:
+ protected:
   TestController test_controller;
   std::shared_ptr<TestPlan> plan;
   std::shared_ptr<core::controller::ControllerServiceNode> aws_credentials_service;

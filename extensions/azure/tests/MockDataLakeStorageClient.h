@@ -30,7 +30,7 @@
 
 namespace org::apache::nifi::minifi::azure::test {
 class MockDataLakeStorageClient : public storage::DataLakeStorageClient {
-public:
+ public:
   const std::string PRIMARY_URI = "http://test-uri/file";
   const std::string FETCHED_DATA = "test azure data for stream";
   const std::string ITEM1_LAST_MODIFIED = "1631292120000";
@@ -153,7 +153,7 @@ public:
     return list_params_;
   }
 
-private:
+ private:
   const std::string RETURNED_PRIMARY_URI = "http://test-uri/file?secret-sas";
   bool create_file_ = true;
   bool file_creation_error_ = false;

@@ -22,7 +22,6 @@
 #include <utility>
 #include <memory>
 
-#include "CachedValueValidator.h"
 #include "ValidationResult.h"
 #include "state/Value.h"
 #include "TypedValues.h"
@@ -58,17 +57,21 @@ static inline std::shared_ptr<state::response::Value> convert(const std::shared_
   }
 }
 
+enum class ValidationState {
+  VALID,
+  INVALID,
+  RECOMPUTE
+};
+
 /**
  * Purpose and Design: PropertyValue extends ValueNode, bringing with it value_.
  * The reason for this is that there are additional features to support validation
  * and value translation.
  */
 class PropertyValue : public state::response::ValueNode {
-  using CachedValueValidator = internal::CachedValueValidator;
-
  public:
-  PropertyValue()
-      : type_id(std::type_index(typeid(std::string))) {}
+  PropertyValue();
+  ~PropertyValue() override = default;
 
   PropertyValue(const PropertyValue &o) = default;
   PropertyValue(PropertyValue &&o) noexcept = default;
@@ -78,17 +81,17 @@ class PropertyValue : public state::response::ValueNode {
     PropertyValue property_value;
     property_value.value_ = std::make_shared<T>(std::string{input});
     property_value.type_id = property_value.value_->getTypeIndex();
-    property_value.cached_value_validator_ = validator;
+    property_value.validator_ = gsl::make_not_null(&validator);
+    property_value.validation_state_ = ValidationState::RECOMPUTE;
     return property_value;
   }
 
-  void setValidator(const PropertyValidator& validator) {
-    cached_value_validator_ = validator;
+  void setValidator(const PropertyValidator& validator, const ValidationState state = ValidationState::RECOMPUTE) {
+    validator_ = gsl::make_not_null(&validator);
+    validation_state_ = state;
   }
 
-  ValidationResult validate(const std::string &subject) const {
-    return cached_value_validator_.validate(subject, getValue());
-  }
+  ValidationResult validate(const std::string &subject) const;
 
   operator uint64_t() const {
     return convertImpl<uint64_t>("uint64_t");
@@ -140,7 +143,7 @@ class PropertyValue : public state::response::ValueNode {
    */
   template<typename T>
   auto operator=(const T ref) -> typename std::enable_if<std::is_same<T, std::string>::value, PropertyValue&>::type {
-    cached_value_validator_.invalidateCachedResult();
+    validation_state_ = ValidationState::RECOMPUTE;
     return WithAssignmentGuard(ref, [&] () -> PropertyValue& {
       if (value_ == nullptr) {
         type_id = std::type_index(typeid(T));
@@ -170,7 +173,7 @@ class PropertyValue : public state::response::ValueNode {
   std::is_same<T, uint64_t >::value ||
   std::is_same<T, int64_t >::value ||
   std::is_same<T, bool >::value, PropertyValue&>::type {
-    cached_value_validator_.invalidateCachedResult();
+    validation_state_ = ValidationState::RECOMPUTE;
     if (value_ == nullptr) {
       type_id = std::type_index(typeid(T));
       value_ = minifi::state::response::createValue(ref);
@@ -208,7 +211,7 @@ class PropertyValue : public state::response::ValueNode {
   std::is_same<T, DataSizeValue >::value ||
   std::is_same<T, DataTransferSpeedValue >::value ||
   std::is_same<T, TimePeriodValue >::value, PropertyValue&>::type {
-    cached_value_validator_.invalidateCachedResult();
+    validation_state_ = ValidationState::RECOMPUTE;
     return WithAssignmentGuard(ref, [&] () -> PropertyValue& {
       value_ = std::make_shared<T>(ref);
       type_id = value_->getTypeIndex();
@@ -229,7 +232,7 @@ class PropertyValue : public state::response::ValueNode {
     throw utils::internal::ConversionException(std::string("Invalid conversion to ") + type_name + " for " + value_->getStringValue());
   }
 
-  bool isValueUsable() const {
+  [[nodiscard]] bool isValueUsable() const {
     if (!value_) return false;
     return validate("__unknown__").valid;
   }
@@ -249,7 +252,8 @@ class PropertyValue : public state::response::ValueNode {
 
  protected:
   std::type_index type_id;
-  CachedValueValidator cached_value_validator_;
+  ValidationState validation_state_;
+  gsl::not_null<const PropertyValidator*> validator_;
 };
 
 inline std::string conditional_conversion(const PropertyValue &v) {
