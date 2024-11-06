@@ -115,6 +115,10 @@ class Expression {
 
   Expression make_aggregate(const std::function<Value(const Parameters &params, const std::vector<Expression> &sub_exprs)>& val_fn) const;
 
+  bool hasExpressions() const {
+    return val_.isNull();
+  }
+
  protected:
   Value val_;
   std::function<Value(const Parameters &params, const std::vector<Expression> &sub_exprs)> val_fn_;

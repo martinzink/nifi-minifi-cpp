@@ -60,20 +60,19 @@ TEST_CASE("Invalid segmentSize tests") {
   minifi::test::SingleProcessorTestController controller{segment_content};
 
   SECTION("foo") {
-    REQUIRE_NOTHROW(segment_content->setProperty(SegmentContent::SegmentSize, "10 MB"));
-    REQUIRE_THROWS_WITH(segment_content->setProperty(SegmentContent::SegmentSize, "foo"), "General Operation: Segment Size value validation failed");
-    REQUIRE_NOTHROW(controller.trigger("bar"));
+    REQUIRE_THROWS_WITH(controller.plan->setProperty(segment_content,SegmentContent::SegmentSize, "foo"), "General Operation: Segment Size value validation failed");
+    REQUIRE_THROWS_WITH(controller.trigger("bar"), "Processor Operation: Invalid Segment Size: ''");
   }
   SECTION("10 foo") {
-    REQUIRE_NOTHROW(segment_content->setProperty(SegmentContent::SegmentSize, "10 foo"), "General Operation: Segment Size value validation failed");
+    REQUIRE_NOTHROW(controller.plan->setProperty(segment_content, SegmentContent::SegmentSize, "10 foo"));
     REQUIRE_NOTHROW(controller.trigger("bar"));
   }
   SECTION("0") {
-    REQUIRE_NOTHROW(segment_content->setProperty(SegmentContent::SegmentSize, "0"), "General Operation: Segment Size value validation failed");
+    REQUIRE_NOTHROW(controller.plan->setProperty(segment_content, SegmentContent::SegmentSize, "0"));
     REQUIRE_THROWS_WITH(controller.trigger("bar"), "Processor Operation: Invalid Segment Size: '0'");
   }
   SECTION("10 MB") {
-    REQUIRE_NOTHROW(segment_content->setProperty(SegmentContent::SegmentSize, "10 MB"), "General Operation: Segment Size value validation failed");
+    REQUIRE_NOTHROW(controller.plan->setProperty(segment_content, SegmentContent::SegmentSize, "10 MB"));
     REQUIRE_NOTHROW(controller.trigger("bar"));
   }
 }
@@ -110,7 +109,7 @@ TEST_CASE("SegmentContent with different sized text input") {
 
   const std::string original_content = utils::string::repeat("a", original_size);
 
-  segment_content->setProperty(SegmentContent::SegmentSize, std::to_string(segment_size));
+  controller.plan->setProperty(segment_content, SegmentContent::SegmentSize, std::to_string(segment_size));
 
   auto trigger_results = controller.trigger(original_content);
 
@@ -148,7 +147,7 @@ TEST_CASE("SegmentContent with different sized byte input") {
   const auto input_data = generateRandomData(original_size);
   std::string_view input(reinterpret_cast<const char*>(input_data.data()), input_data.size());
 
-  segment_content->setProperty(SegmentContent::SegmentSize, std::to_string(segment_size));
+  controller.plan->setProperty(segment_content, SegmentContent::SegmentSize, std::to_string(segment_size));
 
   auto trigger_results = controller.trigger(input);
 
@@ -172,7 +171,7 @@ TEST_CASE("SimpleTest", "[NiFi]") {
   const auto segment_content = std::make_shared<SegmentContent>("SegmentContent");
   minifi::test::SingleProcessorTestController controller{segment_content};
 
-  segment_content->setProperty(SegmentContent::SegmentSize, "4 B");
+  controller.plan->setProperty(segment_content, SegmentContent::SegmentSize, "4 B");
 
   const auto input_data = createByteVector(1, 2, 3, 4, 5, 6, 7, 8, 9);
   std::string_view input(reinterpret_cast<const char*>(input_data.data()), input_data.size());
@@ -217,7 +216,7 @@ TEST_CASE("TransferSmall", "[NiFi]") {
   const auto segment_content = std::make_shared<SegmentContent>("SegmentContent");
   minifi::test::SingleProcessorTestController controller{segment_content};
 
-  segment_content->setProperty(SegmentContent::SegmentSize, "4 KB");
+  controller.plan->setProperty(segment_content, SegmentContent::SegmentSize, "4 KB");
 
   const auto input_data = createByteVector(1, 2, 3, 4, 5, 6, 7, 8, 9);
   std::string_view input(reinterpret_cast<const char*>(input_data.data()), input_data.size());

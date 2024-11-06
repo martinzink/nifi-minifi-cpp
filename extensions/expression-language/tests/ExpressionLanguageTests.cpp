@@ -1722,3 +1722,12 @@ TEST_CASE("resolve_user_id_test", "[resolve_user_id tests]") {
   REQUIRE(expr(expression::Parameters{flow_file_a.get()}).asString().empty());
 }
 }
+
+TEST_CASE("Has expressions") {
+  CHECK_FALSE(expression::compile("text").hasExpressions());
+  REQUIRE_THROWS(expression::compile("te$xt"));
+  CHECK_FALSE(expression::compile("te$$xt").hasExpressions());
+  CHECK(expression::compile("te${attr}xt").hasExpressions());
+  CHECK(expression::compile("${literal('text')}").hasExpressions());
+  CHECK_FALSE(expression::compile("text_before|{}()[],:;\\/*#'\" \t\r\n()").hasExpressions());
+}

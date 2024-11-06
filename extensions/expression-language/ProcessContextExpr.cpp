@@ -68,8 +68,9 @@ bool ProcessContextExpr::getDynamicProperty(const Property &property, std::strin
 
 
 bool ProcessContextExpr::setProperty(const std::string_view property, const std::string& value) {
+  const auto expr = expression::compile(value);
   expressions_.erase(std::string{property});
-  return processor_node_->setProperty(property, value, false);
+  return processor_node_->setProperty(property, value, !expr.hasExpressions());
 }
 
 bool ProcessContextExpr::setDynamicProperty(const std::string_view property, const std::string& value) {
