@@ -38,7 +38,6 @@
 #include "core/Processor.h"
 #include "core/ProcessContext.h"
 #include "core/ProcessSession.h"
-#include "core/ProcessorNode.h"
 #include "core/Resource.h"
 #include "TailFile.h"
 #include "LogAttribute.h"

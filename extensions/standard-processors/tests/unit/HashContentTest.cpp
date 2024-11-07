@@ -29,7 +29,6 @@
 
 #include "core/Processor.h"
 #include "core/ProcessSession.h"
-#include "core/ProcessorNode.h"
 
 #include "GetFile.h"
 #include "HashContent.h"

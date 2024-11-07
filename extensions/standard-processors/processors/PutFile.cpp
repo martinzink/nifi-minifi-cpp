@@ -31,6 +31,7 @@
 #include "utils/ProcessorConfigUtils.h"
 #include "utils/gsl.h"
 #include "core/Resource.h"
+#include "core/ProcessContext.h"
 
 namespace org::apache::nifi::minifi::processors {
 

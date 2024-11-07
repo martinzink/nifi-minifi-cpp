@@ -35,7 +35,7 @@
 
 #include "core/logging/Logger.h"
 #include "core/ProcessContext.h"
-#include "core/ProcessorNode.h"
+#include "core/Processor.h"
 #include "http/BaseHTTPClient.h"
 #include "controllers/SSLContextService.h"
 #include "utils/net/DNS.h"

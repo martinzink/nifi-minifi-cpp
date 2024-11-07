@@ -17,6 +17,7 @@
 #include "ListenTCP.h"
 
 #include "core/Resource.h"
+#include "core/ProcessContext.h"
 #include "controllers/SSLContextService.h"
 #include "utils/ProcessorConfigUtils.h"
 

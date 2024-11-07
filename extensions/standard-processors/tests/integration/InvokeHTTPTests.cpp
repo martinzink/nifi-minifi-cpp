@@ -29,7 +29,6 @@
 #include "core/Processor.h"
 #include "core/ProcessContext.h"
 #include "core/ProcessSession.h"
-#include "core/ProcessorNode.h"
 #include "processors/LogAttribute.h"
 #include "unit/SingleProcessorTestController.h"
 #include "integration/ConnectionCountingServer.h"
@@ -85,8 +84,7 @@ TEST_CASE("HTTPTestsWithNoResourceClaimPOST", "[httptest1]") {
   minifi::utils::Identifier invokehttp_uuid = invokehttp->getUUID();
   REQUIRE(invokehttp_uuid);
 
-  auto node = std::make_shared<core::ProcessorNodeImpl>(invokehttp.get());
-  auto context = std::make_shared<core::ProcessContextImpl>(node, nullptr, repo, repo, content_repo);
+  auto context = std::make_shared<core::ProcessContextImpl>(*invokehttp, nullptr, repo, repo, content_repo);
 
   context->setProperty(org::apache::nifi::minifi::processors::InvokeHTTP::Method, "POST");
   context->setProperty(org::apache::nifi::minifi::processors::InvokeHTTP::URL, TestHTTPServer::URL);
@@ -164,34 +162,32 @@ TEST_CASE("HTTPTestsWithResourceClaimPOST", "[httptest1]") {
   invokehttp->addConnection(connection.get());
   invokehttp->addConnection(connection2.get());
 
-  auto node = std::make_shared<core::ProcessorNodeImpl>(listenhttp.get());
-  auto node2 = std::make_shared<core::ProcessorNodeImpl>(invokehttp.get());
-  auto context = std::make_shared<core::ProcessContextImpl>(node, nullptr, repo, repo, content_repo);
-  auto context2 = std::make_shared<core::ProcessContextImpl>(node2, nullptr, repo, repo, content_repo);
-  context->setProperty(org::apache::nifi::minifi::processors::ListenHTTP::Port, "8680");
-  context->setProperty(org::apache::nifi::minifi::processors::ListenHTTP::BasePath, "/testytesttest");
+  auto listen_context = std::make_shared<core::ProcessContextImpl>(*listenhttp, nullptr, repo, repo, content_repo);
+  auto invoke_context = std::make_shared<core::ProcessContextImpl>(*invokehttp, nullptr, repo, repo, content_repo);
+  listen_context->setProperty(org::apache::nifi::minifi::processors::ListenHTTP::Port, "8680");
+  listen_context->setProperty(org::apache::nifi::minifi::processors::ListenHTTP::BasePath, "/testytesttest");
 
-  context2->setProperty(org::apache::nifi::minifi::processors::InvokeHTTP::Method, "POST");
-  context2->setProperty(org::apache::nifi::minifi::processors::InvokeHTTP::URL, "http://localhost:8680/testytesttest");
-  auto session = std::make_shared<core::ProcessSessionImpl>(context);
-  auto session2 = std::make_shared<core::ProcessSessionImpl>(context2);
+  invoke_context->setProperty(org::apache::nifi::minifi::processors::InvokeHTTP::Method, "POST");
+  invoke_context->setProperty(org::apache::nifi::minifi::processors::InvokeHTTP::URL, "http://localhost:8680/testytesttest");
+  auto session = std::make_shared<core::ProcessSessionImpl>(listen_context);
+  auto session2 = std::make_shared<core::ProcessSessionImpl>(invoke_context);
 
   REQUIRE(listenhttp->getName() == "listenhttp");
 
-  auto factory = std::make_shared<core::ProcessSessionFactoryImpl>(context);
+  auto factory = std::make_shared<core::ProcessSessionFactoryImpl>(listen_context);
 
   std::shared_ptr<core::FlowFile> record;
 
   invokehttp->incrementActiveTasks();
   invokehttp->setScheduledState(core::ScheduledState::RUNNING);
-  auto factory2 = std::make_shared<core::ProcessSessionFactoryImpl>(context2);
-  invokehttp->onSchedule(*context2, *factory2);
-  invokehttp->onTrigger(*context2, *session2);
+  auto factory2 = std::make_shared<core::ProcessSessionFactoryImpl>(invoke_context);
+  invokehttp->onSchedule(*invoke_context, *factory2);
+  invokehttp->onTrigger(*invoke_context, *session2);
 
   listenhttp->incrementActiveTasks();
   listenhttp->setScheduledState(core::ScheduledState::RUNNING);
-  listenhttp->onSchedule(*context, *factory);
-  listenhttp->onTrigger(*context, *session);
+  listenhttp->onSchedule(*listen_context, *factory);
+  listenhttp->onTrigger(*listen_context, *session);
 
   auto reporter = session->getProvenanceReporter();
   auto records = reporter->getEvents();
@@ -201,7 +197,7 @@ TEST_CASE("HTTPTestsWithResourceClaimPOST", "[httptest1]") {
 
   listenhttp->incrementActiveTasks();
   listenhttp->setScheduledState(core::ScheduledState::RUNNING);
-  listenhttp->onTrigger(*context, *session);
+  listenhttp->onTrigger(*listen_context, *session);
 
   reporter = session->getProvenanceReporter();
 
@@ -210,7 +206,7 @@ TEST_CASE("HTTPTestsWithResourceClaimPOST", "[httptest1]") {
 
   invokehttp->incrementActiveTasks();
   invokehttp->setScheduledState(core::ScheduledState::RUNNING);
-  invokehttp->onTrigger(*context2, *session2);
+  invokehttp->onTrigger(*invoke_context, *session2);
 
   session2->commit();
   records = reporter->getEvents();

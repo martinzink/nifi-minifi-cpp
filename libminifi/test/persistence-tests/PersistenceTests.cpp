@@ -35,7 +35,6 @@
 #include "core/repository/VolatileFlowFileRepository.h"
 #include "../../extensions/rocksdb-repos/DatabaseContentRepository.h"
 #include "unit/TestUtils.h"
-#include "core/ProcessorNode.h"
 #include "core/repository/FileSystemRepository.h"
 
 using ConnectionImpl = minifi::ConnectionImpl;
@@ -65,15 +64,13 @@ struct TestFlow{
     auto processor = processorGenerator(mainProcUUID());
     {
       processor_ = processor.get();
-      auto node = std::make_shared<core::ProcessorNodeImpl>(processor_);
-      processorContext = std::make_shared<core::ProcessContextImpl>(node, nullptr, prov_repo, ff_repository, content_repo);
+      processorContext = std::make_shared<core::ProcessContextImpl>(*processor_, nullptr, prov_repo, ff_repository, content_repo);
     }
 
     // setup INPUT processor
     {
       inputProcessor = std::make_shared<TestProcessor>("source", inputProcUUID());
-      auto node = std::make_shared<core::ProcessorNodeImpl>(inputProcessor.get());
-      inputContext = std::make_shared<core::ProcessContextImpl>(node, nullptr, prov_repo,
+      inputContext = std::make_shared<core::ProcessContextImpl>(*inputProcessor, nullptr, prov_repo,
                                                             ff_repository, content_repo);
     }
 

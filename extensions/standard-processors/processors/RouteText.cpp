@@ -23,6 +23,7 @@
 #include <utility>
 
 #include "core/ProcessSession.h"
+#include "core/ProcessContext.h"
 #include "core/Resource.h"
 #include "io/StreamPipe.h"
 #include "core/logging/LoggerFactory.h"
