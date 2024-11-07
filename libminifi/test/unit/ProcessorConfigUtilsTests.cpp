@@ -22,7 +22,6 @@
 #include "core/PropertyDefinitionBuilder.h"
 #include "utils/ProcessorConfigUtils.h"
 #include "utils/Enum.h"
-#include "core/ProcessorNode.h"
 
 namespace org::apache::nifi::minifi::core {
 namespace {
@@ -49,7 +48,7 @@ TEST_CASE("Parse enum property") {
       .build();
   auto proc = std::make_shared<TestProcessor>("test-proc");
   proc->setSupportedProperties(std::to_array<core::PropertyReference>({prop}));
-  ProcessContextImpl context(std::make_shared<ProcessorNodeImpl>(proc.get()), nullptr, nullptr, nullptr, nullptr, nullptr);
+  ProcessContextImpl context(*proc, nullptr, nullptr, nullptr, nullptr, nullptr);
   SECTION("Valid") {
     proc->setProperty(prop, "B");
     const auto val = utils::parseEnumProperty<TestEnum>(context, prop);

@@ -31,7 +31,7 @@
 
 #include "core/ClassLoader.h"
 #include "core/Connectable.h"
-#include "core/ProcessorNode.h"
+#include "core/Processor.h"
 #include "core/ProcessContext.h"
 #include "core/ProcessContextBuilder.h"
 #include "core/ProcessSessionFactory.h"
@@ -75,14 +75,12 @@ void ThreadedSchedulingAgent::schedule(core::Processor* processor) {
     return;
   }
 
-  std::shared_ptr<core::ProcessorNode> processor_node = std::make_shared<core::ProcessorNodeImpl>(processor);
-
   std::shared_ptr<core::ProcessContextBuilder> contextBuilder = core::ClassLoader::getDefaultClassLoader().instantiate<core::ProcessContextBuilder>("ProcessContextBuilder", "ProcessContextBuilder");
 
   contextBuilder = contextBuilder->withContentRepository(content_repo_)->withFlowFileRepository(flow_repo_)->withProvider(controller_service_provider_)->withProvenanceRepository(repo_)
       ->withConfiguration(configure_);
 
-  auto process_context = contextBuilder->build(processor_node);
+  auto process_context = contextBuilder->build(*processor);
 
   auto session_factory = std::make_shared<core::ProcessSessionFactoryImpl>(process_context);
 

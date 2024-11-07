@@ -31,10 +31,10 @@
 #include "minifi-cpp/core/repository/FileSystemRepository.h"
 #include "core/Core.h"
 #include "core/ContentRepository.h"
+#include "core/Property.h"
 #include "minifi-cpp/core/controller/ControllerServiceProvider.h"
 #include "minifi-cpp/core/controller/ControllerServiceLookup.h"
 #include "core/logging/LoggerFactory.h"
-#include "minifi-cpp/core/ProcessorNode.h"
 #include "minifi-cpp/core/Property.h"
 #include "minifi-cpp/core/Repository.h"
 #include "minifi-cpp/core/FlowFile.h"
@@ -51,13 +51,13 @@ class ProcessContextImpl : public core::VariableRegistryImpl, public virtual Pro
   /*!
    * Create a new process context associated with the processor/controller service/state manager
    */
-  ProcessContextImpl(const std::shared_ptr<ProcessorNode> &processor, controller::ControllerServiceProvider* controller_service_provider, const std::shared_ptr<core::Repository> &repo,
+  ProcessContextImpl(Processor& processor, controller::ControllerServiceProvider* controller_service_provider, const std::shared_ptr<core::Repository> &repo,
                  const std::shared_ptr<core::Repository> &flow_repo, const std::shared_ptr<core::ContentRepository> &content_repo = repository::createFileSystemRepository())
       : VariableRegistryImpl(Configure::create()),
         controller_service_provider_(controller_service_provider),
         flow_repo_(flow_repo),
         content_repo_(content_repo),
-        processor_node_(processor),
+        processor_(processor),
         logger_(logging::LoggerFactory<ProcessContext>::getLogger()),
         configure_(minifi::Configure::create()),
         initialized_(false) {
@@ -68,13 +68,13 @@ class ProcessContextImpl : public core::VariableRegistryImpl, public virtual Pro
   /*!
    * Create a new process context associated with the processor/controller service/state manager
    */
-  ProcessContextImpl(const std::shared_ptr<ProcessorNode> &processor, controller::ControllerServiceProvider* controller_service_provider, const std::shared_ptr<core::Repository> &repo,
+  ProcessContextImpl(Processor& processor, controller::ControllerServiceProvider* controller_service_provider, const std::shared_ptr<core::Repository> &repo,
                  const std::shared_ptr<core::Repository> &flow_repo, const std::shared_ptr<minifi::Configure> &configuration, const std::shared_ptr<core::ContentRepository> &content_repo = repository::createFileSystemRepository())
       : VariableRegistryImpl(configuration),
         controller_service_provider_(controller_service_provider),
         flow_repo_(flow_repo),
         content_repo_(content_repo),
-        processor_node_(processor),
+        processor_(processor),
         logger_(logging::LoggerFactory<ProcessContext>::getLogger()),
         configure_(configuration),
         initialized_(false) {
@@ -86,8 +86,8 @@ class ProcessContextImpl : public core::VariableRegistryImpl, public virtual Pro
   }
 
   // Get Processor associated with the Process Context
-  std::shared_ptr<ProcessorNode> getProcessorNode() const override {
-    return processor_node_;
+  Processor& getProcessor() const override {
+    return processor_;
   }
 
   using ProcessContext::getProperty;
@@ -105,21 +105,21 @@ class ProcessContextImpl : public core::VariableRegistryImpl, public virtual Pro
   }
 
   bool getDynamicProperty(const std::string &name, std::string &value) const override {
-    return processor_node_->getDynamicProperty(name, value);
+    return processor_.getDynamicProperty(name, value);
   }
   bool getDynamicProperty(const Property &property, std::string &value, const FlowFile* const) override {
     return getDynamicProperty(property.getName(), value);
   }
 
   std::vector<std::string> getDynamicPropertyKeys() const override {
-    return processor_node_->getDynamicPropertyKeys();
+    return processor_.getDynamicPropertyKeys();
   }
   // Sets the property value using the property's string name
   bool setProperty(const std::string &name, std::string value) override {
-    return processor_node_->setProperty(name, value);
+    return processor_.setProperty(name, value);
   }  // Sets the dynamic property value using the property's string name
   bool setDynamicProperty(const std::string &name, std::string value) override {
-    return processor_node_->setDynamicProperty(name, value);
+    return processor_.setDynamicProperty(name, value);
   }
   // Sets the property value using the Property object
   bool setProperty(const Property& property, std::string value) override {
@@ -130,15 +130,15 @@ class ProcessContextImpl : public core::VariableRegistryImpl, public virtual Pro
   }
   // Check whether the relationship is auto terminated
   bool isAutoTerminated(Relationship relationship) const override {
-    return processor_node_->isAutoTerminated(relationship);
+    return processor_.isAutoTerminated(relationship);
   }
   // Get ProcessContext Maximum Concurrent Tasks
   uint8_t getMaxConcurrentTasks() const override {
-    return processor_node_->getMaxConcurrentTasks();
+    return processor_.getMaxConcurrentTasks();
   }
   // Yield based on the yield period
   void yield() override {
-    processor_node_->yield();
+    processor_.yield();
   }
 
   std::shared_ptr<core::Repository> getProvenanceRepository() override {
@@ -214,7 +214,7 @@ class ProcessContextImpl : public core::VariableRegistryImpl, public virtual Pro
       return nullptr;
     }
     if (!state_manager_) {
-      state_manager_ = state_storage_->getStateManager(*processor_node_);
+      state_manager_ = state_storage_->getStateManager(processor_);
     }
     return state_manager_.get();
   }
@@ -342,7 +342,7 @@ class ProcessContextImpl : public core::VariableRegistryImpl, public virtual Pro
  private:
   template<typename T>
   bool getPropertyImp(const std::string &name, T &value) const {
-    return processor_node_->getProperty<typename std::common_type<T>::type>(name, value);
+    return processor_.getProperty<typename std::common_type<T>::type>(name, value);
   }
 
   controller::ControllerServiceProvider* controller_service_provider_;
@@ -351,7 +351,7 @@ class ProcessContextImpl : public core::VariableRegistryImpl, public virtual Pro
   std::shared_ptr<core::Repository> repo_;
   std::shared_ptr<core::Repository> flow_repo_;
   std::shared_ptr<core::ContentRepository> content_repo_;
-  std::shared_ptr<ProcessorNode> processor_node_;
+  Processor& processor_;
   std::shared_ptr<logging::Logger> logger_;
   std::shared_ptr<Configure> configure_;
   bool initialized_;
@@ -388,11 +388,11 @@ std::optional<T> ProcessContext::getProperty(const PropertyReference& property) 
 }
 
 bool ProcessContext::getProperty(std::string_view name, detail::NotAFlowFile auto& value) const {
-  return getProcessorNode()->getProperty<typename std::common_type<decltype(value)>::type>(std::string{name}, value);
+  return getProcessor().getProperty<typename std::common_type<decltype(value)>::type>(std::string{name}, value);
 }
 
 bool ProcessContext::getProperty(const PropertyReference& property, detail::NotAFlowFile auto& value) const {
-  return getProcessorNode()->getProperty<typename std::common_type<decltype(value)>::type>(std::string{property.name}, value);
+  return getProcessor().getProperty<typename std::common_type<decltype(value)>::type>(std::string{property.name}, value);
 }
 
 }  // namespace org::apache::nifi::minifi::core

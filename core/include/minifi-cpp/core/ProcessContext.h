@@ -31,7 +31,7 @@
 #include "minifi-cpp/core/Core.h"
 #include "minifi-cpp/core/ContentRepository.h"
 #include "minifi-cpp/core/controller/ControllerServiceLookup.h"
-#include "minifi-cpp/core/ProcessorNode.h"
+#include "minifi-cpp/core/Processor.h"
 #include "minifi-cpp/core/Property.h"
 #include "minifi-cpp/core/Repository.h"
 #include "minifi-cpp/core/FlowFile.h"
@@ -47,7 +47,7 @@ concept NotAFlowFile = !std::convertible_to<T &, const FlowFile &> && !std::conv
 
 class ProcessContext : public virtual controller::ControllerServiceLookup, public virtual core::VariableRegistry, public virtual utils::EnableSharedFromThis {
  public:
-  virtual std::shared_ptr<ProcessorNode> getProcessorNode() const = 0;
+  virtual Processor& getProcessor() const = 0;
   virtual std::optional<std::string> getProperty(const Property&, const FlowFile* const) = 0;
   virtual std::optional<std::string> getProperty(const PropertyReference&, const FlowFile* const) = 0;
   virtual bool getProperty(const Property &property, std::string &value, const FlowFile* const) = 0;

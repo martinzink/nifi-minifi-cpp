@@ -22,6 +22,7 @@
 #include "core/Resource.h"
 
 #include "core/ProcessSession.h"
+#include "core/ProcessContext.h"
 #include "modbus/Error.h"
 #include "modbus/ReadModbusFunctions.h"
 #include "utils/net/AsioCoro.h"

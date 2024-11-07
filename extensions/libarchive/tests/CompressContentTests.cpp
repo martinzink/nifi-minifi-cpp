@@ -35,7 +35,6 @@
 #include "core/Processor.h"
 #include "core/ProcessContext.h"
 #include "core/ProcessSession.h"
-#include "core/ProcessorNode.h"
 #include "CompressContent.h"
 #include "io/FileStream.h"
 #include "processors/LogAttribute.h"
@@ -146,7 +145,7 @@ class CompressDecompressionTestController : public TestController {
     processor->incrementActiveTasks();
     processor->setScheduledState(core::ScheduledState::RUNNING);
 
-    context = std::make_shared<core::ProcessContextImpl>(std::make_shared<core::ProcessorNodeImpl>(processor.get()), nullptr, repo, repo, content_repo);
+    context = std::make_shared<core::ProcessContextImpl>(*processor, nullptr, repo, repo, content_repo);
     helper_session = std::make_shared<core::ProcessSessionImpl>(context);
   }
 

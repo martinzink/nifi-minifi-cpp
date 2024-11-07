@@ -31,7 +31,7 @@ bool ProcessContextExpr::getProperty(bool supports_expression_language, std::str
     if (!ProcessContextImpl::getProperty(name, expression_str)) {
       return false;
     }
-    logger_->log_debug("Compiling expression for {}/{}: {}", getProcessorNode()->getName(), name, expression_str);
+    logger_->log_debug("Compiling expression for {}/{}: {}", getProcessor().getName(), name, expression_str);
     expressions_.emplace(name, expression::compile(expression_str));
     expression_strs_.insert_or_assign(name, expression_str);
   }
@@ -58,7 +58,7 @@ bool ProcessContextExpr::getDynamicProperty(const Property &property, std::strin
   if (dynamic_property_expressions_.find(name) == dynamic_property_expressions_.end()) {
     std::string expression_str;
     ProcessContextImpl::getDynamicProperty(name, expression_str);
-    logger_->log_debug("Compiling expression for {}/{}: {}", getProcessorNode()->getName(), name, expression_str);
+    logger_->log_debug("Compiling expression for {}/{}: {}", getProcessor().getName(), name, expression_str);
     dynamic_property_expressions_.emplace(name, expression::compile(expression_str));
     expression_strs_.insert_or_assign(name, expression_str);
   }
