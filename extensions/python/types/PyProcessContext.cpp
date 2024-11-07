@@ -141,7 +141,7 @@ PyObject* PyProcessContext::getName(PyProcessContext* self, PyObject*) {
     return nullptr;
   }
 
-  return object::returnReference(context->getProcessorNode()->getName());
+  return object::returnReference(context->getProcessor().getName());
 }
 
 PyObject* PyProcessContext::getProperties(PyProcessContext* self, PyObject*) {
@@ -151,12 +151,7 @@ PyObject* PyProcessContext::getProperties(PyProcessContext* self, PyObject*) {
     return nullptr;
   }
 
-  auto processor = dynamic_cast<core::Processor*>(context->getProcessorNode()->getProcessor());
-  if (!processor) {
-    PyErr_SetString(PyExc_AttributeError, "Processor not available in getProperties");
-    return nullptr;
-  }
-  auto properties = processor->getProperties();
+  auto properties = context->getProcessor().getProperties();
   auto py_properties = OwnedDict::create();
   for (const auto& [property_name, property] : properties) {
     std::string value;

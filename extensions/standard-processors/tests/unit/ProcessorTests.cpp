@@ -43,7 +43,6 @@
 #include "core/Processor.h"
 #include "core/ProcessContext.h"
 #include "core/ProcessSession.h"
-#include "core/ProcessorNode.h"
 #include "core/reporting/SiteToSiteProvenanceReportingTask.h"
 #include "core/Resource.h"
 #include "utils/gsl.h"
@@ -90,8 +89,7 @@ TEST_CASE("Test GetFileMultiple", "[getfileCreate3]") {
   processor->addConnection(connection.get());
   REQUIRE(!dir.empty());
 
-  auto node = std::make_shared<core::ProcessorNodeImpl>(processor.get());
-  auto context = std::make_shared<core::ProcessContextImpl>(node, nullptr, repo, repo, content_repo);
+  auto context = std::make_shared<core::ProcessContextImpl>(*processor, nullptr, repo, repo, content_repo);
 
   context->setProperty(org::apache::nifi::minifi::processors::GetFile::Directory, dir.string());
   // replicate 10 threads
@@ -173,8 +171,7 @@ TEST_CASE("Test GetFile Ignore", "[getfileCreate3]") {
   processor->addConnection(connection.get());
   REQUIRE(!dir.empty());
 
-  auto node = std::make_shared<core::ProcessorNodeImpl>(processor.get());
-  auto context = std::make_shared<core::ProcessContextImpl>(node, nullptr, repo, repo, content_repo);
+  auto context = std::make_shared<core::ProcessContextImpl>(*processor, nullptr, repo, repo, content_repo);
 
   context->setProperty(org::apache::nifi::minifi::processors::GetFile::Directory, dir.string());
   // replicate 10 threads
@@ -259,8 +256,7 @@ TEST_CASE("TestConnectionFull", "[ConnectionFull]") {
   processor->addConnection(connection.get());
   processor->setScheduledState(core::ScheduledState::RUNNING);
 
-  auto node = std::make_shared<core::ProcessorNodeImpl>(processor.get());
-  auto context = std::make_shared<core::ProcessContextImpl>(node, nullptr, repo, repo, content_repo);
+  auto context = std::make_shared<core::ProcessContextImpl>(*processor, nullptr, repo, repo, content_repo);
 
   auto factory = std::make_shared<core::ProcessSessionFactoryImpl>(context);
 
@@ -553,8 +549,7 @@ void testRPGBypass(const std::string &host, const std::string &port, bool has_er
   rpg->initialize();
   REQUIRE(rpg->setProperty(minifi::RemoteProcessorGroupPort::hostName, host));
   rpg->setProperty(minifi::RemoteProcessorGroupPort::port, port);
-  auto node = std::make_shared<core::ProcessorNodeImpl>(rpg.get());
-  auto context = std::make_shared<core::ProcessContextImpl>(node, nullptr, repo, repo, content_repo);
+  auto context = std::make_shared<core::ProcessContextImpl>(*rpg, nullptr, repo, repo, content_repo);
   auto psf = std::make_shared<core::ProcessSessionFactoryImpl>(context);
   if (has_error) {
     rpg->onSchedule(*context, *psf);
@@ -619,8 +614,7 @@ ProcessorWithIncomingConnectionTest::ProcessorWithIncomingConnectionTest() {
   processor_->addConnection(incoming_connection_.get());
   processor_->initialize();
 
-  const auto processor_node = std::make_shared<core::ProcessorNodeImpl>(processor_.get());
-  const auto context = std::make_shared<core::ProcessContextImpl>(processor_node, nullptr, repo, repo, content_repo);
+  const auto context = std::make_shared<core::ProcessContextImpl>(*processor_, nullptr, repo, repo, content_repo);
   const auto session_factory = std::make_shared<core::ProcessSessionFactoryImpl>(context);
   session_ = session_factory->createSession();
 }

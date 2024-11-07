@@ -25,7 +25,6 @@
 #include <utility>
 
 #include "core/Processor.h"
-#include "core/ProcessorNode.h"
 #include "core/ProcessContextBuilder.h"
 #include "core/PropertyDefinition.h"
 #include "core/logging/LoggerConfiguration.h"
@@ -281,13 +280,11 @@ std::shared_ptr<minifi::core::Processor> TestPlan::addProcessor(const std::share
     }
     relationships_.push_back(std::move(connection));
   }
-  std::shared_ptr<minifi::core::ProcessorNode> node = std::make_shared<minifi::core::ProcessorNodeImpl>(processor.get());
-  processor_nodes_.push_back(node);
   std::shared_ptr<minifi::core::ProcessContextBuilder> contextBuilder =
     minifi::core::ClassLoader::getDefaultClassLoader().instantiate<minifi::core::ProcessContextBuilder>("ProcessContextBuilder", "ProcessContextBuilder");
   contextBuilder = contextBuilder->withContentRepository(content_repo_)->withFlowFileRepository(flow_repo_)->withProvider(controller_services_provider_.get())
     ->withProvenanceRepository(prov_repo_)->withConfiguration(configuration_);
-  auto context = contextBuilder->build(node);
+  auto context = contextBuilder->build(*processor);
   processor_contexts_.push_back(context);
   processor_queue_.push_back(processor);
   return processor;
@@ -461,7 +458,7 @@ std::vector<std::shared_ptr<minifi::core::Processor>>::iterator TestPlan::getPro
 
 std::shared_ptr<minifi::core::ProcessContext> TestPlan::getProcessContextForProcessor(const std::shared_ptr<minifi::core::Processor>& processor) {
   const auto contextMatchesProcessor = [&processor] (const std::shared_ptr<minifi::core::ProcessContext>& context) {
-    return context->getProcessorNode()->getUUIDStr() ==  processor->getUUIDStr();
+    return context->getProcessor().getUUIDStr() ==  processor->getUUIDStr();
   };
   const auto context_found_at = std::find_if(processor_contexts_.begin(), processor_contexts_.end(), contextMatchesProcessor);
   if (context_found_at == processor_contexts_.end()) {

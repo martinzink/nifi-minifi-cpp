@@ -20,6 +20,7 @@
 
 #include "KamikazeProcessor.h"
 #include "Exception.h"
+#include "core/ProcessContext.h"
 #include "core/Resource.h"
 
 namespace org::apache::nifi::minifi::processors {

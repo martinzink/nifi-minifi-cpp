@@ -34,14 +34,14 @@ namespace org::apache::nifi::minifi::core {
  */
 class ProcessContextExpr final : public core::ProcessContextImpl {
  public:
-  ProcessContextExpr(const std::shared_ptr<ProcessorNode> &processor, controller::ControllerServiceProvider* controller_service_provider,
+  ProcessContextExpr(Processor& processor, controller::ControllerServiceProvider* controller_service_provider,
                      const std::shared_ptr<core::Repository> &repo, const std::shared_ptr<core::Repository> &flow_repo,
                      const std::shared_ptr<core::ContentRepository> &content_repo = core::repository::createFileSystemRepository())
       : core::ProcessContextImpl(processor, controller_service_provider, repo, flow_repo, content_repo),
         logger_(logging::LoggerFactory<ProcessContextExpr>::getLogger()) {
   }
 
-  ProcessContextExpr(const std::shared_ptr<ProcessorNode> &processor, controller::ControllerServiceProvider* controller_service_provider,
+  ProcessContextExpr(Processor& processor, controller::ControllerServiceProvider* controller_service_provider,
                      const std::shared_ptr<core::Repository> &repo, const std::shared_ptr<core::Repository> &flow_repo, const std::shared_ptr<minifi::Configure> &configuration,
                      const std::shared_ptr<core::ContentRepository> &content_repo = core::repository::createFileSystemRepository())
       : core::ProcessContextImpl(processor, controller_service_provider, repo, flow_repo, configuration, content_repo),

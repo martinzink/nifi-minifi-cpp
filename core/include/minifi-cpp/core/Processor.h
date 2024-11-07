@@ -34,9 +34,10 @@
 
 #include "ConfigurableComponent.h"
 #include "Connectable.h"
+#include "Property.h"
+#include "DynamicProperty.h"
 #include "Core.h"
 #include "minifi-cpp/core/Annotation.h"
-#include "DynamicProperty.h"
 #include "Scheduling.h"
 #include "utils/TimeUtil.h"
 #include "minifi-cpp/core/state/nodes/MetricsBase.h"

@@ -27,6 +27,7 @@
 #include "core/Core.h"
 #include "core/OutputAttributeDefinition.h"
 #include "core/Processor.h"
+#include "core/ProcessContext.h"
 #include "core/ProcessSession.h"
 #include "core/PropertyDefinitionBuilder.h"
 #include "core/PropertyType.h"
