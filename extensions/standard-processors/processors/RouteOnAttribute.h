@@ -25,6 +25,7 @@
 #include <utility>
 
 #include "core/Processor.h"
+#include "core/ProcessContext.h"
 #include "core/ProcessSession.h"
 #include "core/RelationshipDefinition.h"
 #include "core/Core.h"

@@ -21,6 +21,7 @@
 #include "utils/StringUtils.h"
 #include "utils/TimeUtil.h"
 #include "core/Resource.h"
+#include "core/ProcessContext.h"
 
 namespace org::apache::nifi::minifi::processors {
 
