@@ -81,6 +81,7 @@ class PublishKafka : public KafkaProcessorBase {
       .isRequired(false)
       .supportsExpressionLanguage(true)
       .withDefaultValue(DELIVERY_ONE_NODE)
+      .withValidator(core::StandardPropertyTypes::NON_BLANK_VALIDATOR)
       .build();
   EXTENSIONAPI static constexpr auto MaxMessageSize = core::PropertyDefinitionBuilder<>::createProperty("Max Request Size")
       .withDescription("Maximum Kafka protocol request message size")
@@ -89,13 +90,13 @@ class PublishKafka : public KafkaProcessorBase {
   EXTENSIONAPI static constexpr auto RequestTimeOut = core::PropertyDefinitionBuilder<>::createProperty("Request Timeout")
       .withDescription("The ack timeout of the producer request")
       .isRequired(false)
-      .withPropertyType(core::StandardPropertyTypes::TIME_PERIOD_TYPE)
+      .withValidator(core::StandardPropertyTypes::TIME_PERIOD_VALIDATOR)
       .withDefaultValue("10 sec")
       .build();
   EXTENSIONAPI static constexpr auto MessageTimeOut = core::PropertyDefinitionBuilder<>::createProperty("Message Timeout")
       .withDescription("The total time sending a message could take")
       .isRequired(false)
-      .withPropertyType(core::StandardPropertyTypes::TIME_PERIOD_TYPE)
+      .withValidator(core::StandardPropertyTypes::TIME_PERIOD_VALIDATOR)
       .withDefaultValue("30 sec")
       .build();
   EXTENSIONAPI static constexpr auto ClientName = core::PropertyDefinitionBuilder<>::createProperty("Client Name")
@@ -106,13 +107,13 @@ class PublishKafka : public KafkaProcessorBase {
   EXTENSIONAPI static constexpr auto BatchSize = core::PropertyDefinitionBuilder<>::createProperty("Batch Size")
       .withDescription("Maximum number of messages batched in one MessageSet")
       .isRequired(false)
-      .withPropertyType(core::StandardPropertyTypes::UNSIGNED_INT_TYPE)
+      .withValidator(core::StandardPropertyTypes::UNSIGNED_INTEGER_VALIDATOR)
       .withDefaultValue("10")
       .build();
   EXTENSIONAPI static constexpr auto TargetBatchPayloadSize = core::PropertyDefinitionBuilder<>::createProperty("Target Batch Payload Size")
       .withDescription("The target total payload size for a batch. 0 B means unlimited (Batch Size is still applied).")
       .isRequired(false)
-      .withPropertyType(core::StandardPropertyTypes::DATA_SIZE_TYPE)
+      .withValidator(core::StandardPropertyTypes::DATA_SIZE_VALIDATOR)
       .withDefaultValue("512 KB")
       .build();
   EXTENSIONAPI static constexpr auto AttributeNameRegex = core::PropertyDefinitionBuilder<>::createProperty("Attributes to Send as Headers")
@@ -121,19 +122,19 @@ class PublishKafka : public KafkaProcessorBase {
   EXTENSIONAPI static constexpr auto QueueBufferMaxTime = core::PropertyDefinitionBuilder<>::createProperty("Queue Buffering Max Time")
       .withDescription("Delay to wait for messages in the producer queue to accumulate before constructing message batches")
       .isRequired(false)
-      .withPropertyType(core::StandardPropertyTypes::TIME_PERIOD_TYPE)
+      .withValidator(core::StandardPropertyTypes::TIME_PERIOD_VALIDATOR)
       .withDefaultValue("5 millis")
       .build();
   EXTENSIONAPI static constexpr auto QueueBufferMaxSize = core::PropertyDefinitionBuilder<>::createProperty("Queue Max Buffer Size")
       .withDescription("Maximum total message size sum allowed on the producer queue")
       .isRequired(false)
-      .withPropertyType(core::StandardPropertyTypes::DATA_SIZE_TYPE)
+      .withValidator(core::StandardPropertyTypes::DATA_SIZE_VALIDATOR)
       .withDefaultValue("1 MB")
       .build();
   EXTENSIONAPI static constexpr auto QueueBufferMaxMessage = core::PropertyDefinitionBuilder<>::createProperty("Queue Max Message")
       .withDescription("Maximum number of messages allowed on the producer queue")
       .isRequired(false)
-      .withPropertyType(core::StandardPropertyTypes::UNSIGNED_LONG_TYPE)
+      .withValidator(core::StandardPropertyTypes::UNSIGNED_INTEGER_VALIDATOR)
       .withDefaultValue("1000")
       .build();
   EXTENSIONAPI static constexpr auto CompressCodec = core::PropertyDefinitionBuilder<3>::createProperty("Compress Codec")
@@ -145,7 +146,7 @@ class PublishKafka : public KafkaProcessorBase {
   EXTENSIONAPI static constexpr auto MaxFlowSegSize = core::PropertyDefinitionBuilder<>::createProperty("Max Flow Segment Size")
       .withDescription("Maximum flow content payload segment size for the kafka record. 0 B means unlimited.")
       .isRequired(false)
-      .withPropertyType(core::StandardPropertyTypes::DATA_SIZE_TYPE)
+      .withValidator(core::StandardPropertyTypes::DATA_SIZE_VALIDATOR)
       .withDefaultValue("0 B")
       .build();
   EXTENSIONAPI static constexpr auto SecurityCA = core::PropertyDefinitionBuilder<>::createProperty("Security CA")
@@ -164,6 +165,7 @@ class PublishKafka : public KafkaProcessorBase {
   EXTENSIONAPI static constexpr auto KafkaKey = core::PropertyDefinitionBuilder<>::createProperty("Kafka Key")
       .withDescription("The key to use for the message. If not specified, the UUID of the flow file is used as the message key.")
       .supportsExpressionLanguage(true)
+      .withValidator(core::StandardPropertyTypes::NON_BLANK_VALIDATOR)
       .build();
   EXTENSIONAPI static constexpr auto MessageKeyField = core::PropertyDefinitionBuilder<>::createProperty("Message Key Field")
       .withDescription("DEPRECATED, does not work -- use Kafka Key instead")
@@ -171,12 +173,13 @@ class PublishKafka : public KafkaProcessorBase {
   EXTENSIONAPI static constexpr auto DebugContexts = core::PropertyDefinitionBuilder<>::createProperty("Debug contexts")
       .withDescription("A comma-separated list of debug contexts to enable."
           "Including: generic, broker, topic, metadata, feature, queue, msg, protocol, cgrp, security, fetch, interceptor, plugin, consumer, admin, eos, all")
+      .withValidator(core::StandardPropertyTypes::NON_BLANK_VALIDATOR)
       .build();
   EXTENSIONAPI static constexpr auto FailEmptyFlowFiles = core::PropertyDefinitionBuilder<>::createProperty("Fail empty flow files")
       .withDescription("Keep backwards compatibility with <=0.7.0 bug which caused flow files with empty content to not be published to Kafka and forwarded to failure. The old behavior is "
           "deprecated. Use connections to drop empty flow files!")
       .isRequired(false)
-      .withPropertyType(core::StandardPropertyTypes::BOOLEAN_TYPE)
+      .withValidator(core::StandardPropertyTypes::BOOLEAN_VALIDATOR)
       .withDefaultValue("true")
       .build();
   EXTENSIONAPI static constexpr auto Properties = utils::array_cat(KafkaProcessorBase::Properties, std::to_array<core::PropertyReference>({
@@ -240,7 +243,7 @@ class PublishKafka : public KafkaProcessorBase {
   std::unique_ptr<KafkaConnection> conn_;
   std::mutex connection_mutex_;
 
-  uint32_t batch_size_{};
+  uint64_t batch_size_{};
   uint64_t target_batch_payload_size_{};
   uint64_t max_flow_seg_size_{};
   std::optional<utils::Regex> attributeNameRegex_;
