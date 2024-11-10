@@ -487,8 +487,8 @@ TEST_CASE("expected transformError", "[expected][transformError]") {
   }
 
   {
-    nonstd::expected<uint64_t, std::string> e = nonstd::make_unexpected("sajt");
-    auto ret = e | utils::transformError([](std::string error) -> int { return error.length(); });
+    nonstd::expected<size_t, std::string> e = nonstd::make_unexpected("sajt");
+    auto ret = e | utils::transformError([](const std::string& error) -> int { return error.length(); });
     REQUIRE(!ret);
     REQUIRE(ret.error() == 4);
   }

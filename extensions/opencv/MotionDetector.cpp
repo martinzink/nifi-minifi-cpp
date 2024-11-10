@@ -66,18 +66,17 @@ bool MotionDetector::detectAndDraw(cv::Mat &frame) {
   logger_->log_trace("Get difference [{} x {}] [{} x {}]", bg_img_.rows, bg_img_.cols, gray.rows, gray.cols);
   cv::absdiff(gray, bg_img_, img_diff);
   logger_->log_trace("Apply threshold");
-  cv::threshold(img_diff, thresh, threshold_, 255, cv::THRESH_BINARY);
+  cv::threshold(img_diff, thresh, gsl::narrow<double>(threshold_), 255, cv::THRESH_BINARY);
   // Image processing.
   logger_->log_trace("Dilation");
-  cv::dilate(thresh, thresh, cv::Mat(), cv::Point(-1, -1), dil_iter_);
+  cv::dilate(thresh, thresh, cv::Mat(), cv::Point(-1, -1), gsl::narrow<double>(dil_iter_));
   cv::findContours(thresh, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
   // Finish process
   logger_->log_debug("Draw contours");
   bool moved = false;
   for (const auto &contour : contours) {
-    auto area = cv::contourArea(contour);
-    if (area < min_area_) {
+    if (const auto area = cv::contourArea(contour); area < gsl::narrow<double>(min_area_)) {
       continue;
     }
     moved = true;
