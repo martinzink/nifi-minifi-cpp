@@ -27,10 +27,10 @@ TEST_CASE("Scheduling should fail when batch size is larger than the max queue m
   LogTestController::getInstance().setTrace<processors::PublishKafka>();
   SingleProcessorTestController test_controller(std::make_unique<processors::PublishKafka>("PublishKafka"));
   const auto publish_kafka = test_controller.getProcessor();
-  publish_kafka->setProperty(processors::PublishKafka::ClientName, "test_client");
-  publish_kafka->setProperty(processors::PublishKafka::SeedBrokers, "test_seedbroker");
-  publish_kafka->setProperty(processors::PublishKafka::QueueBufferMaxMessage, "1000");
-  publish_kafka->setProperty(processors::PublishKafka::BatchSize, "1500");
+  publish_kafka->setProperty(processors::PublishKafka::ClientName.name, "test_client");
+  publish_kafka->setProperty(processors::PublishKafka::SeedBrokers.name, "test_seedbroker");
+  publish_kafka->setProperty(processors::PublishKafka::QueueBufferMaxMessage.name, "1000");
+  publish_kafka->setProperty(processors::PublishKafka::BatchSize.name, "1500");
   REQUIRE_THROWS_WITH(test_controller.trigger(""), "Process Schedule Operation: Invalid configuration: Batch Size cannot be larger than Queue Max Message");
 }
 

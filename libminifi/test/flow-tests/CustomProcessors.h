@@ -18,6 +18,7 @@
 
 #pragma once
 
+
 #include <memory>
 #include <random>
 #include <string>
@@ -25,14 +26,15 @@
 #include <utility>
 
 #include "core/Processor.h"
-#include "unit/TestBase.h"
-#include "unit/Catch.h"
-#include "processors/GenerateFlowFile.h"
 #include "core/PropertyDefinition.h"
 #include "core/PropertyDefinitionBuilder.h"
 #include "core/PropertyType.h"
 #include "core/RelationshipDefinition.h"
 #include "core/Resource.h"
+#include "processors/GenerateFlowFile.h"
+#include "unit/Catch.h"
+#include "unit/TestBase.h"
+#include "utils/ProcessorConfigUtils.h"
 
 namespace org::apache::nifi::minifi::processors {
 
@@ -40,13 +42,13 @@ static constexpr auto Apple = core::RelationshipDefinition{"apple", ""};
 static constexpr auto Banana = core::RelationshipDefinition{"banana", ""};
 // The probability that this processor routes to Apple
 static constexpr auto AppleProbability = core::PropertyDefinitionBuilder<>::createProperty("AppleProbability")
-    .withPropertyType(core::StandardPropertyTypes::INTEGER_TYPE)
+    .withValidator(core::StandardPropertyTypes::INTEGER_VALIDATOR)
     .withDefaultValue("100")
     .isRequired(true)
     .build();
 // The probability that this processor routes to Banana
 static constexpr auto BananaProbability = core::PropertyDefinitionBuilder<>::createProperty("BananaProbability")
-    .withPropertyType(core::StandardPropertyTypes::INTEGER_TYPE)
+    .withValidator(core::StandardPropertyTypes::INTEGER_VALIDATOR)
     .withDefaultValue("0")
     .isRequired(true)
     .build();
@@ -98,12 +100,8 @@ class TestProcessor : public core::ProcessorImpl, public ProcessorWithStatistics
     throw std::runtime_error("Couldn't route file");
   }
   void onSchedule(core::ProcessContext& context, core::ProcessSessionFactory&) override {
-    int apple;
-    bool appleSuccess = context.getProperty(AppleProbability, apple);
-    REQUIRE(appleSuccess);
-    int banana;
-    bool bananaSuccess = context.getProperty(BananaProbability, banana);
-    REQUIRE(bananaSuccess);
+    int apple = utils::parseI64Property(context, AppleProbability);
+    int banana = utils::parseI64Property(context, BananaProbability);
     apple_probability_ = apple;
     banana_probability_ = banana;
   }

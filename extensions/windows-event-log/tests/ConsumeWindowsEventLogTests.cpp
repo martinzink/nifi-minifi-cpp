@@ -17,7 +17,7 @@
 
 #include "ConsumeWindowsEventLog.h"
 
-#include "core/ConfigurableComponent.h"
+#include "core/ConfigurableComponentImpl.h"
 #include "processors/LogAttribute.h"
 #include "processors/PutFile.h"
 #include "unit/TestBase.h"
