@@ -15,13 +15,16 @@
  * limitations under the License.
  */
 
+#include "MotionDetector.h"
+
+
 #include <utility>
 #include <vector>
 
-#include "MotionDetector.h"
 #include "core/ProcessContext.h"
 #include "core/ProcessSession.h"
 #include "core/Resource.h"
+#include "utils/ProcessorConfigUtils.h"
 
 namespace org::apache::nifi::minifi::processors {
 
@@ -31,26 +34,14 @@ void MotionDetector::initialize() {
 }
 
 void MotionDetector::onSchedule(core::ProcessContext& context, core::ProcessSessionFactory&) {
-  std::string value;
+  image_encoding_ = context.getProperty(ImageEncoding).value_or("");
+  min_area_ = utils::parseU64Property(context, MinInterestArea);
+  threshold_ = utils::parseU64Property(context, Threshold);
+  dil_iter_ = utils::parseU64Property(context, DilateIter);
 
-  if (context.getProperty(ImageEncoding, value)) {
-    image_encoding_ = value;
-  }
 
-  if (context.getProperty(MinInterestArea, value)) {
-    core::Property::StringToInt(value, min_area_);
-  }
-
-  if (context.getProperty(Threshold, value)) {
-    core::Property::StringToInt(value, threshold_);
-  }
-
-  if (context.getProperty(DilateIter, value)) {
-    core::Property::StringToInt(value, dil_iter_);
-  }
-
-  if (context.getProperty(BackgroundFrame, value) && !value.empty()) {
-    bg_img_ = cv::imread(value, cv::IMREAD_GRAYSCALE);
+  if (const auto value = context.getProperty(BackgroundFrame)) {
+    bg_img_ = cv::imread(*value, cv::IMREAD_GRAYSCALE);
     double scale = IMG_WIDTH / bg_img_.size().width;
     cv::resize(bg_img_, bg_img_, cv::Size(0, 0), scale, scale);
     cv::GaussianBlur(bg_img_, bg_img_, cv::Size(21, 21), 0, 0);

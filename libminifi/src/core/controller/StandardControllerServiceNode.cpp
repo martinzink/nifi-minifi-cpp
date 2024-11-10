@@ -23,12 +23,11 @@
 namespace org::apache::nifi::minifi::core::controller {
 
 bool StandardControllerServiceNode::enable() {
-  Property property("Linked Services", "Referenced Controller Services");
   controller_service_->setState(ENABLED);
   logger_->log_trace("Enabling CSN {}", getName());
-  if (getProperty(property.getName(), property)) {
+  if (auto linked_services = getAllPropertyValues("Linked Services")) {
     active = true;
-    for (const auto& linked_service : property.getValues()) {
+    for (const auto& linked_service : *linked_services) {
       ControllerServiceNode* csNode = provider->getControllerServiceNode(linked_service, controller_service_->getUUID());
       if (nullptr != csNode) {
         std::lock_guard<std::mutex> lock(mutex_);

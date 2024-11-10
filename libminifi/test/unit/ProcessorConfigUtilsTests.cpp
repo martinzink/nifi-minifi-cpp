@@ -50,25 +50,23 @@ TEST_CASE("Parse enum property") {
   proc->setSupportedProperties(std::to_array<core::PropertyReference>({prop}));
   ProcessContextImpl context(*proc, nullptr, nullptr, nullptr, nullptr, nullptr);
   SECTION("Valid") {
-    proc->setProperty(prop, "B");
+    proc->setProperty(prop.name, "B");
     const auto val = utils::parseEnumProperty<TestEnum>(context, prop);
     REQUIRE(val == TestEnum::B);
   }
   SECTION("Invalid") {
-    proc->setProperty(prop, "C");
-    REQUIRE_THROWS(utils::parseEnumProperty<TestEnum>(context, prop));
+    CHECK_FALSE(proc->setProperty(prop.name, "C"));  // Cant set it anymore
   }
   SECTION("Missing") {
     REQUIRE_THROWS(utils::parseEnumProperty<TestEnum>(context, prop));
   }
   SECTION("Optional enum property valid") {
-    proc->setProperty(prop, "B");
+    proc->setProperty(prop.name, "B");
     const auto val = utils::parseOptionalEnumProperty<TestEnum>(context, prop);
     REQUIRE(*val == TestEnum::B);
   }
   SECTION("Optional enum property invalid") {
-    proc->setProperty(prop, "C");
-    REQUIRE_THROWS(utils::parseOptionalEnumProperty<TestEnum>(context, prop));
+    CHECK_FALSE(proc->setProperty(prop.name, "C"));  // Cant set it anymore
   }
   SECTION("Optional enum property missing") {
     const auto val = utils::parseOptionalEnumProperty<TestEnum>(context, prop);
