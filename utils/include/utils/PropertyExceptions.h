@@ -16,4 +16,4 @@
  */
 #pragma once
 
-#include "minifi-cpp/utils/PropertyErrors.h"
+#include "minifi-cpp/utils/PropertyExceptions.h"

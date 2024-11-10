@@ -41,7 +41,7 @@ TEST_CASE("ListenTCP test multiple messages", "[ListenTCP][NetworkListenerProces
   const auto listen_tcp = std::make_shared<ListenTCP>("ListenTCP");
   SingleProcessorTestController controller{listen_tcp};
   LogTestController::getInstance().setTrace<ListenTCP>();
-  REQUIRE(listen_tcp->setProperty(ListenTCP::MaxBatchSize, "2"));
+  REQUIRE(listen_tcp->setProperty(ListenTCP::MaxBatchSize.name, "2"));
   auto port = utils::scheduleProcessorOnRandomPort(controller.plan, listen_tcp);
 
   asio::ip::tcp::endpoint endpoint;
@@ -69,8 +69,8 @@ TEST_CASE("ListenTCP can be rescheduled", "[ListenTCP][NetworkListenerProcessor]
   const auto listen_tcp = std::make_shared<ListenTCP>("ListenTCP");
   SingleProcessorTestController controller{listen_tcp};
   LogTestController::getInstance().setTrace<ListenTCP>();
-  REQUIRE(listen_tcp->setProperty(ListenTCP::Port, "0"));
-  REQUIRE(listen_tcp->setProperty(ListenTCP::MaxBatchSize, "100"));
+  REQUIRE(listen_tcp->setProperty(ListenTCP::Port.name, "0"));
+  REQUIRE(listen_tcp->setProperty(ListenTCP::MaxBatchSize.name, "100"));
 
   REQUIRE_NOTHROW(controller.plan->scheduleProcessor(listen_tcp));
   REQUIRE_NOTHROW(controller.plan->reset(true));
@@ -81,8 +81,8 @@ TEST_CASE("ListenTCP max queue and max batch size test", "[ListenTCP][NetworkLis
   const auto listen_tcp = std::make_shared<ListenTCP>("ListenTCP");
   SingleProcessorTestController controller{listen_tcp};
   LogTestController::getInstance().setTrace<ListenTCP>();
-  REQUIRE(listen_tcp->setProperty(ListenTCP::MaxBatchSize, "10"));
-  REQUIRE(listen_tcp->setProperty(ListenTCP::MaxQueueSize, "50"));
+  REQUIRE(listen_tcp->setProperty(ListenTCP::MaxBatchSize.name, "10"));
+  REQUIRE(listen_tcp->setProperty(ListenTCP::MaxQueueSize.name, "50"));
   auto port = utils::scheduleProcessorOnRandomPort(controller.plan, listen_tcp);
 
   asio::ip::tcp::endpoint endpoint;
@@ -295,8 +295,8 @@ TEST_CASE("Custom delimiter", "[ListenTCP][NetworkListenerProcessor]") {
   std::string delimiter = GENERATE("\n", "\\n", "foo", "💩", "foo\\nbar");
   const auto consume_delimiter = GENERATE(true, false);
 
-  REQUIRE(listen_tcp->setProperty(ListenTCP::MessageDelimiter, delimiter));
-  REQUIRE(listen_tcp->setProperty(ListenTCP::ConsumeDelimiter, fmt::format("{}", consume_delimiter)));
+  REQUIRE(listen_tcp->setProperty(ListenTCP::MessageDelimiter.name, delimiter));
+  REQUIRE(listen_tcp->setProperty(ListenTCP::ConsumeDelimiter.name, fmt::format("{}", consume_delimiter)));
   auto port = utils::scheduleProcessorOnRandomPort(controller.plan, listen_tcp);
 
   asio::ip::tcp::endpoint endpoint = asio::ip::tcp::endpoint(asio::ip::address_v4::loopback(), port);

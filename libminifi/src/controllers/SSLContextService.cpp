@@ -412,7 +412,7 @@ void SSLContextServiceImpl::onEnable() {
   logger_->log_trace("onEnable()");
 
   certificate_.clear();
-  if (auto certificate = getProperty(ClientCertificate)) {
+  if (auto certificate = getProperty(ClientCertificate.name)) {
     if (is_valid_and_readable_path(*certificate)) {
       certificate_ = *certificate;
     } else {
@@ -429,7 +429,7 @@ void SSLContextServiceImpl::onEnable() {
 
   private_key_.clear();
   if (!certificate_.empty() && !isFileTypeP12(certificate_)) {
-    if (auto private_key = getProperty(PrivateKey)) {
+    if (auto private_key = getProperty(PrivateKey.name)) {
       if (is_valid_and_readable_path(*private_key)) {
         private_key_ = *private_key;
       } else {
@@ -447,9 +447,8 @@ void SSLContextServiceImpl::onEnable() {
   }
 
   passphrase_.clear();
-  if (!getProperty(Passphrase, passphrase_)) {
-    logger_->log_debug("No pass phrase for {}", certificate_);
-  } else {
+  if (auto passphrase = getProperty(Passphrase.name)) {
+    passphrase_ = *passphrase;
     std::ifstream passphrase_file(passphrase_);
     if (passphrase_file.good()) {
       // we should read it from the file
@@ -465,10 +464,12 @@ void SSLContextServiceImpl::onEnable() {
       passphrase_file_test.close();
     }
     passphrase_file.close();
+  } else {
+    logger_->log_debug("No pass phrase for {}", certificate_);
   }
 
   ca_certificate_.clear();
-  if (auto ca_certificate = getProperty(CACertificate)) {
+  if (auto ca_certificate = getProperty(CACertificate.name)) {
     if (is_valid_and_readable_path(*ca_certificate)) {
       ca_certificate_ = *ca_certificate;
     } else {
@@ -484,7 +485,7 @@ void SSLContextServiceImpl::onEnable() {
     logger_->log_debug("CA Certificate empty");
   }
 
-  getProperty(UseSystemCertStore, use_system_cert_store_);
+  use_system_cert_store_ = (getProperty(UseSystemCertStore.name) | utils::andThen(parsing::parseBool)).value_or(false);
 
 #ifdef WIN32
   getProperty(CertStoreLocation, cert_store_location_);

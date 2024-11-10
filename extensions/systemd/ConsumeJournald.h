@@ -59,7 +59,7 @@ class ConsumeJournald final : public core::ProcessorImpl {
 
   EXTENSIONAPI static constexpr auto BatchSize = core::PropertyDefinitionBuilder<>::createProperty("Batch Size")
     .withDescription("The maximum number of entries processed in a single execution.")
-    .withPropertyType(core::StandardPropertyTypes::UNSIGNED_LONG_TYPE)
+    .withValidator(core::StandardPropertyTypes::UNSIGNED_INTEGER_VALIDATOR)
     .withDefaultValue("1000")
     .isRequired(true)
     .build();
@@ -71,7 +71,7 @@ class ConsumeJournald final : public core::ProcessorImpl {
     .build();
   EXTENSIONAPI static constexpr auto IncludeTimestamp = core::PropertyDefinitionBuilder<>::createProperty("Include Timestamp")
     .withDescription("Include message timestamp in the 'timestamp' attribute.")
-    .withPropertyType(core::StandardPropertyTypes::BOOLEAN_TYPE)
+    .withValidator(core::StandardPropertyTypes::BOOLEAN_VALIDATOR)
     .withDefaultValue("true")
     .isRequired(true)
     .build();
@@ -83,7 +83,7 @@ class ConsumeJournald final : public core::ProcessorImpl {
     .build();
   EXTENSIONAPI static constexpr auto ProcessOldMessages = core::PropertyDefinitionBuilder<>::createProperty("Process Old Messages")
     .withDescription("Process events created before the first usage (schedule) of the processor instance.")
-    .withPropertyType(core::StandardPropertyTypes::BOOLEAN_TYPE)
+    .withValidator(core::StandardPropertyTypes::BOOLEAN_VALIDATOR)
     .withDefaultValue("false")
     .isRequired(true)
     .build();

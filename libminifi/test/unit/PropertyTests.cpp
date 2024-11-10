@@ -88,42 +88,34 @@ TEST_CASE("Test Trimmer Left", "[testTrims]") {
   REQUIRE(test.c_str()[1] == ' ');
 }
 
-TEST_CASE("Test Permissions Conversion", "[testPermissions]") {
-  uint32_t permissions = 0U;
+TEST_CASE("Test Permissions Conversion", "[testPermissions]") {  // TODO(mzink) move me to parsing tests
+  using org::apache::nifi::minifi::parsing::parsePermissions;
 
-  REQUIRE(true == org::apache::nifi::minifi::core::Property::StringToPermissions("0777", permissions));
-  REQUIRE(0777 == permissions);
+  CHECK(0777 == parsePermissions("0777"));
+  CHECK(0000 == parsePermissions("0000"));
 
-  REQUIRE(true == org::apache::nifi::minifi::core::Property::StringToPermissions("0000", permissions));
-  REQUIRE(0000 == permissions);
+  CHECK(0644 == parsePermissions("0644"));
 
-  REQUIRE(true == org::apache::nifi::minifi::core::Property::StringToPermissions("0644", permissions));
-  REQUIRE(0644 == permissions);
+  CHECK_FALSE(parsePermissions("0999").has_value());
 
-  REQUIRE(false == org::apache::nifi::minifi::core::Property::StringToPermissions("0999", permissions));
+  CHECK_FALSE(parsePermissions("999").has_value());
 
-  REQUIRE(false == org::apache::nifi::minifi::core::Property::StringToPermissions("999", permissions));
+  CHECK_FALSE(parsePermissions("0644a").has_value());
 
-  REQUIRE(false == org::apache::nifi::minifi::core::Property::StringToPermissions("0644a", permissions));
+  CHECK_FALSE(parsePermissions("07777").has_value());
 
-  REQUIRE(false == org::apache::nifi::minifi::core::Property::StringToPermissions("07777", permissions));
+  CHECK(0777 == parsePermissions("rwxrwxrwx"));
 
-  REQUIRE(true == org::apache::nifi::minifi::core::Property::StringToPermissions("rwxrwxrwx", permissions));
-  REQUIRE(0777 == permissions);
+  CHECK(0000 == parsePermissions("---------"));
 
-  REQUIRE(true == org::apache::nifi::minifi::core::Property::StringToPermissions("---------", permissions));
-  REQUIRE(0000 == permissions);
+  CHECK(0764 == parsePermissions("rwxrw-r--"));
 
-  REQUIRE(true == org::apache::nifi::minifi::core::Property::StringToPermissions("rwxrw-r--", permissions));
-  REQUIRE(0764 == permissions);
+  CHECK(0444 == parsePermissions("r--r--r--"));
 
-  REQUIRE(true == org::apache::nifi::minifi::core::Property::StringToPermissions("r--r--r--", permissions));
-  REQUIRE(0444 == permissions);
+  CHECK_FALSE(parsePermissions("wxrwxrwxr").has_value());
 
-  REQUIRE(false == org::apache::nifi::minifi::core::Property::StringToPermissions("wxrwxrwxr", permissions));
+  CHECK_FALSE(parsePermissions("foobarfoo").has_value());
 
-  REQUIRE(false == org::apache::nifi::minifi::core::Property::StringToPermissions("foobarfoo", permissions));
-
-  REQUIRE(false == org::apache::nifi::minifi::core::Property::StringToPermissions("foobar", permissions));
+  CHECK_FALSE(parsePermissions("foobar").has_value());
 }
 }   // namespace

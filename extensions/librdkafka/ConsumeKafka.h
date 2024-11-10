@@ -38,11 +38,12 @@
 namespace org::apache::nifi::minifi {
 
 namespace core {
-class ConsumeKafkaMaxPollTimePropertyType : public TimePeriodPropertyType {
+class ConsumeKafkaMaxPollTimePropertyType : public PropertyValidator {
  public:
   constexpr ~ConsumeKafkaMaxPollTimePropertyType() override { }  // NOLINT see comment at grandparent
 
-  [[nodiscard]] ValidationResult validate(const std::string& subject, const std::string& input) const override;
+  [[nodiscard]] bool validate(const std::string_view input) const override;
+  [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const { return std::nullopt; }  // TODO(mzink) should we just lie and tell its standard time period?
 };
 
 inline constexpr ConsumeKafkaMaxPollTimePropertyType CONSUME_KAFKA_MAX_POLL_TIME_TYPE{};
@@ -96,7 +97,7 @@ class ConsumeKafka : public KafkaProcessorBase {
 
   EXTENSIONAPI static constexpr auto KafkaBrokers = core::PropertyDefinitionBuilder<>::createProperty("Kafka Brokers")
       .withDescription("A comma-separated list of known Kafka Brokers in the format <host>:<port>.")
-      .withPropertyType(core::StandardPropertyTypes::NON_BLANK_TYPE)
+      .withValidator(core::StandardPropertyTypes::NON_BLANK_VALIDATOR)
       .withDefaultValue("localhost:9092")
       .supportsExpressionLanguage(true)
       .isRequired(true)
@@ -119,7 +120,7 @@ class ConsumeKafka : public KafkaProcessorBase {
           "read_uncomitted. This means that messages will be received as soon as they are written to Kafka but will be pulled, even if the producer cancels the transactions. "
           "If this value is true, MiNiFi will not receive any messages for which the producer's transaction was canceled, but this can result in some latency since the consumer "
           "must wait for the producer to finish its entire transaction instead of pulling as the messages become available.")
-      .withPropertyType(core::StandardPropertyTypes::BOOLEAN_TYPE)
+      .withValidator(core::StandardPropertyTypes::BOOLEAN_VALIDATOR)
       .withDefaultValue("true")
       .isRequired(true)
       .build();
@@ -170,13 +171,13 @@ class ConsumeKafka : public KafkaProcessorBase {
       .build();
   EXTENSIONAPI static constexpr auto MaxPollRecords = core::PropertyDefinitionBuilder<>::createProperty("Max Poll Records")
       .withDescription("Specifies the maximum number of records Kafka should return when polling each time the processor is triggered.")
-      .withPropertyType(core::StandardPropertyTypes::UNSIGNED_LONG_TYPE)
+      .withValidator(core::StandardPropertyTypes::UNSIGNED_INTEGER_VALIDATOR)
       .withDefaultValue(DEFAULT_MAX_POLL_RECORDS)
       .build();
   EXTENSIONAPI static constexpr auto MaxPollTime = core::PropertyDefinitionBuilder<>::createProperty("Max Poll Time")
       .withDescription("Specifies the maximum amount of time the consumer can use for polling data from the brokers. "
           "Polling is a blocking operation, so the upper limit of this value is specified in 4 seconds.")
-      .withPropertyType(core::CONSUME_KAFKA_MAX_POLL_TIME_TYPE)
+      .withValidator(core::CONSUME_KAFKA_MAX_POLL_TIME_TYPE)
       .withDefaultValue(DEFAULT_MAX_POLL_TIME)
       .isRequired(true)
       .build();
@@ -185,7 +186,7 @@ class ConsumeKafka : public KafkaProcessorBase {
           "to indicate its liveness to the broker. If no hearts are received by the broker for a group member within "
           "the session timeout, the broker will remove the consumer from the group and trigger a rebalance. "
           "The allowed range is configured with the broker configuration properties group.min.session.timeout.ms and group.max.session.timeout.ms.")
-      .withPropertyType(core::StandardPropertyTypes::TIME_PERIOD_TYPE)
+      .withValidator(core::StandardPropertyTypes::TIME_PERIOD_VALIDATOR)
       .withDefaultValue("60 seconds")
       .build();
   EXTENSIONAPI static constexpr auto Properties = utils::array_cat(KafkaProcessorBase::Properties, std::to_array<core::PropertyReference>({

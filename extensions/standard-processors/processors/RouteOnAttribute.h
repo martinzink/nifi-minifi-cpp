@@ -57,13 +57,13 @@ class RouteOnAttribute : public core::ProcessorImpl {
 
   ADD_COMMON_VIRTUAL_FUNCTIONS_FOR_PROCESSORS
 
-  void onDynamicPropertyModified(const core::Property &orig_property, const core::Property &new_property) override;
+  void onSchedule(core::ProcessContext &, core::ProcessSessionFactory&) override;
   void onTrigger(core::ProcessContext& context, core::ProcessSession& session) override;
   void initialize() override;
 
  private:
   std::shared_ptr<core::logging::Logger> logger_ = core::logging::LoggerFactory<RouteOnAttribute>::getLogger(uuid_);
-  std::map<std::string, core::Property> route_properties_;
+  std::map<std::string, std::string> route_properties_;
   std::map<std::string, core::Relationship> route_rels_;
 };
 

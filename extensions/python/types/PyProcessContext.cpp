@@ -78,26 +78,24 @@ PyObject* PyProcessContext::getProperty(PyProcessContext* self, PyObject* args) 
     return nullptr;
   }
 
-  std::string value;
   if (!script_flow_file) {
-    if (!context->getProperty(property_name, value)) {
-      Py_RETURN_NONE;
+    if (const auto property_value = context->getProperty(property_name)) {
+      return object::returnReference(*property_value);
     }
-  } else {
-    auto py_flow = reinterpret_cast<PyScriptFlowFile*>(script_flow_file);
-    const auto flow_file = py_flow->script_flow_file_.lock();
-    if (!flow_file) {
-      PyErr_SetString(PyExc_AttributeError, "tried reading FlowFile outside 'on_trigger'");
-      return nullptr;
-    }
-    core::Property property{property_name, ""};
-    property.setSupportsExpressionLanguage(true);
-    if (!context->getProperty(property, value, flow_file.get())) {
-      Py_RETURN_NONE;
-    }
+    Py_RETURN_NONE;
   }
-
-  return object::returnReference(value);
+  auto py_flow = reinterpret_cast<PyScriptFlowFile*>(script_flow_file);
+  const auto flow_file = py_flow->script_flow_file_.lock();
+  if (!flow_file) {
+    PyErr_SetString(PyExc_AttributeError, "tried reading FlowFile outside 'on_trigger'");
+    return nullptr;
+  }
+  core::Property property{property_name, ""};
+  property.setSupportsExpressionLanguage(true);
+  if (const auto property_value = context->getProperty(property, flow_file.get())) {
+    return object::returnReference(*property_value);
+  }
+  Py_RETURN_NONE;
 }
 
 PyObject* PyProcessContext::getStateManager(PyProcessContext* self, PyObject*) {
@@ -151,14 +149,12 @@ PyObject* PyProcessContext::getProperties(PyProcessContext* self, PyObject*) {
     return nullptr;
   }
 
-  auto properties = context->getProcessor().getProperties();
+  auto properties = context->getProcessor().getSupportedProperties();
   auto py_properties = OwnedDict::create();
   for (const auto& [property_name, property] : properties) {
-    std::string value;
-    if (!context->getProperty(property_name, value)) {
-      continue;
+    if (const auto value = context->getProperty(property_name)) {
+      py_properties.put(property_name, *value);
     }
-    py_properties.put(property_name, value);
   }
 
   return object::returnReference(py_properties);

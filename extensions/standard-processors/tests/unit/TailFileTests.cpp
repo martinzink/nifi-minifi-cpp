@@ -1727,15 +1727,8 @@ TEST_CASE("Initial Start Position is set to invalid or empty value", "[initialSt
   plan->setProperty(tailfile, org::apache::nifi::minifi::processors::TailFile::FileName, temp_file_path.string());
   plan->setProperty(tailfile, org::apache::nifi::minifi::processors::TailFile::Delimiter, "\n");
 
-  SECTION("Initial Start Position is empty") {
-    plan->setProperty(tailfile, org::apache::nifi::minifi::processors::TailFile::InitialStartPosition, "");
-  }
-
-  SECTION("Initial Start Position is invalid") {
-    plan->setProperty(tailfile, org::apache::nifi::minifi::processors::TailFile::InitialStartPosition, "Invalid Value");
-  }
-
-  REQUIRE_THROWS_AS(testController.runSession(plan), minifi::Exception);
+  CHECK_FALSE(plan->setProperty(tailfile, org::apache::nifi::minifi::processors::TailFile::InitialStartPosition, ""));
+  CHECK_FALSE(plan->setProperty(tailfile, org::apache::nifi::minifi::processors::TailFile::InitialStartPosition, "Invalid Value"));
 }
 
 TEST_CASE("TailFile onSchedule throws if an invalid Attribute Provider Service is found", "[configuration][AttributeProviderService]") {
@@ -1840,9 +1833,9 @@ TEST_CASE("TailFile honors batch size for maximum lines processed", "[batchSize]
   }
   tmpfile.close();
 
-  tailfile->setProperty(minifi::processors::TailFile::FileName, temp_file_path.string());
-  tailfile->setProperty(minifi::processors::TailFile::Delimiter, "\n");
-  tailfile->setProperty(minifi::processors::TailFile::BatchSize, "10");
+  tailfile->setProperty(minifi::processors::TailFile::FileName.name, temp_file_path.string());
+  tailfile->setProperty(minifi::processors::TailFile::Delimiter.name, "\n");
+  tailfile->setProperty(minifi::processors::TailFile::BatchSize.name, "10");
 
   const auto result = test_controller.trigger();
   const auto& file_contents = result.at(minifi::processors::TailFile::Success);

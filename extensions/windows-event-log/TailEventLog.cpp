@@ -41,14 +41,8 @@ void TailEventLog::initialize() {
 }
 
 void TailEventLog::onSchedule(core::ProcessContext& context, core::ProcessSessionFactory& session_factory) {
-  std::string value;
-
-  if (context.getProperty(LogSourceFileName, value)) {
-    log_source_ = value;
-  }
-  if (context.getProperty(MaxEventsPerFlowFile, value)) {
-    core::Property::StringToInt(value, max_events_);
-  }
+  log_source_ = utils::parseOptionalProperty(context, LogSourceFileName).value_or("");
+  max_events_ = gsl::narrow<uint32_t>(utils::parseOptionalU64Property(context, MaxEventsPerFlowFile).value_or(0));
 
   log_handle_ = OpenEventLog(NULL, log_source_.c_str());
 

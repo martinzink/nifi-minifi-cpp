@@ -82,7 +82,7 @@ auto operator|(Expected&& object, and_then_wrapper<F> f) {
   using value_type = typename std::remove_cvref_t<Expected>::value_type;
   if constexpr (std::is_void_v<value_type>) {
     using function_return_type = std::remove_cvref_t<std::invoke_result_t<F>>;
-    static_assert(is_expected_v<function_return_type>, "flatMap expects a function returning expected");
+    static_assert(is_expected_v<function_return_type>, "andThen expects a function returning expected");
     if (object.has_value()) {
       return std::invoke(std::forward<F>(f.function));
     } else {
@@ -90,7 +90,7 @@ auto operator|(Expected&& object, and_then_wrapper<F> f) {
     }
   } else {
     using function_return_type = std::remove_cvref_t<std::invoke_result_t<F, decltype(*std::forward<Expected>(object))>>;
-    static_assert(is_expected_v<function_return_type>, "flatMap expects a function returning expected");
+    static_assert(is_expected_v<function_return_type>, "andThen expects a function returning expected");
     if (object.has_value()) {
       return std::invoke(std::forward<F>(f.function), *std::forward<Expected>(object));
     } else {
@@ -181,6 +181,21 @@ auto operator|(Expected&& object, transform_error_wrapper<F> f) {
   return transformed_expected_type{nonstd::unexpect, std::invoke(std::forward<F>(f.function), std::forward<Expected>(object).error())};
 }
 
+template<expected Expected>
+std::optional<typename std::remove_cvref_t<Expected>::value_type> operator|(Expected&& object, to_optional_wrapper) {
+  if (object) {
+    return std::move(*object);
+  }
+  return std::nullopt;
+}
+
+template<expected Expected>
+typename std::remove_cvref_t<Expected>::value_type operator|(Expected&& object, expect_wrapper e) {
+  if (object) {
+    return std::move(*object);
+  }
+  throw std::runtime_error(e.reason);
+}
 }  // namespace detail
 
 template<typename F, typename... Args>

@@ -15,28 +15,29 @@
  * limitations under the License.
  */
 
+#include "ExecutePythonProcessor.h"
+
 #include <set>
 #include <stdexcept>
 #include <utility>
 
-#include "ExecutePythonProcessor.h"
 #include "PythonConfigState.h"
-#include "types/PyRelationship.h"
-#include "types/PyLogger.h"
 #include "controllers/SSLContextService.h"
-
+#include "core/Resource.h"
+#include "range/v3/algorithm/find_if.hpp"
+#include "range/v3/range/conversion.hpp"
+#include "types/PyLogger.h"
+#include "types/PyRelationship.h"
 #include "utils/StringUtils.h"
 #include "utils/file/FileUtils.h"
-#include "core/Resource.h"
-#include "range/v3/range/conversion.hpp"
-#include "range/v3/algorithm/find_if.hpp"
+#include "utils/ProcessorConfigUtils.h"
+#include "minifi-cpp/utils/PropertyErrors.h"
 
 namespace org::apache::nifi::minifi::extensions::python::processors {
 
 void ExecutePythonProcessor::initialize() {
-  if (getProperties().empty()) {
+  if (getSupportedProperties().empty()) {
     setSupportedProperties(Properties);
-    setAcceptAllProperties();
     setSupportedRelationships(Relationships);
   }
 
@@ -93,7 +94,7 @@ void ExecutePythonProcessor::onSchedule(core::ProcessContext& context, core::Pro
   python_script_engine_->eval(script_to_exec_);
   python_script_engine_->onSchedule(context);
 
-  getProperty(ReloadOnScriptChange, reload_on_script_change_);
+  reload_on_script_change_ = utils::parseBoolProperty(context, ReloadOnScriptChange);
 }
 
 void ExecutePythonProcessor::onTrigger(core::ProcessContext& context, core::ProcessSession& session) {
@@ -106,8 +107,7 @@ void ExecutePythonProcessor::onTrigger(core::ProcessContext& context, core::Proc
 }
 
 void ExecutePythonProcessor::appendPathForImportModules() {
-  std::string module_directory;
-  getProperty(ModuleDirectory, module_directory);
+  std::string module_directory = getProperty(ModuleDirectory.name).value_or("");
   if (!module_directory.empty()) {
     python_script_engine_->appendModulePaths(utils::string::splitAndTrimRemovingEmpty(module_directory, ",") | ranges::to<std::vector<std::filesystem::path>>());
   }
@@ -123,10 +123,8 @@ void ExecutePythonProcessor::loadScriptFromFile() {
 }
 
 void ExecutePythonProcessor::loadScript() {
-  std::string script_file;
-  std::string script_body;
-  getProperty(ScriptFile, script_file);
-  getProperty(ScriptBody, script_body);
+  std::string script_file = getProperty(ScriptFile.name).value_or("");
+  std::string script_body = getProperty(ScriptBody.name).value_or("");
   if (script_file.empty() && script_body.empty()) {
     throw std::runtime_error("Neither Script Body nor Script File is available to execute");
   }
@@ -165,6 +163,39 @@ std::unique_ptr<PythonScriptEngine> ExecutePythonProcessor::createScriptEngine()
   return engine;
 }
 
+namespace {
+enum class ProperyValidatorCode : int64_t {
+  INTEGER = 0,
+  LONG = 1,
+  BOOLEAN = 2,
+  DATA_SIZE = 3,
+  TIME_PERIOD = 4,
+  NON_BLANK = 5,
+  PORT = 6
+};
+
+const core::PropertyValidator& translateCodeToPropertyValidator(const ProperyValidatorCode& code) {
+  switch (code) {
+    case ProperyValidatorCode::INTEGER:
+      return core::StandardPropertyTypes::INTEGER_VALIDATOR;
+    case ProperyValidatorCode::LONG:
+      return core::StandardPropertyTypes::INTEGER_VALIDATOR;
+    case ProperyValidatorCode::BOOLEAN:
+      return core::StandardPropertyTypes::BOOLEAN_VALIDATOR;
+    case ProperyValidatorCode::DATA_SIZE:
+      return core::StandardPropertyTypes::DATA_SIZE_VALIDATOR;
+    case ProperyValidatorCode::TIME_PERIOD:
+      return core::StandardPropertyTypes::TIME_PERIOD_VALIDATOR;
+    case ProperyValidatorCode::NON_BLANK:
+      return core::StandardPropertyTypes::NON_BLANK_VALIDATOR;
+    case ProperyValidatorCode::PORT:
+      return core::StandardPropertyTypes::PORT_VALIDATOR;
+    default:
+      throw std::invalid_argument("Unknown ProperyValidatorCode");
+  }
+}
+}  // namespace
+
 void ExecutePythonProcessor::addProperty(const std::string &name, const std::string &description, const std::optional<std::string> &defaultvalue, bool required, bool el, bool sensitive,
     const std::optional<int64_t>& property_type_code, gsl::span<const std::string_view> allowable_values, const std::optional<std::string>& controller_service_type_name) {
   auto builder = core::PropertyDefinitionBuilder<>::createProperty(name).withDescription(description).isRequired(required).supportsExpressionLanguage(el).isSensitive(sensitive);
@@ -172,7 +203,7 @@ void ExecutePythonProcessor::addProperty(const std::string &name, const std::str
     builder.withDefaultValue(*defaultvalue);
   }
   if (property_type_code) {
-    builder.withPropertyType(core::StandardPropertyTypes::translateCodeToPropertyType(static_cast<core::StandardPropertyTypes::PropertyTypeCode>(*property_type_code)));
+    builder.withValidator(translateCodeToPropertyValidator(static_cast<ProperyValidatorCode>(*property_type_code)));
   }
   if (controller_service_type_name && *controller_service_type_name == "SSLContextService") {
     builder.withAllowedTypes<controllers::SSLContextService>();
@@ -180,31 +211,44 @@ void ExecutePythonProcessor::addProperty(const std::string &name, const std::str
   const auto property_definition = builder.build();
 
   core::Property property{property_definition};
-  property.setAllowedValues(allowable_values, *property_definition.type);
+  std::vector<std::string> allowed_values{allowable_values.begin(), allowable_values.end()};
+  property.setAllowedValues(std::move(allowed_values));
 
   std::lock_guard<std::mutex> lock(python_properties_mutex_);
   python_properties_.emplace_back(property);
 }
 
-const core::Property* ExecutePythonProcessor::findProperty(const std::string& name) const {
-  if (auto prop_ptr = core::ConfigurableComponentImpl::findProperty(name)) {
-    return prop_ptr;
+nonstd::expected<std::string, std::error_code> ExecutePythonProcessor::getProperty(std::string_view name) const {
+  if (auto non_python_property = ConfigurableComponentImpl::getProperty(name)) {
+    return *non_python_property;
   }
-
   std::lock_guard<std::mutex> lock(python_properties_mutex_);
-
   auto it = ranges::find_if(python_properties_, [&name](const auto& item){
     return item.getName() == name;
   });
   if (it != python_properties_.end()) {
-    return &*it;
+    return it->getValue() | utils::transform([](const std::string_view value_view) -> std::string { return std::string{value_view}; });
   }
-
-  return nullptr;
+  return nonstd::make_unexpected(core::PropertyErrorCode::NotSupportedProperty);
 }
 
-std::map<std::string, core::Property> ExecutePythonProcessor::getProperties() const {
-  auto result = ConfigurableComponentImpl::getProperties();
+nonstd::expected<void, std::error_code> ExecutePythonProcessor::setProperty(std::string_view name, std::string value) {
+  auto set_non_python_property = ConfigurableComponentImpl::setProperty(name, value);
+  if (set_non_python_property || set_non_python_property.error() != core::PropertyErrorCode::NotSupportedProperty) {
+    return set_non_python_property;
+  }
+  std::lock_guard<std::mutex> lock(python_properties_mutex_);
+  auto it = ranges::find_if(python_properties_, [&name](const auto& item){
+    return item.getName() == name;
+  });
+  if (it != python_properties_.end()) {
+    return it->setValue(std::move(value));
+  }
+  return nonstd::make_unexpected(core::PropertyErrorCode::NotSupportedProperty);
+}
+
+std::map<std::string, core::Property> ExecutePythonProcessor::getSupportedProperties() const {
+  auto result = ConfigurableComponentImpl::getSupportedProperties();
 
   std::lock_guard<std::mutex> lock(python_properties_mutex_);
 

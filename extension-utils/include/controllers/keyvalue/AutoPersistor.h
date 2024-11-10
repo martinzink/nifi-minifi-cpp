@@ -17,16 +17,10 @@
 #pragma once
 
 #include <condition_variable>
-#include <memory>
 #include <mutex>
-#include <string>
 #include <thread>
-#include <utility>
 
-#include "core/ConfigurableComponent.h"
-#include "core/Core.h"
 #include "core/logging/LoggerFactory.h"
-#include "utils/Export.h"
 
 namespace org::apache::nifi::minifi::controllers {
 

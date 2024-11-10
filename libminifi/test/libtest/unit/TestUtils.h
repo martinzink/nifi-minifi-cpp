@@ -218,7 +218,7 @@ concept NetworkingProcessor = std::derived_from<T, minifi::core::Processor>
 
 template<NetworkingProcessor T>
 uint16_t scheduleProcessorOnRandomPort(const std::shared_ptr<TestPlan>& test_plan, const std::shared_ptr<T>& processor) {
-  REQUIRE(processor->setProperty(T::Port, "0"));
+  REQUIRE(processor->setProperty(T::Port.name, "0"));
   test_plan->scheduleProcessor(processor);
   REQUIRE(verifyEventHappenedInPollTime(250ms, [&processor] { return processor->getPort() != 0; }, 20ms));
   return processor->getPort();

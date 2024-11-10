@@ -109,8 +109,7 @@ class MockProcessor : public minifi::core::ProcessorImpl {
   }
 
   void onTrigger(minifi::core::ProcessContext& context, minifi::core::ProcessSession&) override {
-    std::string linked_service;
-    getProperty("linkedService", linked_service);
+    std::string linked_service = getProperty("linkedService").value_or("");
     if (!IsNullOrEmpty(linked_service)) {
       std::shared_ptr<minifi::core::controller::ControllerService> service = context.getControllerService(linked_service);
       std::lock_guard<std::mutex> lock(control_mutex);

@@ -46,7 +46,7 @@
 #include "core/reporting/SiteToSiteProvenanceReportingTask.h"
 #include "core/Resource.h"
 #include "utils/gsl.h"
-#include "utils/PropertyErrors.h"
+#include "utils/PropertyExceptions.h"
 #include "unit/TestUtils.h"
 #include "io/BufferStream.h"
 #include "fmt/format.h"
@@ -91,7 +91,7 @@ TEST_CASE("Test GetFileMultiple", "[getfileCreate3]") {
 
   auto context = std::make_shared<core::ProcessContextImpl>(*processor, nullptr, repo, repo, content_repo);
 
-  context->setProperty(org::apache::nifi::minifi::processors::GetFile::Directory, dir.string());
+  context->setProperty(minifi::processors::GetFile::Directory.name, dir.string());
   // replicate 10 threads
   processor->setScheduledState(core::ScheduledState::RUNNING);
 
@@ -173,7 +173,7 @@ TEST_CASE("Test GetFile Ignore", "[getfileCreate3]") {
 
   auto context = std::make_shared<core::ProcessContextImpl>(*processor, nullptr, repo, repo, content_repo);
 
-  context->setProperty(org::apache::nifi::minifi::processors::GetFile::Directory, dir.string());
+  context->setProperty(minifi::processors::GetFile::Directory.name, dir.string());
   // replicate 10 threads
   processor->setScheduledState(core::ScheduledState::RUNNING);
 
@@ -234,8 +234,8 @@ TEST_CASE("TestConnectionFull", "[ConnectionFull]") {
   content_repo->initialize(std::make_shared<minifi::ConfigureImpl>());
   std::shared_ptr<core::Processor> processor = std::make_shared<org::apache::nifi::minifi::processors::GenerateFlowFile>("GFF");
   processor->initialize();
-  processor->setProperty(minifi::processors::GenerateFlowFile::BatchSize, "10");
-  processor->setProperty(minifi::processors::GenerateFlowFile::FileSize, "0");
+  processor->setProperty(minifi::processors::GenerateFlowFile::BatchSize.name, "10");
+  processor->setProperty(minifi::processors::GenerateFlowFile::FileSize.name, "0");
 
   std::shared_ptr<core::Repository> test_repo = std::make_shared<TestRepository>();
   std::shared_ptr<TestRepository> repo = std::dynamic_pointer_cast<TestRepository>(test_repo);
@@ -332,7 +332,7 @@ TEST_CASE("LogAttributeTestInvalid", "[TestLogAttribute]") {
 
   plan->setProperty(getfile, org::apache::nifi::minifi::processors::GetFile::Directory, dir.string());
   plan->setProperty(getfile, org::apache::nifi::minifi::processors::GetFile::BatchSize, "1");
-  REQUIRE_THROWS_AS(plan->setProperty(loggattr, org::apache::nifi::minifi::processors::LogAttribute::FlowFilesToLog, "-1"), utils::internal::ParseException);
+  REQUIRE_FALSE(plan->setProperty(loggattr, org::apache::nifi::minifi::processors::LogAttribute::FlowFilesToLog, "-1"));
   LogTestController::getInstance().reset();
 }
 
@@ -547,8 +547,8 @@ void testRPGBypass(const std::string &host, const std::string &port, bool has_er
 
   auto rpg = std::make_shared<minifi::RemoteProcessorGroupPort>("rpg", "http://localhost:8989/nifi", configuration);
   rpg->initialize();
-  REQUIRE(rpg->setProperty(minifi::RemoteProcessorGroupPort::hostName, host));
-  rpg->setProperty(minifi::RemoteProcessorGroupPort::port, port);
+  REQUIRE(rpg->setProperty(minifi::RemoteProcessorGroupPort::hostName.name, host));
+  rpg->setProperty(minifi::RemoteProcessorGroupPort::port.name, port);
   auto context = std::make_shared<core::ProcessContextImpl>(*rpg, nullptr, repo, repo, content_repo);
   auto psf = std::make_shared<core::ProcessSessionFactoryImpl>(context);
   if (has_error) {

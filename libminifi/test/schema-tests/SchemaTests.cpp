@@ -160,7 +160,7 @@ TEST_CASE("The JSON schema detects invalid values in the json flow") {
           "scheduling strategy": "TIMER_DRIVEN",
           "scheduling period": "1 min",
           "Properties": {
-            "Batch Size": {"$value": "not a number", "$err": "unexpected instance type"}
+            "Batch Size": "not a number"
           }
         },
         {

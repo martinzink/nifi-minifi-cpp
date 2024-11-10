@@ -389,9 +389,9 @@ bool TestPlan::setProperty(const std::shared_ptr<minifi::core::Processor>& proce
   }
 
   if (dynamic) {
-    return processor_contexts_.at(i)->setDynamicProperty(property, value);
+    return processor_contexts_.at(i)->setDynamicProperty(property, value).has_value();
   } else {
-    return processor_contexts_.at(i)->setProperty(property, value);
+    return processor_contexts_.at(i)->setProperty(property, value).has_value();
   }
 }
 
@@ -410,10 +410,10 @@ bool TestPlan::setDynamicProperty(const std::shared_ptr<minifi::core::Processor>
 bool TestPlan::setProperty(const std::shared_ptr<minifi::core::controller::ControllerServiceNode>& controller_service_node, const std::string& property, const std::string& value, bool dynamic) {
   if (dynamic) {
     controller_service_node->setDynamicProperty(property, value);
-    return controller_service_node->getControllerServiceImplementation()->setDynamicProperty(property, value);
+    return controller_service_node->getControllerServiceImplementation()->setDynamicProperty(property, value).has_value();
   } else {
     controller_service_node->setProperty(property, value);
-    return controller_service_node->getControllerServiceImplementation()->setProperty(property, value);
+    return controller_service_node->getControllerServiceImplementation()->setProperty(property, value).has_value();
   }
 }
 

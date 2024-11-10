@@ -101,9 +101,9 @@ class PutTCPTestFixture {
     LogTestController::getInstance().setTrace<PutTCP>();
     LogTestController::getInstance().setInfo<core::ProcessSession>();
     LogTestController::getInstance().setTrace<utils::net::Server>();
-    put_tcp_->setProperty(PutTCP::Hostname, "${literal('localhost')}");
-    put_tcp_->setProperty(PutTCP::Timeout, "200 ms");
-    put_tcp_->setProperty(PutTCP::OutgoingMessageDelimiter, "\n");
+    put_tcp_->setProperty(PutTCP::Hostname.name, "${literal('localhost')}");
+    put_tcp_->setProperty(PutTCP::Timeout.name, "200 ms");
+    put_tcp_->setProperty(PutTCP::OutgoingMessageDelimiter.name, "\n");
   }
 
   PutTCPTestFixture(PutTCPTestFixture&&) = delete;
@@ -177,7 +177,7 @@ class PutTCPTestFixture {
     }
     ssl_context_service_node->enable();
 
-    put_tcp_->setProperty(PutTCP::SSLContextService, "SSLContextService");
+    put_tcp_->setProperty(PutTCP::SSLContextService.name, "SSLContextService");
   }
 
   void setHostname(const std::string& hostname) {
@@ -208,11 +208,11 @@ class PutTCPTestFixture {
   }
 
   void setPutTCPPort(uint16_t port) {
-    put_tcp_->setProperty(PutTCP::Port, utils::string::join_pack("${literal('", std::to_string(port), "')}"));
+    CHECK(put_tcp_->setProperty(PutTCP::Port.name, utils::string::join_pack("${literal('", std::to_string(port), "')}")));
   }
 
   void setPutTCPPort(const std::string& port_str) {
-    put_tcp_->setProperty(PutTCP::Port, port_str);
+    CHECK(put_tcp_->setProperty(PutTCP::Port.name, port_str));
   }
 
   [[nodiscard]] uint16_t getSinglePort() const {

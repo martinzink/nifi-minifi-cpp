@@ -167,10 +167,7 @@ class ListenHTTPTestsFixture {
 
   void check_content_type() {
     if (endpoint == "test") {
-      std::string content_type;
-      if (!update_attribute->getDynamicProperty("mime.type", content_type)) {
-        content_type = "application/octet-stream";
-      }
+      const auto content_type = update_attribute->getDynamicProperty("mime.type").value_or("application/octet-stream");
       REQUIRE(content_type == minifi::utils::string::trim(client->getResponseHeaderMap().at("Content-type")));
       REQUIRE("19" == minifi::utils::string::trim(client->getResponseHeaderMap().at("Content-length")));
     } else {
@@ -674,7 +671,7 @@ TEST_CASE("ListenHTTP bored yield", "[listenhttp][bored][yield]") {
   using processors::ListenHTTP;
   const auto listen_http = std::make_shared<ListenHTTP>("listenhttp");
   SingleProcessorTestController controller{listen_http};
-  listen_http->setProperty(ListenHTTP::Port, "0");
+  listen_http->setProperty(ListenHTTP::Port.name, "0");
 
   REQUIRE(!listen_http->isYield());
   const auto output = controller.trigger();

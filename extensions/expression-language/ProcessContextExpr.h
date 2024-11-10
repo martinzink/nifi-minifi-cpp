@@ -50,24 +50,21 @@ class ProcessContextExpr final : public core::ProcessContextImpl {
 
   ~ProcessContextExpr() override = default;
 
-  bool getProperty(const Property& property, std::string &value, const FlowFile* const flow_file) override;
+  nonstd::expected<std::string, std::error_code> getProperty(std::string_view name, const FlowFile*) const override;
+  nonstd::expected<std::string, std::error_code> getDynamicProperty(std::string_view name, const FlowFile*) const override;
 
-  bool getProperty(const PropertyReference& property, std::string &value, const FlowFile* const flow_file) override;
+  nonstd::expected<void, std::error_code> setProperty(std::string_view name, std::string value) override;
+  nonstd::expected<void, std::error_code> setDynamicProperty(std::string name, std::string value) override;
 
-  bool getDynamicProperty(const Property &property, std::string &value, const FlowFile* const flow_file) override;
-
-  bool setProperty(const std::string& property, std::string value) override;
-
-  bool setDynamicProperty(const std::string& property, std::string value) override;
-
-  using ProcessContextImpl::getProperty;
+  std::map<std::string, std::string> getDynamicProperties(const FlowFile*) const override;
 
  private:
-  bool getProperty(bool supports_expression_language, std::string_view property_name, std::string& value, const FlowFile* const flow_file);
+  mutable std::mutex cache_mutex_;
+  mutable std::unordered_map<std::string, expression::Expression, utils::string::transparent_string_hash, std::equal_to<>> cached_expressions_;
 
-  std::unordered_map<std::string, org::apache::nifi::minifi::expression::Expression> expressions_;
-  std::unordered_map<std::string, org::apache::nifi::minifi::expression::Expression> dynamic_property_expressions_;
-  std::unordered_map<std::string, std::string> expression_strs_;
+  mutable std::mutex dynamic_cache_mutex_;
+  mutable std::unordered_map<std::string, expression::Expression, utils::string::transparent_string_hash, std::equal_to<>> cached_dynamic_expressions_;
+
   std::shared_ptr<logging::Logger> logger_;
 };
 

@@ -282,10 +282,10 @@ using CompressionFormat = minifi::processors::compress_content::ExtendedCompress
 using CompressionMode = minifi::processors::compress_content::CompressionMode;
 
 TEST_CASE_METHOD(CompressTestController, "CompressFileGZip", "[compressfiletest1]") {
-  context->setProperty(minifi::processors::CompressContent::CompressMode, magic_enum::enum_name(CompressionMode::compress));
-  context->setProperty(minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::GZIP));
-  context->setProperty(minifi::processors::CompressContent::CompressLevel, "9");
-  context->setProperty(minifi::processors::CompressContent::UpdateFileName, "true");
+  context->setProperty(minifi::processors::CompressContent::CompressMode.name, std::string{magic_enum::enum_name(CompressionMode::compress)});
+  context->setProperty(minifi::processors::CompressContent::CompressFormat.name, std::string{magic_enum::enum_name(CompressionFormat::GZIP)});
+  context->setProperty(minifi::processors::CompressContent::CompressLevel.name, "9");
+  context->setProperty(minifi::processors::CompressContent::UpdateFileName.name, "true");
 
   auto flow = importFlowFile(rawContentPath());
   flow->setAttribute(core::SpecialFlowAttribute::FILENAME, "inputfile");
@@ -314,10 +314,10 @@ TEST_CASE_METHOD(CompressTestController, "CompressFileGZip", "[compressfiletest1
 }
 
 TEST_CASE_METHOD(DecompressTestController, "DecompressFileGZip", "[compressfiletest2]") {
-  context->setProperty(minifi::processors::CompressContent::CompressMode, magic_enum::enum_name(CompressionMode::decompress));
-  context->setProperty(minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::GZIP));
-  context->setProperty(minifi::processors::CompressContent::CompressLevel, "9");
-  context->setProperty(minifi::processors::CompressContent::UpdateFileName, "true");
+  context->setProperty(minifi::processors::CompressContent::CompressMode.name, std::string{magic_enum::enum_name(CompressionMode::decompress)});
+  context->setProperty(minifi::processors::CompressContent::CompressFormat.name, std::string{magic_enum::enum_name(CompressionFormat::GZIP)});
+  context->setProperty(minifi::processors::CompressContent::CompressLevel.name, "9");
+  context->setProperty(minifi::processors::CompressContent::UpdateFileName.name, "true");
 
   auto flow = importFlowFile(compressedPath());
   flow->setAttribute(core::SpecialFlowAttribute::FILENAME, "inputfile.tar.gz");
@@ -342,10 +342,10 @@ TEST_CASE_METHOD(DecompressTestController, "DecompressFileGZip", "[compressfilet
 }
 
 TEST_CASE_METHOD(CompressTestController, "CompressFileBZip", "[compressfiletest3]") {
-  context->setProperty(minifi::processors::CompressContent::CompressMode, magic_enum::enum_name(CompressionMode::compress));
-  context->setProperty(minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::BZIP2));
-  context->setProperty(minifi::processors::CompressContent::CompressLevel, "9");
-  context->setProperty(minifi::processors::CompressContent::UpdateFileName, "true");
+  context->setProperty(minifi::processors::CompressContent::CompressMode.name, std::string{magic_enum::enum_name(CompressionMode::compress)});
+  context->setProperty(minifi::processors::CompressContent::CompressFormat.name, std::string{magic_enum::enum_name(CompressionFormat::BZIP2)});
+  context->setProperty(minifi::processors::CompressContent::CompressLevel.name, "9");
+  context->setProperty(minifi::processors::CompressContent::UpdateFileName.name, "true");
 
   auto flow = importFlowFile(rawContentPath());
   trigger();
@@ -371,10 +371,10 @@ TEST_CASE_METHOD(CompressTestController, "CompressFileBZip", "[compressfiletest3
 
 
 TEST_CASE_METHOD(DecompressTestController, "DecompressFileBZip", "[compressfiletest4]") {
-  context->setProperty(minifi::processors::CompressContent::CompressMode, magic_enum::enum_name(CompressionMode::decompress));
-  context->setProperty(minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::BZIP2));
-  context->setProperty(minifi::processors::CompressContent::CompressLevel, "9");
-  context->setProperty(minifi::processors::CompressContent::UpdateFileName, "true");
+  context->setProperty(minifi::processors::CompressContent::CompressMode.name, std::string{magic_enum::enum_name(CompressionMode::decompress)});
+  context->setProperty(minifi::processors::CompressContent::CompressFormat.name, std::string{magic_enum::enum_name(CompressionFormat::BZIP2)});
+  context->setProperty(minifi::processors::CompressContent::CompressLevel.name, "9");
+  context->setProperty(minifi::processors::CompressContent::UpdateFileName.name, "true");
 
   auto flow = importFlowFile(compressedPath());
 
@@ -396,10 +396,10 @@ TEST_CASE_METHOD(DecompressTestController, "DecompressFileBZip", "[compressfilet
 }
 
 TEST_CASE_METHOD(CompressTestController, "CompressFileLZMA", "[compressfiletest5]") {
-  context->setProperty(minifi::processors::CompressContent::CompressMode, magic_enum::enum_name(CompressionMode::compress));
-  context->setProperty(minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::LZMA));
-  context->setProperty(minifi::processors::CompressContent::CompressLevel, "9");
-  context->setProperty(minifi::processors::CompressContent::UpdateFileName, "true");
+  context->setProperty(minifi::processors::CompressContent::CompressMode.name, std::string{magic_enum::enum_name(CompressionMode::compress)});
+  context->setProperty(minifi::processors::CompressContent::CompressFormat.name, std::string{magic_enum::enum_name(CompressionFormat::LZMA)});
+  context->setProperty(minifi::processors::CompressContent::CompressLevel.name, "9");
+  context->setProperty(minifi::processors::CompressContent::UpdateFileName.name, "true");
 
   auto flow = importFlowFile(rawContentPath());
   trigger();
@@ -431,10 +431,10 @@ TEST_CASE_METHOD(CompressTestController, "CompressFileLZMA", "[compressfiletest5
 
 
 TEST_CASE_METHOD(DecompressTestController, "DecompressFileLZMA", "[compressfiletest6]") {
-  context->setProperty(minifi::processors::CompressContent::CompressMode, magic_enum::enum_name(CompressionMode::decompress));
-  context->setProperty(minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::USE_MIME_TYPE));
-  context->setProperty(minifi::processors::CompressContent::CompressLevel, "9");
-  context->setProperty(minifi::processors::CompressContent::UpdateFileName, "true");
+  context->setProperty(minifi::processors::CompressContent::CompressMode.name, std::string{magic_enum::enum_name(CompressionMode::decompress)});
+  context->setProperty(minifi::processors::CompressContent::CompressFormat.name, std::string{magic_enum::enum_name(CompressionFormat::USE_MIME_TYPE)});
+  context->setProperty(minifi::processors::CompressContent::CompressLevel.name, "9");
+  context->setProperty(minifi::processors::CompressContent::UpdateFileName.name, "true");
 
   auto flow = importFlowFile(compressedPath());
   flow->setAttribute(core::SpecialFlowAttribute::MIME_TYPE, "application/x-lzma");
@@ -462,10 +462,10 @@ TEST_CASE_METHOD(DecompressTestController, "DecompressFileLZMA", "[compressfilet
 }
 
 TEST_CASE_METHOD(CompressTestController, "CompressFileXYLZMA", "[compressfiletest7]") {
-  context->setProperty(minifi::processors::CompressContent::CompressMode, magic_enum::enum_name(CompressionMode::compress));
-  context->setProperty(minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::XZ_LZMA2));
-  context->setProperty(minifi::processors::CompressContent::CompressLevel, "9");
-  context->setProperty(minifi::processors::CompressContent::UpdateFileName, "true");
+  context->setProperty(minifi::processors::CompressContent::CompressMode.name, std::string{magic_enum::enum_name(CompressionMode::compress)});
+  context->setProperty(minifi::processors::CompressContent::CompressFormat.name, std::string{magic_enum::enum_name(CompressionFormat::XZ_LZMA2)});
+  context->setProperty(minifi::processors::CompressContent::CompressLevel.name, "9");
+  context->setProperty(minifi::processors::CompressContent::UpdateFileName.name, "true");
 
   auto flow = importFlowFile(rawContentPath());
   trigger();
@@ -497,10 +497,10 @@ TEST_CASE_METHOD(CompressTestController, "CompressFileXYLZMA", "[compressfiletes
 
 
 TEST_CASE_METHOD(DecompressTestController, "DecompressFileXYLZMA", "[compressfiletest8]") {
-  context->setProperty(minifi::processors::CompressContent::CompressMode, magic_enum::enum_name(CompressionMode::decompress));
-  context->setProperty(minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::USE_MIME_TYPE));
-  context->setProperty(minifi::processors::CompressContent::CompressLevel, "9");
-  context->setProperty(minifi::processors::CompressContent::UpdateFileName, "true");
+  context->setProperty(minifi::processors::CompressContent::CompressMode.name, std::string{magic_enum::enum_name(CompressionMode::decompress)});
+  context->setProperty(minifi::processors::CompressContent::CompressFormat.name, std::string{magic_enum::enum_name(CompressionFormat::USE_MIME_TYPE)});
+  context->setProperty(minifi::processors::CompressContent::CompressLevel.name, "9");
+  context->setProperty(minifi::processors::CompressContent::UpdateFileName.name, "true");
 
   auto flow = importFlowFile(compressedPath());
   flow->setAttribute(core::SpecialFlowAttribute::MIME_TYPE, "application/x-xz");
@@ -573,8 +573,8 @@ TEST_CASE_METHOD(TestController, "RawGzipCompressionDecompression", "[compressfi
   plan->setProperty(get_file, minifi::processors::GetFile::Directory, src_dir.string());
 
   // Configure CompressContent processor for compression
-  plan->setProperty(compress_content, minifi::processors::CompressContent::CompressMode, magic_enum::enum_name(CompressionMode::compress));
-  plan->setProperty(compress_content, minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::GZIP));
+  plan->setProperty(compress_content, minifi::processors::CompressContent::CompressMode, std::string{magic_enum::enum_name(CompressionMode::compress)});
+  plan->setProperty(compress_content, minifi::processors::CompressContent::CompressFormat, std::string{magic_enum::enum_name(CompressionFormat::GZIP)});
   plan->setProperty(compress_content, minifi::processors::CompressContent::UpdateFileName, "true");
   plan->setProperty(compress_content, minifi::processors::CompressContent::EncapsulateInTar, "false");
 
@@ -582,8 +582,8 @@ TEST_CASE_METHOD(TestController, "RawGzipCompressionDecompression", "[compressfi
   plan->setProperty(put_compressed, minifi::processors::PutFile::Directory, dst_dir.string());
 
   // Configure CompressContent processor for decompression
-  plan->setProperty(decompress_content, minifi::processors::CompressContent::CompressMode, magic_enum::enum_name(CompressionMode::decompress));
-  plan->setProperty(decompress_content, minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::GZIP));
+  plan->setProperty(decompress_content, minifi::processors::CompressContent::CompressMode, std::string{magic_enum::enum_name(CompressionMode::decompress)});
+  plan->setProperty(decompress_content, minifi::processors::CompressContent::CompressFormat, std::string{magic_enum::enum_name(CompressionFormat::GZIP)});
   plan->setProperty(decompress_content, minifi::processors::CompressContent::UpdateFileName, "true");
   plan->setProperty(decompress_content, minifi::processors::CompressContent::EncapsulateInTar, "false");
 
@@ -635,11 +635,11 @@ TEST_CASE_METHOD(CompressTestController, "Batch CompressFileGZip", "[compressFil
   };
   const std::size_t batchSize = 3;
 
-  context->setProperty(minifi::processors::CompressContent::CompressMode, magic_enum::enum_name(CompressionMode::compress));
-  context->setProperty(minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::GZIP));
-  context->setProperty(minifi::processors::CompressContent::CompressLevel, "9");
-  context->setProperty(minifi::processors::CompressContent::UpdateFileName, "true");
-  context->setProperty(minifi::processors::CompressContent::BatchSize, std::to_string(batchSize));
+  context->setProperty(minifi::processors::CompressContent::CompressMode.name, std::string{magic_enum::enum_name(CompressionMode::compress)});
+  context->setProperty(minifi::processors::CompressContent::CompressFormat.name, std::string{magic_enum::enum_name(CompressionFormat::GZIP)});
+  context->setProperty(minifi::processors::CompressContent::CompressLevel.name, "9");
+  context->setProperty(minifi::processors::CompressContent::UpdateFileName.name, "true");
+  context->setProperty(minifi::processors::CompressContent::BatchSize.name, std::to_string(batchSize));
 
   for (const auto& content : flowFileContents) {
     importFlowFileFrom(minifi::io::BufferStream(content));
@@ -690,21 +690,21 @@ TEST_CASE_METHOD(CompressTestController, "Batch CompressFileGZip", "[compressFil
 }
 
 TEST_CASE_METHOD(DecompressTestController, "Invalid archive decompression", "[compressfiletest9]") {
-  context->setProperty(minifi::processors::CompressContent::CompressMode, magic_enum::enum_name(CompressionMode::decompress));
+  context->setProperty(minifi::processors::CompressContent::CompressMode.name, std::string{magic_enum::enum_name(CompressionMode::decompress)});
   SECTION("GZIP") {
-    context->setProperty(minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::GZIP));
+    context->setProperty(minifi::processors::CompressContent::CompressFormat.name, std::string{magic_enum::enum_name(CompressionFormat::GZIP)});
   }
   SECTION("LZMA") {
-    context->setProperty(minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::LZMA));
+    context->setProperty(minifi::processors::CompressContent::CompressFormat.name, std::string{magic_enum::enum_name(CompressionFormat::LZMA)});
   }
   SECTION("XZ_LZMA2") {
-    context->setProperty(minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::XZ_LZMA2));
+    context->setProperty(minifi::processors::CompressContent::CompressFormat.name, std::string{magic_enum::enum_name(CompressionFormat::XZ_LZMA2)});
   }
   SECTION("BZIP2") {
-    context->setProperty(minifi::processors::CompressContent::CompressFormat, magic_enum::enum_name(CompressionFormat::BZIP2));
+    context->setProperty(minifi::processors::CompressContent::CompressFormat.name, std::string{magic_enum::enum_name(CompressionFormat::BZIP2)});
   }
-  context->setProperty(minifi::processors::CompressContent::CompressLevel, "9");
-  context->setProperty(minifi::processors::CompressContent::UpdateFileName, "true");
+  context->setProperty(minifi::processors::CompressContent::CompressLevel.name, "9");
+  context->setProperty(minifi::processors::CompressContent::UpdateFileName.name, "true");
 
   importFlowFileFrom(minifi::io::BufferStream(std::string{"banana bread"}));
   trigger();
