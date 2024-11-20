@@ -44,6 +44,7 @@ static std::string escape(std::string str) {
 
 static std::string prettifyJson(const std::string& str) {
   rapidjson::Document doc;
+  std::cout << str << std::endl;
   rapidjson::ParseResult res = doc.Parse(str.c_str(), str.length());
   gsl_Assert(res);
 
@@ -66,8 +67,32 @@ void writePropertySchema(const core::Property& prop, std::ostream& out) {
             | ranges::to<std::string>())
         << "]";
   }
-  out << R"(, "type": "string")";
-  out << "}";  // property.getName()
+  if (const auto validator_name = prop.getValidator().getEquivalentNifiStandardValidatorName()) {
+    if (validator_name == "INTEGER_VALIDATOR" || validator_name == "NON_NEGATIVE_INTEGER_VALIDATOR") {
+      out << R"(, "type": "integer")";
+      if (const auto default_value = prop.getDefaultValue()) {
+        out << R"(, "default": )" << *default_value;
+      }
+    } else if (validator_name == "BOOLEAN_VALIDATOR") {
+      out << R"(, "type": "boolean")";
+      if (const auto default_value = prop.getDefaultValue()) {
+        out << R"(, "default": )" << *default_value;
+      }
+    } else {
+      out << R"(, "type": "string")";
+      if (const auto default_value = prop.getDefaultValue()) {
+        out << R"(, "default": ")" << escape(*default_value) << '"';
+      }
+    }
+  } else {
+    out << R"(, "type": "string")";
+    if (const auto default_value = prop.getDefaultValue()) {
+      out << R"(, "default": ")" << escape(*default_value) << '"';
+    }
+  }
+
+
+  out << "}";
 }
 
 template<typename PropertyContainer>
