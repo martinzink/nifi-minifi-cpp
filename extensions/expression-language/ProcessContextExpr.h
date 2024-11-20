@@ -59,10 +59,7 @@ class ProcessContextExpr final : public core::ProcessContextImpl {
   std::map<std::string, std::string> getDynamicProperties(const FlowFile*) const override;
 
  private:
-  mutable std::mutex cache_mutex_;
   mutable std::unordered_map<std::string, expression::Expression, utils::string::transparent_string_hash, std::equal_to<>> cached_expressions_;
-
-  mutable std::mutex dynamic_cache_mutex_;
   mutable std::unordered_map<std::string, expression::Expression, utils::string::transparent_string_hash, std::equal_to<>> cached_dynamic_expressions_;
 
   std::shared_ptr<logging::Logger> logger_;

@@ -34,7 +34,6 @@ nonstd::expected<std::string, std::error_code> ProcessContextExpr::getProperty(c
   if (!property->supports_expression_language) {
     return ProcessContextImpl::getProperty(name, flow_file);
   }
-  std::lock_guard cache_lock(cache_mutex_);
   if (!cached_expressions_.contains(name)) {
     auto expression_str = ProcessContextImpl::getProperty(name, flow_file);
     if (!expression_str) { return expression_str; }
@@ -49,7 +48,6 @@ nonstd::expected<std::string, std::error_code> ProcessContextExpr::getProperty(c
 }
 
 nonstd::expected<std::string, std::error_code> ProcessContextExpr::getDynamicProperty(const std::string_view name, const FlowFile* flow_file) const {
-  std::lock_guard cache_lock(dynamic_cache_mutex_);
   if (!cached_dynamic_expressions_.contains(name)) {
     auto expression_str = ProcessContextImpl::getDynamicProperty(name, flow_file);
     if (!expression_str) { return expression_str; }
@@ -60,23 +58,16 @@ nonstd::expected<std::string, std::error_code> ProcessContextExpr::getDynamicPro
 }
 
 nonstd::expected<void, std::error_code> ProcessContextExpr::setProperty(const std::string_view name, std::string value) {
-  {
-    std::lock_guard cache_lock(cache_mutex_);
-    cached_expressions_.erase(std::string{name});
-  }
+  cached_expressions_.erase(std::string{name});
   return ProcessContextImpl::setProperty(name, std::move(value));
 }
 
 nonstd::expected<void, std::error_code> ProcessContextExpr::setDynamicProperty(std::string name, std::string value) {
-  {
-    std::lock_guard cache_lock(dynamic_cache_mutex_);
-    cached_dynamic_expressions_.erase(name);
-  }
+  cached_dynamic_expressions_.erase(name);
   return ProcessContextImpl::setDynamicProperty(std::move(name), std::move(value));
 }
 
 std::map<std::string, std::string> ProcessContextExpr::getDynamicProperties(const FlowFile* flow_file) const {
-  std::lock_guard cache_lock(dynamic_cache_mutex_);
   auto dynamic_props = ProcessContextImpl::getDynamicProperties(flow_file);
   for (auto& [dynamic_property_name, dynamic_property_value] : dynamic_props) {
     if (!cached_dynamic_expressions_.contains(dynamic_property_name)) {

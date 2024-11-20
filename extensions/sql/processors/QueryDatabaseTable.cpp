@@ -59,7 +59,6 @@ void QueryDatabaseTable::processOnSchedule(core::ProcessContext& context) {
   }
 
   table_name_ = context.getProperty(TableName).value_or("");
-  std::cout << "MAJOM" << table_name_ << std::endl;
   extra_where_clause_ = context.getProperty(WhereClause).value_or("");
 
   return_columns_.clear();
