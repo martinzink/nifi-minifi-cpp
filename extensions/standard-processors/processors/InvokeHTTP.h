@@ -48,6 +48,7 @@ namespace invoke_http {
 class DataTransferSpeedValidator final : public core::PropertyValidator {
  public:
     DataTransferSpeedValidator() = default;
+    constexpr ~DataTransferSpeedValidator() override {}  // NOLINT see comment at parent
 
     [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const override { return std::nullopt; }
     [[nodiscard]] bool validate(std::string_view input) const override;

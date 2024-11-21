@@ -44,8 +44,8 @@ nonstd::expected<T, std::error_code> parseIntegralMinMax(const std::string_view 
     return nonstd::make_unexpected(core::ParsingErrorCode::GeneralParsingError);
   }
 
-  if (t < minimum) { nonstd::make_unexpected(core::ParsingErrorCode::SmallerThanMinimum); }
-  if (t > maximum) { nonstd::make_unexpected(core::ParsingErrorCode::LargerThanMaximum); }
+  if (t < minimum) { return nonstd::make_unexpected(core::ParsingErrorCode::SmallerThanMinimum); }
+  if (t > maximum) { return nonstd::make_unexpected(core::ParsingErrorCode::LargerThanMaximum); }
   return t;
 }
 

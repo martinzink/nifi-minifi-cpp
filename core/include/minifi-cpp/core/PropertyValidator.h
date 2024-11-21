@@ -34,6 +34,7 @@ class PropertyValidator {
 class AlwaysValidValidator final : public PropertyValidator {
 public:
  AlwaysValidValidator() = default;
+ constexpr ~AlwaysValidValidator() override {}  // NOLINT see comment at parent
 
  [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const override { return "VALID"; }
  [[nodiscard]] bool validate(std::string_view) const override { return true; }
@@ -42,6 +43,7 @@ public:
 class NonBlankValidator final : public PropertyValidator {
 public:
  NonBlankValidator() = default;
+ constexpr ~NonBlankValidator() override {}  // NOLINT see comment at parent
 
  [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const override { return "NON_BLANK_VALIDATOR"; }
  [[nodiscard]] bool validate(const std::string_view input) const override {
@@ -52,6 +54,7 @@ public:
 class TimePeriodValidator final : public PropertyValidator {
  public:
  TimePeriodValidator() = default;
+ constexpr ~TimePeriodValidator() override {}  // NOLINT see comment at parent
 
  [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const override { return "TIME_PERIOD_VALIDATOR"; }
  [[nodiscard]] bool validate(const std::string_view input) const override {
@@ -63,6 +66,7 @@ class TimePeriodValidator final : public PropertyValidator {
 class BooleanValidator final : public PropertyValidator {
 public:
  BooleanValidator() = default;
+ constexpr ~BooleanValidator() override {}  // NOLINT see comment at parent
 
  [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const override { return "BOOLEAN_VALIDATOR"; }
  [[nodiscard]] bool validate(const std::string_view input) const override {
@@ -74,6 +78,7 @@ public:
 class IntegerValidator final : public PropertyValidator {
 public:
  IntegerValidator() = default;
+ constexpr ~IntegerValidator() override {}  // NOLINT see comment at parent
 
  [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const override { return "INTEGER_VALIDATOR"; }
  [[nodiscard]] bool validate(const std::string_view input) const override {
@@ -85,6 +90,7 @@ public:
 class UnsignedIntegerValidator final : public PropertyValidator {
 public:
  UnsignedIntegerValidator() = default;
+ constexpr ~UnsignedIntegerValidator() override {}  // NOLINT see comment at parent
 
  [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const override { return "NON_NEGATIVE_INTEGER_VALIDATOR"; }
  [[nodiscard]] bool validate(const std::string_view input) const override {
@@ -96,6 +102,7 @@ public:
 class DataSizeValidator final : public PropertyValidator {
 public:
  DataSizeValidator() = default;
+ constexpr ~DataSizeValidator() override {}  // NOLINT see comment at parent
 
  [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const override { return "DATA_SIZE_VALIDATOR"; }
  [[nodiscard]] bool validate(const std::string_view input) const override {
@@ -107,6 +114,7 @@ public:
 class PortValidator final : public core::PropertyValidator {
 public:
  PortValidator() = default;
+ constexpr ~PortValidator() override {}  // NOLINT see comment at parent
 
  [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const override { return "PORT_VALIDATOR"; }
  [[nodiscard]] bool validate(const std::string_view input) const override {

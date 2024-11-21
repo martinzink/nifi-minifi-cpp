@@ -20,8 +20,36 @@
 #include "utils/ParsingUtils.h"
 
 namespace org::apache::nifi::minifi::parsing::test {
+TEST_CASE("Test boolean parsing") {
+  CHECK(false == *parseBool("false"));
+  CHECK(true == *parseBool("true"));
+  CHECK(false == *parseBool("fAlSe"));
+  CHECK(true == *parseBool("TRUE"));
+  CHECK(core::ParsingErrorCode::GeneralParsingError == parseBool("foo").error());
+  CHECK(core::ParsingErrorCode::GeneralParsingError == parseBool("true dat").error());
+  CHECK(core::ParsingErrorCode::GeneralParsingError == parseBool("bar false").error());
+}
 
-TEST_CASE("Test Permissions Conversion", "[testPermissions]") {
+TEST_CASE("Test integral parsing") {
+  CHECK(8000u == parseIntegral<uint64_t>("8000"));
+  CHECK(nonstd::make_unexpected(core::ParsingErrorCode::GeneralParsingError) == parseIntegral<uint64_t>("-8000"));
+  CHECK(nonstd::make_unexpected(core::ParsingErrorCode::LargerThanMaximum) == parseIntegralMinMax<uint64_t>("10", 3, 8));
+  CHECK(nonstd::make_unexpected(core::ParsingErrorCode::SmallerThanMinimum) == parseIntegralMinMax<uint64_t>("2", 3, 8));
+
+  CHECK(nonstd::make_unexpected(core::ParsingErrorCode::GeneralParsingError) == parseIntegral<int16_t>("90000"));
+  CHECK(nonstd::make_unexpected(core::ParsingErrorCode::GeneralParsingError) == parseIntegral<int16_t>("-90000"));
+}
+
+TEST_CASE("Test data size parsing") {
+  CHECK(8000u == parseDataSize("8000"));
+  CHECK(8192000u == parseDataSize("8000 kB"));
+
+  CHECK(nonstd::make_unexpected(core::ParsingErrorCode::LargerThanMaximum) == parseDataSizeMinMax("9 MB", 3000, 8000));
+  CHECK(nonstd::make_unexpected(core::ParsingErrorCode::SmallerThanMinimum) == parseDataSizeMinMax("0 GB", 3000, 8000));
+  CHECK(8000u == parseDataSize("8000 kutyaB"));  // TODO(mzink) I really dont like this
+}
+
+TEST_CASE("Test Permissions Parsing") {
   CHECK(0777u == parsePermissions("0777"));
   CHECK(0000u == parsePermissions("0000"));
   CHECK(0644u == parsePermissions("0644"));
@@ -40,5 +68,4 @@ TEST_CASE("Test Permissions Conversion", "[testPermissions]") {
   CHECK_FALSE(parsePermissions("foobarfoo"));
   CHECK_FALSE(parsePermissions("foobar"));
 }
-
-}
+}  // namespace org::apache::nifi::minifi::parsing::test
