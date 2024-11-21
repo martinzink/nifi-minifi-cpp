@@ -17,6 +17,7 @@
 #pragma once
 #include <type_traits>
 #include <utility>
+#include <optional>
 #include "nonstd/expected.hpp"
 #include "utils/detail/MonadicOperationWrappers.h"
 
