@@ -38,12 +38,12 @@
 namespace org::apache::nifi::minifi {
 
 namespace core {
-class ConsumeKafkaMaxPollTimePropertyType : public PropertyValidator {
+class ConsumeKafkaMaxPollTimePropertyType final : public PropertyValidator {
  public:
   constexpr ~ConsumeKafkaMaxPollTimePropertyType() override { }  // NOLINT see comment at grandparent
 
   [[nodiscard]] bool validate(const std::string_view input) const override;
-  [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const { return std::nullopt; }  // TODO(mzink) should we just lie and tell its standard time period?
+  [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const override { return std::nullopt; }
 };
 
 inline constexpr ConsumeKafkaMaxPollTimePropertyType CONSUME_KAFKA_MAX_POLL_TIME_TYPE{};

@@ -216,9 +216,9 @@ class ListSFTP : public SFTPProcessorBase {
   std::string target_system_timestamp_precision_;
   std::string entity_tracking_initial_listing_target_;
   std::chrono::milliseconds minimum_file_age_{};
-  std::chrono::milliseconds maximum_file_age_{};
+  std::optional<std::chrono::milliseconds> maximum_file_age_{};
   uint64_t minimum_file_size_{};
-  uint64_t maximum_file_size_{};
+  std::optional<uint64_t> maximum_file_size_{};
 
   std::string last_listing_strategy_;
   std::string last_hostname_;

@@ -17,8 +17,6 @@
 
 #include "ListS3.h"
 
-#include <utils/ProcessorConfigUtils.h>
-
 #include <algorithm>
 #include <memory>
 #include <utility>
@@ -26,6 +24,7 @@
 #include "core/ProcessContext.h"
 #include "core/ProcessSession.h"
 #include "core/Resource.h"
+#include "utils/ProcessorConfigUtils.h"
 
 namespace org::apache::nifi::minifi::aws::processors {
 

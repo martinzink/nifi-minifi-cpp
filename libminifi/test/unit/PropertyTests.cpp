@@ -87,35 +87,4 @@ TEST_CASE("Test Trimmer Left", "[testTrims]") {
   REQUIRE(test.c_str()[0] == 'a');
   REQUIRE(test.c_str()[1] == ' ');
 }
-
-TEST_CASE("Test Permissions Conversion", "[testPermissions]") {  // TODO(mzink) move me to parsing tests
-  using org::apache::nifi::minifi::parsing::parsePermissions;
-
-  CHECK(0777 == parsePermissions("0777"));
-  CHECK(0000 == parsePermissions("0000"));
-
-  CHECK(0644 == parsePermissions("0644"));
-
-  CHECK_FALSE(parsePermissions("0999").has_value());
-
-  CHECK_FALSE(parsePermissions("999").has_value());
-
-  CHECK_FALSE(parsePermissions("0644a").has_value());
-
-  CHECK_FALSE(parsePermissions("07777").has_value());
-
-  CHECK(0777 == parsePermissions("rwxrwxrwx"));
-
-  CHECK(0000 == parsePermissions("---------"));
-
-  CHECK(0764 == parsePermissions("rwxrw-r--"));
-
-  CHECK(0444 == parsePermissions("r--r--r--"));
-
-  CHECK_FALSE(parsePermissions("wxrwxrwxr").has_value());
-
-  CHECK_FALSE(parsePermissions("foobarfoo").has_value());
-
-  CHECK_FALSE(parsePermissions("foobar").has_value());
-}
 }   // namespace

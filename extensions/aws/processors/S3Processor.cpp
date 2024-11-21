@@ -17,8 +17,6 @@
 
 #include "S3Processor.h"
 
-#include <utils/ProcessorConfigUtils.h>
-
 #include <memory>
 #include <string>
 #include <utility>
@@ -30,6 +28,7 @@
 #include "range/v3/algorithm/contains.hpp"
 #include "utils/HTTPUtils.h"
 #include "utils/StringUtils.h"
+#include "utils/ProcessorConfigUtils.h"
 
 namespace org::apache::nifi::minifi::aws::processors {
 
