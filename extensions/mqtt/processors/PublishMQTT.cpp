@@ -27,6 +27,7 @@
 #include "core/ProcessContext.h"
 #include "core/ProcessSession.h"
 #include "core/Resource.h"
+#include "core/state/Value.h"
 
 namespace {
 class RetriableError : public std::runtime_error {

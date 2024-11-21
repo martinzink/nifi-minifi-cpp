@@ -87,7 +87,7 @@ bool SFTPProcessorBase::parseCommonPropertiesOnTrigger(core::ProcessContext& con
   try {
     common_properties.hostname = utils::parseProperty(context, Hostname, flow_file);
     common_properties.port = gsl::narrow<uint16_t>(utils::parseU64Property(context, Port, flow_file));
-    common_properties.password = utils::parseOptionalProperty(context, Password, flow_file).value_or("");
+    common_properties.username = utils::parseOptionalProperty(context, Username, flow_file).value_or("");
     common_properties.private_key_path = utils::parseOptionalProperty(context, PrivateKeyPath, flow_file).value_or("");
     common_properties.private_key_passphrase = utils::parseOptionalProperty(context, PrivateKeyPassphrase, flow_file).value_or("");
     common_properties.password = utils::parseOptionalProperty(context, Password, flow_file).value_or("");
