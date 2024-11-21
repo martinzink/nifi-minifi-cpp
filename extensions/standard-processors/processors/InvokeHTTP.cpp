@@ -48,7 +48,7 @@ nonstd::expected<std::string_view, std::error_code> removePerSecSuffix(const std
 }
 
 nonstd::expected<uint64_t, std::error_code> parseDataTransferSpeed(const std::string_view input) {
-  return removePerSecSuffix(input) | utils::andThen(parsing::parseIntegral<uint64_t>);
+  return removePerSecSuffix(input) | utils::andThen(parsing::parseDataSize);
 }
 }  // namespace
 
