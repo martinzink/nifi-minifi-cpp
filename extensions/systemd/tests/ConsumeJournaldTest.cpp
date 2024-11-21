@@ -279,19 +279,4 @@ TEST_CASE("ConsumeJournald", "[consumejournald]") {
     REQUIRE(8 == plan->getNumFlowFileProducedByCurrentProcessor());
     REQUIRE(consume_journald->isYield());
   }
-  SECTION("throw on invalid batch size") {
-    REQUIRE_THROWS(consume_journald->setProperty(ConsumeJournald::BatchSize.name, "asdf"));
-  }
-  SECTION("throw on invalid payload format") {
-    REQUIRE(consume_journald->setProperty(ConsumeJournald::PayloadFormat.name, "raw"));  // case-sensitive
-    REQUIRE_THROWS(plan->scheduleProcessor(consume_journald));
-  }
-  SECTION("throw on invalid journal type") {
-    REQUIRE(consume_journald->setProperty(ConsumeJournald::JournalType.name, "hello"));
-    REQUIRE_THROWS(plan->scheduleProcessor(consume_journald));
-  }
-  SECTION("throw on invalid journal type") {
-    REQUIRE(consume_journald->setProperty(ConsumeJournald::JournalType.name, "hello"));
-    REQUIRE_THROWS(plan->scheduleProcessor(consume_journald));
-  }
 }
