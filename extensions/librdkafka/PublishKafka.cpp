@@ -703,7 +703,7 @@ void PublishKafka::onTrigger(core::ProcessContext& context, core::ProcessSession
       }
     }
 
-    std::string kafkaKey = context.getProperty(KafkaKey).value_or(flowFile->getUUIDStr());
+    std::string kafkaKey = context.getProperty(KafkaKey, flowFile.get()).value_or(flowFile->getUUIDStr());
 
     logger_->log_debug("PublishKafka: Message Key [{}]", kafkaKey);
 

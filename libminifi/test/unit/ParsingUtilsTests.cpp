@@ -41,28 +41,28 @@ TEST_CASE("Test integral parsing") {
 }
 
 TEST_CASE("Test data size parsing") {
-  CHECK(8000u == parseDataSize("8000"));
-  CHECK(8192000u == parseDataSize("8000 kB"));
+  CHECK(8000U == parseDataSize("8000"));
+  CHECK(8192000U == parseDataSize("8000 kB"));
 
   CHECK(nonstd::make_unexpected(core::ParsingErrorCode::LargerThanMaximum) == parseDataSizeMinMax("9 MB", 3000, 8000));
   CHECK(nonstd::make_unexpected(core::ParsingErrorCode::SmallerThanMinimum) == parseDataSizeMinMax("0 GB", 3000, 8000));
-  CHECK(8000u == parseDataSize("8000 kutyaB"));  // TODO(mzink) I really dont like this
+  CHECK(8000U == parseDataSize("8000 kutyaB"));  // TODO(mzink) I really dont like this
 }
 
 TEST_CASE("Test Permissions Parsing") {
-  CHECK(0777u == parsePermissions("0777"));
-  CHECK(0000u == parsePermissions("0000"));
-  CHECK(0644u == parsePermissions("0644"));
+  CHECK(0777U == parsePermissions("0777"));
+  CHECK(0000U == parsePermissions("0000"));
+  CHECK(0644U == parsePermissions("0644"));
 
   CHECK_FALSE(parsePermissions("0999"));
   CHECK_FALSE(parsePermissions("999"));
   CHECK_FALSE(parsePermissions("0644a"));
   CHECK_FALSE(parsePermissions("07777"));
 
-  CHECK(0777u == parsePermissions("rwxrwxrwx"));
-  CHECK(0000u == parsePermissions("---------"));
-  CHECK(0764u == parsePermissions("rwxrw-r--"));
-  CHECK(0444u == parsePermissions("r--r--r--"));
+  CHECK(0777U == parsePermissions("rwxrwxrwx"));
+  CHECK(0000U == parsePermissions("---------"));
+  CHECK(0764U == parsePermissions("rwxrw-r--"));
+  CHECK(0444U == parsePermissions("r--r--r--"));
 
   CHECK_FALSE(parsePermissions("wxrwxrwxr"));
   CHECK_FALSE(parsePermissions("foobarfoo"));
