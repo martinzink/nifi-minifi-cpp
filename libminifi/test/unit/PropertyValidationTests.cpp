@@ -79,20 +79,6 @@ class TestConfigurableComponent : public ConfigurableComponentImpl, public CoreC
   bool canEdit() override {
     return true;
   }
-
-  template<typename Fn>
-  void setPropertyModifiedCallback(Fn &&functor) {
-    onPropertyModifiedCallback = std::forward<Fn>(functor);
-  }
-
-  template<typename Fn>
-  void setDynamicPropertyModifiedCallback(Fn &&functor) {
-    onDynamicPropertyModifiedCallback = std::forward<Fn>(functor);
-  }
-
- private:
-  std::function<void(const Property &, const Property &)> onPropertyModifiedCallback;
-  std::function<void(const Property &, const Property &)> onDynamicPropertyModifiedCallback;
 };
 
 TEST_CASE("Missing Required With Default") {

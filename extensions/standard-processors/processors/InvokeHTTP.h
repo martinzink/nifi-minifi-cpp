@@ -56,6 +56,7 @@ class DataTransferSpeedValidator final : public core::PropertyValidator {
 
 inline constexpr auto DATA_TRANSFER_SPEED_VALIDATOR = DataTransferSpeedValidator{};
 
+nonstd::expected<uint64_t, std::error_code> parseDataTransferSpeed(const std::string_view input);
 
 enum class InvalidHTTPHeaderFieldHandlingOption {
     fail,

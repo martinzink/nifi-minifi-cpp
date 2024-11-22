@@ -510,4 +510,21 @@ TEST_CASE("Test Keepalive", "[InvokeHTTP]") {
   CHECK(1 == connection_counting_server.getConnectionCounter());
 }
 
+TEST_CASE("Validating data transfer speed") {
+  const auto& data_transfer_speed_validator = processors::invoke_http::DATA_TRANSFER_SPEED_VALIDATOR;
+  CHECK(data_transfer_speed_validator.validate("10 kB/s"));
+  CHECK(data_transfer_speed_validator.validate("20 MB/s"));
+  CHECK(data_transfer_speed_validator.validate("20 TB/s"));
+  CHECK_FALSE(data_transfer_speed_validator.validate("1KBinvalidsuffix"));
+  CHECK_FALSE(data_transfer_speed_validator.validate("1KB"));
+}
+
+TEST_CASE("Data transfer speed parsing") {
+  CHECK(processors::invoke_http::parseDataTransferSpeed("10 kB/s") == 10_KiB);
+  CHECK(processors::invoke_http::parseDataTransferSpeed("20 MB/s") == 20_MiB);
+  CHECK(processors::invoke_http::parseDataTransferSpeed("19 TB/s") == 19_TiB);
+  CHECK(processors::invoke_http::parseDataTransferSpeed("1KBinvalidsuffix") == nonstd::make_unexpected(core::ParsingErrorCode::GeneralParsingError));
+  CHECK(processors::invoke_http::parseDataTransferSpeed("1KB") == nonstd::make_unexpected(core::ParsingErrorCode::GeneralParsingError));
+}
+
 }  // namespace org::apache::nifi::minifi::test

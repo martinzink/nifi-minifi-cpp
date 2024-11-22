@@ -46,11 +46,11 @@ nonstd::expected<std::string_view, std::error_code> removePerSecSuffix(const std
   }
   return nonstd::make_unexpected(core::ParsingErrorCode::GeneralParsingError);
 }
+}  // namespace
 
-nonstd::expected<uint64_t, std::error_code> parseDataTransferSpeed(const std::string_view input) {
+nonstd::expected<uint64_t, std::error_code> invoke_http::parseDataTransferSpeed(const std::string_view input) {
   return removePerSecSuffix(input) | utils::andThen(parsing::parseDataSize);
 }
-}  // namespace
 
 bool invoke_http::DataTransferSpeedValidator::validate(const std::string_view input) const {
   return parseDataTransferSpeed(input).has_value();
@@ -111,8 +111,8 @@ void InvokeHTTP::setupMembersFromProperties(const core::ProcessContext& context)
   use_chunked_encoding_ = utils::parseBoolProperty(context, UseChunkedEncoding);
   send_date_header_ = utils::parseOptionalBoolProperty(context, DateHeader).value_or(true);
 
-  maximum_upload_speed_ = context.getProperty(UploadSpeedLimit) | utils::andThen(parseDataTransferSpeed) | utils::toOptional();
-  maximum_download_speed_ = context.getProperty(DownloadSpeedLimit) | utils::andThen(parseDataTransferSpeed) | utils::toOptional();
+  maximum_upload_speed_ = context.getProperty(UploadSpeedLimit) | utils::andThen(invoke_http::parseDataTransferSpeed) | utils::toOptional();
+  maximum_download_speed_ = context.getProperty(DownloadSpeedLimit) | utils::andThen(invoke_http::parseDataTransferSpeed) | utils::toOptional();
 
   connect_timeout_ = utils::parseMsProperty(context, ConnectTimeout);  // Shouldn't fail due to default value;
   read_timeout_ = utils::parseMsProperty(context, ReadTimeout);  // Shouldn't fail due to default value;
