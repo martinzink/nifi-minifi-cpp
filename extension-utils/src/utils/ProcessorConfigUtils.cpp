@@ -16,12 +16,9 @@
  */
 #include "utils/ProcessorConfigUtils.h"
 
-#include <vector>
 #include <string>
-#include <string_view>
 
-#include "range/v3/algorithm/contains.hpp"
-#include "utils/StringUtils.h"
+#include "utils/expected.h"
 
 namespace org::apache::nifi::minifi::utils {
 
@@ -74,7 +71,7 @@ std::optional<int64_t> parseOptionalI64Property(const core::ProcessContext& ctx,
 }
 
 int64_t parseI64Property(const core::ProcessContext& ctx, const core::PropertyReference& property, const core::FlowFile* flow_file) {
-  return ctx.getProperty(property, flow_file) | utils::andThen(parsing::parseIntegral<uint64_t>) | utils::expect(fmt::format("Expected parsable int64_t from {}::{}", ctx.getProcessor().getName(), property.name));
+  return ctx.getProperty(property, flow_file) | utils::andThen(parsing::parseIntegral<int64_t>) | utils::expect(fmt::format("Expected parsable int64_t from {}::{}", ctx.getProcessor().getName(), property.name));
 }
 
 std::optional<std::chrono::milliseconds> parseOptionalMsProperty(const core::ProcessContext& ctx, const core::PropertyReference& property, const core::FlowFile* flow_file) {
