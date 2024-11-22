@@ -52,6 +52,11 @@ struct transform_error_wrapper {
 
 struct to_optional_wrapper{};
 
+template<typename E>
+struct to_expected_wrapper {
+  E error;
+};
+
 struct expect_wrapper {
   std::string reason;
 };
@@ -92,6 +97,14 @@ detail::or_else_wrapper<T&&> orElse(T&& func) noexcept { return {std::forward<T>
  */
 template<typename T>
 detail::value_or_else_wrapper<T&&> valueOrElse(T&& func) noexcept { return {std::forward<T>(func)}; }
+
+
+/**
+ * Converts from std::optional<T> to nonstd::expected<T, E>
+ * Consuming the expected and discarding the error, if any.
+ */
+template<typename E>
+detail::to_expected_wrapper<E> toExpected(E&& e) noexcept { return {std::forward<E>(e)}; }
 
 
 /**

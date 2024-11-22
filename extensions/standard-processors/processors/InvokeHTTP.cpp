@@ -118,7 +118,7 @@ void InvokeHTTP::setupMembersFromProperties(const core::ProcessContext& context)
   read_timeout_ = utils::parseMsProperty(context, ReadTimeout);  // Shouldn't fail due to default value;
 
   proxy_.host = context.getProperty(InvokeHTTP::ProxyHost).value_or("");
-  proxy_.port = (context.getProperty(InvokeHTTP::ProxyPort) | utils::andThen(parsing::parseIntegral<uint64_t>)).value_or(0);
+  proxy_.port = (context.getProperty(InvokeHTTP::ProxyPort) | utils::andThen(parsing::parseIntegral<int>)).value_or(0);
   std::string port_str;
   proxy_.username = context.getProperty(InvokeHTTP::ProxyUsername).value_or("");
   proxy_.password = context.getProperty(InvokeHTTP::ProxyPassword).value_or("");
