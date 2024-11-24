@@ -142,6 +142,7 @@ class ExecutePythonProcessor : public core::ProcessorImpl {
 
   nonstd::expected<std::string, std::error_code> getProperty(std::string_view name) const override;
   nonstd::expected<void, std::error_code> setProperty(std::string_view name, std::string value) override;
+  nonstd::expected<core::PropertyReference, std::error_code> getPropertyReference(std::string_view name) const override;
 
  private:
   mutable std::mutex python_properties_mutex_;

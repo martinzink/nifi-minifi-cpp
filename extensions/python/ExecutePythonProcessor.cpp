@@ -247,6 +247,20 @@ nonstd::expected<void, std::error_code> ExecutePythonProcessor::setProperty(std:
   return nonstd::make_unexpected(core::PropertyErrorCode::NotSupportedProperty);
 }
 
+nonstd::expected<core::PropertyReference, std::error_code> ExecutePythonProcessor::getPropertyReference(std::string_view name) const {
+  if (const auto non_python_property = ConfigurableComponentImpl::getPropertyReference(name)) {
+    return *non_python_property;
+  }
+  std::lock_guard<std::mutex> lock(python_properties_mutex_);
+  auto it = ranges::find_if(python_properties_, [&name](const auto& item){
+    return item.getName() == name;
+  });
+  if (it != python_properties_.end()) {
+    return it->getReference();
+  }
+  return nonstd::make_unexpected(core::PropertyErrorCode::NotSupportedProperty);
+}
+
 std::map<std::string, core::Property> ExecutePythonProcessor::getSupportedProperties() const {
   auto result = ConfigurableComponentImpl::getSupportedProperties();
 
