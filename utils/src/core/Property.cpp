@@ -23,7 +23,7 @@
 #include "core/PropertyDefinition.h"
 #include "core/PropertyType.h"
 #include "minifi-cpp/utils/PropertyErrors.h"
-#include "range/v3/algorithm/any_of.hpp"
+#include "range/v3/algorithm/none_of.hpp"
 #include "range/v3/range/conversion.hpp"
 #include "range/v3/view/transform.hpp"
 
@@ -148,7 +148,7 @@ nonstd::expected<std::span<const std::string>, std::error_code> Property::getAll
 
 nonstd::expected<void, std::error_code> Property::setValue(std::string value) {
   if (!validator_->validate(value)) { return nonstd::make_unexpected(PropertyErrorCode::ValidationFailed); }
-  if (!allowed_values_.empty() || ranges::any_of(allowed_values_, [&](const auto& allowed_value) -> bool { return utils::string::toLower(allowed_value) == utils::string::toLower(value); })) {
+  if (!allowed_values_.empty() && ranges::none_of(allowed_values_, [&](const auto& allowed_value) -> bool { return utils::string::toLower(allowed_value) == utils::string::toLower(value); })) {
     return nonstd::make_unexpected(PropertyErrorCode::ValidationFailed);
   }
   values_.clear();
@@ -158,7 +158,7 @@ nonstd::expected<void, std::error_code> Property::setValue(std::string value) {
 
 nonstd::expected<void, std::error_code> Property::appendValue(std::string value) {
   if (!validator_->validate(value)) { return nonstd::make_unexpected(PropertyErrorCode::ValidationFailed); }
-  if (!allowed_values_.empty() || ranges::any_of(allowed_values_, [&](const auto& allowed_value) -> bool { return utils::string::toLower(allowed_value) == utils::string::toLower(value); })) {
+  if (!allowed_values_.empty() && ranges::none_of(allowed_values_, [&](const auto& allowed_value) -> bool { return utils::string::toLower(allowed_value) == utils::string::toLower(value); })) {
     return nonstd::make_unexpected(PropertyErrorCode::ValidationFailed);
   }
   if (values_.empty() && default_value_) { values_.push_back(*default_value_); }
