@@ -47,6 +47,8 @@ class ConcurrentQueue {
   ConcurrentQueue(ConcurrentQueue&& other)
     : ConcurrentQueue(std::move(other), std::lock_guard<std::mutex>(other.mtx_)) {}
 
+  virtual ~ConcurrentQueue() = default;
+
   ConcurrentQueue& operator=(ConcurrentQueue&& other) {
     if (this != &other) {
       std::lock(mtx_, other.mtx_);
