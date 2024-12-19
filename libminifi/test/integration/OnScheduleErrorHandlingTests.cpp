@@ -17,13 +17,13 @@
  */
 #include "integration/IntegrationBase.h"
 #include "core/logging/Logger.h"
-#include "core/Scheduling.h"
 #include "core/state/ProcessorController.h"
 #include "unit/TestBase.h"
 #include "../../../extensions/test-processors/KamikazeProcessor.h"
 #include "utils/StringUtils.h"
 #include "unit/TestUtils.h"
 #include "unit/Catch.h"
+#include "minifi-cpp/properties/Configuration.h"
 
 namespace org::apache::nifi::minifi::test {
 
