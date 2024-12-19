@@ -22,18 +22,12 @@
 #include <utility>
 #include "utils/MinifiConcurrentQueue.h"
 
-namespace org {
-namespace apache {
-namespace nifi {
-namespace minifi {
-namespace utils {
+namespace org::apache::nifi::minifi::utils {
 
 namespace internal {
 template<typename T>
 struct default_allocator {
-  T operator()(size_t max_size) const {
-    return T::allocate(max_size);
-  }
+  T operator()(size_t max_size) const { return T::allocate(max_size); }
 };
 }  // namespace internal
 
@@ -49,23 +43,21 @@ class StagingQueue {
 
   static_assert(std::is_same<decltype(std::declval<const Allocator&>()(std::declval<size_t>())), ActiveItem>::value,
       "Allocator::operator(size_t) must return an ActiveItem");
-  static_assert(std::is_same<decltype(std::declval<const Item&>().size()), size_t>::value,
-      "Item::size must return size_t");
-  static_assert(std::is_same<decltype(std::declval<const ActiveItem&>().size()), size_t>::value,
-      "ActiveItem::size must return size_t");
+  static_assert(std::is_same<decltype(std::declval<const Item&>().size()), size_t>::value, "Item::size must return size_t");
+  static_assert(std::is_same<decltype(std::declval<const ActiveItem&>().size()), size_t>::value, "ActiveItem::size must return size_t");
 
   template<typename Functor, typename Arg, typename = void>
   struct FunctorCallHelper;
 
   template<typename Functor, typename Arg>
-  struct FunctorCallHelper<Functor, Arg, typename std::enable_if<std::is_same<decltype(std::declval<Functor>()(std::declval<Arg>())), bool>::value>::type> {
-    static bool call(Functor&& fn, Arg&& arg) {
-      return std::forward<Functor>(fn)(std::forward<Arg>(arg));
-    }
+  struct FunctorCallHelper<Functor, Arg,
+      typename std::enable_if<std::is_same<decltype(std::declval<Functor>()(std::declval<Arg>())), bool>::value>::type> {
+    static bool call(Functor&& fn, Arg&& arg) { return std::forward<Functor>(fn)(std::forward<Arg>(arg)); }
   };
 
   template<typename Functor, typename Arg>
-  struct FunctorCallHelper<Functor, Arg, typename std::enable_if<std::is_same<decltype(std::declval<Functor>()(std::declval<Arg>())), void>::value>::type> {
+  struct FunctorCallHelper<Functor, Arg,
+      typename std::enable_if<std::is_same<decltype(std::declval<Functor>()(std::declval<Arg>())), void>::value>::type> {
     static bool call(Functor&& fn, Arg&& arg) {
       std::forward<Functor>(fn)(std::forward<Arg>(arg));
       return false;
@@ -83,10 +75,10 @@ class StagingQueue {
 
  public:
   StagingQueue(size_t max_size, size_t max_item_size, Allocator allocator = {})
-    : max_size_(max_size),
-      max_item_size_(max_item_size),
-      active_item_(allocateActiveItem(allocator, max_item_size)),
-      allocator_(allocator) {}
+      : max_size_(max_size),
+        max_item_size_(max_item_size),
+        active_item_(allocateActiveItem(allocator, max_item_size)),
+        allocator_(allocator) {}
 
   void commit() {
     std::unique_lock<std::mutex> lock{active_item_mutex_};
@@ -114,16 +106,12 @@ class StagingQueue {
     } else {
       total_size_ -= original_size - new_size;
     }
-    if (should_commit || new_size > max_item_size_) {
-      commit(lock);
-    }
+    if (should_commit || new_size > max_item_size_) { commit(lock); }
   }
 
   template<class Rep, class Period>
   bool tryDequeue(Item& out, const std::chrono::duration<Rep, Period>& time) {
-    if (time == std::chrono::duration<Rep, Period>{0}) {
-      return tryDequeue(out);
-    }
+    if (time == std::chrono::duration<Rep, Period>{0}) { return tryDequeue(out); }
     if (queue_.dequeueWaitFor(out, time)) {
       total_size_ -= out.size();
       return true;
@@ -139,31 +127,21 @@ class StagingQueue {
     return false;
   }
 
-  size_t getMaxSize() const {
-    return max_size_;
-  }
+  size_t getMaxSize() const { return max_size_; }
 
-  size_t getMaxItemSize() const {
-    return max_item_size_;
-  }
+  size_t getMaxItemSize() const { return max_item_size_; }
 
   void discardOverflow() {
     while (total_size_ > max_size_) {
       Item item;
-      if (!queue_.tryDequeue(item)) {
-        break;
-      }
+      if (!queue_.tryDequeue(item)) { break; }
       total_size_ -= item.size();
     }
   }
 
-  size_t size() const {
-    return total_size_;
-  }
+  size_t size() const { return total_size_; }
 
-  size_t itemCount() const {
-    return queue_.size();
-  }
+  size_t itemCount() const { return queue_.size(); }
 
  private:
   void commit(std::unique_lock<std::mutex>& /*lock*/) {
@@ -183,8 +161,4 @@ class StagingQueue {
   ConditionConcurrentQueue<Item> queue_;
 };
 
-}  // namespace utils
-}  // namespace minifi
-}  // namespace nifi
-}  // namespace apache
-}  // namespace org
+}  // namespace org::apache::nifi::minifi::utils
