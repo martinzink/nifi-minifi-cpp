@@ -111,6 +111,7 @@ add_custom_target(
         -v ${PROJECT_VERSION_STR}
         -o ${MINIFI_DOCKER_OPTIONS_STR}
         -d rockylinux
+        -l ${CMAKE_BINARY_DIR}
         -c BUILD_NUMBER=${BUILD_NUMBER}
         -c DOCKER_CCACHE_DUMP_LOCATION=${DOCKER_CCACHE_DUMP_LOCATION}
         -c DOCKER_SKIP_TESTS=OFF

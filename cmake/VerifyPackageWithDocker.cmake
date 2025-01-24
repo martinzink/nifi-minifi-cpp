@@ -28,7 +28,7 @@ function(ADD_PACKAGE_VERIFY TAG_PREFIX)
         endif()
     endforeach()
 
-    set(DISABLED_TAGS "SKIP_CI,ENABLE_PYTHON_SCRIPTING")
+    set(DISABLED_TAGS "SKIP_CI")
 
     add_custom_target(
             docker-verify-${TAG_PREFIX}
@@ -36,12 +36,12 @@ function(ADD_PACKAGE_VERIFY TAG_PREFIX)
 endfunction()
 
 
-CREATE_DOCKER_TARGET_FROM_ROCKY_PACKAGE(rockylinux:8 rocky8 "yum install -y wget")
-CREATE_DOCKER_TARGET_FROM_ROCKY_PACKAGE(rockylinux:9 rocky9 "yum install -y wget")
-CREATE_DOCKER_TARGET_FROM_ROCKY_PACKAGE(ubuntu:jammy jammy "apt update \\&\\& apt install -y wget")
-CREATE_DOCKER_TARGET_FROM_ROCKY_PACKAGE(ubuntu:noble noble "apt update \\&\\& apt install -y wget")
-CREATE_DOCKER_TARGET_FROM_ROCKY_PACKAGE(debian:bookworm bookworm "apt update \\&\\& apt install -y wget")
-CREATE_DOCKER_TARGET_FROM_ROCKY_PACKAGE(debian:bullseye bullseye "apt update \\&\\& apt install -y wget")
+CREATE_DOCKER_TARGET_FROM_ROCKY_PACKAGE(rockylinux:8 rocky8 "dnf install -y wget python3.12")
+CREATE_DOCKER_TARGET_FROM_ROCKY_PACKAGE(rockylinux:9 rocky9 "dnf install -y wget python3")
+CREATE_DOCKER_TARGET_FROM_ROCKY_PACKAGE(ubuntu:jammy jammy "apt update \\&\\& apt install -y wget python3 python3-venv")
+CREATE_DOCKER_TARGET_FROM_ROCKY_PACKAGE(ubuntu:noble noble "apt update \\&\\& apt install -y wget python3 python3-venv")
+CREATE_DOCKER_TARGET_FROM_ROCKY_PACKAGE(debian:bookworm bookworm "apt update \\&\\& apt install -y wget python3 python3-venv")
+CREATE_DOCKER_TARGET_FROM_ROCKY_PACKAGE(debian:bullseye bullseye "apt update \\&\\& apt install -y wget python3-venv")
 
 if (EXISTS ${CMAKE_SOURCE_DIR}/docker/test/integration/features)
     ADD_PACKAGE_VERIFY(rocky8)
