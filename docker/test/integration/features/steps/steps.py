@@ -735,10 +735,9 @@ def step_impl(context, content, topic_name):
         "ssl.ca.location": ca_cert_file.name,
         "ssl.certificate.location": client_cert_file.name,
         "ssl.key.location": client_key_file.name,
-        "ssl.key.password": "",
         "client.id": socket.gethostname()})
     producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report)
-    producer.flush(10)
+    producer.flush(50)
 
 
 # Used for testing transactional message consumption
