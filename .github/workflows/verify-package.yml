@@ -7,8 +7,8 @@ env:
   CCACHE_DIR: ${{ GITHUB.WORKSPACE }}/.ccache
 jobs:
   rocky-x86-64-build:
-    name: "Build package (Rocky 8 x86_64)"
-    runs-on: ubuntu-24.04
+    name: "Build package (Rocky 8 ARM)"
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
     steps:
       - id: checkout
@@ -17,10 +17,10 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.ccache
-          key: verify-package-ccache-${{github.ref}}-${{github.sha}}
+          key: verify-package-ccache-arm-${{github.ref}}-${{github.sha}}
           restore-keys: |
-            verify-package-ccache-${{github.ref}}-
-            verify-package-ccache-refs/heads/main-
+            verify-package-ccache-arm-${{github.ref}}-
+            verify-package-ccache-arm-refs/heads/main-
       - id: install_deps
         run: |
           sudo apt update
@@ -35,7 +35,7 @@ jobs:
         if: always()
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: verify-package-ccache-${{github.ref}}-${{github.sha}}
+          key: verify-package-ccache-arm-${{github.ref}}-${{github.sha}}
       - uses: actions/upload-artifact@v4
         with:
           name: minifi-tar
@@ -44,34 +44,34 @@ jobs:
 
   docker-x86-64-tests:
     name: "${{ matrix.platform.name }}"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
     needs: rocky-x86-64-build
     strategy:
       fail-fast: false
       matrix:
         platform: [
-          { name: "Rocky Linux 8 x86_64",
+          { name: "Rocky Linux 8 aarch64",
             id: "rocky8",
             build_cmd: "make rocky8_from_rocky_package",
             verify_cmd: "make docker-verify-rocky8" },
-          { name: "Rocky Linux 9 x86_64",
+          { name: "Rocky Linux 9 aarch64",
             id: "rocky9",
             build_cmd: "make rocky9_from_rocky_package",
             verify_cmd: "make docker-verify-rocky9" },
-          { name: "Ubuntu 22.04 x86_64",
+          { name: "Ubuntu 22.04 aarch64",
             id: "ubuntu_jammy",
             build_cmd: "make jammy_from_rocky_package",
             verify_cmd: "make docker-verify-jammy" },
-          { name: "Ubuntu 24.04 x86_64",
+          { name: "Ubuntu 24.04 aarch64",
             id: "ubuntu_noble",
             build_cmd: "make noble_from_rocky_package",
             verify_cmd: "make docker-verify-noble" },
-          { name: "Debian 11 x86_64",
+          { name: "Debian 11 aarch64",
             id: "debian_bullseye",
             build_cmd: "make bullseye_from_rocky_package",
             verify_cmd: "make docker-verify-bullseye" },
-          { name: "Debian 12 x86_64",
+          { name: "Debian 12 aarch64",
             id: "debian_bookworm",
             build_cmd: "make bookworm_from_rocky_package",
             verify_cmd: "make docker-verify-bookworm" },
