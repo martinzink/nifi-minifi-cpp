@@ -80,10 +80,10 @@ class ImageStore:
             so_location = "psqlodbca.so"
         elif "bullseye" in MinifiContainer.MINIFI_TAG_PREFIX or "bookworm" in MinifiContainer.MINIFI_TAG_PREFIX:
             install_sql_cmd = "apt -y install odbc-postgresql"
-            so_location = "/usr/lib/x86_64-linux-gnu/odbc/psqlodbca.so"
+            so_location = "/usr/lib/$(gcc -dumpmachine)/odbc/psqlodbca.so"
         elif "jammy" in MinifiContainer.MINIFI_TAG_PREFIX or "noble" in MinifiContainer.MINIFI_TAG_PREFIX:
             install_sql_cmd = "apt -y install odbc-postgresql"
-            so_location = "/usr/lib/x86_64-linux-gnu/odbc/psqlodbca.so"
+            so_location = "/usr/lib/$(gcc -dumpmachine)/odbc/psqlodbca.so"
         else:
             install_sql_cmd = "apk --update --no-cache add psqlodbc"
             so_location = "psqlodbca.so"
