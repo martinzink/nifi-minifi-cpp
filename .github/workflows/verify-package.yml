@@ -38,7 +38,7 @@ jobs:
           key: verify-package-ccache-${{github.ref}}-${{github.sha}}
       - uses: actions/upload-artifact@v4
         with:
-          name: minifi-tar
+          name: minifi-x86-64-tar
           path: build/nifi-minifi-cpp-*-bin-rockylinux.tar.gz
           if-no-files-found: error
 
@@ -74,7 +74,7 @@ jobs:
           key: verify-package-arm-ccache-${{github.ref}}-${{github.sha}}
       - uses: actions/upload-artifact@v4
         with:
-          name: minifi-tar
+          name: minifi-aarch64-tar
           path: build/nifi-minifi-cpp-*-bin-rockylinux.tar.gz
           if-no-files-found: error
 
@@ -118,7 +118,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: minifi-tar
+          name: minifi-x86-64-tar
           path: build
       - id: install_deps
         run: |
@@ -140,7 +140,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.platform.id }}_behavex_output
+          name: ${{ matrix.platform.id }}_x86_64_behavex_output
           path: build/behavex_output
 
 
@@ -184,7 +184,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: minifi-tar
+          name: minifi-aarch64-tar
           path: build
       - id: install_deps
         run: |
@@ -206,5 +206,5 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.platform.id }}_behavex_output
+          name: ${{ matrix.platform.id }}_aarch64_behavex_output
           path: build/behavex_output
