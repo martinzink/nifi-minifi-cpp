@@ -68,7 +68,8 @@ class KafkaBrokerContainer(Container):
             ports={'9092/tcp': 9092, '29092/tcp': 29092, '9093/tcp': 9093, '29093/tcp': 29093, '9094/tcp': 9094, '29094/tcp': 29094, '9094/tcp': 9094, '29095/tcp': 29095},
             environment=[
                 "ZOOKEEPER_HOST=zookeeper-" + self.feature_id,
-                "ZOOKEEPER_PORT=2181"
+                "ZOOKEEPER_PORT=2181",
+                'KAFKA_OPTS="-Djavax.net.debug=ssl,handshake'
             ],
             mounts=[
                 docker.types.Mount(
