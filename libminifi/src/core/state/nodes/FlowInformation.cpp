@@ -37,7 +37,7 @@ std::vector<SerializedResponseNode> FlowInformation::serialize() {
 
   if (nullptr != monitor_) {
     monitor_->executeOnComponent("FlowController", [&serialized](StateController& component) {
-      serialized.push_back({.name = "runStatus", .value = (component.isRunning() ? "Running" : "Stopped")});
+      serialized.push_back({.name = "runStatus", .value = (component.isRunning() ? "RUNNING" : "STOPPED")});
     });
   }
 
@@ -92,7 +92,7 @@ std::vector<SerializedResponseNode> FlowInformation::serialize() {
           {.name = "processingNanos", .value = metrics->processingNanos().load()},
           {.name = "activeThreadCount", .value = -1},
           {.name = "terminatedThreadCount", .value = -1},
-          {.name = "runStatus", .value = (processor->isRunning() ? "Running" : "Stopped")}
+          {.name = "runStatus", .value = (processor->isRunning() ? "RUNNING" : "STOPPED")}
         }
       });
     }
