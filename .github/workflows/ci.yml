@@ -444,6 +444,7 @@ jobs:
         uses: Ana06/get-changed-files@v2.3.0
         continue-on-error: true
       - name: clang-tidy
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-clang-tidy') }}
         run: |
           if [[ -n "${{ steps.files.outputs.all }}" ]]; then
             FILES="${{ steps.files.outputs.all }}"
