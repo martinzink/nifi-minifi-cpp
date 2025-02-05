@@ -51,7 +51,8 @@ class S3Processor : public AwsProcessor {
       .withValidator(core::StandardPropertyTypes::NON_BLANK_VALIDATOR)
       .supportsExpressionLanguage(true)
       .build();
- EXTENSIONAPI static constexpr auto Properties = minifi::utils::array_cat(AwsProcessor::Properties, std::to_array<core::PropertyReference>({Bucket}));
+
+  EXTENSIONAPI static constexpr auto Properties = minifi::utils::array_cat(AwsProcessor::Properties, std::to_array<core::PropertyReference>({Bucket}));
 
 
   explicit S3Processor(std::string_view name, const minifi::utils::Identifier& uuid, std::shared_ptr<core::logging::Logger> logger);

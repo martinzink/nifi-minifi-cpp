@@ -53,7 +53,7 @@ class PutKinesisStreamMocked : public aws::processors::PutKinesisStream {
   ~PutKinesisStreamMocked() override = default;
 
   std::unique_ptr<Aws::Kinesis::KinesisClient> getClient(const Aws::Auth::AWSCredentials&) override {
-  	return std::make_unique<MockKinesisClient>();
+    return std::make_unique<MockKinesisClient>();
   }
 };
 REGISTER_RESOURCE(PutKinesisStreamMocked, Processor);

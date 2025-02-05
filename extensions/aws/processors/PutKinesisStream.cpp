@@ -85,7 +85,8 @@ void PutKinesisStream::onTrigger(core::ProcessContext& context, core::ProcessSes
       session.transfer(flow_file, Failure);
       continue;
     }
-    auto partition_key = context.getProperty(AmazonKinesisStreamPartitionKey.name, flow_file.get()) | minifi::utils::valueOrElse([&flow_file]() -> std::string { return flow_file->getUUID().to_string(); });
+    auto partition_key = context.getProperty(AmazonKinesisStreamPartitionKey.name, flow_file.get())
+        | minifi::utils::valueOrElse([&flow_file]() -> std::string { return flow_file->getUUID().to_string(); });
 
     stream_batches[*stream_name].flow_files.push_back(std::move(flow_file));
     stream_batches[*stream_name].batch_size += flow_file_size;

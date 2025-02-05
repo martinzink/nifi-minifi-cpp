@@ -65,10 +65,14 @@ class PutKinesisStream : public AwsProcessor {
   EXTENSIONAPI static constexpr auto Failure = core::RelationshipDefinition{"failure", "FlowFiles are routed to failure relationship"};
   EXTENSIONAPI static constexpr auto Relationships = std::array{Success, Failure};
 
-  EXTENSIONAPI static constexpr auto AwsKinesisErrorMessage = core::OutputAttributeDefinition<>{"aws.kinesis.error.message", { Failure }, "Error message on posting message to AWS Kinesis"};
-  EXTENSIONAPI static constexpr auto AwsKinesisErrorCode = core::OutputAttributeDefinition<>{"aws.kinesis.error.code", { Failure }, "Error code for the message when posting to AWS Kinesis"};
-  EXTENSIONAPI static constexpr auto AwsKinesisSequenceNumber = core::OutputAttributeDefinition<>{"aws.kinesis.sequence.number", { Success }, "Sequence number for the message when posting to AWS Kinesis"};
-  EXTENSIONAPI static constexpr auto AwsKinesisShardId = core::OutputAttributeDefinition<>{"aws.kinesis.shard.id", { Success }, "Shard id of the message posted to AWS Kinesis"};
+  EXTENSIONAPI static constexpr auto AwsKinesisErrorMessage = core::OutputAttributeDefinition<>{"aws.kinesis.error.message", { Failure },
+    "Error message on posting message to AWS Kinesis"};
+  EXTENSIONAPI static constexpr auto AwsKinesisErrorCode = core::OutputAttributeDefinition<>{"aws.kinesis.error.code", { Failure },
+    "Error code for the message when posting to AWS Kinesis"};
+  EXTENSIONAPI static constexpr auto AwsKinesisSequenceNumber = core::OutputAttributeDefinition<>{"aws.kinesis.sequence.number", { Success },
+    "Sequence number for the message when posting to AWS Kinesis"};
+  EXTENSIONAPI static constexpr auto AwsKinesisShardId = core::OutputAttributeDefinition<>{"aws.kinesis.shard.id", { Success },
+    "Shard id of the message posted to AWS Kinesis"};
   EXTENSIONAPI static constexpr auto OutputAttributes = std::array<core::OutputAttributeReference, 4>{AwsKinesisErrorMessage, AwsKinesisErrorCode, AwsKinesisSequenceNumber, AwsKinesisShardId};
 
   EXTENSIONAPI static constexpr bool SupportsDynamicProperties = true;
@@ -88,8 +92,9 @@ class PutKinesisStream : public AwsProcessor {
   void onSchedule(core::ProcessContext& context, core::ProcessSessionFactory& session_factory) override;
   void onTrigger(core::ProcessContext& context, core::ProcessSession& session) override;
 
-protected:
+ protected:
   virtual std::unique_ptr<Aws::Kinesis::KinesisClient> getClient(const Aws::Auth::AWSCredentials& credentials);
+
  private:
   uint64_t batch_size_ = 250;
   uint64_t batch_data_size_soft_cap_ = 1_MB;
