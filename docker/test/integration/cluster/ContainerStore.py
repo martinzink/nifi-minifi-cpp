@@ -157,11 +157,11 @@ class ContainerStore:
         elif engine == 'kinesis-server':
             return self.containers.setdefault(container_name,
                                               KinesisServerContainer(feature_context=feature_context,
-                                                                    name=container_name,
-                                                                    vols=self.vols,
-                                                                    network=self.network,
-                                                                    image_store=self.image_store,
-                                                                    command=command))
+                                                                     name=container_name,
+                                                                     vols=self.vols,
+                                                                     network=self.network,
+                                                                     image_store=self.image_store,
+                                                                     command=command))
         elif engine == 'azure-storage-server':
             return self.containers.setdefault(container_name,
                                               AzureStorageServerContainer(feature_context=feature_context,

@@ -464,10 +464,10 @@ def step_impl(context):
 def step_impl(context):
     context.test.acquire_container(context=context, name="s3-server", engine="s3-server")
 
+
 @given("a kinesis server is set up in correspondence with the PutKinesisStream")
 def step_impl(context):
     context.test.acquire_container(context=context, name="kinesis-server", engine="kinesis-server")
-
 
 
 # azure storage setup
@@ -905,6 +905,7 @@ def step_impl(context, duration):
 @then("no errors were generated on the http-proxy regarding \"{url}\"")
 def step_impl(context, url):
     context.test.check_http_proxy_access('http-proxy', url)
+
 
 @then("there is a record on the kinesis server with \"{record_data}\"")
 def step_impl(context, record_data):

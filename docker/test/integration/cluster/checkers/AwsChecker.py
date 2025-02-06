@@ -25,7 +25,6 @@ class AwsChecker:
         (code, output) = self.container_communicator.execute_command(container_name, ["node", "/app/consumer/consumer.js", record_data])
         return code == 0
 
-
     @retry_check()
     def check_s3_server_object_data(self, container_name, test_data):
         (code, output) = self.container_communicator.execute_command(container_name, ["find", "/s3mockroot/test_bucket", "-mindepth", "1", "-maxdepth", "1", "-type", "d"])

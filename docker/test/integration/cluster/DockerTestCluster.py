@@ -194,7 +194,6 @@ class DockerTestCluster:
         container_name = self.container_store.get_container_name_with_postfix(container_name)
         return self.aws_checker.check_kinesis_server_record_data(container_name, record_data)
 
-
     def check_s3_server_object_data(self, container_name, test_data):
         container_name = self.container_store.get_container_name_with_postfix(container_name)
         return self.aws_checker.check_s3_server_object_data(container_name, test_data)
