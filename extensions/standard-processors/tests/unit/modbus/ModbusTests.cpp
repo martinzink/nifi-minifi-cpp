@@ -31,7 +31,9 @@ struct Catch::StringMaker<org::apache::nifi::minifi::modbus::ReadModbusFunction>
 template<typename T>
 struct Catch::StringMaker<org::apache::nifi::minifi::modbus::ReadRegisters<T>> {
   static std::string convert(const org::apache::nifi::minifi::modbus::ReadRegisters<T>& a) {
-    return Catch::StringMaker<org::apache::nifi::minifi::modbus::ReadModbusFunction>::convert(a);
+    const auto parent = Catch::StringMaker<org::apache::nifi::minifi::modbus::ReadModbusFunction>::convert(a);
+    const auto child = fmt::format("ReadRegisters: {}, {}", a.getStartingAddress(), a.getNumberOfPoints());
+    return fmt::format("{}, {}", parent, child);
   }
 };
 
@@ -199,6 +201,13 @@ TEST_CASE("ParseAddress") {
   constexpr uint8_t unit_id = 0;
   {
     auto expected = ReadRegisters<uint16_t>(RegisterType::holding, transaction_id, unit_id, 20, 10);
+
+    const auto horse = ReadModbusFunction::parse(transaction_id, unit_id, "holding-register:20:UINT[10]");
+    CHECK(horse);
+    const auto cast_horse = dynamic_cast<const ReadRegisters<uint16_t>*>(&*horse);
+    REQUIRE(cast_horse);
+
+    CHECK(Catch::StringMaker<ReadRegisters<uint16_t>>::convert(*cast_horse) == Catch::StringMaker<ReadRegisters<uint16_t>>::convert(expected));
 
     CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "holding-register:20:UINT[10]") == expected);
     CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "400020:UINT[10]") == expected);

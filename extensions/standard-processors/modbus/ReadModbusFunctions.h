@@ -163,6 +163,10 @@ class ReadRegisters final : public ReadModbusFunction {
            read_holding_registers_rhs->transaction_id_ == this->transaction_id_;
   }
 
+  uint16_t getStartingAddress() const { return starting_address_; }
+  uint16_t getNumberOfPoints() const { return number_of_points_; }
+  RegisterType getRegisterType() const { return register_type_; }
+
  protected:
   RegisterType register_type_{};
   uint16_t starting_address_{};
