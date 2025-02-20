@@ -14,11 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include <numbers>
 
 #include "modbus/ReadModbusFunctions.h"
 #include "unit/Catch.h"
+#include "fmt/ranges.h"
 
+template<>
+struct Catch::StringMaker<org::apache::nifi::minifi::modbus::ReadModbusFunction> {
+  static std::string convert(const org::apache::nifi::minifi::modbus::ReadModbusFunction& a) {
+    return fmt::format("ReadModbusFunction: {}", fmt::join(a.requestBytes(), ","));
+  }
+};
+
+template<typename T>
+struct Catch::StringMaker<org::apache::nifi::minifi::modbus::ReadRegisters<T>> {
+  static std::string convert(const org::apache::nifi::minifi::modbus::ReadRegisters<T>& a) {
+    const auto parent = Catch::StringMaker<org::apache::nifi::minifi::modbus::ReadModbusFunction>::convert(a);
+    const auto child = fmt::format("ReadRegisters: {}, {}", a.getStartingAddress(), a.getNumberOfPoints());
+    return fmt::format("{}, {}", parent, child);
+  }
+};
+
+template<>
+struct Catch::StringMaker<org::apache::nifi::minifi::modbus::ReadCoilStatus> {
+  static std::string convert(const org::apache::nifi::minifi::modbus::ReadCoilStatus& a) {
+    return Catch::StringMaker<org::apache::nifi::minifi::modbus::ReadModbusFunction>::convert(a);
+  }
+};
 
 namespace org::apache::nifi::minifi::modbus::test {
 
@@ -177,6 +201,17 @@ TEST_CASE("ParseAddress") {
   constexpr uint8_t unit_id = 0;
   {
     auto expected = ReadRegisters<uint16_t>(RegisterType::holding, transaction_id, unit_id, 20, 10);
+
+    const auto horse = ReadModbusFunction::parse(transaction_id, unit_id, "holding-register:20:UINT[10]");
+    REQUIRE(horse);
+    const auto& h = *horse;
+    const auto horse_id = typeid(h).name();
+    const auto expected_id = typeid(expected).name();
+    CHECK(horse_id == expected_id);
+    const auto cast_horse = dynamic_cast<const ReadRegisters<uint16_t>*>(&*horse);
+    REQUIRE(cast_horse);
+
+    CHECK(Catch::StringMaker<ReadRegisters<uint16_t>>::convert(*cast_horse) == Catch::StringMaker<ReadRegisters<uint16_t>>::convert(expected));
 
     CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "holding-register:20:UINT[10]") == expected);
     CHECK(*ReadModbusFunction::parse(transaction_id, unit_id, "400020:UINT[10]") == expected);
