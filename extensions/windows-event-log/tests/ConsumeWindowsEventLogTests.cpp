@@ -353,6 +353,8 @@ TEST_CASE("ConsumeWindowsEventLog output format can be set", "[create][output_fo
 
 TEST_CASE("ConsumeWindowsEventLog prints events in plain text correctly", "[onTrigger]") {
   std::string event = SimpleFormatTestController{APPLICATION_CHANNEL, QUERY, "Plaintext"}.run();
+
+  std::cout << event << std::endl;
   CHECK(!event.empty());
   CHECK(event.find(R"(Log Name:      Application)") != std::string::npos);
   CHECK(event.find(R"(Source:        Application)") != std::string::npos);
