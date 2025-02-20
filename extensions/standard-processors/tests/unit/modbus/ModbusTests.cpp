@@ -14,11 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include <numbers>
 
 #include "modbus/ReadModbusFunctions.h"
 #include "unit/Catch.h"
+#include "fmt/ranges.h"
 
+template<>
+struct Catch::StringMaker<org::apache::nifi::minifi::modbus::ReadModbusFunction> {
+  static std::string convert(const org::apache::nifi::minifi::modbus::ReadModbusFunction& a) {
+    return fmt::format("ReadModbusFunction: {}", fmt::join(a.requestBytes(), ","));
+  }
+};
+
+template<typename T>
+struct Catch::StringMaker<org::apache::nifi::minifi::modbus::ReadRegisters<T>> {
+  static std::string convert(const org::apache::nifi::minifi::modbus::ReadRegisters<T>& a) {
+    return Catch::StringMaker<org::apache::nifi::minifi::modbus::ReadModbusFunction>::convert(a);
+  }
+};
+
+template<>
+struct Catch::StringMaker<org::apache::nifi::minifi::modbus::ReadCoilStatus> {
+  static std::string convert(const org::apache::nifi::minifi::modbus::ReadCoilStatus& a) {
+    return Catch::StringMaker<org::apache::nifi::minifi::modbus::ReadModbusFunction>::convert(a);
+  }
+};
 
 namespace org::apache::nifi::minifi::modbus::test {
 
