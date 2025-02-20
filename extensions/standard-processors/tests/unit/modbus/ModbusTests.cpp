@@ -203,7 +203,11 @@ TEST_CASE("ParseAddress") {
     auto expected = ReadRegisters<uint16_t>(RegisterType::holding, transaction_id, unit_id, 20, 10);
 
     const auto horse = ReadModbusFunction::parse(transaction_id, unit_id, "holding-register:20:UINT[10]");
-    CHECK(horse);
+    REQUIRE(horse);
+    const auto& h = *horse;
+    const auto horse_id = typeid(h).name();
+    const auto expected_id = typeid(expected).name();
+    CHECK(horse_id == expected_id);
     const auto cast_horse = dynamic_cast<const ReadRegisters<uint16_t>*>(&*horse);
     REQUIRE(cast_horse);
 
