@@ -25,6 +25,8 @@
 #include "core/ProcessContext.h"
 #include "minifi-cpp/core/PropertyValidator.h"
 #include "utils/Enum.h"
+#include "utils/expected.h"
+#include "utils/OptionalUtils.h"
 
 namespace org::apache::nifi::minifi::utils {
 
@@ -154,4 +156,8 @@ std::optional<std::shared_ptr<ControllerServiceType>> parseOptionalControllerSer
   return typed_controller_service;
 }
 
+template<typename ControllerServiceType>
+std::shared_ptr<ControllerServiceType> parseControllerService(const core::ProcessContext& context, const core::PropertyReference& prop, const utils::Identifier& processor_uuid) {
+  return parseOptionalControllerService<ControllerServiceType>(context, prop, processor_uuid) | utils::orThrow("Required Controller Service");
+}
 }  // namespace org::apache::nifi::minifi::utils
