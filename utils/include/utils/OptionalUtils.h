@@ -134,6 +134,14 @@ nonstd::expected<T, E> operator|(std::optional<T> object, to_expected_wrapper<E>
   }
   return std::move(*object);
 }
+
+template<typename T>
+auto operator|(std::optional<T>&& object, const expect_wrapper e) {
+  if (object) {
+    return std::move(*object);
+  }
+  throw std::runtime_error(e.reason);
+}
 }  // namespace detail
 }  // namespace org::apache::nifi::minifi::utils
 
