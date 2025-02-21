@@ -22,8 +22,6 @@
 
 namespace org::apache::nifi::minifi::modbus {
 
-ReadModbusFunction::~ReadModbusFunction() = default;
-
 std::vector<std::byte> ReadModbusFunction::requestBytes() const {
   constexpr std::array modbus_service_protocol_identifier = {std::byte{0}, std::byte{0}};
   const auto pdu = rawPdu();

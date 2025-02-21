@@ -48,7 +48,7 @@ class ReadModbusFunction {
 
   virtual bool operator==(const ReadModbusFunction&) const = 0;
 
-  virtual ~ReadModbusFunction();
+  virtual ~ReadModbusFunction() = default;
 
   [[nodiscard]] std::vector<std::byte> requestBytes() const;
 
