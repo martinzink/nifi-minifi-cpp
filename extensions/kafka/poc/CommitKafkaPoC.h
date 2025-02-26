@@ -51,7 +51,7 @@ class CommitKafkaPoC : public core::ProcessorImpl {
 
   using ProcessorImpl::ProcessorImpl;
 
-private:
+ private:
   std::shared_ptr<KafkaClientControllerService> kafka_client_controller_service_;
 };
 
