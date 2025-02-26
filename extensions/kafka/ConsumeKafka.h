@@ -53,9 +53,13 @@ namespace processors {
 
 class ConsumeKafka final : public KafkaProcessorBase {
  public:
-  // Security Protocol allowable values
-  static constexpr std::string_view SECURITY_PROTOCOL_PLAINTEXT = "plaintext";
-  static constexpr std::string_view SECURITY_PROTOCOL_SSL = "ssl";
+  enum class CommitPolicy {
+    NoCommit,
+    AutoCommit,
+    CommitAfterBatch,
+    CommitFromIncomingFlowFiles
+  };
+
 
   // Topic Name Format allowable values
   static constexpr std::string_view TOPIC_FORMAT_NAMES = "Names";
@@ -78,13 +82,6 @@ class ConsumeKafka final : public KafkaProcessorBase {
   static constexpr std::string_view MSG_HEADER_KEEP_FIRST = "Keep First";
   static constexpr std::string_view MSG_HEADER_KEEP_LATEST = "Keep Latest";
   static constexpr std::string_view MSG_HEADER_COMMA_SEPARATED_MERGE = "Comma-separated Merge";
-
-  // Flowfile attributes written
-  static constexpr std::string_view KAFKA_COUNT_ATTR = "kafka.count";  // Always 1 until we start supporting merging from batches
-  static constexpr std::string_view KAFKA_MESSAGE_KEY_ATTR = "kafka.key";
-  static constexpr std::string_view KAFKA_OFFSET_ATTR = "kafka.offset";
-  static constexpr std::string_view KAFKA_PARTITION_ATTR = "kafka.partition";
-  static constexpr std::string_view KAFKA_TOPIC_ATTR = "kafka.topic";
 
   static constexpr std::string_view DEFAULT_MAX_POLL_RECORDS = "10000";
   static constexpr std::string_view DEFAULT_MAX_POLL_TIME = "4 seconds";
@@ -213,8 +210,15 @@ class ConsumeKafka final : public KafkaProcessorBase {
 
   EXTENSIONAPI static constexpr bool SupportsDynamicProperties = true;
   EXTENSIONAPI static constexpr bool SupportsDynamicRelationships = false;
-  EXTENSIONAPI static constexpr core::annotation::Input InputRequirement = core::annotation::Input::INPUT_FORBIDDEN;
+  EXTENSIONAPI static constexpr core::annotation::Input InputRequirement = core::annotation::Input::INPUT_ALLOWED;
   EXTENSIONAPI static constexpr bool IsSingleThreaded = false;
+
+  EXTENSIONAPI static constexpr auto KafkaTopicAttribute = core::OutputAttributeDefinition<>{"kafka.topic", {Success}, "The topic the message or message bundle is from"};
+  EXTENSIONAPI static constexpr auto KafkaPartitionAttribute = core::OutputAttributeDefinition<>{"kafka.partition", {Success}, "The partition of the topic the message or message bundle is from"};
+  EXTENSIONAPI static constexpr auto KafkaCountAttribute = core::OutputAttributeDefinition<>{"kafka.count", {Success}, "The number of messages written if more than one"};
+  EXTENSIONAPI static constexpr auto KafkaKeyAttribute = core::OutputAttributeDefinition<>{"kafka.key", {Success}, "The key of the message if present and if single message"};
+  EXTENSIONAPI static constexpr auto KafkaOffsetAttribute = core::OutputAttributeDefinition<>{"kafka.offset", {Success}, "The offset of the message (or largest offset of the message bundle)"};
+
 
   ADD_COMMON_VIRTUAL_FUNCTIONS_FOR_PROCESSORS
 
@@ -232,19 +236,40 @@ class ConsumeKafka final : public KafkaProcessorBase {
   void initialize() override;
 
  private:
+    struct KafkaMessageLocation {
+        std::string_view topic;
+        int32_t partition;
+    };
+
+    class MessageBundle {
+    public:
+        void pushBack(utils::rd_kafka_message_unique_ptr message) {
+            largest_offset_ = std::max(largest_offset_, message->offset);
+            messages_.push_back(std::move(message));
+        }
+        int64_t getLargestOffset() const { return largest_offset_; }
+    private:
+        std::vector<utils::rd_kafka_message_unique_ptr> messages_;
+        int64_t largest_offset_ = 0;
+    };
+    friend struct ::std::hash<KafkaMessageLocation>;
+
   void create_topic_partition_list();
   void extend_config_from_dynamic_properties(const core::ProcessContext& context);
   void configure_new_connection(core::ProcessContext& context);
   static std::string extract_message(const rd_kafka_message_t& rkmessage);
-  std::vector<std::unique_ptr<rd_kafka_message_t, utils::rd_kafka_message_deleter>> poll_kafka_messages();
+  std::unordered_map<KafkaMessageLocation, MessageBundle> pollKafkaMessages();
   utils::KafkaEncoding key_attr_encoding_attr_to_enum() const;
   utils::KafkaEncoding message_header_encoding_attr_to_enum() const;
   std::string resolve_duplicate_headers(const std::vector<std::string>& matching_headers) const;
   std::vector<std::string> get_matching_headers(const rd_kafka_message_t& message, const std::string& header_name) const;
   std::vector<std::pair<std::string, std::string>> get_flowfile_attributes_from_message_header(const rd_kafka_message_t& message) const;
   void add_kafka_attributes_to_flowfile(core::FlowFile& flow_file, const rd_kafka_message_t& message) const;
-  std::optional<std::vector<std::shared_ptr<core::FlowFile>>> transform_pending_messages_into_flowfiles(core::ProcessSession& session) const;
-  void process_pending_messages(core::ProcessSession& session);
+  std::optional<std::vector<std::shared_ptr<core::FlowFile>>> transform_pending_messages_into_flowfiles(core::ProcessSession& session, const std::vector<std::unique_ptr<rd_kafka_message_t, utils::rd_kafka_message_deleter>>& messages) const;
+  void processMessages(core::ProcessSession& session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles);
+
+  void commitOffsetsFromMessages(const std::unordered_map<KafkaMessageLocation, MessageBundle>& messages) const;
+  void commitOffsetsFromIncomingFlowFiles(core::ProcessSession& session) const;
 
   std::string kafka_brokers_;
   std::vector<std::string> topic_names_;
@@ -257,17 +282,13 @@ class ConsumeKafka final : public KafkaProcessorBase {
   std::string message_header_encoding_;
   std::string duplicate_header_handling_;
   std::vector<std::string> headers_to_add_as_attributes_;
-  std::size_t max_poll_records_{};
+  uint32_t max_poll_records_{};
   std::chrono::milliseconds max_poll_time_milliseconds_{};
   std::chrono::milliseconds session_timeout_milliseconds_{};
 
   std::unique_ptr<rd_kafka_t, utils::rd_kafka_consumer_deleter> consumer_;
   std::unique_ptr<rd_kafka_conf_t, utils::rd_kafka_conf_deleter> conf_;
   std::unique_ptr<rd_kafka_topic_partition_list_t, utils::rd_kafka_topic_partition_list_deleter> kf_topic_partition_list_;
-
-  // Intermediate container type for messages that have been processed, but are
-  // not yet persisted (eg. in case of I/O error)
-  std::vector<std::unique_ptr<rd_kafka_message_t, utils::rd_kafka_message_deleter>> pending_messages_;
 
   std::mutex do_not_call_on_trigger_concurrently_;
 };
