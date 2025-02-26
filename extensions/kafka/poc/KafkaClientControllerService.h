@@ -28,7 +28,7 @@
 namespace org::apache::nifi::minifi::kafka {
 
 class KafkaClientControllerService : public core::controller::ControllerServiceImpl {
-public:
+ public:
   EXTENSIONAPI static constexpr const char* Description = "Manages the client for Apache Kafka. This allows for multiple Kafka related processors "
       "to reference this single client.";
 

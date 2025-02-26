@@ -35,58 +35,68 @@
 #include "KafkaConnection.h"
 #include "utils/ArrayUtils.h"
 
-namespace org::apache::nifi::minifi {
+namespace org::apache::nifi::minifi::processors::consume_kafka {
 
-namespace core {
-class ConsumeKafkaMaxPollTimePropertyType final : public PropertyValidator {
+class ConsumeKafkaMaxPollTimePropertyType final : public minifi::core::PropertyValidator {
  public:
   constexpr ~ConsumeKafkaMaxPollTimePropertyType() override { }  // NOLINT see comment at grandparent
 
-  [[nodiscard]] bool validate(const std::string_view input) const override;
+  [[nodiscard]] bool validate(std::string_view input) const override;
   [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const override { return std::nullopt; }
 };
-
 inline constexpr ConsumeKafkaMaxPollTimePropertyType CONSUME_KAFKA_MAX_POLL_TIME_TYPE{};
-}  // namespace core
 
-namespace processors {
-
-class ConsumeKafka final : public KafkaProcessorBase {
- public:
-  enum class CommitPolicy {
+enum class CommitPolicyEnum {
     NoCommit,
     AutoCommit,
     CommitAfterBatch,
     CommitFromIncomingFlowFiles
+};
+
+enum class OffsetResetPolicyEnum {
+    earliest,
+    latest,
+    none
   };
 
+enum class TopicNameFormatEnum {
+    Names,
+    Patterns
+};
 
-  // Topic Name Format allowable values
-  static constexpr std::string_view TOPIC_FORMAT_NAMES = "Names";
-  static constexpr std::string_view TOPIC_FORMAT_PATTERNS = "Patterns";
+enum class MessageHeaderPolicyEnum {
+    KEEP_FIRST,
+    KEEP_LATEST,
+    COMMA_SEPARATED_MERGE
+};
 
-  // Offset Reset allowable values
-  static constexpr std::string_view OFFSET_RESET_EARLIEST = "earliest";
-  static constexpr std::string_view OFFSET_RESET_LATEST = "latest";
-  static constexpr std::string_view OFFSET_RESET_NONE = "none";
+}  // namespace org::apache::nifi::minifi::processors::consume_kafka
 
-  // Key Attribute Encoding allowable values
-  static constexpr std::string_view KEY_ATTR_ENCODING_UTF_8 = "UTF-8";
-  static constexpr std::string_view KEY_ATTR_ENCODING_HEX = "Hex";
 
-  // Message Header Encoding allowable values
-  static constexpr std::string_view MSG_HEADER_ENCODING_UTF_8 = "UTF-8";
-  static constexpr std::string_view MSG_HEADER_ENCODING_HEX = "Hex";
+namespace magic_enum::customize {
+using org::apache::nifi::minifi::processors::consume_kafka::MessageHeaderPolicyEnum;
 
-  // Duplicate Header Handling allowable values
-  static constexpr std::string_view MSG_HEADER_KEEP_FIRST = "Keep First";
-  static constexpr std::string_view MSG_HEADER_KEEP_LATEST = "Keep Latest";
-  static constexpr std::string_view MSG_HEADER_COMMA_SEPARATED_MERGE = "Comma-separated Merge";
+template <>
+constexpr customize_t enum_name<MessageHeaderPolicyEnum>(const MessageHeaderPolicyEnum value) noexcept {
+    switch (value) {
+        case MessageHeaderPolicyEnum::KEEP_FIRST: return "Keep First";
+        case MessageHeaderPolicyEnum::KEEP_LATEST: return "Keep Latest";
+        case MessageHeaderPolicyEnum::COMMA_SEPARATED_MERGE: return "Comma-separated Merge";
+        default: return invalid_tag;
+    }
+}
 
+}  // namespace magic_enum::customize
+
+
+namespace org::apache::nifi::minifi::processors {
+
+class ConsumeKafka final : public KafkaProcessorBase {
+ public:
   static constexpr std::string_view DEFAULT_MAX_POLL_RECORDS = "10000";
   static constexpr std::string_view DEFAULT_MAX_POLL_TIME = "4 seconds";
 
-  static constexpr const std::size_t METADATA_COMMUNICATIONS_TIMEOUT_MS{ 60000 };
+  static constexpr std::size_t METADATA_COMMUNICATIONS_TIMEOUT_MS{ 60000 };
 
   EXTENSIONAPI static constexpr const char* Description = "Consumes messages from Apache Kafka and transform them into MiNiFi FlowFiles. "
       "The application should make sure that the processor is triggered at regular intervals, even if no messages are expected, "
@@ -107,8 +117,8 @@ class ConsumeKafka final : public KafkaProcessorBase {
   EXTENSIONAPI static constexpr auto TopicNameFormat = core::PropertyDefinitionBuilder<2>::createProperty("Topic Name Format")
       .withDescription("Specifies whether the Topic(s) provided are a comma separated list of names or a single regular expression. "
           "Using regular expressions does not automatically discover Kafka topics created after the processor started.")
-      .withAllowedValues({TOPIC_FORMAT_NAMES, TOPIC_FORMAT_PATTERNS})
-      .withDefaultValue(TOPIC_FORMAT_NAMES)
+      .withDefaultValue(magic_enum::enum_name(consume_kafka::TopicNameFormatEnum::Names))
+      .withAllowedValues(magic_enum::enum_names<consume_kafka::TopicNameFormatEnum>())
       .isRequired(true)
       .build();
   EXTENSIONAPI static constexpr auto HonorTransactions = core::PropertyDefinitionBuilder<>::createProperty("Honor Transactions")
@@ -129,14 +139,14 @@ class ConsumeKafka final : public KafkaProcessorBase {
   EXTENSIONAPI static constexpr auto OffsetReset = core::PropertyDefinitionBuilder<3>::createProperty("Offset Reset")
       .withDescription("Allows you to manage the condition when there is no initial offset in Kafka or if the current offset does not exist any more on the server (e.g. because that "
           "data has been deleted). Corresponds to Kafka's 'auto.offset.reset' property.")
-      .withAllowedValues({OFFSET_RESET_EARLIEST, OFFSET_RESET_LATEST, OFFSET_RESET_NONE})
-      .withDefaultValue(OFFSET_RESET_LATEST)
+      .withDefaultValue(magic_enum::enum_name(consume_kafka::OffsetResetPolicyEnum::latest))
+      .withAllowedValues(magic_enum::enum_names<consume_kafka::OffsetResetPolicyEnum>())
       .isRequired(true)
       .build();
-  EXTENSIONAPI static constexpr auto KeyAttributeEncoding = core::PropertyDefinitionBuilder<2>::createProperty("Key Attribute Encoding")
+  EXTENSIONAPI static constexpr auto KeyAttributeEncoding = core::PropertyDefinitionBuilder<magic_enum::enum_count<utils::KafkaEncoding>()>::createProperty("Key Attribute Encoding")
       .withDescription("FlowFiles that are emitted have an attribute named 'kafka.key'. This property dictates how the value of the attribute should be encoded.")
-      .withAllowedValues({KEY_ATTR_ENCODING_UTF_8, KEY_ATTR_ENCODING_HEX})
-      .withDefaultValue(KEY_ATTR_ENCODING_UTF_8)
+      .withDefaultValue(magic_enum::enum_name(utils::KafkaEncoding::UTF8))
+      .withAllowedValues(magic_enum::enum_names<utils::KafkaEncoding>())
       .isRequired(true)
       .build();
   EXTENSIONAPI static constexpr auto MessageDemarcator = core::PropertyDefinitionBuilder<>::createProperty("Message Demarcator")
@@ -145,26 +155,26 @@ class ConsumeKafka final : public KafkaProcessorBase {
           "This is an optional property and if not provided each Kafka message received will result in a single FlowFile which time it is triggered. ")
       .supportsExpressionLanguage(true)
       .build();
-  EXTENSIONAPI static constexpr auto MessageHeaderEncoding = core::PropertyDefinitionBuilder<2>::createProperty("Message Header Encoding")
+  EXTENSIONAPI static constexpr auto MessageHeaderEncoding = core::PropertyDefinitionBuilder<magic_enum::enum_count<utils::KafkaEncoding>()>::createProperty("Message Header Encoding")
       .withDescription("Any message header that is found on a Kafka message will be added to the outbound FlowFile as an attribute. This property indicates the Character Encoding "
           "to use for deserializing the headers.")
-      .withAllowedValues({MSG_HEADER_ENCODING_UTF_8, MSG_HEADER_ENCODING_HEX})
-      .withDefaultValue(MSG_HEADER_ENCODING_UTF_8)
+      .withDefaultValue(magic_enum::enum_name(utils::KafkaEncoding::UTF8))
+      .withAllowedValues(magic_enum::enum_names<utils::KafkaEncoding>())
       .build();
   EXTENSIONAPI static constexpr auto HeadersToAddAsAttributes = core::PropertyDefinitionBuilder<>::createProperty("Headers To Add As Attributes")
       .withDescription("A comma separated list to match against all message headers. Any message header whose name matches an item from the list will be added to the FlowFile "
           "as an Attribute. If not specified, no Header values will be added as FlowFile attributes. The behaviour on when multiple headers of the same name are present is set using "
           "the Duplicate Header Handling attribute.")
       .build();
-  EXTENSIONAPI static constexpr auto DuplicateHeaderHandling = core::PropertyDefinitionBuilder<3>::createProperty("Duplicate Header Handling")
+  EXTENSIONAPI static constexpr auto DuplicateHeaderHandling = core::PropertyDefinitionBuilder<magic_enum::enum_count<consume_kafka::MessageHeaderPolicyEnum>()>::createProperty("Duplicate Header Handling")
       .withDescription("For headers to be added as attributes, this option specifies how to handle cases where multiple headers are present with the same key. "
           "For example in case of receiving these two headers: \"Accept: text/html\" and \"Accept: application/xml\" and we want to attach the value of \"Accept\" "
           "as a FlowFile attribute:\n"
           " - \"Keep First\" attaches: \"Accept -> text/html\"\n"
           " - \"Keep Latest\" attaches: \"Accept -> application/xml\"\n"
           " - \"Comma-separated Merge\" attaches: \"Accept -> text/html, application/xml\"\n")
-      .withAllowedValues({MSG_HEADER_KEEP_FIRST, MSG_HEADER_KEEP_LATEST, MSG_HEADER_COMMA_SEPARATED_MERGE})
-      .withDefaultValue(MSG_HEADER_KEEP_LATEST)  // Mirroring NiFi behaviour
+      .withDefaultValue(magic_enum::enum_name(consume_kafka::MessageHeaderPolicyEnum::KEEP_LATEST))
+      .withAllowedValues(magic_enum::enum_names<consume_kafka::MessageHeaderPolicyEnum>())
       .build();
   EXTENSIONAPI static constexpr auto MaxPollRecords = core::PropertyDefinitionBuilder<>::createProperty("Max Poll Records")
       .withDescription("Specifies the maximum number of records Kafka should return when polling each time the processor is triggered.")
@@ -174,7 +184,7 @@ class ConsumeKafka final : public KafkaProcessorBase {
   EXTENSIONAPI static constexpr auto MaxPollTime = core::PropertyDefinitionBuilder<>::createProperty("Max Poll Time")
       .withDescription("Specifies the maximum amount of time the consumer can use for polling data from the brokers. "
           "Polling is a blocking operation, so the upper limit of this value is specified in 4 seconds.")
-      .withValidator(core::CONSUME_KAFKA_MAX_POLL_TIME_TYPE)
+      .withValidator(consume_kafka::CONSUME_KAFKA_MAX_POLL_TIME_TYPE)
       .withDefaultValue(DEFAULT_MAX_POLL_TIME)
       .isRequired(true)
       .build();
@@ -186,6 +196,16 @@ class ConsumeKafka final : public KafkaProcessorBase {
       .withValidator(core::StandardPropertyTypes::TIME_PERIOD_VALIDATOR)
       .withDefaultValue("60 seconds")
       .build();
+
+  EXTENSIONAPI static constexpr auto CommitPolicy = core::PropertyDefinitionBuilder<magic_enum::enum_count<consume_kafka::CommitPolicyEnum>()>::createProperty("Commit Offsets Policy")
+    .withDescription("NoCommit disables offset commiting entirely. "
+                     "AutoCommit configures Kafka to automatically increase offsets after serving the messages. "
+                     "CommitAfterBatch commits offsets after the messages has been converted to flowfiles. "
+                     "CommitFromIncomingFlowFiles consumes incoming flowfiles and commits the offsets based on their attributes. ")
+    .withDefaultValue(magic_enum::enum_name(consume_kafka::CommitPolicyEnum::CommitAfterBatch))
+    .withAllowedValues(magic_enum::enum_names<consume_kafka::CommitPolicyEnum>())
+    .build();
+
   EXTENSIONAPI static constexpr auto Properties = utils::array_cat(KafkaProcessorBase::Properties, std::to_array<core::PropertyReference>({
       KafkaBrokers,
       TopicNames,
@@ -200,7 +220,8 @@ class ConsumeKafka final : public KafkaProcessorBase {
       DuplicateHeaderHandling,
       MaxPollRecords,
       MaxPollTime,
-      SessionTimeout
+      SessionTimeout,
+      CommitPolicy
   }));
 
 
@@ -211,7 +232,7 @@ class ConsumeKafka final : public KafkaProcessorBase {
   EXTENSIONAPI static constexpr bool SupportsDynamicProperties = true;
   EXTENSIONAPI static constexpr bool SupportsDynamicRelationships = false;
   EXTENSIONAPI static constexpr core::annotation::Input InputRequirement = core::annotation::Input::INPUT_ALLOWED;
-  EXTENSIONAPI static constexpr bool IsSingleThreaded = false;
+  EXTENSIONAPI static constexpr bool IsSingleThreaded = true;
 
   EXTENSIONAPI static constexpr auto KafkaTopicAttribute = core::OutputAttributeDefinition<>{"kafka.topic", {Success}, "The topic the message or message bundle is from"};
   EXTENSIONAPI static constexpr auto KafkaPartitionAttribute = core::OutputAttributeDefinition<>{"kafka.partition", {Success}, "The partition of the topic the message or message bundle is from"};
@@ -239,59 +260,63 @@ class ConsumeKafka final : public KafkaProcessorBase {
     struct KafkaMessageLocation {
         std::string_view topic;
         int32_t partition;
+        auto operator<=>(const KafkaMessageLocation &) const = default;
     };
 
     class MessageBundle {
     public:
+        MessageBundle() = default;
         void pushBack(utils::rd_kafka_message_unique_ptr message) {
             largest_offset_ = std::max(largest_offset_, message->offset);
             messages_.push_back(std::move(message));
         }
-        int64_t getLargestOffset() const { return largest_offset_; }
+        [[nodiscard]] int64_t getLargestOffset() const { return largest_offset_; }
+
+        [[nodiscard]] const std::vector<utils::rd_kafka_message_unique_ptr>& getMessages() const {
+            return messages_;
+        }
+
     private:
         std::vector<utils::rd_kafka_message_unique_ptr> messages_;
         int64_t largest_offset_ = 0;
     };
     friend struct ::std::hash<KafkaMessageLocation>;
 
-  void create_topic_partition_list();
-  void extend_config_from_dynamic_properties(const core::ProcessContext& context);
-  void configure_new_connection(core::ProcessContext& context);
-  static std::string extract_message(const rd_kafka_message_t& rkmessage);
+  void createTopicPartitionList();
+  void extendConfigFromDynamicProperties(const core::ProcessContext& context);
+  void configureNewConnection(core::ProcessContext& context);
+  static std::string extractMessage(const rd_kafka_message_t& rkmessage);
   std::unordered_map<KafkaMessageLocation, MessageBundle> pollKafkaMessages();
-  utils::KafkaEncoding key_attr_encoding_attr_to_enum() const;
-  utils::KafkaEncoding message_header_encoding_attr_to_enum() const;
   std::string resolve_duplicate_headers(const std::vector<std::string>& matching_headers) const;
   std::vector<std::string> get_matching_headers(const rd_kafka_message_t& message, const std::string& header_name) const;
-  std::vector<std::pair<std::string, std::string>> get_flowfile_attributes_from_message_header(const rd_kafka_message_t& message) const;
-  void add_kafka_attributes_to_flowfile(core::FlowFile& flow_file, const rd_kafka_message_t& message) const;
-  std::optional<std::vector<std::shared_ptr<core::FlowFile>>> transform_pending_messages_into_flowfiles(core::ProcessSession& session, const std::vector<std::unique_ptr<rd_kafka_message_t, utils::rd_kafka_message_deleter>>& messages) const;
+  std::vector<std::pair<std::string, std::string>> getFlowFilesAttributesFromMessageHeaders(const rd_kafka_message_t& message) const;
+  void addAttributesToSingleMessageFlowFile(core::FlowFile& flow_file, const rd_kafka_message_t& message) const;
+  void addAttributesToMessageBundleFlowFile(core::FlowFile& flow_file, const MessageBundle& message_bundle) const;
   void processMessages(core::ProcessSession& session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles);
+  void processMessageBundles(core::ProcessSession& session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles, std::string_view message_demarcator);
 
   void commitOffsetsFromMessages(const std::unordered_map<KafkaMessageLocation, MessageBundle>& messages) const;
   void commitOffsetsFromIncomingFlowFiles(core::ProcessSession& session) const;
 
-  std::string kafka_brokers_;
-  std::vector<std::string> topic_names_;
-  std::string topic_name_format_;
-  bool honor_transactions_{};
-  std::string group_id_;
-  std::string offset_reset_;
-  std::string key_attribute_encoding_;
-  std::string message_demarcator_;
-  std::string message_header_encoding_;
-  std::string duplicate_header_handling_;
+  std::vector<std::string> topic_names_{};
+  consume_kafka::TopicNameFormatEnum topic_name_format_ = consume_kafka::TopicNameFormatEnum::Names;
+
+  utils::KafkaEncoding key_attribute_encoding_ = utils::KafkaEncoding::UTF8;
+  utils::KafkaEncoding message_header_encoding_ = utils::KafkaEncoding::UTF8;
+
+  std::optional<std::string> message_demarcator_;
+
+  consume_kafka::MessageHeaderPolicyEnum duplicate_header_handling_ = consume_kafka::MessageHeaderPolicyEnum::KEEP_LATEST;
   std::vector<std::string> headers_to_add_as_attributes_;
+
   uint32_t max_poll_records_{};
   std::chrono::milliseconds max_poll_time_milliseconds_{};
-  std::chrono::milliseconds session_timeout_milliseconds_{};
+  consume_kafka::CommitPolicyEnum commit_policy_ = consume_kafka::CommitPolicyEnum::CommitAfterBatch;
+
 
   std::unique_ptr<rd_kafka_t, utils::rd_kafka_consumer_deleter> consumer_;
   std::unique_ptr<rd_kafka_conf_t, utils::rd_kafka_conf_deleter> conf_;
   std::unique_ptr<rd_kafka_topic_partition_list_t, utils::rd_kafka_topic_partition_list_deleter> kf_topic_partition_list_;
-
-  std::mutex do_not_call_on_trigger_concurrently_;
 };
 
-}  // namespace processors
-}  // namespace org::apache::nifi::minifi
+}  // namespace org::apache::nifi::minifi::processors
