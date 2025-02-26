@@ -24,17 +24,16 @@
 #include "core/ProcessSession.h"
 #include "core/PropertyType.h"
 #include "core/Resource.h"
+#include "utils/AttributeErrors.h"
 #include "utils/ProcessorConfigUtils.h"
 #include "utils/gsl.h"
-#include "utils/AttributeErrors.h"
 
 using namespace std::literals::chrono_literals;
 
 template<>
 struct std::hash<org::apache::nifi::minifi::processors::ConsumeKafka::KafkaMessageLocation> {
-  size_t operator()(const org::apache::nifi::minifi::processors::ConsumeKafka::KafkaMessageLocation& message_location) const noexcept {
-    return org::apache::nifi::minifi::utils::hash_combine(
-        std::hash<std::string_view>{}(message_location.topic),
+  size_t operator()(const org::apache::nifi::minifi::processors::ConsumeKafka::KafkaMessageLocation &message_location) const noexcept {
+    return org::apache::nifi::minifi::utils::hash_combine(std::hash<std::string_view>{}(message_location.topic),
         std::hash<int32_t>{}(message_location.partition));
   }
 };
@@ -103,7 +102,6 @@ void ConsumeKafka::createTopicPartitionList() {
   kf_topic_partition_list_ = utils::rd_kafka_topic_partition_list_unique_ptr{
       rd_kafka_topic_partition_list_new(gsl::narrow<int>(topic_names_.size()))};
 
-
   if (topic_name_format_ == consume_kafka::TopicNameFormatEnum::Names) {
     for (const std::string &topic: topic_names_) {
       const std::string regex_format = "^" + topic;
@@ -159,7 +157,9 @@ void ConsumeKafka::configureNewConnection(core::ProcessContext &context) {
 
   setKafkaConfigurationField(*conf_, "bootstrap.servers", utils::parseProperty(context, KafkaBrokers));
   setKafkaConfigurationField(*conf_, "allow.auto.create.topics", "true");
-  setKafkaConfigurationField(*conf_, "auto.offset.reset", std::string(magic_enum::enum_name(utils::parseEnumProperty<consume_kafka::OffsetResetPolicyEnum>(context, OffsetReset))));
+  setKafkaConfigurationField(*conf_,
+      "auto.offset.reset",
+      std::string(magic_enum::enum_name(utils::parseEnumProperty<consume_kafka::OffsetResetPolicyEnum>(context, OffsetReset))));
   setKafkaConfigurationField(*conf_, "enable.auto.commit", std::to_string(commit_policy_ == consume_kafka::CommitPolicyEnum::AutoCommit));
   setKafkaConfigurationField(*conf_, "enable.auto.offset.store", "false");
   setKafkaConfigurationField(*conf_, "isolation.level", utils::parseBoolProperty(context, HonorTransactions) ? "read_committed" : "read_uncommitted");
@@ -279,7 +279,7 @@ std::vector<std::pair<std::string, std::string>> ConsumeKafka::getFlowFilesAttri
   return attributes_from_headers;
 }
 
-void ConsumeKafka::addAttributesToSingleMessageFlowFile(core::FlowFile &flow_file, const rd_kafka_message_t& message) const {
+void ConsumeKafka::addAttributesToSingleMessageFlowFile(core::FlowFile &flow_file, const rd_kafka_message_t &message) const {
   flow_file.setAttribute(KafkaCountAttribute.name, "1");
   if (const auto message_key = get_encoded_message_key(message, key_attribute_encoding_)) {
     flow_file.setAttribute(KafkaKeyAttribute.name, *message_key);
@@ -287,23 +287,25 @@ void ConsumeKafka::addAttributesToSingleMessageFlowFile(core::FlowFile &flow_fil
   flow_file.setAttribute(KafkaOffsetAttribute.name, std::to_string(message.offset));
   flow_file.setAttribute(KafkaPartitionAttribute.name, std::to_string(message.partition));
   flow_file.setAttribute(KafkaTopicAttribute.name, rd_kafka_topic_name(message.rkt));
-  for (const auto& [attr_key, attr_value]: getFlowFilesAttributesFromMessageHeaders(message)) {
-    flow_file.setAttribute(attr_key, attr_value);
-  }
+  for (const auto &[attr_key, attr_value]: getFlowFilesAttributesFromMessageHeaders(message)) { flow_file.setAttribute(attr_key, attr_value); }
 }
 
-void ConsumeKafka::addAttributesToMessageBundleFlowFile(core::FlowFile &flow_file, const MessageBundle& message_bundle) const {
+void ConsumeKafka::addAttributesToMessageBundleFlowFile(core::FlowFile &flow_file, const MessageBundle &message_bundle) const {
   flow_file.setAttribute(KafkaCountAttribute.name, std::to_string(message_bundle.getMessages().size()));
   flow_file.setAttribute(KafkaOffsetAttribute.name, std::to_string(message_bundle.getLargestOffset()));
   flow_file.setAttribute(KafkaPartitionAttribute.name, std::to_string(message_bundle.getMessages().front()->partition));
   flow_file.setAttribute(KafkaTopicAttribute.name, rd_kafka_topic_name(message_bundle.getMessages().front()->rkt));
 }
 
-void ConsumeKafka::commitOffsetsFromMessages(const std::unordered_map<ConsumeKafka::KafkaMessageLocation, ConsumeKafka::MessageBundle>& message_bundles) const {
+void ConsumeKafka::commitOffsetsFromMessages(const std::unordered_map<ConsumeKafka::KafkaMessageLocation, ConsumeKafka::MessageBundle>
+        &message_bundles) const {
   if (message_bundles.empty()) { return; }
 
-  for (const auto& [location, message_bundle]: message_bundles) {
-    rd_kafka_topic_partition_list_set_offset(kf_topic_partition_list_.get(), location.topic.data(), location.partition, message_bundle.getLargestOffset());
+  for (const auto &[location, message_bundle]: message_bundles) {
+    rd_kafka_topic_partition_list_set_offset(kf_topic_partition_list_.get(),
+        location.topic.data(),
+        location.partition,
+        message_bundle.getLargestOffset());
   }
 
   if (RD_KAFKA_RESP_ERR_NO_ERROR != rd_kafka_commit(consumer_.get(), kf_topic_partition_list_.get(), 0)) {
@@ -317,19 +319,20 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession &sess
   if (flow_files.empty()) { return; }
 
   std::unordered_map<KafkaMessageLocation, int64_t> max_offsets;
-  for (const auto& flow_file : std::ranges::reverse_view(flow_files)) {
+  for (const auto &flow_file: std::ranges::reverse_view(flow_files)) {
     const auto topic_name = flow_file->getAttribute(KafkaTopicAttribute.name);
-    const auto offset = flow_file->getAttribute(KafkaOffsetAttribute.name)
-        | utils::toExpected(make_error_code(core::AttributeErrorCode::MissingAttribute))
-        | utils::andThen(parsing::parseIntegral<int64_t>);
-    const auto partition = flow_file->getAttribute(KafkaPartitionAttribute.name)
-        | utils::toExpected(make_error_code(core::AttributeErrorCode::MissingAttribute))
-        | utils::andThen(parsing::parseIntegral<int32_t>);
+    const auto offset = flow_file->getAttribute(KafkaOffsetAttribute.name) |
+        utils::toExpected(make_error_code(core::AttributeErrorCode::MissingAttribute)) | utils::andThen(parsing::parseIntegral<int64_t>);
+    const auto partition = flow_file->getAttribute(KafkaPartitionAttribute.name) |
+        utils::toExpected(make_error_code(core::AttributeErrorCode::MissingAttribute)) | utils::andThen(parsing::parseIntegral<int32_t>);
     if (!topic_name || !offset || !partition) {
       logger_->log_error("Insufficient data for setting offsets. {} : {}, {} : {}, {} : {}",
-          KafkaTopicAttribute.name, topic_name,
-          KafkaOffsetAttribute.name, offset,
-          KafkaPartitionAttribute.name, partition);
+          KafkaTopicAttribute.name,
+          topic_name,
+          KafkaOffsetAttribute.name,
+          offset,
+          KafkaPartitionAttribute.name,
+          partition);
       continue;
     }
     const int64_t curr_offset = max_offsets[KafkaMessageLocation{*topic_name, *partition}];
@@ -341,9 +344,9 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession &sess
   for (const auto &ff: flow_files) { session.remove(ff); }
 }
 
-void ConsumeKafka::processMessages(core::ProcessSession &session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles) {
-  for (const auto& [msg_location, msg_bundle]: message_bundles) {
-    for (const auto& message: msg_bundle.getMessages()) {
+void ConsumeKafka::processMessages(core::ProcessSession &session, const std::unordered_map<KafkaMessageLocation, MessageBundle> &message_bundles) {
+  for (const auto &[msg_location, msg_bundle]: message_bundles) {
+    for (const auto &message: msg_bundle.getMessages()) {
       std::string message_content = extractMessage(*message);
       auto flow_file = session.create();
       session.writeBuffer(flow_file, message_content);
@@ -352,15 +355,16 @@ void ConsumeKafka::processMessages(core::ProcessSession &session, const std::uno
     }
   }
   session.commit();
-  if (commit_policy_ == consume_kafka::CommitPolicyEnum::CommitAfterBatch) {
-    commitOffsetsFromMessages(message_bundles);
-  }
+  if (commit_policy_ == consume_kafka::CommitPolicyEnum::CommitAfterBatch) { commitOffsetsFromMessages(message_bundles); }
 }
 
-void ConsumeKafka::processMessageBundles(core::ProcessSession& session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles, const std::string_view message_demarcator) {
-  for (const auto& [msg_location, msg_bundle]: message_bundles) {
+void ConsumeKafka::processMessageBundles(core::ProcessSession &session,
+    const std::unordered_map<KafkaMessageLocation, MessageBundle> &message_bundles, const std::string_view message_demarcator) {
+  for (const auto &[msg_location, msg_bundle]: message_bundles) {
     auto flow_file = session.create();
-    auto merged_message_content = minifi::utils::string::join(message_demarcator, msg_bundle.getMessages(), [](const auto& message) { return extractMessage(*message); });
+    auto merged_message_content = minifi::utils::string::join(message_demarcator, msg_bundle.getMessages(), [](const auto &message) {
+      return extractMessage(*message);
+    });
     session.writeBuffer(flow_file, merged_message_content);
     addAttributesToMessageBundleFlowFile(*flow_file, msg_bundle);
     session.transfer(flow_file, Success);
@@ -368,9 +372,7 @@ void ConsumeKafka::processMessageBundles(core::ProcessSession& session, const st
 }
 
 void ConsumeKafka::onTrigger(core::ProcessContext &, core::ProcessSession &session) {
-  if (commit_policy_ == consume_kafka::CommitPolicyEnum::CommitAfterBatch) {
-    commitOffsetsFromIncomingFlowFiles(session);
-  }
+  if (commit_policy_ == consume_kafka::CommitPolicyEnum::CommitAfterBatch) { commitOffsetsFromIncomingFlowFiles(session); }
   const auto message_bundles = pollKafkaMessages();
   if (message_bundles.empty()) { return; }
   if (!message_demarcator_) {
