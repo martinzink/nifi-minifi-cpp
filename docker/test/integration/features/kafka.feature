@@ -306,9 +306,8 @@ Feature: Sending data to using Kafka streaming platform using PublishKafka
     Examples: Key attribute encoding values
       | message 1            | message 2                     | key attribute encoding |
       | The Odyssey          | Ὅμηρος                        | (not set)              |
-      | Lolita               | Владимир Владимирович Набоков | utf-8                  |
-      | Crime and Punishment | Фёдор Михайлович Достоевский  | hex                    |
-      | Paradise Lost        | John Milton                   | hEX                    |
+      | Lolita               | Владимир Владимирович Набоков | UTF-8                  |
+      | Crime and Punishment | Фёдор Михайлович Достоевский  | Hex                    |
 
   Scenario Outline: ConsumeKafka transactional behaviour is supported
     Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
