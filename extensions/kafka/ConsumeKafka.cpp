@@ -102,7 +102,7 @@ void ConsumeKafka::createTopicPartitionList() {
   kf_topic_partition_list_ = utils::rd_kafka_topic_partition_list_unique_ptr{
       rd_kafka_topic_partition_list_new(gsl::narrow<int>(topic_names_.size()))};
 
-  if (topic_name_format_ == consume_kafka::TopicNameFormatEnum::Names) {
+  if (topic_name_format_ == consume_kafka::TopicNameFormatEnum::Patterns) {
     for (const std::string &topic: topic_names_) {
       const std::string regex_format = "^" + topic;
       rd_kafka_topic_partition_list_add(kf_topic_partition_list_.get(), regex_format.c_str(), RD_KAFKA_PARTITION_UA);
