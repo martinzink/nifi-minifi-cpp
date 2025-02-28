@@ -20,7 +20,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "KafkaConnection.h"
@@ -306,7 +305,7 @@ class ConsumeKafka final : public KafkaProcessorBase {
   friend struct ::std::hash<KafkaMessageLocation>;
 
   void createTopicPartitionList();
-  void extendConfigFromDynamicProperties(const core::ProcessContext& context);
+  void extendConfigFromDynamicProperties(const core::ProcessContext& context) const;
   void configureNewConnection(core::ProcessContext& context);
   static std::string extractMessage(const rd_kafka_message_t& rkmessage);
   std::unordered_map<KafkaMessageLocation, MessageBundle> pollKafkaMessages();
@@ -315,9 +314,9 @@ class ConsumeKafka final : public KafkaProcessorBase {
   std::vector<std::pair<std::string, std::string>> getFlowFilesAttributesFromMessageHeaders(const rd_kafka_message_t& message) const;
   void addAttributesToSingleMessageFlowFile(core::FlowFile& flow_file, const rd_kafka_message_t& message) const;
   void addAttributesToMessageBundleFlowFile(core::FlowFile& flow_file, const MessageBundle& message_bundle) const;
-  void processMessages(core::ProcessSession& session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles);
+  void processMessages(core::ProcessSession& session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles) const;
   void processMessageBundles(core::ProcessSession& session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles,
-      std::string_view message_demarcator);
+      std::string_view message_demarcator) const;
 
   void commitOffsetsFromMessages(const std::unordered_map<KafkaMessageLocation, MessageBundle>& messages) const;
   void commitOffsetsFromIncomingFlowFiles(core::ProcessSession& session) const;
