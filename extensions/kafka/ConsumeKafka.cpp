@@ -66,11 +66,16 @@ void ConsumeKafka::onSchedule(core::ProcessContext &context, core::ProcessSessio
   message_demarcator_ = utils::parseOptionalProperty(context, MessageDemarcator);
   headers_to_add_as_attributes_ = utils::string::splitAndTrim(utils::parseOptionalProperty(context, HeadersToAddAsAttributes).value_or(""), ",");
 
+  if (message_demarcator_ && !headers_to_add_as_attributes_.empty()) {
+    logger_->log_error("Message merging with header extraction is not yet supported");
+    throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Message merging with header extraction is not yet supported");
+  }
+
   configureNewConnection(context);
 }
 
 namespace {
-void rebalance_cb(rd_kafka_t *rk, rd_kafka_resp_err_t trigger, rd_kafka_topic_partition_list_t *partitions, void * /*opaque*/) {
+void rebalance_cb(rd_kafka_t *rk, rd_kafka_resp_err_t trigger, rd_kafka_topic_partition_list_t* partitions, void * /*opaque*/) {
   // Cooperative, incremental assignment is not supported in the current librdkafka version
   std::shared_ptr<core::logging::Logger> logger{core::logging::LoggerFactory<ConsumeKafka>::getLogger()};
   logger->log_debug("Rebalance triggered.");
@@ -123,7 +128,7 @@ void ConsumeKafka::createTopicPartitionList() {
   }
 }
 
-void ConsumeKafka::extendConfigFromDynamicProperties(const core::ProcessContext &context) {
+void ConsumeKafka::extendConfigFromDynamicProperties(const core::ProcessContext &context) const {
   using utils::setKafkaConfigurationField;
 
   const std::vector<std::string> dynamic_prop_keys = context.getDynamicPropertyKeys();
@@ -291,14 +296,14 @@ void ConsumeKafka::addAttributesToSingleMessageFlowFile(core::FlowFile &flow_fil
 }
 
 void ConsumeKafka::addAttributesToMessageBundleFlowFile(core::FlowFile &flow_file, const MessageBundle &message_bundle) const {
+  gsl_Assert(headers_to_add_as_attributes_.empty());
   flow_file.setAttribute(KafkaCountAttribute.name, std::to_string(message_bundle.getMessages().size()));
   flow_file.setAttribute(KafkaOffsetAttribute.name, std::to_string(message_bundle.getLargestOffset()));
   flow_file.setAttribute(KafkaPartitionAttribute.name, std::to_string(message_bundle.getMessages().front()->partition));
   flow_file.setAttribute(KafkaTopicAttribute.name, rd_kafka_topic_name(message_bundle.getMessages().front()->rkt));
 }
 
-void ConsumeKafka::commitOffsetsFromMessages(const std::unordered_map<ConsumeKafka::KafkaMessageLocation, ConsumeKafka::MessageBundle>
-        &message_bundles) const {
+void ConsumeKafka::commitOffsetsFromMessages(const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles) const {
   if (message_bundles.empty()) { return; }
 
   for (const auto &[location, message_bundle]: message_bundles) {
@@ -344,8 +349,8 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession &sess
   for (const auto &ff: flow_files) { session.remove(ff); }
 }
 
-void ConsumeKafka::processMessages(core::ProcessSession &session, const std::unordered_map<KafkaMessageLocation, MessageBundle> &message_bundles) {
-  for (const auto &[msg_location, msg_bundle]: message_bundles) {
+void ConsumeKafka::processMessages(core::ProcessSession &session, const std::unordered_map<KafkaMessageLocation, MessageBundle> &message_bundles) const {
+  for (const auto &msg_bundle: message_bundles | std::views::values) {
     for (const auto &message: msg_bundle.getMessages()) {
       std::string message_content = extractMessage(*message);
       auto flow_file = session.create();
@@ -359,10 +364,10 @@ void ConsumeKafka::processMessages(core::ProcessSession &session, const std::uno
 }
 
 void ConsumeKafka::processMessageBundles(core::ProcessSession &session,
-    const std::unordered_map<KafkaMessageLocation, MessageBundle> &message_bundles, const std::string_view message_demarcator) {
-  for (const auto &[msg_location, msg_bundle]: message_bundles) {
+    const std::unordered_map<KafkaMessageLocation, MessageBundle> &message_bundles, const std::string_view message_demarcator) const {
+  for (const auto &msg_bundle: message_bundles | std::views::values) {
     auto flow_file = session.create();
-    auto merged_message_content = minifi::utils::string::join(message_demarcator, msg_bundle.getMessages(), [](const auto &message) {
+    auto merged_message_content = utils::string::join(message_demarcator, msg_bundle.getMessages(), [](const auto &message) {
       return extractMessage(*message);
     });
     session.writeBuffer(flow_file, merged_message_content);
