@@ -362,9 +362,9 @@ Feature: Sending data to using Kafka streaming platform using PublishKafka
       | Mistborn              | Brandon Sanderson | Metal: Copper; Metal: Iron  | Metal                        | Copper, Iron         | Comma-separated Merge     |
       | The Lord of the Rings | J. R. R. Tolkien  | Parts: First, second, third | Parts                        | First, second, third | (not set)                 |
 
-  Scenario: Messages are separated into multiple flowfiles if the message demarcator is present in the message
+  Scenario: Messages are merged if the message demarcator is present in the message
     Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
-    And the "Message Demarcator" property of the ConsumeKafka processor is set to "a"
+    And the "Message Demarcator" property of the ConsumeKafka processor is set to ","
     And a PutFile processor with the "Directory" property set to "/tmp/output" in the "kafka-consumer-flow" flow
 
     And the "success" relationship of the ConsumeKafka processor is connected to the PutFile
@@ -375,7 +375,7 @@ Feature: Sending data to using Kafka streaming platform using PublishKafka
     And a message with content "Barbapapa" is published to the "ConsumeKafkaTest" topic
     And a message with content "Anette Tison and Talus Taylor" is published to the "ConsumeKafkaTest" topic
 
-    Then flowfiles with these contents are placed in the monitored directory in less than 45 seconds: "B,rb,p,Anette Tison ,nd T,lus T,ylor"
+    Then a flowfile with the content "Barbapapa, Anette Tison and Talus Taylor" is placed in the monitored directory in less than 45 seconds:
 
   Scenario Outline: The ConsumeKafka "Maximum Poll Records" property sets a limit on the messages processed in a single batch
     Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
