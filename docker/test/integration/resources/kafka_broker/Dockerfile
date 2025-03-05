@@ -1,4 +1,5 @@
-FROM ubuntu/kafka:3.1-22.04_beta
-ADD conf/server.properties /opt/kafka/config/kraft/server.properties
-ADD conf/server.properties /opt/kafka/config/server.properties
-ADD conf/ /usr/local/etc/kafka/
+FROM apache/kafka:3.9.0
+COPY --chown=appuser server.properties /opt/kafka/config/kraft/server.properties
+COPY --chown=appuser server.properties /opt/kafka/config/server.properties
+COPY --chown=appuser server_keystore.jks /usr/local/etc/kafka/certs/server_keystore.jks
+COPY --chown=appuser server_truststore.pem /usr/local/etc/kafka/certs/server_truststore.pem

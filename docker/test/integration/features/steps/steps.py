@@ -662,6 +662,13 @@ def step_impl(context):
 def step_impl(context):
     context.test.start()
 
+@when("\"{container_name}\" flow is stopped")
+def step_impl(context, container_name):
+    context.test.stop(container_name)
+
+@when("\"{container_name}\" flow is restarted")
+def step_impl(context, container_name):
+    context.test.restart(container_name)
 
 @then("\"{container_name}\" flow is stopped")
 def step_impl(context, container_name):
@@ -840,6 +847,16 @@ def step_impl(context, content, duration):
     context.test.check_for_at_least_one_file_with_content_generated(content, humanfriendly.parse_timespan(duration))
 
 
+@then("no files are placed in the monitored directory in {duration} of running time")
+def step_impl(context, duration):
+    context.test.check_for_no_files_generated(humanfriendly.parse_timespan(duration))
+
+
+@then("there is exactly {num_flowfiles} files in the monitored directory")
+def step_impl(context, num_flowfiles):
+    context.test.check_for_num_files_generated(int(num_flowfiles), humanfriendly.parse_timespan("1"))
+
+
 @then("{num_flowfiles} flowfiles are placed in the monitored directory in less than {duration}")
 def step_impl(context, num_flowfiles, duration):
     if num_flowfiles == 0:
@@ -867,6 +884,16 @@ def step_impl(context, content, duration):
 def step_impl(context, content_1, content_2, duration):
     context.test.check_for_multiple_files_generated(2, humanfriendly.parse_timespan(duration), [content_1, content_2])
 
+@then("exactly these flowfiles are in the monitored directory in less than {duration}: \"\"")
+def step_impl(context, duration):
+    context.execute_steps(f"Then no files are placed in the monitored directory in {duration} of running time")
+
+
+@then("exactly these flowfiles are in the monitored directory in less than {duration}: \"{contents}\"")
+def step_impl(context, duration, contents):
+    contents_arr = contents.split(",")
+    context.test.check_for_multiple_files_generated(len(contents_arr), humanfriendly.parse_timespan(duration), contents_arr)
+
 
 @then("flowfiles with these contents are placed in the monitored directory in less than {duration}: \"{contents}\"")
 def step_impl(context, duration, contents):
@@ -888,12 +915,6 @@ def step_impl(context, number_of_files, duration):
 @then("at least one empty flowfile is placed in the monitored directory in less than {duration}")
 def step_impl(context, duration):
     context.test.check_for_an_empty_file_generated(humanfriendly.parse_timespan(duration))
-
-
-@then("no files are placed in the monitored directory in {duration} of running time")
-def step_impl(context, duration):
-    context.test.check_for_no_files_generated(humanfriendly.parse_timespan(duration))
-
 
 @then("no errors were generated on the http-proxy regarding \"{url}\"")
 def step_impl(context, url):

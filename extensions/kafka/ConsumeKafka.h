@@ -57,6 +57,19 @@ enum class MessageHeaderPolicyEnum { KEEP_FIRST, KEEP_LATEST, COMMA_SEPARATED_ME
 
 namespace magic_enum::customize {
 using org::apache::nifi::minifi::processors::consume_kafka::MessageHeaderPolicyEnum;
+using org::apache::nifi::minifi::processors::consume_kafka::CommitPolicyEnum;
+
+template<>
+constexpr customize_t enum_name<CommitPolicyEnum>(const CommitPolicyEnum value) noexcept {
+    switch (value) {
+        case CommitPolicyEnum::NoCommit: return "No Commit";
+        case CommitPolicyEnum::AutoCommit: return "Auto Commit";
+        case CommitPolicyEnum::CommitAfterBatch: return "Commit After Batch";
+        case CommitPolicyEnum::CommitFromIncomingFlowFiles: return "Commit from incoming flowfiles";
+        default: return invalid_tag;
+    }
+}
+
 
 template<>
 constexpr customize_t enum_name<MessageHeaderPolicyEnum>(const MessageHeaderPolicyEnum value) noexcept {

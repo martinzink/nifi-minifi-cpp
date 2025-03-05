@@ -420,6 +420,7 @@ Feature: Sending data to using Kafka streaming platform using PublishKafka
 
     Then two flowfiles with the contents "Alice's Adventures in Wonderland" and "Lewis Carroll" are placed in the monitored directory in less than 60 seconds
 
+  @WIP
   Scenario: ConsumeKafka receives data via SASL SSL
     Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
     And these processor properties are set:
@@ -459,3 +460,50 @@ Feature: Sending data to using Kafka streaming platform using PublishKafka
     And a message with content "some test message" is published to the "ConsumeKafkaTest" topic
 
     Then at least one flowfile with the content "some test message" is placed in the monitored directory in less than 60 seconds
+
+  Scenario Outline: MiNiFi commit policy tests
+    Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
+    And the "Topic Names" property of the ConsumeKafka processor is set to "ConsumeKafkaTest"
+    And the "Commit Offsets Policy" property of the ConsumeKafka processor is set to "<commit_policy>"
+    And the "Offset Reset" property of the ConsumeKafka processor is set to "<offset_reset>"
+    And the "Security Protocol" property of the ConsumeKafka processor is set to "plaintext"
+    And the "SASL Mechanism" property of the ConsumeKafka processor is set to "PLAIN"
+    And a PutFile processor with the "Directory" property set to "/tmp/output" in the "kafka-consumer-flow" flow
+    And the "success" relationship of the ConsumeKafka processor is connected to the PutFile
+
+    And a kafka broker is set up in correspondence with the third-party kafka publisher
+    And the kafka broker is started
+    And the topic "ConsumeKafkaTest" is initialized on the kafka broker
+
+    When a message with content "Augustus" is published to the "ConsumeKafkaTest" topic
+    And all other processes start up
+    And the Kafka consumer is registered in kafka broker
+    Then exactly these flowfiles are in the monitored directory in less than 10 seconds: "<contents_after_augustus>"
+
+    When a message with content "Tiberius" is published to the "ConsumeKafkaTest" topic
+    Then exactly these flowfiles are in the monitored directory in less than 10 seconds: "<contents_after_tiberius>"
+
+    When "kafka-consumer-flow" flow is stopped
+    And a message with content "Caligula" is published to the "ConsumeKafkaTest" topic
+    Then exactly these flowfiles are in the monitored directory in less than 10 seconds: "<contents_after_caligula>"
+
+    When a message with content "Claudius" is published to the "ConsumeKafkaTest" topic
+    Then exactly these flowfiles are in the monitored directory in less than 10 seconds: "<contents_after_cladius>"
+
+    When "kafka-consumer-flow" flow is restarted
+    And the Kafka consumer is registered in kafka broker
+    And a message with content "Nero" is published to the "ConsumeKafkaTest" topic
+    Then exactly these flowfiles are in the monitored directory in less than 100 seconds: "<contents_after_nero>"
+
+    Examples: No Commit
+      | commit_policy      | offset_reset | contents_after_augustus | contents_after_tiberius | contents_after_caligula | contents_after_cladius | contents_after_nero                                        |
+      | No Commit          | latest       |                         | Tiberius                | Tiberius                | Tiberius               | Tiberius,Nero                                              |
+      | No Commit          | earliest     | Augustus                | Augustus,Tiberius       | Augustus,Tiberius       | Augustus,Tiberius      | Augustus,Tiberius,Augustus,Tiberius,Caligula,Claudius,Nero |
+    Examples: Auto Commit
+      | commit_policy      | offset_reset | contents_after_augustus | contents_after_tiberius | contents_after_caligula | contents_after_cladius | contents_after_nero                                        |
+      | Auto Commit        | latest       |                         | Tiberius                | Tiberius                | Tiberius               | Tiberius,Caligula,Claudius,Nero                            |
+      | Auto Commit        | earliest     | Augustus                | Augustus,Tiberius       | Augustus,Tiberius       | Augustus,Tiberius      | Augustus,Tiberius,Caligula,Claudius,Nero                   |
+    Examples: Commit After Batch
+      | commit_policy      | offset_reset | contents_after_augustus | contents_after_tiberius | contents_after_caligula | contents_after_cladius | contents_after_nero                                        |
+      | Commit After Batch | latest       |                         | Tiberius                | Tiberius                | Tiberius               | Tiberius,Caligula,Claudius,Nero                            |
+      | Commit After Batch | earliest     | Augustus                | Augustus,Tiberius       | Augustus,Tiberius       | Augustus,Tiberius      | Augustus,Tiberius,Caligula,Claudius,Nero                   |

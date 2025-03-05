@@ -313,8 +313,9 @@ void ConsumeKafka::commitOffsetsFromMessages(const std::unordered_map<KafkaMessa
         message_bundle.getLargestOffset());
   }
 
-  if (RD_KAFKA_RESP_ERR_NO_ERROR != rd_kafka_commit(consumer_.get(), kf_topic_partition_list_.get(), 0)) {
-    logger_->log_error("Committing offset failed.");
+  const auto commit_err_code = rd_kafka_commit(consumer_.get(), kf_topic_partition_list_.get(), 0);
+  if (RD_KAFKA_RESP_ERR_NO_ERROR != commit_err_code) {
+    logger_->log_error("Committing offset failed: {}: {}", magic_enum::enum_underlying(commit_err_code), rd_kafka_err2str(commit_err_code));
   }
 }
 
