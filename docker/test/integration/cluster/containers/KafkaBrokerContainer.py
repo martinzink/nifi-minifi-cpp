@@ -15,13 +15,11 @@
 
 
 import logging
-import shutil
 import tempfile
 import os
 import docker.types
 import jks
 from OpenSSL import crypto
-from pathlib import Path
 
 from .Container import Container
 from ssl_utils.SSL_cert_utils import make_server_cert
@@ -36,33 +34,38 @@ class KafkaBrokerContainer(Container):
         pke = jks.PrivateKeyEntry.new('kafka-broker-cert', [crypto.dump_certificate(crypto.FILETYPE_ASN1, kafka_cert)], crypto.dump_privatekey(crypto.FILETYPE_ASN1, kafka_key), 'rsa_raw')
         server_keystore = jks.KeyStore.new('jks', [pke])
 
-        self.temp_dir = tempfile.mkdtemp()
+        with tempfile.NamedTemporaryFile(delete=False) as server_keystore_file:
+            server_keystore.save(server_keystore_file.name, 'abcdefgh')
+            self.server_keystore_file_path = server_keystore_file.name
 
-        self.server_keystore_file_path = os.path.join(self.temp_dir, "server_keystore.jks")
-        server_keystore.save(self.server_keystore_file_path, 'abcdefgh')
-        os.chmod(self.server_keystore_file_path, 0o644)
+        ca_cert_der = crypto.dump_certificate(crypto.FILETYPE_ASN1, feature_context.root_ca_cert)
+        server_truststore = jks.KeyStore.new('jks', {})
+        #server_truststore.entries["CARoot"] = jks.TrustedCertEntry(cert=ca_cert_der)  # ✅ Correct
 
-        self.server_truststore_file_path = os.path.join(self.temp_dir, "server_truststore.pem")
-        with open(self.server_truststore_file_path, "wb") as truststore_file:
-            truststore_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, feature_context.root_ca_cert))
-        os.chmod(self.server_truststore_file_path, 0o644)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jks") as server_truststore_file:
+            server_truststore.save(server_truststore_file.name, 'abcdefgh')
+            self.server_truststore_file_path = server_truststore_file.name
 
-        self.server_properties_file_path = os.path.join(self.temp_dir, "server.properties")
-        self.feature_id = feature_context.id
-        with open(os.environ['TEST_DIRECTORY'] + "/resources/kafka_broker/conf/server.properties") as server_properties_file:
-            server_properties_content = server_properties_file.read()
-            patched_server_properties_content = server_properties_content.replace("kafka-broker", f"kafka-broker-{feature_context.id}")
-            with open(self.server_properties_file_path, "wb") as prop_file:
-                prop_file.write(patched_server_properties_content.encode())
-            os.chmod(self.server_properties_file_path, 0o644)
-        dockerfile_path = Path(__file__).resolve().parents[2] / "resources" / "kafka_broker" / "Dockerfile"
-        shutil.copy(dockerfile_path, self.temp_dir)
-        self.image, _ = self.client.images.build(path=self.temp_dir)
-        print("FLOW")
 
-    def __del__(self):
-        #self.client.images.remove(image=self.image.id)
-        shutil.rmtree(self.temp_dir)
+        with tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8") as jaas_config_file:
+            jaas_config_file.write("""
+KafkaServer {
+  org.apache.kafka.common.security.plain.PlainLoginModule required
+  username="admin"
+  password="admin-secret"
+  user_admin="admin-secret"
+  user_alice="alice-secret";
+};
+
+Client {
+  org.apache.kafka.common.security.plain.PlainLoginModule required
+  username="admin"
+  password="admin-secret";
+};
+""")
+            self.jaas_config_file_path = jaas_config_file.name
+
+
 
     def get_startup_finished_log_entry(self):
         return "Kafka Server started"
@@ -73,14 +76,70 @@ class KafkaBrokerContainer(Container):
 
         logging.info('Creating and running kafka broker docker container...')
         self.client.containers.run(
-            image=self.image.id,
+            image="bitnami/kafka:3.9.0",
             detach=True,
             name=self.name,
             network=self.network.name,
-            ports={'9092/tcp': 9092, '29092/tcp': 29092, '9093/tcp': 9093, '29093/tcp': 29093, '9094/tcp': 9094, '29094/tcp': 29094, '9094/tcp': 9094, '29095/tcp': 29095},
-            environment=[
-                "ZOOKEEPER_HOST=zookeeper-" + self.feature_id,
-                "ZOOKEEPER_PORT=2181"
+ environment=[
+    "KAFKA_CFG_NODE_ID=1",
+    "KAFKA_CFG_PROCESS_ROLES=controller,broker",
+    "KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT",
+    "KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER",
+
+    f"KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-broker-{self.feature_context.id}:9096",
+
+    f"KAFKA_CFG_LISTENERS=PLAINTEXT://kafka-broker-{self.feature_context.id}:9092,"
+    f"SASL_PLAINTEXT://kafka-broker-{self.feature_context.id}:9094,"
+    f"SSL://kafka-broker-{self.feature_context.id}:9093,"
+    f"SASL_SSL://kafka-broker-{self.feature_context.id}:9095,"
+    f"CONTROLLER://kafka-broker-{self.feature_context.id}:9096",
+
+    f"KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-broker-{self.feature_context.id}:9092,"
+    f"SASL_PLAINTEXT://kafka-broker-{self.feature_context.id}:9094,"
+    f"SSL://kafka-broker-{self.feature_context.id}:9093,"
+    f"SASL_SSL://kafka-broker-{self.feature_context.id}:9095,"
+    f"CONTROLLER://kafka-broker-{self.feature_context.id}:9096",
+
+    "KAFKA_CFG_LOG4J_ROOT_LOGLEVEL=DEBUG",
+    "KAFKA_CFG_LOG4J_LOGGERS=kafka.controller=DEBUG,kafka.server.KafkaApis=DEBUG",
+
+    f"KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,"
+    f"SASL_PLAINTEXT:SASL_PLAINTEXT,"
+    f"SSL:SSL,"
+    f"SASL_SSL:SASL_SSL,"
+    f"CONTROLLER:PLAINTEXT",
+
+    # **If using SASL_PLAINTEXT, provide JAAS config**
+    'KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL=PLAIN',
+    'KAFKA_CFG_SASL_ENABLED_MECHANISMS=PLAIN',
+    'KAFKA_CFG_OPTS=-Djava.security.auth.login.config=/etc/kafka/jaas.conf',
+
+    "KAFKA_CFG_SSL_PROTOCOL=TLS",
+    "KAFKA_CFG_SSL_ENABLED_PROTOCOLS=TLSv1.2",
+    "KAFKA_CFG_SSL_KEYSTORE_TYPE=JKS",
+    "KAFKA_CFG_SSL_KEYSTORE_LOCATION=/bitnami/kafka/config/certs/server_keystore.jks",
+    "KAFKA_CFG_SSL_KEYSTORE_PASSWORD=abcdefgh",
+    "KAFKA_CFG_SSL_KEY_PASSWORD=abcdefgh",
+    "KAFKA_CFG_SSL_TRUSTSTORE_TYPE=PEM",
+    "KAFKA_CFG_SSL_TRUSTSTORE_LOCATION=/bitnami/kafka/config/certs/server_truststore.pem",
+    "KAFKA_CFG_SSL_CLIENT_AUTH=none"
+],
+            mounts=[
+                docker.types.Mount(
+                    type='bind',
+                    source=self.server_keystore_file_path,
+                    target='/bitnami/kafka/config/certs/kafka.keystore.jks'
+                ),
+                docker.types.Mount(
+                    type='bind',
+                    source=self.server_truststore_file_path,
+                    target='/bitnami/kafka/config/certs/kafka.truststore.jks'
+                ),
+                docker.types.Mount(
+                    type='bind',
+                    source=self.jaas_config_file_path,
+                    target='/etc/kafka/jaas.conf'
+                )
             ],
             entrypoint=self.command)
         logging.info('Added container \'%s\'', self.name)

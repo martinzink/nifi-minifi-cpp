@@ -61,7 +61,6 @@ class MiNiFi_integration_test:
 
     def start_kafka_broker(self, context):
         self.cluster.acquire_container(context=context, name='kafka-broker', engine='kafka-broker')
-        self.cluster.deploy_container(name='zookeeper')
         self.cluster.deploy_container(name='kafka-broker')
         assert self.cluster.wait_for_container_startup_to_finish('kafka-broker') or self.cluster.log_app_output()
 

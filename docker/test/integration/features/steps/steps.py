@@ -616,17 +616,8 @@ def step_impl(context):
 
 @given("the topic \"{topic_name}\" is initialized on the kafka broker")
 def step_impl(context, topic_name):
-    admin = AdminClient({'bootstrap.servers': "localhost:29092"})
-    new_topics = [NewTopic(topic_name, num_partitions=3, replication_factor=1)]
-    futures = admin.create_topics(new_topics)
-    # Block until the topic is created
-    for topic, future in futures.items():
-        try:
-            future.result()
-            print("Topic {} created".format(topic))
-        except Exception as e:
-            print("Failed to create topic {}: {}".format(topic, e))
-
+    container_name = context.test.get_container_name_with_postfix("kafka-broker")
+    assert context.test.cluster.kafka_checker.create_topic(container_name, topic_name)
 
 # SQL
 @given("an ODBCService is setup up for {processor_name} with the name \"{service_name}\"")
@@ -702,19 +693,10 @@ def step_impl(context, content, file_name, path, seconds):
     context.test.add_test_data(path, content, file_name)
 
 
-# Kafka
-def delivery_report(err, msg):
-    if err is not None:
-        logging.info('Message delivery failed: {}'.format(err))
-    else:
-        logging.info('Message delivered to {} [{}]'.format(msg.topic(), msg.partition()))
-
-
 @when("a message with content \"{content}\" is published to the \"{topic_name}\" topic")
 def step_impl(context, content, topic_name):
-    producer = Producer({"bootstrap.servers": "localhost:29092", "client.id": socket.gethostname()})
-    producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report)
-    producer.flush(10)
+    container_name = context.test.get_container_name_with_postfix("kafka-broker")
+    assert context.test.cluster.kafka_checker.produce_message(container_name, topic_name, content)
 
 
 @when("a message with content \"{content}\" is published to the \"{topic_name}\" topic using an ssl connection")
@@ -784,14 +766,8 @@ def step_impl(context, transaction_type, topic_name, messages):
 
 @when("a message with content \"{content}\" is published to the \"{topic_name}\" topic with key \"{message_key}\"")
 def step_impl(context, content, topic_name, message_key):
-    producer = Producer({"bootstrap.servers": "localhost:29092", "client.id": socket.gethostname()})
-    # Asynchronously produce a message, the delivery report callback
-    # will be triggered from poll() above, or flush() below, when the message has
-    # been successfully delivered or failed permanently.
-    producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report, key=message_key.encode("utf-8"))
-    # Wait for any outstanding messages to be delivered and delivery report
-    # callbacks to be triggered.
-    producer.flush(10)
+    container_name = context.test.get_container_name_with_postfix("kafka-broker")
+    assert context.test.cluster.kafka_checker.produce_message(container_name, topic_name, content, message_key)
 
 
 @when("{number_of_messages} kafka messages are sent to the topic \"{topic_name}\"")

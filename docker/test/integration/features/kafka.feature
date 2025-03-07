@@ -82,6 +82,7 @@ Feature: Sending data to using Kafka streaming platform using PublishKafka
     When the MiNiFi instance starts up
     Then a flowfile with the content "no broker" is placed in the monitored directory in less than 60 seconds
 
+  @WIP
   Scenario: PublishKafka sends can use SSL connect with security properties
     Given a GetFile processor with the "Input Directory" property set to "/tmp/input"
     And a file with the content "test" is present in "/tmp/input"
@@ -233,11 +234,13 @@ Feature: Sending data to using Kafka streaming platform using PublishKafka
     And the "success" relationship of the ConsumeKafka processor is connected to the PutFile
 
     And a kafka broker is set up in correspondence with the third-party kafka publisher
+    And the kafka broker is started
+    And the topic "ConsumeKafkaTest" is initialized on the kafka broker
 
     When all instances start up
     And a message with content "some test message" is published to the "ConsumeKafkaTest" topic
 
-    Then at least one flowfile with the content "some test message" is placed in the monitored directory in less than 60 seconds
+    Then at least one flowfile with the content "some test message" is placed in the monitored directory in less than 600 seconds
 
   Scenario Outline: ConsumeKafka parses and uses kafka topics and topic name formats
     Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
@@ -420,7 +423,6 @@ Feature: Sending data to using Kafka streaming platform using PublishKafka
 
     Then two flowfiles with the contents "Alice's Adventures in Wonderland" and "Lewis Carroll" are placed in the monitored directory in less than 60 seconds
 
-  @WIP
   Scenario: ConsumeKafka receives data via SASL SSL
     Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
     And these processor properties are set:

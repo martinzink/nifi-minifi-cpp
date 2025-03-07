@@ -195,12 +195,14 @@ void ConsumeKafka::configureNewConnection(core::ProcessContext &context) {
   //
   // As far as I understand, instead of rd_kafka_position() an rd_kafka_committed() call if preferred here,
   // as it properly fetches offsets from the broker
-  if (RD_KAFKA_RESP_ERR_NO_ERROR != rd_kafka_committed(consumer_.get(), kf_topic_partition_list_.get(), METADATA_COMMUNICATIONS_TIMEOUT_MS)) {
+  if (const auto retrieved_commited = rd_kafka_committed(consumer_.get(), kf_topic_partition_list_.get(), METADATA_COMMUNICATIONS_TIMEOUT_MS); RD_KAFKA_RESP_ERR_NO_ERROR != retrieved_commited) {
+    logger_->log_error("Retrieving committed offsets for topics+partitions failed {}: {}",
+      magic_enum::enum_underlying(retrieved_commited),
+      rd_kafka_err2str(retrieved_commited));
     logger_->log_error("Retrieving committed offsets for topics+partitions failed.");
   }
 
-  rd_kafka_resp_err_t poll_set_consumer_response = rd_kafka_poll_set_consumer(consumer_.get());
-  if (RD_KAFKA_RESP_ERR_NO_ERROR != poll_set_consumer_response) {
+  if (rd_kafka_resp_err_t poll_set_consumer_response = rd_kafka_poll_set_consumer(consumer_.get());RD_KAFKA_RESP_ERR_NO_ERROR != poll_set_consumer_response) {
     logger_->log_error("rd_kafka_poll_set_consumer error {}: {}",
         magic_enum::enum_underlying(poll_set_consumer_response),
         rd_kafka_err2str(poll_set_consumer_response));
@@ -344,8 +346,8 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession &sess
     const int64_t curr_offset = max_offsets[KafkaMessageLocation{*topic_name, *partition}];
     max_offsets[KafkaMessageLocation{*topic_name, *partition}] = std::max(curr_offset, *offset);
   }
-  if (RD_KAFKA_RESP_ERR_NO_ERROR != rd_kafka_commit(consumer_.get(), kf_topic_partition_list_.get(), 0)) {
-    logger_->log_error("Committing offset failed.");
+  if (const auto commit_res = rd_kafka_commit(consumer_.get(), kf_topic_partition_list_.get(), 0); RD_KAFKA_RESP_ERR_NO_ERROR != commit_res) {
+    logger_->log_error("Committing offset failed: {}: {}", magic_enum::enum_underlying(commit_res), rd_kafka_err2str(commit_res));
   }
   for (const auto &ff: flow_files) { session.remove(ff); }
 }
@@ -380,7 +382,10 @@ void ConsumeKafka::processMessageBundles(core::ProcessSession &session,
 void ConsumeKafka::onTrigger(core::ProcessContext &, core::ProcessSession &session) {
   if (commit_policy_ == consume_kafka::CommitPolicyEnum::CommitAfterBatch) { commitOffsetsFromIncomingFlowFiles(session); }
   const auto message_bundles = pollKafkaMessages();
-  if (message_bundles.empty()) { return; }
+  if (message_bundles.empty()) {
+    logger_->log_debug("No new messages");
+    return;
+  }
   if (!message_demarcator_) {
     processMessages(session, message_bundles);
   } else {

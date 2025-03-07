@@ -30,6 +30,7 @@ from .checkers.AwsChecker import AwsChecker
 from .checkers.AzureChecker import AzureChecker
 from .checkers.ElasticSearchChecker import ElasticSearchChecker
 from .checkers.GcsChecker import GcsChecker
+from .checkers.KafkaChecker import KafkaChecker
 from .checkers.PostgresChecker import PostgresChecker
 from .checkers.PrometheusChecker import PrometheusChecker
 from .checkers.SplunkChecker import SplunkChecker
@@ -56,6 +57,7 @@ class DockerTestCluster:
         self.minifi_controller_executor = MinifiControllerExecutor(self.container_communicator)
         self.modbus_checker = ModbusChecker(self.container_communicator)
         self.couchbase_checker = CouchbaseChecker()
+        self.kafka_checker = KafkaChecker(self.container_communicator)
 
     def cleanup(self):
         self.container_store.cleanup()
