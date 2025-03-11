@@ -200,31 +200,23 @@ class MiNiFi_integration_test:
     def check_subdirectory(self, sub_directory: str, expected_contents: list, timeout: int, interval: float = 1.0) -> bool:
         logging.info("check_directory")
         start_time = time.time()
-
+        expected_contents.sort()
         while time.time() - start_time < timeout:
             try:
+                current_contents = []
                 directory = self.file_system_observer.get_output_dir() + "/" + sub_directory
                 current_files = os.listdir(directory)
+                for file in current_files:
+                    file_path = os.path.join(directory, file)
+                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read()
+                        current_contents.append(content)
+                current_contents.sort()
 
-                if len(current_files) > len(expected_contents):
-                    return False
-                if len(current_files) == len(expected_contents):
-                    all_contents_found = True
-                    for expected in expected_contents:
-                        found = False
-                        for file in current_files:
-                            file_path = os.path.join(directory, file)
-                            if os.path.isfile(file_path):
-                                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                                    if expected in f.read():
-                                        found = True
-                                        break
-                        if not found:
-                            all_contents_found = False
-                            break
-
-                    if all_contents_found:
-                        return True
+                if current_contents == expected_contents:
+                    logging.info("subdir checks out")
+                    return True
+                logging.info(f"expected: {expected_contents} vs actual {current_contents}")
 
             except Exception as e:
                 print(f"Error checking directory: {e}")

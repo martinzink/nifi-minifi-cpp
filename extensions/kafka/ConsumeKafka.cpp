@@ -350,9 +350,12 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession& sess
           partition);
       relationship = Failure;
     }
+    logger_->log_debug("From flowfile ", offset, topic_name, partition);
+
     const int64_t curr_offset = max_offsets[KafkaMessageLocation{*topic_name, *partition}];
     max_offsets[KafkaMessageLocation{*topic_name, *partition}] = std::max(curr_offset, *offset);
   }
+
   const auto partitions = utils::rd_kafka_topic_partition_list_unique_ptr{rd_kafka_topic_partition_list_new(gsl::narrow<int>(max_offsets.size()))};
 
   for (const auto& [location, max_offset] : max_offsets) {

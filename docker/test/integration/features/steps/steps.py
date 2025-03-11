@@ -888,7 +888,7 @@ def step_impl(context, duration, contents):
 @then("exactly these flowfiles are in the monitored directory's \"{subdir}\" subdirectory in less than {duration}: \"{contents}\"")
 def step_impl(context, duration, subdir, contents):
     contents_arr = contents.split(",")
-    assert context.test.check_subdirectory(sub_directory=subdir, expected_contents=contents_arr, timeout=humanfriendly.parse_timespan(duration))
+    assert context.test.check_subdirectory(sub_directory=subdir, expected_contents=contents_arr, timeout=humanfriendly.parse_timespan(duration)) or context.test.cluster.log_app_output()
 
 
 @then("flowfiles with these contents are placed in the monitored directory in less than {duration}: \"{contents}\"")
