@@ -351,8 +351,6 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession& sess
           partition);
       relationship = Failure;
     }
-    logger_->log_debug("From flowfile {} {} {}", offset, topic_name, partition);
-
     int64_t& curr_offset = max_offsets[KafkaMessageLocation{std::move(*topic_name), *partition}];
     curr_offset = std::max(curr_offset, *offset);
   }
@@ -360,11 +358,10 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession& sess
   const auto partitions = utils::rd_kafka_topic_partition_list_unique_ptr{rd_kafka_topic_partition_list_new(gsl::narrow<int>(max_offsets.size()))};
 
   for (const auto& [location, max_offset] : max_offsets) {
-    logger_->log_debug("Commiting max offset {} for {} {} ", max_offset, location.topic, location.partition);
     rd_kafka_topic_partition_list_add(partitions.get(), location.topic.data(), location.partition)->offset = max_offset + 1;
   }
-
-  if (const auto commit_res = rd_kafka_commit(consumer_.get(), partitions.get(), 0); RD_KAFKA_RESP_ERR_NO_ERROR != commit_res) {
+  const auto commit_res = rd_kafka_commit(consumer_.get(), partitions.get(), 0);
+  if (RD_KAFKA_RESP_ERR_NO_ERROR != commit_res || RD_KAFKA_RESP_ERR_OFFSET_OUT_OF_RANGE != commit_res || RD_KAFKA_RESP_ERR__NO_OFFSET != commit_res) {
     // TODO(mzink) what happens if offsets are out of range, or no commit required (another consumer already commited etc) maybe we shouldnt throw?
     logger_->log_error("Committing offset failed: {}: {}", magic_enum::enum_underlying(commit_res), rd_kafka_err2str(commit_res));
     throw Exception(PROCESS_SESSION_EXCEPTION, fmt::format("Committing offset failed: {}: {}", magic_enum::enum_underlying(commit_res), rd_kafka_err2str(commit_res)));

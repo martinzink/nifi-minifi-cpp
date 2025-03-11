@@ -220,7 +220,6 @@ Feature: Receiving data from using Kafka streaming platform using ConsumeKafka
 
     Then two flowfiles with the contents "Through the Looking-Glass" and "Lewis Carroll" are placed in the monitored directory in less than 60 seconds
 
-  @WIP
   Scenario: ConsumeKafka receives data via SASL SSL
     Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
     And these processor properties are set:
