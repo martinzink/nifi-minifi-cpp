@@ -877,7 +877,7 @@ def step_impl(context, duration):
 
 @then("exactly these flowfiles are in the monitored directory's \"{subdir}\" subdirectory in less than {duration}: \"\"")
 def step_impl(context, duration, subdir):
-    context.test.check_for_no_files_generated_in_subdir(humanfriendly.parse_timespan(duration), subdir)
+    assert context.test.check_subdirectory(sub_directory=subdir, expected_contents=[], timeout=humanfriendly.parse_timespan(duration)) or context.test.cluster.log_app_output()
 
 
 @then("exactly these flowfiles are in the monitored directory in less than {duration}: \"{contents}\"")
