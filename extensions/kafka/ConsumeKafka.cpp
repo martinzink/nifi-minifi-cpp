@@ -350,7 +350,7 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession& sess
           partition);
       relationship = Failure;
     }
-    logger_->log_debug("From flowfile ", offset, topic_name, partition);
+    logger_->log_debug("From flowfile {} {} {}", offset, topic_name, partition);
 
     const int64_t curr_offset = max_offsets[KafkaMessageLocation{*topic_name, *partition}];
     max_offsets[KafkaMessageLocation{*topic_name, *partition}] = std::max(curr_offset, *offset);
