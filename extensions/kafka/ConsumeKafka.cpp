@@ -65,7 +65,8 @@ void ConsumeKafka::onSchedule(core::ProcessContext &context, core::ProcessSessio
 
   // Optional properties
   message_demarcator_ = utils::parseOptionalProperty(context, MessageDemarcator);
-  headers_to_add_as_attributes_ = parseOptionalProperty(context, HeadersToAddAsAttributes) | utils::transform([](std::string headers_to_add_str) { return utils::string::splitAndTrim(headers_to_add_str, ","); });
+  headers_to_add_as_attributes_ = parseOptionalProperty(context, HeadersToAddAsAttributes)
+      | utils::transform([](std::string headers_to_add_str) { return utils::string::splitAndTrim(headers_to_add_str, ","); });
   if (message_demarcator_ && headers_to_add_as_attributes_) {
     logger_->log_error("Message merging with header extraction is not yet supported");
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Message merging with header extraction is not yet supported");
@@ -204,7 +205,7 @@ void ConsumeKafka::configureNewConnection(core::ProcessContext &context) {
       rd_kafka_err2str(retrieved_commited));
   }
 
-  if (rd_kafka_resp_err_t poll_set_consumer_response = rd_kafka_poll_set_consumer(consumer_.get());RD_KAFKA_RESP_ERR_NO_ERROR != poll_set_consumer_response) {
+  if (rd_kafka_resp_err_t poll_set_consumer_response = rd_kafka_poll_set_consumer(consumer_.get()); RD_KAFKA_RESP_ERR_NO_ERROR != poll_set_consumer_response) {
     logger_->log_error("rd_kafka_poll_set_consumer error {}: {}",
         magic_enum::enum_underlying(poll_set_consumer_response),
         rd_kafka_err2str(poll_set_consumer_response));
