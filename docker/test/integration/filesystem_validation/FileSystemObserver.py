@@ -41,6 +41,7 @@ class FileSystemObserver(object):
         if self.observer.is_alive():
             return
 
+        logging.info("restart observer")
         self.observer = Observer()
         self.done_event.clear()
         self.observer.schedule(self.event_handler, self.test_output_dir, recursive=True)
@@ -51,6 +52,7 @@ class FileSystemObserver(object):
         self.restart_observer_if_needed()
         try:
             if max_files and max_files <= self.event_handler.get_num_files_created():
+                logging.info("max_file <= self.event_handler.get_num_files_created()")
                 return output_validator.validate()
             wait_start_time = time.perf_counter()
             while True:
@@ -59,11 +61,17 @@ class FileSystemObserver(object):
                 if self.done_event.is_set():
                     self.done_event.clear()
                     if max_files and max_files <= self.event_handler.get_num_files_created():
+                        logging.info("done_event && max_files <= self.")
                         return output_validator.validate()
                     if output_validator.validate():
+                        logging.info("return true")
                         return True
                 if timeout_seconds < (time.perf_counter() - wait_start_time):
+                    logging.info("timeout_seconds < time.perf")
                     return output_validator.validate()
+        except Exception as e:
+            logging.error("SAJTOS POGÁCSA")
+            logging.error(e)
         finally:
             self.observer.stop()
             self.observer.join()

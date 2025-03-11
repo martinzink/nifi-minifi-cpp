@@ -14,12 +14,14 @@
 # limitations under the License.
 from __future__ import annotations
 
+import io
 import json
 from utils import retry_check
 import logging
+import docker
 
 
-class KafkaChecker:
+class KafkaHelper:
     def __init__(self, container_communicator):
         self.container_communicator = container_communicator
 
@@ -31,6 +33,19 @@ class KafkaChecker:
 
     def produce_message(self, container_name: str, topic_name: str, message: str, message_key: str|None = None):
         logging.info(f"Sending {message} to {container_name}:{topic_name}")
-        (code, output) = self.container_communicator.execute_command(container_name, ["/bin/bash", "-c", f"/opt/bitnami/kafka/bin/kafka-console-producer.sh --topic {topic_name} --bootstrap-server {container_name}:9092 <<< '{message}'"])
+        (code, output) = self.container_communicator.execute_command(container_name, ["/bin/bash", "-c", f"/opt/bitnami/kafka/bin/kafka-console-producer.sh --property 'key.separator=:' --property 'parse.key=true' --topic {topic_name} --bootstrap-server {container_name}:9092 <<< '{message_key}:{message}'"])
         logging.info(output)
         return code == 0
+
+    def run_in_kafka_helper_docker(self, command: str):
+        try:
+            self.container_communicator.clientclient.images.get("kafka-helper")
+        except docker.errors.ImageNotFound:
+            dockerfile_content = f"""
+            FROM python:3.13-slim-bookworm
+            RUN pip install confluent-kafka
+            """
+            dockerfile_stream = io.BytesIO(dockerfile_content.encode("utf-8"))
+            image, _ = self.container_communicator.client.images.build(fileobj=dockerfile_stream, tag="kafka-helper")
+
+        self.container_communicator.client.containers.run("kafka-helper", command, remove=True, stdout=True, stderr=True)

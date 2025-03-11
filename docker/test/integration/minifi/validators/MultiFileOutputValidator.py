@@ -49,10 +49,12 @@ class MultiFileOutputValidator(FileOutputValidator):
         logging.info("Output folder: %s", full_dir)
 
         if not os.path.isdir(full_dir):
+            logging.info("not dir")
             return False
 
         listing = listdir(full_dir)
         if not listing:
+            logging.info("not listing")
             return False
 
         for out_file_name in listing:
@@ -60,6 +62,7 @@ class MultiFileOutputValidator(FileOutputValidator):
 
             full_path = join(full_dir, out_file_name)
             if not os.path.isfile(full_path) or is_temporary_output_file(full_path):
+                logging.info("not isfile or temp outfile")
                 return False
 
             logging.info("dir %s -- name %s", full_dir, out_file_name)
@@ -73,9 +76,11 @@ class MultiFileOutputValidator(FileOutputValidator):
             logging.info("New file added %s", full_path)
 
         if self.expected_file_count != 0 and len(self.file_timestamps) != self.expected_file_count:
+            logging.info("not expected_file_count")
             return False
 
         if len(self.file_timestamps) >= len(self.expected_content):
+            logging.info("check_expected_content")
             return self.check_expected_content(full_dir)
 
         return False

@@ -69,6 +69,8 @@ class DockerTestDirectoryBindings:
             return self.data_directories[self.feature_id]["input_dir"]
         if docker_path == "/tmp/output":
             return self.data_directories[self.feature_id]["output_dir"]
+        if docker_path == "/tmp/commited":
+            return self.data_directories[self.feature_id]["output_dir"]
         if docker_path == "/tmp/resources":
             return self.data_directories[self.feature_id]["resources_dir"]
         # Might be worth reworking these

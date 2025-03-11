@@ -24,6 +24,7 @@
 #include "core/ProcessSession.h"
 #include "core/PropertyType.h"
 #include "core/Resource.h"
+#include "utils/OptionalUtils.h"
 #include "utils/AttributeErrors.h"
 #include "utils/ProcessorConfigUtils.h"
 #include "utils/gsl.h"
@@ -64,14 +65,19 @@ void ConsumeKafka::onSchedule(core::ProcessContext &context, core::ProcessSessio
 
   // Optional properties
   message_demarcator_ = utils::parseOptionalProperty(context, MessageDemarcator);
-  headers_to_add_as_attributes_ = utils::string::splitAndTrim(utils::parseOptionalProperty(context, HeadersToAddAsAttributes).value_or(""), ",");
-
-  if (message_demarcator_ && !headers_to_add_as_attributes_.empty()) {
+  headers_to_add_as_attributes_ = parseOptionalProperty(context, HeadersToAddAsAttributes) | utils::transform([](std::string headers_to_add_str) { return utils::string::splitAndTrim(headers_to_add_str, ","); });
+  if (message_demarcator_ && headers_to_add_as_attributes_) {
     logger_->log_error("Message merging with header extraction is not yet supported");
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Message merging with header extraction is not yet supported");
   }
 
   configureNewConnection(context);
+  if (commit_policy_ == consume_kafka::CommitPolicyEnum::CommitFromIncomingFlowFiles) {
+    setTriggerWhenEmpty(true);
+  } else if (hasIncomingConnections()) {
+    logger_->log_error("Incoming connections are not allowed with {}", magic_enum::enum_name(commit_policy_));
+    throw Exception(PROCESS_SCHEDULE_EXCEPTION, fmt::format("Incoming connections are not allowed with {}", magic_enum::enum_name(commit_policy_)));
+  }
 }
 
 namespace {
@@ -165,17 +171,14 @@ void ConsumeKafka::configureNewConnection(core::ProcessContext &context) {
   setKafkaConfigurationField(*conf_,
       "auto.offset.reset",
       std::string(magic_enum::enum_name(utils::parseEnumProperty<consume_kafka::OffsetResetPolicyEnum>(context, OffsetReset))));
-  setKafkaConfigurationField(*conf_, "enable.auto.commit", std::to_string(commit_policy_ == consume_kafka::CommitPolicyEnum::AutoCommit));
-  setKafkaConfigurationField(*conf_, "enable.auto.offset.store", "false");
+  setKafkaConfigurationField(*conf_, "enable.auto.commit", "false");
+  setKafkaConfigurationField(*conf_, "enable.auto.offset.store", std::to_string(commit_policy_ == consume_kafka::CommitPolicyEnum::AutoCommit));
   setKafkaConfigurationField(*conf_, "isolation.level", utils::parseBoolProperty(context, HonorTransactions) ? "read_committed" : "read_uncommitted");
   setKafkaConfigurationField(*conf_, "group.id", utils::parseProperty(context, GroupID));
+  setKafkaConfigurationField(*conf_, "client.id", this->getUUIDStr());
   setKafkaConfigurationField(*conf_, "session.timeout.ms", std::to_string(utils::parseMsProperty(context, SessionTimeout).count()));
   // Twice the default, arbitrarily chosen
   setKafkaConfigurationField(*conf_, "max.poll.interval.ms", "600000");
-
-  // This is a librdkafka option, but the communication timeout is also specified in each of the
-  // relevant API calls. Could be redundant, but it probably does not hurt to set this
-  setKafkaConfigurationField(*conf_, "metadata.request.timeout.ms", std::to_string(METADATA_COMMUNICATIONS_TIMEOUT_MS));
 
   extendConfigFromDynamicProperties(context);
 
@@ -199,7 +202,6 @@ void ConsumeKafka::configureNewConnection(core::ProcessContext &context) {
     logger_->log_error("Retrieving committed offsets for topics+partitions failed {}: {}",
       magic_enum::enum_underlying(retrieved_commited),
       rd_kafka_err2str(retrieved_commited));
-    logger_->log_error("Retrieving committed offsets for topics+partitions failed.");
   }
 
   if (rd_kafka_resp_err_t poll_set_consumer_response = rd_kafka_poll_set_consumer(consumer_.get());RD_KAFKA_RESP_ERR_NO_ERROR != poll_set_consumer_response) {
@@ -275,8 +277,9 @@ std::vector<std::string> ConsumeKafka::get_matching_headers(const rd_kafka_messa
 }
 
 std::vector<std::pair<std::string, std::string>> ConsumeKafka::getFlowFilesAttributesFromMessageHeaders(const rd_kafka_message_t &message) const {
+  gsl_Assert(headers_to_add_as_attributes_);
   std::vector<std::pair<std::string, std::string>> attributes_from_headers;
-  for (const std::string &header_name: headers_to_add_as_attributes_) {
+  for (const std::string& header_name: *headers_to_add_as_attributes_) {
     const std::vector<std::string> matching_headers = get_matching_headers(message, header_name);
     if (!matching_headers.empty()) {
       attributes_from_headers.emplace_back(header_name,
@@ -294,11 +297,13 @@ void ConsumeKafka::addAttributesToSingleMessageFlowFile(core::FlowFile &flow_fil
   flow_file.setAttribute(KafkaOffsetAttribute.name, std::to_string(message.offset));
   flow_file.setAttribute(KafkaPartitionAttribute.name, std::to_string(message.partition));
   flow_file.setAttribute(KafkaTopicAttribute.name, rd_kafka_topic_name(message.rkt));
-  for (const auto &[attr_key, attr_value]: getFlowFilesAttributesFromMessageHeaders(message)) { flow_file.setAttribute(attr_key, attr_value); }
+  if (headers_to_add_as_attributes_) {
+    for (const auto &[attr_key, attr_value]: getFlowFilesAttributesFromMessageHeaders(message)) { flow_file.setAttribute(attr_key, attr_value); }
+  }
 }
 
 void ConsumeKafka::addAttributesToMessageBundleFlowFile(core::FlowFile &flow_file, const MessageBundle &message_bundle) const {
-  gsl_Assert(headers_to_add_as_attributes_.empty());
+  gsl_Assert(!headers_to_add_as_attributes_);
   flow_file.setAttribute(KafkaCountAttribute.name, std::to_string(message_bundle.getMessages().size()));
   flow_file.setAttribute(KafkaOffsetAttribute.name, std::to_string(message_bundle.getLargestOffset()));
   flow_file.setAttribute(KafkaPartitionAttribute.name, std::to_string(message_bundle.getMessages().front()->partition));
@@ -308,26 +313,28 @@ void ConsumeKafka::addAttributesToMessageBundleFlowFile(core::FlowFile &flow_fil
 void ConsumeKafka::commitOffsetsFromMessages(const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles) const {
   if (message_bundles.empty()) { return; }
 
-  for (const auto &[location, message_bundle]: message_bundles) {
-    rd_kafka_topic_partition_list_set_offset(kf_topic_partition_list_.get(),
-        location.topic.data(),
-        location.partition,
-        message_bundle.getLargestOffset());
+  const auto partitions = utils::rd_kafka_topic_partition_list_unique_ptr{rd_kafka_topic_partition_list_new(gsl::narrow<int>(message_bundles.size()))};
+
+  for (const auto& [location, message_bundle] : message_bundles) {
+    logger_->log_debug("Message bundle offsets: {} {} {}", location.topic, location.partition, message_bundle.getLargestOffset());
+    rd_kafka_topic_partition_list_add(partitions.get(), location.topic.data(), location.partition)->offset = message_bundle.getLargestOffset() + 1;
   }
 
-  const auto commit_err_code = rd_kafka_commit(consumer_.get(), kf_topic_partition_list_.get(), 0);
+  const auto commit_err_code = rd_kafka_commit(consumer_.get(), partitions.get(), 0);
+
   if (RD_KAFKA_RESP_ERR_NO_ERROR != commit_err_code) {
-    logger_->log_error("Committing offset failed: {}: {}", magic_enum::enum_underlying(commit_err_code), rd_kafka_err2str(commit_err_code));
+    logger_->log_error("Committing offset failed: {}: {}",
+        magic_enum::enum_underlying(commit_err_code), rd_kafka_err2str(commit_err_code));
   }
 }
 
-void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession &session) const {
-  std::vector<std::shared_ptr<core::FlowFile>> flow_files;
-  while (auto ff = session.get()) { flow_files.push_back(ff); }
+void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession& session) const {
+  std::vector<std::pair<std::shared_ptr<core::FlowFile>, core::Relationship>> flow_files;
+  while (auto ff = session.get()) { flow_files.push_back({ff, Commited}); }
   if (flow_files.empty()) { return; }
 
   std::unordered_map<KafkaMessageLocation, int64_t> max_offsets;
-  for (const auto &flow_file: std::ranges::reverse_view(flow_files)) {
+  for (auto& [flow_file, relationship]: std::ranges::reverse_view(flow_files)) {
     const auto topic_name = flow_file->getAttribute(KafkaTopicAttribute.name);
     const auto offset = flow_file->getAttribute(KafkaOffsetAttribute.name) |
         utils::toExpected(make_error_code(core::AttributeErrorCode::MissingAttribute)) | utils::andThen(parsing::parseIntegral<int64_t>);
@@ -341,15 +348,25 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession &sess
           offset,
           KafkaPartitionAttribute.name,
           partition);
-      continue;
+      relationship = Failure;
     }
     const int64_t curr_offset = max_offsets[KafkaMessageLocation{*topic_name, *partition}];
     max_offsets[KafkaMessageLocation{*topic_name, *partition}] = std::max(curr_offset, *offset);
   }
-  if (const auto commit_res = rd_kafka_commit(consumer_.get(), kf_topic_partition_list_.get(), 0); RD_KAFKA_RESP_ERR_NO_ERROR != commit_res) {
-    logger_->log_error("Committing offset failed: {}: {}", magic_enum::enum_underlying(commit_res), rd_kafka_err2str(commit_res));
+  const auto partitions = utils::rd_kafka_topic_partition_list_unique_ptr{rd_kafka_topic_partition_list_new(gsl::narrow<int>(max_offsets.size()))};
+
+  for (const auto& [location, max_offset] : max_offsets) {
+    logger_->log_debug("Commiting max offset {} for {} {} ", max_offset, location.topic, location.partition);
+    rd_kafka_topic_partition_list_add(partitions.get(), location.topic.data(), location.partition)->offset = max_offset + 1;
   }
-  for (const auto &ff: flow_files) { session.remove(ff); }
+
+  if (const auto commit_res = rd_kafka_commit(consumer_.get(), partitions.get(), 0); RD_KAFKA_RESP_ERR_NO_ERROR != commit_res) {
+    // TODO(mzink) what happens if offsets are out of range, or no commit required (another consumer already commited etc) maybe we shouldnt throw?
+    logger_->log_error("Committing offset failed: {}: {}", magic_enum::enum_underlying(commit_res), rd_kafka_err2str(commit_res));
+    throw Exception(PROCESS_SESSION_EXCEPTION, fmt::format("Committing offset failed: {}: {}", magic_enum::enum_underlying(commit_res), rd_kafka_err2str(commit_res)));
+  }
+  logger_->log_debug("Commited from {} flowfiles", flow_files.size());
+  for (const auto& [ff, relationship]: flow_files) { session.transfer(ff, relationship); }
 }
 
 void ConsumeKafka::processMessages(core::ProcessSession &session, const std::unordered_map<KafkaMessageLocation, MessageBundle> &message_bundles) const {
@@ -380,7 +397,7 @@ void ConsumeKafka::processMessageBundles(core::ProcessSession &session,
 }
 
 void ConsumeKafka::onTrigger(core::ProcessContext &, core::ProcessSession &session) {
-  if (commit_policy_ == consume_kafka::CommitPolicyEnum::CommitAfterBatch) { commitOffsetsFromIncomingFlowFiles(session); }
+  if (commit_policy_ == consume_kafka::CommitPolicyEnum::CommitFromIncomingFlowFiles) { commitOffsetsFromIncomingFlowFiles(session); }
   const auto message_bundles = pollKafkaMessages();
   if (message_bundles.empty()) {
     logger_->log_debug("No new messages");

@@ -259,7 +259,10 @@ class ConsumeKafka final : public KafkaProcessorBase {
           CommitPolicy}));
 
   EXTENSIONAPI static constexpr auto Success = core::RelationshipDefinition{"success",
-      "Incoming Kafka messages as flowfiles. Depending on the demarcation strategy, this can be one or multiple flowfiles per message."};
+      "Incoming Kafka messages as flowfiles. Depending on the demarcation strategy, this can be one or multiple messages per flowfile."};
+  EXTENSIONAPI static constexpr auto Commited = core::RelationshipDefinition{"commited", "Only when using \"Commit from incoming flowfiles\" policy. Flowfiles that were used for commiting offsets are routed here."};
+  EXTENSIONAPI static constexpr auto Failure = core::RelationshipDefinition{"failure", "Only when using \"Commit from incoming flowfiles\" policy. Flowfiles that were malformed for commiting offsets are routed here."};
+
   EXTENSIONAPI static constexpr auto Relationships = std::array{Success};
 
   EXTENSIONAPI static constexpr bool SupportsDynamicProperties = true;
@@ -343,7 +346,7 @@ class ConsumeKafka final : public KafkaProcessorBase {
   std::optional<std::string> message_demarcator_;
 
   consume_kafka::MessageHeaderPolicyEnum duplicate_header_handling_ = consume_kafka::MessageHeaderPolicyEnum::KEEP_LATEST;
-  std::vector<std::string> headers_to_add_as_attributes_;
+  std::optional<std::vector<std::string>> headers_to_add_as_attributes_;
 
   uint32_t max_poll_records_{};
   std::chrono::milliseconds max_poll_time_milliseconds_{};

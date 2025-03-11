@@ -39,8 +39,6 @@ import binascii
 import humanfriendly
 import OpenSSL.crypto
 
-from confluent_kafka.admin import AdminClient, NewTopic
-from confluent_kafka import Producer
 import socket
 import os
 
@@ -49,6 +47,11 @@ import os
 @given("the content of \"{directory}\" is monitored")
 def step_impl(context, directory):
     context.test.add_file_system_observer(FileSystemObserver(context.directory_bindings.docker_path_to_local_path(directory)))
+
+
+@given("there is a \"{subdir}\" subdirectory in the monitored directory")
+def step_impl(context, subdir):
+    os.mkdir(context.test.file_system_observer.get_output_dir() + "/" + subdir)
 
 
 def __create_processor(context, processor_type, processor_name, property_name, property_value, container_name, engine='minifi-cpp'):
@@ -248,6 +251,12 @@ def step_impl(context, relationship, source_name, remote_process_group_name):
     input_port_node = context.test.generate_input_port_for_remote_process_group(remote_process_group, "to_nifi")
     context.test.add_node(input_port_node)
     source.out_proc.connect({relationship: input_port_node})
+
+
+@given("the \"{relationship}\" relationship of the {source_name} is auto terminated")
+@given("the \"{relationship}\" relationship of the {source_name} processor is auto terminated")
+def step_impl(context, relationship, source_name):
+    pass
 
 
 @given("the \"{relationship}\" relationship of the {source_name} is connected to the {destination_name}")
@@ -698,71 +707,60 @@ def step_impl(context, content, topic_name):
     container_name = context.test.get_container_name_with_postfix("kafka-broker")
     assert context.test.cluster.kafka_checker.produce_message(container_name, topic_name, content)
 
-
-@when("a message with content \"{content}\" is published to the \"{topic_name}\" topic using an ssl connection")
-def step_impl(context, content, topic_name):
-    ca_cert_file = tempfile.NamedTemporaryFile(delete=False)
-    ca_cert_file.write(OpenSSL.crypto.dump_certificate(type=OpenSSL.crypto.FILETYPE_PEM, cert=context.root_ca_cert))
-    ca_cert_file.close()
-    os.chmod(ca_cert_file.name, 0o644)
-
-    client_cert, client_key = make_client_cert(socket.gethostname(), context.root_ca_cert, context.root_ca_key)
-    client_cert_file = tempfile.NamedTemporaryFile(delete=False)
-    client_cert_file.write(OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, client_cert))
-    client_cert_file.close()
-    os.chmod(client_cert_file.name, 0o644)
-
-    client_key_file = tempfile.NamedTemporaryFile(delete=False)
-    client_key_file.write(OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, client_key))
-    client_key_file.close()
-    os.chmod(client_key_file.name, 0o644)
-
-    producer = Producer({
-        "bootstrap.servers": "localhost:29093",
-        "security.protocol": "SSL",
-        "ssl.ca.location": ca_cert_file.name,
-        "ssl.certificate.location": client_cert_file.name,
-        "ssl.key.location": client_key_file.name,
-        "ssl.key.password": "",
-        "client.id": socket.gethostname(),
-        "ssl.endpoint.identification.algorithm": "none"})
-    producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report)
-    producer.flush(10)
-
-
 # Used for testing transactional message consumption
 @when("the publisher performs a {transaction_type} transaction publishing to the \"{topic_name}\" topic these messages: {messages}")
 def step_impl(context, transaction_type, topic_name, messages):
-    producer = Producer({"bootstrap.servers": "localhost:29092", "transactional.id": "1001"})
-    producer.init_transactions()
-    logging.info("Transaction type: %s", transaction_type)
-    logging.info("Messages: %s", messages.split(", "))
     if transaction_type == "SINGLE_COMMITTED_TRANSACTION":
+        python_code = f"""
+        from confluent_kafka import Producer
+        
+        producer = Producer({"bootstrap.servers": "kafka-broker-{context.feature_id}:9092", "transactional.id": "1001"})
+        producer.init_transactions()
         producer.begin_transaction()
-        for content in messages.split(", "):
-            producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report)
+        for content in {messages}.split(", "):
+            producer.produce({topic_name}, content.encode("utf-8"), callback=delivery_report)
         producer.commit_transaction()
         producer.flush(10)
+        """
     elif transaction_type == "TWO_SEPARATE_TRANSACTIONS":
-        for content in messages.split(", "):
+        python_code = f"""
+        from confluent_kafka import Producer
+        
+        producer = Producer({"bootstrap.servers": "kafka-broker-{context.feature_id}:9092", "transactional.id": "1001"})
+        producer.init_transactions()
+        producer.begin_transaction()
+        for content in {messages}.split(", "):
             producer.begin_transaction()
-            producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report)
+            producer.produce({topic_name}, content.encode("utf-8"), callback=delivery_report)
             producer.commit_transaction()
         producer.flush(10)
+        """
     elif transaction_type == "NON_COMMITTED_TRANSACTION":
+        python_code = f"""
+        from confluent_kafka import Producer
+        
+        producer = Producer({"bootstrap.servers": "kafka-broker-{context.feature_id}:9092", "transactional.id": "1001"})
+        producer.init_transactions()
         producer.begin_transaction()
-        for content in messages.split(", "):
-            producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report)
+        for content in {messages}.split(", "):
+            producer.produce({topic_name}, content.encode("utf-8"), callback=delivery_report)
         producer.flush(10)
+        """
     elif transaction_type == "CANCELLED_TRANSACTION":
+        python_code = f"""
+        from confluent_kafka import Producer
+        
+        producer = Producer({"bootstrap.servers": "kafka-broker-{context.feature_id}:9092", "transactional.id": "1001"})
+        producer.init_transactions()
         producer.begin_transaction()
-        for content in messages.split(", "):
-            producer.produce(topic_name, content.encode("utf-8"), callback=delivery_report)
+        for content in {messages}.split(", "):
+            producer.produce({topic_name}, content.encode("utf-8"), callback=delivery_report)
         producer.flush(10)
         producer.abort_transaction()
+        """
     else:
         raise Exception("Unknown transaction type.")
-
+    assert context.test.cluster.kafka_checker.run_in_kafka_helper_docker(python_code)
 
 @when("a message with content \"{content}\" is published to the \"{topic_name}\" topic with key \"{message_key}\"")
 def step_impl(context, content, topic_name, message_key):
@@ -772,27 +770,39 @@ def step_impl(context, content, topic_name, message_key):
 
 @when("{number_of_messages} kafka messages are sent to the topic \"{topic_name}\"")
 def step_impl(context, number_of_messages, topic_name):
-    producer = Producer({"bootstrap.servers": "localhost:29092", "client.id": socket.gethostname()})
-    for i in range(0, int(number_of_messages)):
-        producer.produce(topic_name, str(uuid.uuid4()).encode("utf-8"))
+    python_code = f"""
+    from confluent_kafka import Producer
+    producer = Producer({"bootstrap.servers": "kafka-broker-{context.feature_id}:9092", "client.id": socket.gethostname()})
+    for i in range(0, int({number_of_messages})):
+        producer.produce({topic_name}, str(uuid.uuid4()).encode("utf-8"))
     producer.flush(10)
-
+    """
+    assert context.test.cluster.kafka_checker.run_in_kafka_helper_docker(python_code)
 
 @when("a message with content \"{content}\" is published to the \"{topic_name}\" topic with headers \"{semicolon_separated_headers}\"")
 def step_impl(context, content, topic_name, semicolon_separated_headers):
-    # Confluent kafka does not support multiple headers with same key, another API must be used here.
+    python_code = f"""
+    from confluent_kafka import Producer
     headers = []
-    for header in semicolon_separated_headers.split(";"):
+    for header in {semicolon_separated_headers}.split(";"):
         kv = header.split(":")
         headers.append((kv[0].strip(), kv[1].strip().encode("utf-8")))
-    producer = Producer({"bootstrap.servers": "localhost:29092"})
-    producer.produce(topic_name, content.encode("utf-8"), headers=headers)
+    producer = Producer({"bootstrap.servers": "kafka-broker-{context.feature_id}:9092"})
+    producer.produce({topic_name}, {content.encode("utf-8")}, headers=headers)
     producer.flush(10)
+    """
+    assert context.test.cluster.kafka_checker.run_in_kafka_helper_docker(python_code)
 
+@when("the Kafka consumer is reregistered in kafka broker")
+def step_impl(context):
+    context.test.wait_for_kafka_consumer_to_be_registered("kafka-broker", 2)
+    # After the consumer is registered there is still some time needed for consumer-broker synchronization
+    # Unfortunately there are no additional log messages that could be checked for this
+    time.sleep(2)
 
 @when("the Kafka consumer is registered in kafka broker")
 def step_impl(context):
-    context.test.wait_for_kafka_consumer_to_be_registered("kafka-broker")
+    context.test.wait_for_kafka_consumer_to_be_registered("kafka-broker", 1)
     # After the consumer is registered there is still some time needed for consumer-broker synchronization
     # Unfortunately there are no additional log messages that could be checked for this
     time.sleep(2)
@@ -865,10 +875,20 @@ def step_impl(context, duration):
     context.execute_steps(f"Then no files are placed in the monitored directory in {duration} of running time")
 
 
+@then("exactly these flowfiles are in the monitored directory's \"{subdir}\" subdirectory in less than {duration}: \"\"")
+def step_impl(context, duration, subdir):
+    context.test.check_for_no_files_generated_in_subdir(humanfriendly.parse_timespan(duration), subdir)
+
+
 @then("exactly these flowfiles are in the monitored directory in less than {duration}: \"{contents}\"")
 def step_impl(context, duration, contents):
     contents_arr = contents.split(",")
     context.test.check_for_multiple_files_generated(len(contents_arr), humanfriendly.parse_timespan(duration), contents_arr)
+
+@then("exactly these flowfiles are in the monitored directory's \"{subdir}\" subdirectory in less than {duration}: \"{contents}\"")
+def step_impl(context, duration, subdir, contents):
+    contents_arr = contents.split(",")
+    assert context.test.check_subdirectory(sub_directory=subdir, expected_contents=contents_arr, timeout=humanfriendly.parse_timespan(duration))
 
 
 @then("flowfiles with these contents are placed in the monitored directory in less than {duration}: \"{contents}\"")

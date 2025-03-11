@@ -14,219 +14,13 @@
 # limitations under the License.
 
 @ENABLE_KAFKA
-Feature: Sending data to using Kafka streaming platform using PublishKafka
+Feature: Receiving data from using Kafka streaming platform using ConsumeKafka
   In order to send data to a Kafka stream
   As a user of MiNiFi
-  I need to have PublishKafka processor
+  I need to have ConsumeKafka processor
 
   Background:
     Given the content of "/tmp/output" is monitored
-
-  Scenario Outline: A MiNiFi instance transfers data to a kafka broker
-    Given a GetFile processor with the "Input Directory" property set to "/tmp/input"
-    And a file with the content "test" is present in "/tmp/input"
-    And a UpdateAttribute processor
-    And these processor properties are set:
-      | processor name  | property name          | property value         |
-      | UpdateAttribute | kafka_require_num_acks | 1                      |
-      | UpdateAttribute | kafka_message_key      | unique_message_key_123 |
-    And a PublishKafka processor set up to communicate with a kafka broker instance
-    And these processor properties are set:
-      | processor name | property name      | property value                                       |
-      | PublishKafka   | Topic Name         | test                                                 |
-      | PublishKafka   | Delivery Guarantee | ${kafka_require_num_acks}                            |
-      | PublishKafka   | Request Timeout    | 12 s                                                 |
-      | PublishKafka   | Message Timeout    | 13 s                                                 |
-      | PublishKafka   | Known Brokers      | kafka-broker-${feature_id}:${literal(9000):plus(92)} |
-      | PublishKafka   | Client Name        | client_no_${literal(6):multiply(7)}                  |
-      | PublishKafka   | Kafka Key          | ${kafka_message_key}                                 |
-      | PublishKafka   | retry.backoff.ms   | ${literal(2):multiply(25):multiply(3)}               |
-      | PublishKafka   | Message Key Field  | kafka.key                                            |
-      | PublishKafka   | Compress Codec     | <compress_codec>                                     |
-    And a PutFile processor with the "Directory" property set to "/tmp/output"
-    And the "success" relationship of the GetFile processor is connected to the UpdateAttribute
-    And the "success" relationship of the UpdateAttribute processor is connected to the PublishKafka
-    And the "success" relationship of the PublishKafka processor is connected to the PutFile
-    And the "failure" relationship of the PublishKafka processor is connected to the PublishKafka
-
-    And a kafka broker is set up in correspondence with the PublishKafka
-
-    When both instances start up
-    Then a flowfile with the content "test" is placed in the monitored directory in less than 60 seconds
-    And the Minifi logs contain the following message: " is 'test'" in less than 60 seconds
-    And the Minifi logs contain the following message: "PublishKafka: request.required.acks [1]" in less than 10 seconds
-    And the Minifi logs contain the following message: "PublishKafka: request.timeout.ms [12000]" in less than 10 seconds
-    And the Minifi logs contain the following message: "PublishKafka: message.timeout.ms [13000]" in less than 10 seconds
-    And the Minifi logs contain the following message: "PublishKafka: bootstrap.servers [kafka-broker-${feature_id}:9092]" in less than 10 seconds
-    And the Minifi logs contain the following message: "PublishKafka: client.id [client_no_42]" in less than 10 seconds
-    And the Minifi logs contain the following message: "PublishKafka: Message Key [unique_message_key_123]" in less than 10 seconds
-    And the Minifi logs contain the following message: "PublishKafka: DynamicProperty: [retry.backoff.ms] -> [150]" in less than 10 seconds
-    And the Minifi logs contain the following message: "The Message Key Field property is set. This property is DEPRECATED and has no effect; please use Kafka Key instead." in less than 10 seconds
-
-    Examples: Compression formats
-      | compress_codec |
-      | none           |
-      | snappy         |
-      | gzip           |
-      | lz4            |
-      | zstd           |
-
-  Scenario: PublishKafka sends flowfiles to failure when the broker is not available
-    Given a GetFile processor with the "Input Directory" property set to "/tmp/input"
-    And a file with the content "no broker" is present in "/tmp/input"
-    And a PublishKafka processor set up to communicate with a kafka broker instance
-    And a PutFile processor with the "Directory" property set to "/tmp/output"
-    And the "success" relationship of the GetFile processor is connected to the PublishKafka
-    And the "failure" relationship of the PublishKafka processor is connected to the PutFile
-
-    When the MiNiFi instance starts up
-    Then a flowfile with the content "no broker" is placed in the monitored directory in less than 60 seconds
-
-  @WIP
-  Scenario: PublishKafka sends can use SSL connect with security properties
-    Given a GetFile processor with the "Input Directory" property set to "/tmp/input"
-    And a file with the content "test" is present in "/tmp/input"
-    And a PublishKafka processor set up to communicate with a kafka broker instance
-    And these processor properties are set:
-      | processor name | property name        | property value                   |
-      | PublishKafka   | Client Name          | LMN                              |
-      | PublishKafka   | Known Brokers        | kafka-broker-${feature_id}:9093  |
-      | PublishKafka   | Topic Name           | test                             |
-      | PublishKafka   | Batch Size           | 10                               |
-      | PublishKafka   | Compress Codec       | none                             |
-      | PublishKafka   | Delivery Guarantee   | 1                                |
-      | PublishKafka   | Request Timeout      | 10 sec                           |
-      | PublishKafka   | Message Timeout      | 12 sec                           |
-      | PublishKafka   | Security CA          | /tmp/resources/root_ca.crt       |
-      | PublishKafka   | Security Cert        | /tmp/resources/minifi_client.crt |
-      | PublishKafka   | Security Private Key | /tmp/resources/minifi_client.key |
-      | PublishKafka   | Security Protocol    | ssl                              |
-    And a PutFile processor with the "Directory" property set to "/tmp/output"
-    And the "success" relationship of the GetFile processor is connected to the PublishKafka
-    And the "success" relationship of the PublishKafka processor is connected to the PutFile
-    And the "failure" relationship of the PublishKafka processor is connected to the PublishKafka
-
-    And a kafka broker is set up in correspondence with the PublishKafka
-
-    When both instances start up
-    Then a flowfile with the content "test" is placed in the monitored directory in less than 60 seconds
-
-    # We fallback to the flowfile's uuid as message key if the Kafka Key property is not set
-    And the Minifi logs match the following regex: "PublishKafka: Message Key \[[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}\]" in less than 10 seconds
-
-  Scenario: A MiNiFi instance transfers data to a kafka broker through SASL Plain security protocol
-    Given a GetFile processor with the "Input Directory" property set to "/tmp/input"
-    And a file with the content "test" is present in "/tmp/input"
-    And a PublishKafka processor set up to communicate with a kafka broker instance
-    And these processor properties are set:
-      | processor name | property name     | property value                  |
-      | PublishKafka   | Topic Name        | test                            |
-      | PublishKafka   | Request Timeout   | 10 sec                          |
-      | PublishKafka   | Message Timeout   | 12 sec                          |
-      | PublishKafka   | Known Brokers     | kafka-broker-${feature_id}:9094 |
-      | PublishKafka   | Client Name       | LMN                             |
-      | PublishKafka   | Security Protocol | sasl_plaintext                  |
-      | PublishKafka   | SASL Mechanism    | PLAIN                           |
-      | PublishKafka   | Username          | alice                           |
-      | PublishKafka   | Password          | alice-secret                    |
-    And a PutFile processor with the "Directory" property set to "/tmp/output"
-    And the "success" relationship of the GetFile processor is connected to the PublishKafka
-    And the "success" relationship of the PublishKafka processor is connected to the PutFile
-    And the "failure" relationship of the PublishKafka processor is connected to the PublishKafka
-
-    And a kafka broker is set up in correspondence with the PublishKafka
-
-    When both instances start up
-    Then a flowfile with the content "test" is placed in the monitored directory in less than 60 seconds
-
-  Scenario: PublishKafka sends can use SASL SSL connect with security properties
-    Given a GetFile processor with the "Input Directory" property set to "/tmp/input"
-    And a file with the content "test" is present in "/tmp/input"
-    And a PublishKafka processor set up to communicate with a kafka broker instance
-    And these processor properties are set:
-      | processor name | property name        | property value                   |
-      | PublishKafka   | Client Name          | LMN                              |
-      | PublishKafka   | Known Brokers        | kafka-broker-${feature_id}:9095  |
-      | PublishKafka   | Topic Name           | test                             |
-      | PublishKafka   | Batch Size           | 10                               |
-      | PublishKafka   | Compress Codec       | none                             |
-      | PublishKafka   | Delivery Guarantee   | 1                                |
-      | PublishKafka   | Request Timeout      | 10 sec                           |
-      | PublishKafka   | Message Timeout      | 12 sec                           |
-      | PublishKafka   | Security CA          | /tmp/resources/root_ca.crt       |
-      | PublishKafka   | Security Cert        | /tmp/resources/minifi_client.crt |
-      | PublishKafka   | Security Private Key | /tmp/resources/minifi_client.key |
-      | PublishKafka   | Security Protocol    | sasl_ssl                         |
-      | PublishKafka   | SASL Mechanism       | PLAIN                            |
-      | PublishKafka   | Username             | alice                            |
-      | PublishKafka   | Password             | alice-secret                     |
-    And a PutFile processor with the "Directory" property set to "/tmp/output"
-    And the "success" relationship of the GetFile processor is connected to the PublishKafka
-    And the "success" relationship of the PublishKafka processor is connected to the PutFile
-    And the "failure" relationship of the PublishKafka processor is connected to the PublishKafka
-
-    And a kafka broker is set up in correspondence with the PublishKafka
-
-    When both instances start up
-    Then a flowfile with the content "test" is placed in the monitored directory in less than 60 seconds
-
-  Scenario: PublishKafka sends can use SASL SSL connect with SSL Context
-    Given a GetFile processor with the "Input Directory" property set to "/tmp/input"
-    And a file with the content "test" is present in "/tmp/input"
-    And a PublishKafka processor set up to communicate with a kafka broker instance
-    And these processor properties are set:
-      | processor name | property name      | property value                  |
-      | PublishKafka   | Client Name        | LMN                             |
-      | PublishKafka   | Known Brokers      | kafka-broker-${feature_id}:9095 |
-      | PublishKafka   | Topic Name         | test                            |
-      | PublishKafka   | Batch Size         | 10                              |
-      | PublishKafka   | Compress Codec     | none                            |
-      | PublishKafka   | Delivery Guarantee | 1                               |
-      | PublishKafka   | Request Timeout    | 10 sec                          |
-      | PublishKafka   | Message Timeout    | 12 sec                          |
-      | PublishKafka   | Security Protocol  | sasl_ssl                        |
-      | PublishKafka   | SASL Mechanism     | PLAIN                           |
-      | PublishKafka   | Username           | alice                           |
-      | PublishKafka   | Password           | alice-secret                    |
-    And a PutFile processor with the "Directory" property set to "/tmp/output"
-    And an ssl context service is set up for PublishKafka
-    And the "success" relationship of the GetFile processor is connected to the PublishKafka
-    And the "success" relationship of the PublishKafka processor is connected to the PutFile
-    And the "failure" relationship of the PublishKafka processor is connected to the PublishKafka
-
-    And a kafka broker is set up in correspondence with the PublishKafka
-
-    When both instances start up
-    Then a flowfile with the content "test" is placed in the monitored directory in less than 60 seconds
-
-  Scenario: PublishKafka sends can use SSL connect with SSL Context Service
-    Given a GetFile processor with the "Input Directory" property set to "/tmp/input"
-    And a file with the content "test" is present in "/tmp/input"
-    And a PublishKafka processor set up to communicate with a kafka broker instance
-    And these processor properties are set:
-      | processor name | property name      | property value                  |
-      | PublishKafka   | Client Name        | LMN                             |
-      | PublishKafka   | Known Brokers      | kafka-broker-${feature_id}:9093 |
-      | PublishKafka   | Topic Name         | test                            |
-      | PublishKafka   | Batch Size         | 10                              |
-      | PublishKafka   | Compress Codec     | none                            |
-      | PublishKafka   | Delivery Guarantee | 1                               |
-      | PublishKafka   | Request Timeout    | 10 sec                          |
-      | PublishKafka   | Message Timeout    | 12 sec                          |
-      | PublishKafka   | Security Protocol  | ssl                             |
-    And a PutFile processor with the "Directory" property set to "/tmp/output"
-    And an ssl context service is set up for PublishKafka
-    And the "success" relationship of the GetFile processor is connected to the PublishKafka
-    And the "success" relationship of the PublishKafka processor is connected to the PutFile
-    And the "failure" relationship of the PublishKafka processor is connected to the PublishKafka
-
-    And a kafka broker is set up in correspondence with the PublishKafka
-
-    When both instances start up
-    Then a flowfile with the content "test" is placed in the monitored directory in less than 60 seconds
-
-    # We fallback to the flowfile's uuid as message key if the Kafka Key property is not set
-    And the Minifi logs match the following regex: "PublishKafka: Message Key \[[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}\]" in less than 10 seconds
 
   Scenario: MiNiFi consumes data from a kafka topic
     Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
@@ -373,12 +167,14 @@ Feature: Sending data to using Kafka streaming platform using PublishKafka
     And the "success" relationship of the ConsumeKafka processor is connected to the PutFile
 
     And a kafka broker is set up in correspondence with the third-party kafka publisher
+    And the kafka broker is started
+    And the topic "ConsumeKafkaTest" is initialized on the kafka broker
 
     When all instances start up
     And a message with content "Barbapapa" is published to the "ConsumeKafkaTest" topic
     And a message with content "Anette Tison and Talus Taylor" is published to the "ConsumeKafkaTest" topic
 
-    Then a flowfile with the content "Barbapapa, Anette Tison and Talus Taylor" is placed in the monitored directory in less than 45 seconds:
+    Then a flowfile with the content "Barbapapa,Anette Tison and Talus Taylor" is placed in the monitored directory in less than 45 seconds
 
   Scenario Outline: The ConsumeKafka "Maximum Poll Records" property sets a limit on the messages processed in a single batch
     Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
@@ -418,8 +214,8 @@ Feature: Sending data to using Kafka streaming platform using PublishKafka
     And a kafka broker is set up in correspondence with the publisher flow
 
     When all instances start up
-    And a message with content "Alice's Adventures in Wonderland" is published to the "ConsumeKafkaTest" topic using an ssl connection
-    And a message with content "Lewis Carroll" is published to the "ConsumeKafkaTest" topic using an ssl connection
+    And a message with content "Alice's Adventures in Wonderland" is published to the "ConsumeKafkaTest" topic
+    And a message with content "Lewis Carroll" is published to the "ConsumeKafkaTest" topic
 
     Then two flowfiles with the contents "Alice's Adventures in Wonderland" and "Lewis Carroll" are placed in the monitored directory in less than 60 seconds
 
@@ -439,8 +235,8 @@ Feature: Sending data to using Kafka streaming platform using PublishKafka
     And a kafka broker is set up in correspondence with the publisher flow
 
     When all instances start up
-    And a message with content "Alice's Adventures in Wonderland" is published to the "ConsumeKafkaTest" topic using an ssl connection
-    And a message with content "Lewis Carroll" is published to the "ConsumeKafkaTest" topic using an ssl connection
+    And a message with content "Alice's Adventures in Wonderland" is published to the "ConsumeKafkaTest" topic
+    And a message with content "Lewis Carroll" is published to the "ConsumeKafkaTest" topic
 
     Then two flowfiles with the contents "Alice's Adventures in Wonderland" and "Lewis Carroll" are placed in the monitored directory in less than 60 seconds
 
@@ -463,7 +259,7 @@ Feature: Sending data to using Kafka streaming platform using PublishKafka
 
     Then at least one flowfile with the content "some test message" is placed in the monitored directory in less than 60 seconds
 
-  Scenario Outline: MiNiFi commit policy tests
+  Scenario Outline: MiNiFi commit policy tests without incoming flowfiles
     Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
     And the "Topic Names" property of the ConsumeKafka processor is set to "ConsumeKafkaTest"
     And the "Commit Offsets Policy" property of the ConsumeKafka processor is set to "<commit_policy>"
@@ -493,19 +289,65 @@ Feature: Sending data to using Kafka streaming platform using PublishKafka
     Then exactly these flowfiles are in the monitored directory in less than 10 seconds: "<contents_after_cladius>"
 
     When "kafka-consumer-flow" flow is restarted
-    And the Kafka consumer is registered in kafka broker
+    And the Kafka consumer is reregistered in kafka broker
     And a message with content "Nero" is published to the "ConsumeKafkaTest" topic
-    Then exactly these flowfiles are in the monitored directory in less than 100 seconds: "<contents_after_nero>"
+    Then exactly these flowfiles are in the monitored directory in less than 10 seconds: "<contents_after_nero>"
+
 
     Examples: No Commit
-      | commit_policy      | offset_reset | contents_after_augustus | contents_after_tiberius | contents_after_caligula | contents_after_cladius | contents_after_nero                                        |
-      | No Commit          | latest       |                         | Tiberius                | Tiberius                | Tiberius               | Tiberius,Nero                                              |
-      | No Commit          | earliest     | Augustus                | Augustus,Tiberius       | Augustus,Tiberius       | Augustus,Tiberius      | Augustus,Tiberius,Augustus,Tiberius,Caligula,Claudius,Nero |
-    Examples: Auto Commit
-      | commit_policy      | offset_reset | contents_after_augustus | contents_after_tiberius | contents_after_caligula | contents_after_cladius | contents_after_nero                                        |
-      | Auto Commit        | latest       |                         | Tiberius                | Tiberius                | Tiberius               | Tiberius,Caligula,Claudius,Nero                            |
-      | Auto Commit        | earliest     | Augustus                | Augustus,Tiberius       | Augustus,Tiberius       | Augustus,Tiberius      | Augustus,Tiberius,Caligula,Claudius,Nero                   |
+      | commit_policy | offset_reset | contents_after_augustus | contents_after_tiberius | contents_after_caligula | contents_after_cladius | contents_after_nero                                        |
+      | No Commit     | latest       |                         | Tiberius                | Tiberius                | Tiberius               | Tiberius,Nero                                              |
+      | No Commit     | earliest     | Augustus                | Augustus,Tiberius       | Augustus,Tiberius       | Augustus,Tiberius      | Augustus,Tiberius,Augustus,Tiberius,Caligula,Claudius,Nero |
     Examples: Commit After Batch
-      | commit_policy      | offset_reset | contents_after_augustus | contents_after_tiberius | contents_after_caligula | contents_after_cladius | contents_after_nero                                        |
-      | Commit After Batch | latest       |                         | Tiberius                | Tiberius                | Tiberius               | Tiberius,Caligula,Claudius,Nero                            |
-      | Commit After Batch | earliest     | Augustus                | Augustus,Tiberius       | Augustus,Tiberius       | Augustus,Tiberius      | Augustus,Tiberius,Caligula,Claudius,Nero                   |
+      | commit_policy      | offset_reset | contents_after_augustus | contents_after_tiberius | contents_after_caligula | contents_after_cladius | contents_after_nero                      |
+      | Commit After Batch | latest       |                         | Tiberius                | Tiberius                | Tiberius               | Tiberius,Caligula,Claudius,Nero          |
+      | Commit After Batch | earliest     | Augustus                | Augustus,Tiberius       | Augustus,Tiberius       | Augustus,Tiberius      | Augustus,Tiberius,Caligula,Claudius,Nero |
+    Examples: Commit from FlowFiles (without incoming flowfiles)
+      | commit_policy                  | offset_reset | contents_after_augustus | contents_after_tiberius | contents_after_caligula | contents_after_cladius | contents_after_nero                                        |
+      | Commit from incoming flowfiles | latest       |                         | Tiberius                | Tiberius                | Tiberius               | Tiberius,Nero                                              |
+      | Commit from incoming flowfiles | earliest     | Augustus                | Augustus,Tiberius       | Augustus,Tiberius       | Augustus,Tiberius      | Augustus,Tiberius,Augustus,Tiberius,Caligula,Claudius,Nero |
+
+  @WIP
+  Scenario Outline: MiNiFi commit policy tests
+    Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
+    And there is a "processed" subdirectory in the monitored directory
+    And there is a "commited" subdirectory in the monitored directory
+    And the "Topic Names" property of the ConsumeKafka processor is set to "ConsumeKafkaTest"
+    And the "Commit Offsets Policy" property of the ConsumeKafka processor is set to "<commit_policy>"
+    And the "Offset Reset" property of the ConsumeKafka processor is set to "<offset_reset>"
+    And the "Security Protocol" property of the ConsumeKafka processor is set to "plaintext"
+    And the "SASL Mechanism" property of the ConsumeKafka processor is set to "PLAIN"
+    And a PutFile processor with the name "Consumed" and the "Directory" property set to "/tmp/output/processed" in the "kafka-consumer-flow" flow
+    And a PutFile processor with the name "Commited" and the "Directory" property set to "/tmp/output/commited" in the "kafka-consumer-flow" flow
+    And the "success" relationship of the ConsumeKafka processor is connected to the Consumed
+    And the "success" relationship of the Consumed processor is connected to the ConsumeKafka
+    And the "success" relationship of the ConsumeKafka processor is connected to the Commited
+
+    And a kafka broker is set up in correspondence with the third-party kafka publisher
+    And the kafka broker is started
+    And the topic "ConsumeKafkaTest" is initialized on the kafka broker
+
+    When a message with content "Augustus" is published to the "ConsumeKafkaTest" topic
+    And all other processes start up
+    And the Kafka consumer is registered in kafka broker
+    Then exactly these flowfiles are in the monitored directory's "processed" subdirectory in less than 15 seconds: "<contents_after_augustus>"
+
+    When a message with content "Tiberius" is published to the "ConsumeKafkaTest" topic
+    Then exactly these flowfiles are in the monitored directory's "processed" subdirectory in less than 15 seconds: "<contents_after_tiberius>"
+    And exactly these flowfiles are in the monitored directory's "commited" subdirectory in less than 15 seconds: "<contents_after_tiberius>"
+
+    When a message with content "Caligula" is published to the "ConsumeKafkaTest" topic
+    Then exactly these flowfiles are in the monitored directory's "processed" subdirectory in less than 15 seconds: "<contents_after_caligula>"
+
+    When a message with content "Claudius" is published to the "ConsumeKafkaTest" topic
+    Then exactly these flowfiles are in the monitored directory's "processed" subdirectory in less than 15 seconds: "<contents_after_cladius>"
+
+    When "kafka-consumer-flow" flow is restarted
+    And the Kafka consumer is reregistered in kafka broker
+    And a message with content "Nero" is published to the "ConsumeKafkaTest" topic
+    Then exactly these flowfiles are in the monitored directory's "processed" subdirectory in less than 15 seconds: "<contents_after_nero>"
+
+    Examples: Commit from FlowFiles (with incoming flowfiles)
+      | commit_policy                  | offset_reset | contents_after_augustus | contents_after_tiberius | contents_after_caligula | contents_after_cladius | contents_after_nero                      |
+      | Commit from incoming flowfiles | latest       |                         | Tiberius                | Tiberius                | Tiberius               | Tiberius,Caligula,Claudius,Nero          |
+      | Commit from incoming flowfiles | earliest     | Augustus                | Augustus,Tiberius       | Augustus,Tiberius       | Augustus,Tiberius      | Augustus,Tiberius,Caligula,Claudius,Nero |
