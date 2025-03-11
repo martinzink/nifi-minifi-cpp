@@ -129,6 +129,7 @@ Feature: Receiving data from using Kafka streaming platform using ConsumeKafka
       | Operation Dark Heart              | CANCELLED_TRANSACTION        | true               | 0                            |
       | Brexit                            | CANCELLED_TRANSACTION        | false              | 1                            |
 
+
   Scenario Outline: Headers on consumed kafka messages are extracted into attributes if requested on ConsumeKafka
     Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
     And the "Headers To Add As Attributes" property of the ConsumeKafka processor is set to "<headers to add as attributes>"
@@ -214,11 +215,12 @@ Feature: Receiving data from using Kafka streaming platform using ConsumeKafka
     And a kafka broker is set up in correspondence with the publisher flow
 
     When all instances start up
-    And a message with content "Alice's Adventures in Wonderland" is published to the "ConsumeKafkaTest" topic
+    And a message with content "Through the Looking-Glass" is published to the "ConsumeKafkaTest" topic
     And a message with content "Lewis Carroll" is published to the "ConsumeKafkaTest" topic
 
-    Then two flowfiles with the contents "Alice's Adventures in Wonderland" and "Lewis Carroll" are placed in the monitored directory in less than 60 seconds
+    Then two flowfiles with the contents "Through the Looking-Glass" and "Lewis Carroll" are placed in the monitored directory in less than 60 seconds
 
+  @WIP
   Scenario: ConsumeKafka receives data via SASL SSL
     Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
     And these processor properties are set:
@@ -235,10 +237,10 @@ Feature: Receiving data from using Kafka streaming platform using ConsumeKafka
     And a kafka broker is set up in correspondence with the publisher flow
 
     When all instances start up
-    And a message with content "Alice's Adventures in Wonderland" is published to the "ConsumeKafkaTest" topic
+    And a message with content "Through the Looking-Glass" is published to the "ConsumeKafkaTest" topic
     And a message with content "Lewis Carroll" is published to the "ConsumeKafkaTest" topic
 
-    Then two flowfiles with the contents "Alice's Adventures in Wonderland" and "Lewis Carroll" are placed in the monitored directory in less than 60 seconds
+    Then two flowfiles with the contents "Through the Looking-Glass" and "Lewis Carroll" are placed in the monitored directory in less than 60 seconds
 
   Scenario: MiNiFi consumes data from a kafka topic via SASL PLAIN connection
     Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
@@ -307,8 +309,8 @@ Feature: Receiving data from using Kafka streaming platform using ConsumeKafka
       | Commit from incoming flowfiles | latest       |                         | Tiberius                | Tiberius                | Tiberius               | Tiberius,Nero                                              |
       | Commit from incoming flowfiles | earliest     | Augustus                | Augustus,Tiberius       | Augustus,Tiberius       | Augustus,Tiberius      | Augustus,Tiberius,Augustus,Tiberius,Caligula,Claudius,Nero |
 
-  @WIP
-  Scenario Outline: MiNiFi commit policy tests
+
+  Scenario Outline: MiNiFi commit policy tests with incoming flowfiles
     Given a ConsumeKafka processor set up in a "kafka-consumer-flow" flow
     And there is a "processed" subdirectory in the monitored directory
     And there is a "commited" subdirectory in the monitored directory

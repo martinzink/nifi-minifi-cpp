@@ -57,7 +57,7 @@ class DockerTestCluster:
         self.minifi_controller_executor = MinifiControllerExecutor(self.container_communicator)
         self.modbus_checker = ModbusChecker(self.container_communicator)
         self.couchbase_checker = CouchbaseChecker()
-        self.kafka_checker = KafkaHelper(self.container_communicator)
+        self.kafka_checker = KafkaHelper(self.container_communicator, feature_id)
 
     def cleanup(self):
         self.container_store.cleanup()

@@ -253,12 +253,6 @@ def step_impl(context, relationship, source_name, remote_process_group_name):
     source.out_proc.connect({relationship: input_port_node})
 
 
-@given("the \"{relationship}\" relationship of the {source_name} is auto terminated")
-@given("the \"{relationship}\" relationship of the {source_name} processor is auto terminated")
-def step_impl(context, relationship, source_name):
-    pass
-
-
 @given("the \"{relationship}\" relationship of the {source_name} is connected to the {destination_name}")
 @given("the \"{relationship}\" relationship of the {source_name} processor is connected to the {destination_name}")
 def step_impl(context, relationship, source_name, destination_name):
@@ -712,55 +706,54 @@ def step_impl(context, content, topic_name):
 def step_impl(context, transaction_type, topic_name, messages):
     if transaction_type == "SINGLE_COMMITTED_TRANSACTION":
         python_code = f"""
-        from confluent_kafka import Producer
-        
-        producer = Producer({"bootstrap.servers": "kafka-broker-{context.feature_id}:9092", "transactional.id": "1001"})
-        producer.init_transactions()
-        producer.begin_transaction()
-        for content in {messages}.split(", "):
-            producer.produce({topic_name}, content.encode("utf-8"), callback=delivery_report)
-        producer.commit_transaction()
-        producer.flush(10)
+from confluent_kafka import Producer
+
+producer = Producer({{"bootstrap.servers": "kafka-broker-{context.feature_id}:9092", "transactional.id": "1001"}})
+producer.init_transactions()
+producer.begin_transaction()
+for content in "{messages}".split(", "):
+    producer.produce("{topic_name}", content.encode("utf-8"))
+producer.commit_transaction()
+producer.flush(10)
         """
     elif transaction_type == "TWO_SEPARATE_TRANSACTIONS":
         python_code = f"""
-        from confluent_kafka import Producer
-        
-        producer = Producer({"bootstrap.servers": "kafka-broker-{context.feature_id}:9092", "transactional.id": "1001"})
-        producer.init_transactions()
-        producer.begin_transaction()
-        for content in {messages}.split(", "):
-            producer.begin_transaction()
-            producer.produce({topic_name}, content.encode("utf-8"), callback=delivery_report)
-            producer.commit_transaction()
-        producer.flush(10)
+from confluent_kafka import Producer
+
+producer = Producer({{"bootstrap.servers": "kafka-broker-{context.feature_id}:9092", "transactional.id": "1001"}})
+producer.init_transactions()
+for content in "{messages}".split(", "):
+    producer.begin_transaction()
+    producer.produce("{topic_name}", content.encode("utf-8"))
+    producer.commit_transaction()
+producer.flush(10)
         """
     elif transaction_type == "NON_COMMITTED_TRANSACTION":
         python_code = f"""
-        from confluent_kafka import Producer
-        
-        producer = Producer({"bootstrap.servers": "kafka-broker-{context.feature_id}:9092", "transactional.id": "1001"})
-        producer.init_transactions()
-        producer.begin_transaction()
-        for content in {messages}.split(", "):
-            producer.produce({topic_name}, content.encode("utf-8"), callback=delivery_report)
-        producer.flush(10)
+from confluent_kafka import Producer
+
+producer = Producer({{"bootstrap.servers": "kafka-broker-{context.feature_id}:9092", "transactional.id": "1001"}})
+producer.init_transactions()
+producer.begin_transaction()
+for content in "{messages}".split(", "):
+    producer.produce("{topic_name}", content.encode("utf-8"))
+producer.flush(10)
         """
     elif transaction_type == "CANCELLED_TRANSACTION":
         python_code = f"""
-        from confluent_kafka import Producer
-        
-        producer = Producer({"bootstrap.servers": "kafka-broker-{context.feature_id}:9092", "transactional.id": "1001"})
-        producer.init_transactions()
-        producer.begin_transaction()
-        for content in {messages}.split(", "):
-            producer.produce({topic_name}, content.encode("utf-8"), callback=delivery_report)
-        producer.flush(10)
-        producer.abort_transaction()
+from confluent_kafka import Producer
+
+producer = Producer({{"bootstrap.servers": "kafka-broker-{context.feature_id}:9092", "transactional.id": "1001"}})
+producer.init_transactions()
+producer.begin_transaction()
+for content in "{messages}".split(", "):
+    producer.produce("{topic_name}", content.encode("utf-8"))
+producer.flush(10)
+producer.abort_transaction()
         """
     else:
         raise Exception("Unknown transaction type.")
-    assert context.test.cluster.kafka_checker.run_in_kafka_helper_docker(python_code)
+    assert context.test.cluster.kafka_checker.run_python_in_kafka_helper_docker(python_code)
 
 @when("a message with content \"{content}\" is published to the \"{topic_name}\" topic with key \"{message_key}\"")
 def step_impl(context, content, topic_name, message_key):
@@ -771,27 +764,28 @@ def step_impl(context, content, topic_name, message_key):
 @when("{number_of_messages} kafka messages are sent to the topic \"{topic_name}\"")
 def step_impl(context, number_of_messages, topic_name):
     python_code = f"""
-    from confluent_kafka import Producer
-    producer = Producer({"bootstrap.servers": "kafka-broker-{context.feature_id}:9092", "client.id": socket.gethostname()})
-    for i in range(0, int({number_of_messages})):
-        producer.produce({topic_name}, str(uuid.uuid4()).encode("utf-8"))
-    producer.flush(10)
+from confluent_kafka import Producer
+import uuid
+producer = Producer({{"bootstrap.servers": "kafka-broker-{context.feature_id}:9092"}})
+for i in range(0, int({number_of_messages})):
+    producer.produce("{topic_name}", str(uuid.uuid4()).encode("utf-8"))
+producer.flush(10)
     """
-    assert context.test.cluster.kafka_checker.run_in_kafka_helper_docker(python_code)
+    assert context.test.cluster.kafka_checker.run_python_in_kafka_helper_docker(python_code) or context.test.cluster.log_app_output()
 
 @when("a message with content \"{content}\" is published to the \"{topic_name}\" topic with headers \"{semicolon_separated_headers}\"")
 def step_impl(context, content, topic_name, semicolon_separated_headers):
     python_code = f"""
-    from confluent_kafka import Producer
-    headers = []
-    for header in {semicolon_separated_headers}.split(";"):
-        kv = header.split(":")
-        headers.append((kv[0].strip(), kv[1].strip().encode("utf-8")))
-    producer = Producer({"bootstrap.servers": "kafka-broker-{context.feature_id}:9092"})
-    producer.produce({topic_name}, {content.encode("utf-8")}, headers=headers)
-    producer.flush(10)
+from confluent_kafka import Producer
+headers = []
+for header in "{semicolon_separated_headers}".split(";"):
+    kv = header.split(":")
+    headers.append((kv[0].strip(), kv[1].strip().encode("utf-8")))
+producer = Producer({{"bootstrap.servers": "kafka-broker-{context.feature_id}:9092"}})
+producer.produce("{topic_name}", "{content}".encode("utf-8"), headers=headers)
+producer.flush(10)
     """
-    assert context.test.cluster.kafka_checker.run_in_kafka_helper_docker(python_code)
+    assert context.test.cluster.kafka_checker.run_python_in_kafka_helper_docker(python_code) or context.test.cluster.log_app_output()
 
 @when("the Kafka consumer is reregistered in kafka broker")
 def step_impl(context):

@@ -22,8 +22,9 @@ import docker
 
 
 class KafkaHelper:
-    def __init__(self, container_communicator):
+    def __init__(self, container_communicator, feature_id):
         self.container_communicator = container_communicator
+        self.feature_id = feature_id
 
     def create_topic(self, container_name: str, topic_name: str):
         logging.info(f"Creating topic {topic_name} in {container_name}")
@@ -37,9 +38,9 @@ class KafkaHelper:
         logging.info(output)
         return code == 0
 
-    def run_in_kafka_helper_docker(self, command: str):
+    def run_python_in_kafka_helper_docker(self, command: str):
         try:
-            self.container_communicator.clientclient.images.get("kafka-helper")
+            self.container_communicator.client.images.get("kafka-helper")
         except docker.errors.ImageNotFound:
             dockerfile_content = f"""
             FROM python:3.13-slim-bookworm
@@ -48,4 +49,6 @@ class KafkaHelper:
             dockerfile_stream = io.BytesIO(dockerfile_content.encode("utf-8"))
             image, _ = self.container_communicator.client.images.build(fileobj=dockerfile_stream, tag="kafka-helper")
 
-        self.container_communicator.client.containers.run("kafka-helper", command, remove=True, stdout=True, stderr=True)
+        output = self.container_communicator.client.containers.run("kafka-helper", ["python", "-c", command], remove=True, stdout=True, stderr=True, network=f"minifi_integration_test_network-{self.feature_id}")
+        logging.info(output)
+        return True
