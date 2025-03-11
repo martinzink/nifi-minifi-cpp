@@ -321,7 +321,7 @@ Feature: Receiving data from using Kafka streaming platform using ConsumeKafka
     And a PutFile processor with the name "Commited" and the "Directory" property set to "/tmp/output/commited" in the "kafka-consumer-flow" flow
     And the "success" relationship of the ConsumeKafka processor is connected to the Consumed
     And the "success" relationship of the Consumed processor is connected to the ConsumeKafka
-    And the "success" relationship of the ConsumeKafka processor is connected to the Commited
+    And the "commited" relationship of the ConsumeKafka processor is connected to the Commited
 
     And a kafka broker is set up in correspondence with the third-party kafka publisher
     And the kafka broker is started

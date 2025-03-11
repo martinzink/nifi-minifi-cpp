@@ -236,7 +236,7 @@ std::unordered_map<ConsumeKafka::KafkaMessageLocation, ConsumeKafka::MessageBund
     const std::string_view topic_name = rd_kafka_topic_name(message->rkt);
     const int32_t partition = message->partition;
 
-    message_bundles[KafkaMessageLocation{topic_name, partition}].pushBack(std::move(message));
+    message_bundles[KafkaMessageLocation{std::string(topic_name), partition}].pushBack(std::move(message));
     elapsed = std::chrono::steady_clock::now() - start;
     ++message_count;
   }
@@ -352,8 +352,8 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession& sess
     }
     logger_->log_debug("From flowfile {} {} {}", offset, topic_name, partition);
 
-    const int64_t curr_offset = max_offsets[KafkaMessageLocation{*topic_name, *partition}];
-    max_offsets[KafkaMessageLocation{*topic_name, *partition}] = std::max(curr_offset, *offset);
+    int64_t& curr_offset = max_offsets[KafkaMessageLocation{std::move(*topic_name), *partition}];
+    curr_offset = std::max(curr_offset, *offset);
   }
 
   const auto partitions = utils::rd_kafka_topic_partition_list_unique_ptr{rd_kafka_topic_partition_list_new(gsl::narrow<int>(max_offsets.size()))};

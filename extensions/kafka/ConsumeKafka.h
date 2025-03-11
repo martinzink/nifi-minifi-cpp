@@ -298,7 +298,7 @@ class ConsumeKafka final : public KafkaProcessorBase {
 
  private:
   struct KafkaMessageLocation {
-    std::string_view topic;
+    std::string topic;
     int32_t partition;
     auto operator<=>(const KafkaMessageLocation&) const = default;
   };
