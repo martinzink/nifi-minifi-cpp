@@ -18,7 +18,6 @@ from .containers.MinifiContainer import MinifiOptions
 from .containers.MinifiContainer import MinifiContainer
 from .containers.NifiContainer import NifiContainer
 from .containers.NifiContainer import NiFiOptions
-from .containers.ZookeeperContainer import ZookeeperContainer
 from .containers.KafkaBrokerContainer import KafkaBrokerContainer
 from .containers.S3ServerContainer import S3ServerContainer
 from .containers.AzureStorageServerContainer import AzureStorageServerContainer

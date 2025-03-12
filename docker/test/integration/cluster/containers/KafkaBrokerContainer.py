@@ -16,7 +16,6 @@
 
 import logging
 import tempfile
-import os
 import docker.types
 import jks
 from OpenSSL import crypto
@@ -68,8 +67,6 @@ Client {
 """)
             self.jaas_config_file_path = jaas_config_file.name
 
-
-
     def get_startup_finished_log_entry(self):
         return "Kafka Server started"
 
@@ -106,11 +103,11 @@ Client {
                 "KAFKA_CFG_LOG4J_ROOT_LOGLEVEL=DEBUG",
                 "KAFKA_CFG_LOG4J_LOGGERS=kafka.controller=DEBUG,kafka.server.KafkaApis=DEBUG",
 
-                f"KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,"
-                f"SASL_PLAINTEXT:SASL_PLAINTEXT,"
-                f"SSL:SSL,"
-                f"SASL_SSL:SASL_SSL,"
-                f"CONTROLLER:PLAINTEXT",
+                "KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,"
+                "SASL_PLAINTEXT:SASL_PLAINTEXT,"
+                "SSL:SSL,"
+                "SASL_SSL:SASL_SSL,"
+                "CONTROLLER:PLAINTEXT",
 
                 # **If using SASL_PLAINTEXT, provide JAAS config**
                 'KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL=PLAIN',

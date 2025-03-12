@@ -280,7 +280,6 @@ class DockerTestCluster:
         kafka_container_name = self.container_store.get_container_name_with_postfix(kafka_container_name)
         return self.wait_for_app_logs_regex(kafka_container_name, "Assignment received from leader.*for group docker_test_group.*Assignment received from leader.*for group docker_test_group.", 60)
 
-
     def wait_for_metric_class_on_prometheus(self, metric_class, timeout_seconds):
         return self.prometheus_checker.wait_for_metric_class_on_prometheus(metric_class, timeout_seconds)
 

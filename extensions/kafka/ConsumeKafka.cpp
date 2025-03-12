@@ -66,7 +66,7 @@ void ConsumeKafka::onSchedule(core::ProcessContext &context, core::ProcessSessio
   // Optional properties
   message_demarcator_ = utils::parseOptionalProperty(context, MessageDemarcator);
   headers_to_add_as_attributes_ = parseOptionalProperty(context, HeadersToAddAsAttributes)
-      | utils::transform([](std::string headers_to_add_str) { return utils::string::splitAndTrim(headers_to_add_str, ","); });
+      | utils::transform([](const std::string& headers_to_add_str) { return utils::string::splitAndTrim(headers_to_add_str, ","); });
   if (message_demarcator_ && headers_to_add_as_attributes_) {
     logger_->log_error("Message merging with header extraction is not yet supported");
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Message merging with header extraction is not yet supported");
@@ -336,7 +336,7 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession& sess
 
   std::unordered_map<KafkaMessageLocation, int64_t> max_offsets;
   for (auto& [flow_file, relationship]: std::ranges::reverse_view(flow_files)) {
-    const auto topic_name = flow_file->getAttribute(KafkaTopicAttribute.name);
+    auto topic_name = flow_file->getAttribute(KafkaTopicAttribute.name);
     const auto offset = flow_file->getAttribute(KafkaOffsetAttribute.name) |
         utils::toExpected(make_error_code(core::AttributeErrorCode::MissingAttribute)) | utils::andThen(parsing::parseIntegral<int64_t>);
     const auto partition = flow_file->getAttribute(KafkaPartitionAttribute.name) |
@@ -351,7 +351,7 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession& sess
           partition);
       relationship = Failure;
     }
-    int64_t& curr_offset = max_offsets[KafkaMessageLocation{std::move(*topic_name), *partition}];
+    int64_t& curr_offset = max_offsets[KafkaMessageLocation{std::move(topic_name.value()), *partition}];
     curr_offset = std::max(curr_offset, *offset);
   }
 
@@ -361,12 +361,24 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession& sess
     rd_kafka_topic_partition_list_add(partitions.get(), location.topic.data(), location.partition)->offset = max_offset + 1;
   }
   const auto commit_res = rd_kafka_commit(consumer_.get(), partitions.get(), 0);
-  if (RD_KAFKA_RESP_ERR_NO_ERROR != commit_res || RD_KAFKA_RESP_ERR_OFFSET_OUT_OF_RANGE != commit_res || RD_KAFKA_RESP_ERR__NO_OFFSET != commit_res) {
-    // TODO(mzink) what happens if offsets are out of range, or no commit required (another consumer already commited etc) maybe we shouldnt throw?
-    logger_->log_error("Committing offset failed: {}: {}", magic_enum::enum_underlying(commit_res), rd_kafka_err2str(commit_res));
-    throw Exception(PROCESS_SESSION_EXCEPTION, fmt::format("Committing offset failed: {}: {}", magic_enum::enum_underlying(commit_res), rd_kafka_err2str(commit_res)));
+  switch (commit_res) {
+    case RD_KAFKA_RESP_ERR_NO_ERROR: {
+      logger_->log_debug("Commit successfully from {} flowfiles", flow_files.size());
+      break;
+    }
+    case RD_KAFKA_RESP_ERR_OFFSET_OUT_OF_RANGE: {
+      logger_->log_info("{}, continuing", rd_kafka_err2str(RD_KAFKA_RESP_ERR_OFFSET_OUT_OF_RANGE));
+      break;
+    }
+    case RD_KAFKA_RESP_ERR__NO_OFFSET: {
+      logger_->log_info("{}, continuing", rd_kafka_err2str(RD_KAFKA_RESP_ERR__NO_OFFSET));
+      break;
+    }
+    default: {
+      logger_->log_error("Committing offset failed: {}: {}", magic_enum::enum_underlying(commit_res), rd_kafka_err2str(commit_res));
+      throw Exception(PROCESS_SESSION_EXCEPTION, fmt::format("Committing offset failed: {}: {}", magic_enum::enum_underlying(commit_res), rd_kafka_err2str(commit_res)));
+    }
   }
-  logger_->log_debug("Commited from {} flowfiles", flow_files.size());
   for (const auto& [ff, relationship]: flow_files) { session.transfer(ff, relationship); }
 }
 

@@ -225,7 +225,6 @@ class MiNiFi_integration_test:
 
         return False
 
-
     def check_for_at_least_one_file_with_matching_content(self, regex, timeout_seconds):
         output_validator = SingleOrMultiFileOutputRegexValidator(regex)
         output_validator.set_output_dir(self.file_system_observer.get_output_dir())

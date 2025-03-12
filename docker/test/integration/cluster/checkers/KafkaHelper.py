@@ -30,7 +30,7 @@ class KafkaHelper:
         logging.info(output)
         return code == 0
 
-    def produce_message(self, container_name: str, topic_name: str, message: str, message_key: str|None = None):
+    def produce_message(self, container_name: str, topic_name: str, message: str, message_key):
         logging.info(f"Sending {message} to {container_name}:{topic_name}")
         (code, output) = self.container_communicator.execute_command(container_name, ["/bin/bash", "-c", f"/opt/bitnami/kafka/bin/kafka-console-producer.sh --property 'key.separator=:' --property 'parse.key=true' --topic {topic_name} --bootstrap-server {container_name}:9092 <<< '{message_key}:{message}'"])
         logging.info(output)
@@ -40,7 +40,7 @@ class KafkaHelper:
         try:
             self.container_communicator.client.images.get("kafka-helper")
         except docker.errors.ImageNotFound:
-            dockerfile_content = f"""
+            dockerfile_content = """
             FROM python:3.13-slim-bookworm
             RUN pip install confluent-kafka
             """
