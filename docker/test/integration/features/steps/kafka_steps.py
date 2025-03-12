@@ -129,7 +129,7 @@ producer.abort_transaction()
 @when("a message with content \"{content}\" is published to the \"{topic_name}\" topic with key \"{message_key}\"")
 def publish_to_topic_with_key(context, content, topic_name, message_key):
     container_name = context.test.get_container_name_with_postfix("kafka-broker")
-    assert context.test.cluster.kafka_checker.produce_message(container_name, topic_name, content, message_key) or context.test.cluster.log_app_output()
+    assert context.test.cluster.kafka_checker.produce_message_with_key(container_name, topic_name, content, message_key) or context.test.cluster.log_app_output()
 
 
 @when("{number_of_messages} kafka messages are sent to the topic \"{topic_name}\"")

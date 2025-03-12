@@ -30,7 +30,13 @@ class KafkaHelper:
         logging.info(output)
         return code == 0
 
-    def produce_message(self, container_name: str, topic_name: str, message: str, message_key):
+    def produce_message(self, container_name: str, topic_name: str, message: str):
+        logging.info(f"Sending {message} to {container_name}:{topic_name}")
+        (code, output) = self.container_communicator.execute_command(container_name, ["/bin/bash", "-c", f"/opt/bitnami/kafka/bin/kafka-console-producer.sh --topic {topic_name} --bootstrap-server {container_name}:9092 <<< '{message}'"])
+        logging.info(output)
+        return code == 0
+
+    def produce_message_with_key(self, container_name: str, topic_name: str, message: str, message_key: str):
         logging.info(f"Sending {message} to {container_name}:{topic_name}")
         (code, output) = self.container_communicator.execute_command(container_name, ["/bin/bash", "-c", f"/opt/bitnami/kafka/bin/kafka-console-producer.sh --property 'key.separator=:' --property 'parse.key=true' --topic {topic_name} --bootstrap-server {container_name}:9092 <<< '{message_key}:{message}'"])
         logging.info(output)
