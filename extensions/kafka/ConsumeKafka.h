@@ -336,7 +336,7 @@ class ConsumeKafka final : public KafkaProcessorBase {
   void processMessageBundles(core::ProcessSession& session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles,
       std::string_view message_demarcator) const;
 
-  void commitOffsetsFromMessages(const std::unordered_map<KafkaMessageLocation, MessageBundle>& messages) const;
+  void commitOffsetsFromMessages(const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles) const;
   void commitOffsetsFromIncomingFlowFiles(core::ProcessSession& session) const;
 
   std::vector<std::string> topic_names_{};
