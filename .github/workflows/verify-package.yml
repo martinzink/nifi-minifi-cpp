@@ -113,6 +113,70 @@ jobs:
           name: ${{ matrix.platform.id }}_x86_64_behavex_output
           path: build/behavex_output
 
+  docker-fips-x86-64-tests:
+    name: "${{ matrix.platform.name }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    needs: rocky-x86-64-build
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [
+          { name: "Rocky Linux 8 FIPS x86-64",
+            id: "rocky8_fips",
+            build_cmd: "make rocky8_from_rocky_package",
+            verify_cmd: "make docker-verify-rocky8-fips" },
+          { name: "Rocky Linux 9 FIPS x86-64",
+            id: "rocky9_fips",
+            build_cmd: "make rocky9_from_rocky_package",
+            verify_cmd: "make docker-verify-rocky9-fips" },
+          { name: "Ubuntu 22.04 FIPS x86-64",
+            id: "ubuntu_jammy_fips",
+            build_cmd: "make jammy_from_rocky_package",
+            verify_cmd: "make docker-verify-jammy-fips" },
+          { name: "Ubuntu 24.04 FIPS x86-64",
+            id: "ubuntu_noble_fips",
+            build_cmd: "make noble_from_rocky_package",
+            verify_cmd: "make docker-verify-noble-fips" },
+          { name: "Debian 11 FIPS x86-64",
+            id: "debian_bullseye_fips",
+            build_cmd: "make bullseye_from_rocky_package",
+            verify_cmd: "make docker-verify-bullseye-fips" },
+          { name: "Debian 12 FIPS x86-64",
+            id: "debian_bookworm_fips",
+            build_cmd: "make bookworm_from_rocky_package",
+            verify_cmd: "make docker-verify-bookworm-fips" },
+        ]
+
+    steps:
+      - id: checkout
+        uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: minifi-x86-64-tar
+          path: build
+      - id: install_deps
+        run: |
+          sudo apt update
+          sudo apt install -y python3-virtualenv
+      - run: cd build && cmake ${DOCKER_CMAKE_FLAGS} .. \
+          && ${{ matrix.platform.build_cmd }} && ${{ matrix.platform.verify_cmd }}
+      - name: Test Reporter
+        if: always()
+        uses: phoenix-actions/test-reporting@v15
+        with:
+          name: "${{ matrix.platform.name }}"
+          path: build/behavex_output/behave/*.xml
+          reporter: java-junit
+          output-to: 'step-summary'
+          list-tests: 'failed'
+          list-suites: 'failed'
+      - name: Upload artifact
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform.id }}_x86_64_behavex_output
+          path: build/behavex_output
 
   docker-aarch64-tests:
     name: "${{ matrix.platform.name }}"
@@ -147,6 +211,71 @@ jobs:
             id: "debian_bookworm",
             build_cmd: "make bookworm_from_rocky_package",
             verify_cmd: "make docker-verify-bookworm" },
+        ]
+
+    steps:
+      - id: checkout
+        uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: minifi-aarch64-tar
+          path: build
+      - id: install_deps
+        run: |
+          sudo apt update
+          sudo apt install -y python3-virtualenv
+      - run: cd build && cmake ${DOCKER_CMAKE_FLAGS} .. \
+          && ${{ matrix.platform.build_cmd }} && ${{ matrix.platform.verify_cmd }}
+      - name: Test Reporter
+        if: always()
+        uses: phoenix-actions/test-reporting@v15
+        with:
+          name: "${{ matrix.platform.name }}"
+          path: build/behavex_output/behave/*.xml
+          reporter: java-junit
+          output-to: 'step-summary'
+          list-tests: 'failed'
+          list-suites: 'failed'
+      - name: Upload artifact
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform.id }}_aarch64_behavex_output
+          path: build/behavex_output
+
+  docker-fips-aarch64-tests:
+    name: "${{ matrix.platform.name }}"
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    needs: rocky-aarch64-build
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [
+          { name: "Rocky Linux 8 FIPS aarch64",
+            id: "rocky8_fips",
+            build_cmd: "make rocky8_from_rocky_package",
+            verify_cmd: "make docker-verify-rocky8-fips" },
+          { name: "Rocky Linux 9 FIPS aarch64",
+            id: "rocky9_fips",
+            build_cmd: "make rocky9_from_rocky_package",
+            verify_cmd: "make docker-verify-rocky9-fips" },
+          { name: "Ubuntu 22.04 FIPS aarch64",
+            id: "ubuntu_jammy_fips",
+            build_cmd: "make jammy_from_rocky_package",
+            verify_cmd: "make docker-verify-jammy-fips" },
+          { name: "Ubuntu 24.04 FIPS aarch64",
+            id: "ubuntu_noble_fips",
+            build_cmd: "make noble_from_rocky_package",
+            verify_cmd: "make docker-verify-noble-fips" },
+          { name: "Debian 11 FIPS aarch64",
+            id: "debian_bullseye_fips",
+            build_cmd: "make bullseye_from_rocky_package",
+            verify_cmd: "make docker-verify-bullseye-fips" },
+          { name: "Debian 12 FIPS aarch64",
+            id: "debian_bookworm_fips",
+            build_cmd: "make bookworm_from_rocky_package",
+            verify_cmd: "make docker-verify-bookworm-fips" },
         ]
 
     steps:
