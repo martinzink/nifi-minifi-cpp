@@ -161,7 +161,9 @@ void ConsumeKafka::configureNewConnection(core::ProcessContext &context) {
   // If they are not set, offset reset is ignored and polling produces messages
   // Registering a rebalance_cb turns off librdkafka's automatic partition assignment/revocation and instead delegates that
   // responsibility to the application's rebalance_cb.
-  rd_kafka_conf_set_rebalance_cb(conf_.get(), rebalance_cb);
+  if (commit_policy_ != consume_kafka::CommitPolicyEnum::CommitFromIncomingFlowFiles) {
+    rd_kafka_conf_set_rebalance_cb(conf_.get(), rebalance_cb);
+  }
 
   // Uncomment this for librdkafka debug logs:
   // logger_->log_info("Enabling all debug logs for kafka consumer.");
