@@ -51,6 +51,9 @@ void HashContent::onSchedule(core::ProcessContext& context, core::ProcessSession
       const auto supported_algorithms = ranges::views::keys(HashAlgos) | ranges::views::join(std::string_view(", ")) | ranges::to<std::string>();
       throw Exception(PROCESS_SCHEDULE_EXCEPTION, algo_name + " is not supported, supported algorithms are: " + supported_algorithms);
     }
+    if (algo_name == "MD5" && EVP_default_properties_is_fips_enabled(nullptr)) {
+      throw Exception(PROCESS_SCHEDULE_EXCEPTION, "MD5 is not supported when OpenSSL FIPS mode is enabled");
+    }
     algorithm_ = HashAlgos.at(algo_name);
   }
 }

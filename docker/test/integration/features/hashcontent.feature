@@ -39,6 +39,17 @@ Feature: Hash value is added to Flowfiles by HashContent processor
       | "test"   | SHA1           | A94A8FE5CCB19BA61C4C0873D391E987982FBBD3                         |
       | "coffee" | SHA256         | 37290D74AC4D186E3A8E5785D259D2EC04FAC91AE28092E7620EC8BC99E830AA |
 
+  Scenario: HashContent refuse MD5 with FIPS enabled
+    Given OpenSSL FIPS mode is enabled in MiNiFi
+    And a GetFile processor with the "Input Directory" property set to "/tmp/input"
+    And a file with the content apple is present in "/tmp/input"
+    And a HashContent processor with the "Hash Attribute" property set to "hash"
+    And the "Hash Algorithm" property of the HashContent processor is set to "MD5"
+    And a LogAttribute processor
+    And the "success" relationship of the GetFile processor is connected to the HashContent
+    And the "success" relationship of the HashContent processor is connected to the LogAttribute
+    When the MiNiFi instance starts up
+    Then the Minifi logs contain the following message: "MD5 is not supported when OpenSSL FIPS mode is enabled" in less than 60 seconds
 
   Scenario: HashContent fails for an empty file if 'fail on empty' property is set to true
     Given a GetFile processor with the "Input Directory" property set to "/tmp/input"
