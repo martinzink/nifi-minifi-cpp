@@ -1,53 +1,17 @@
 diff --git a/cmake/ThirdPartyDependencies.cmake b/cmake/ThirdPartyDependencies.cmake
-index f02af02..f83c181 100644
 --- a/cmake/ThirdPartyDependencies.cmake
 +++ b/cmake/ThirdPartyDependencies.cmake
-@@ -3,73 +3,30 @@
- include(cmake/CPM.cmake)
- 
- # https://cmake.org/cmake/help/v3.28/policy/CMP0063.html
- set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
- 
- function(declare_system_library target)
-   message(STATUS "Declaring system library ${target}")
-   get_target_property(target_aliased_name ${target} ALIASED_TARGET)
-   if(target_aliased_name)
-     set(target ${target_aliased_name})
-   endif()
-   set_target_properties(${target} PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES
+@@ -17,29 +17,6 @@
                                               $<TARGET_PROPERTY:${target},INTERFACE_INCLUDE_DIRECTORIES>)
  endfunction()
- 
--if(NOT TARGET fmt::fmt)
--  # https://github.com/fmtlib/fmt/releases
--  cpmaddpackage(
--    NAME
--    fmt
--    GIT_TAG
--    11.0.1
--    VERSION
--    11.0.1
--    GITHUB_REPOSITORY
--    "fmtlib/fmt"
--    EXCLUDE_FROM_ALL ON
--    OPTIONS
--    "FMT_INSTALL OFF"
--    # Unicode support for MSVC enabled in CompilerWarnings.cmake
--    "FMT_UNICODE OFF"
--    "FMT_DOC OFF"
--    "BUILD_SHARED_LIBS OFF"
--    "CMAKE_C_VISIBILITY_PRESET hidden"
--    "CMAKE_CXX_VISIBILITY_PRESET hidden"
--    "CMAKE_POSITION_INDEPENDENT_CODE ON")
--endif()
--
+
 -if(NOT TARGET spdlog::spdlog)
 -  # https://github.com/gabime/spdlog/releases
 -  cpmaddpackage(
 -    NAME
 -    spdlog
 -    VERSION
--    1.14.1
+-    1.15.0
 -    GITHUB_REPOSITORY
 -    "gabime/spdlog"
 -    EXCLUDE_FROM_ALL ON
@@ -57,41 +21,20 @@ index f02af02..f83c181 100644
 -    "CMAKE_C_VISIBILITY_PRESET hidden"
 -    "CMAKE_CXX_VISIBILITY_PRESET hidden"
 -    "CMAKE_POSITION_INDEPENDENT_CODE ON"
+-    "NO_CMAKE_SYSTEM_PATH ON"
+-    "NO_CMAKE_INSTALL_PREFIX ON"
+-    "NO_CMAKE_SYSTEM_PACKAGE_REGISTRY ON"
 -    "SPDLOG_BUILD_SHARED OFF"
--    "SPDLOG_FMT_EXTERNAL ON")
+-    "SPDLOG_FMT_EXTERNAL OFF")
 -endif()
 -
  if(NOT TARGET Microsoft.GSL::GSL)
    # https://github.com/microsoft/GSL/releases
    cpmaddpackage(
-     NAME
-     gsl
-     VERSION
-     4.0.0
-     GITHUB_REPOSITORY
-     "microsoft/gsl"
-     EXCLUDE_FROM_ALL ON
-     OPTIONS
-     "GSL_INSTALL OFF"
-     "CMAKE_C_VISIBILITY_PRESET hidden"
-     "CMAKE_CXX_VISIBILITY_PRESET hidden"
-     "CMAKE_POSITION_INDEPENDENT_CODE ON")
-@@ -159,93 +116,24 @@ if(NOT TARGET taocpp::json)
-     "CMAKE_POSITION_INDEPENDENT_CODE ON"
-     "BUILD_SHARED_LIBS OFF"
-     "PEGTL_INSTALL ${COUCHBASE_CXX_CLIENT_INSTALL}"
-     "PEGTL_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/pegtl"
-     "PEGTL_INSTALL_DOC_DIR ${CMAKE_INSTALL_DATAROOTDIR}/doc/tao/pegtl"
-     "PEGTL_BUILD_TESTS OFF"
-     "PEGTL_BUILD_EXAMPLES OFF"
-     "PEGTL_USE_BOOST_FILESYSTEM OFF"
-     "TAOCPP_JSON_INSTALL ${COUCHBASE_CXX_CLIENT_INSTALL}"
-     "TAOCPP_JSON_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/taocpp-json"
-     "TAOCPP_JSON_INSTALL_DOC_DIR ${CMAKE_INSTALL_DATAROOTDIR}/doc/tao/json"
-     "TAOCPP_JSON_BUILD_TESTS OFF"
+@@ -153,72 +130,6 @@
      "TAOCPP_JSON_BUILD_EXAMPLES OFF")
  endif()
- 
+
 -
 -if(NOT TARGET asio::asio)
 -  # https://github.com/chriskohlhoff/asio/tags
@@ -161,12 +104,10 @@ index f02af02..f83c181 100644
  add_library(jsonsl OBJECT ${PROJECT_SOURCE_DIR}/third_party/jsonsl/jsonsl.c)
  set_target_properties(jsonsl PROPERTIES C_VISIBILITY_PRESET hidden POSITION_INDEPENDENT_CODE TRUE)
  target_include_directories(jsonsl SYSTEM PUBLIC ${PROJECT_SOURCE_DIR}/third_party/jsonsl)
- 
- declare_system_library(snappy)
+@@ -227,6 +138,4 @@
  declare_system_library(llhttp::llhttp)
  declare_system_library(hdr_histogram_static)
  declare_system_library(Microsoft.GSL::GSL)
 -declare_system_library(spdlog::spdlog)
--declare_system_library(fmt::fmt)
 -declare_system_library(asio)
  declare_system_library(taocpp::json)

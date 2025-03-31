@@ -38,8 +38,8 @@ set(PC ${Bash_EXECUTABLE}  -c "set -x &&\
             (\\\"${Patch_EXECUTABLE}\\\" -p1 -R -s -f --dry-run -i \\\"${PATCH_FILE_2}\\\" || \\\"${Patch_EXECUTABLE}\\\" -p1 -N -i \\\"${PATCH_FILE_2}\\\")")
 
 FetchContent_Declare(couchbase-cxx-client
-    URL      https://github.com/couchbase/couchbase-cxx-client/releases/download/1.0.2/couchbase-cxx-client-1.0.2.tar.gz
-    URL_HASH SHA256=1954e6f5e063d94675428182bc8b1b82fd8e8532c10d1787f157aeb18bb37769
+    URL      https://github.com/couchbase/couchbase-cxx-client/archive/refs/tags/1.0.6.tar.gz
+    URL_HASH SHA256=b14bd9f78db40621c7b09e901b3a139e7712dc6417c73be52f386c7b87b409dd
     PATCH_COMMAND "${PC}"
 )
 FetchContent_MakeAvailable(couchbase-cxx-client)
