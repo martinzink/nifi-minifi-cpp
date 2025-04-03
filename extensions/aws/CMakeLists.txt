@@ -46,7 +46,6 @@ target_include_directories(minifi-aws INTERFACE ${AWS_SDK_KINESIS_INCLUDE_DIRS})
 if(WIN32)
     target_compile_definitions(minifi-aws INTERFACE "AWS_CORE_API=__declspec(dllimport)")
     target_compile_definitions(minifi-aws INTERFACE "AWS_S3_API=__declspec(dllimport)")
-    target_compile_definitions(minifi-aws INTERFACE "AWS_KINESIS_API=__declspec(dllimport)")
 endif()
 
 register_extension(minifi-aws "AWS EXTENSIONS" AWS-EXTENSIONS "This enables AWS support" "extensions/aws/tests")
