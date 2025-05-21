@@ -55,7 +55,10 @@ nonstd::expected<std::string, std::error_code> reverseDnsLookup(const asio::ip::
 
   if (resolve_error)
     return nonstd::make_unexpected(resolve_error);
-  return results->host_name();
+  if (!results.empty()) {
+    return results.begin()->host_name();
+  }
+  return nonstd::make_unexpected(std::make_error_code(std::errc::host_unreachable));
 }
 
 std::string getMyHostName() {

@@ -88,7 +88,7 @@ RecordField RecordField::fromJson(const rapidjson::Value& value) {
   } else if (value.IsObject()) {
     RecordObject obj;
     for (const auto& member : value.GetObject()) {
-      obj.emplace(member.name.GetString(), BoxedRecordField{std::make_unique<RecordField>(RecordField::fromJson(member.value))});
+      obj.emplace(member.name.GetString(), BoxedRecordField{std::unique_ptr<RecordField, BoxedRecordField::RecordFieldDeleter>{new RecordField(RecordField::fromJson(member.value))}});
     }
     return RecordField{std::move(obj)};
   } else {

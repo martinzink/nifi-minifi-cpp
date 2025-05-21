@@ -41,9 +41,14 @@ struct BoxedRecordField {
   };
   ~BoxedRecordField() = default;
 
-  explicit BoxedRecordField(std::unique_ptr<RecordField>&& _field) : field(std::move(_field)) {}
+  struct RecordFieldDeleter
+  {
+    void operator()(RecordField *p) const noexcept;
+  };
+
+  explicit BoxedRecordField(std::unique_ptr<RecordField, RecordFieldDeleter>&& _field) : field(std::move(_field)) {}
   bool operator==(const BoxedRecordField&) const;
-  std::unique_ptr<RecordField> field = nullptr;
+  std::unique_ptr<RecordField, RecordFieldDeleter> field = nullptr;
 };
 
 
@@ -86,6 +91,10 @@ struct RecordField {
 
   std::variant<std::string, int64_t, uint64_t, double, bool, std::chrono::system_clock::time_point, RecordArray, RecordObject> value_;
 };
+
+inline void BoxedRecordField::RecordFieldDeleter::operator()(RecordField* p) const noexcept {
+  delete p;
+}
 
 inline bool BoxedRecordField::operator==(const BoxedRecordField& rhs) const {
   if (!field || !rhs.field)
