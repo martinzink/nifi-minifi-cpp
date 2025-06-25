@@ -62,12 +62,22 @@ class MinifiLocations:
             self.properties_path = '/etc/nifi-minifi-cpp/minifi.properties'
             self.log_properties_path = '/etc/nifi-minifi-cpp/minifi-log.properties'
             self.uid_properties_path = '/etc/nifi-minifi-cpp/minifi-uid.properties'
+            self.minifi_python_dir_path = '/var/lib/nifi-minifi-cpp/minifi-python'
+            self.minifi_python_venv_parent = '/var/lib/nifi-minifi-cpp'
+            self.minifi_python_examples = '/var/lib/nifi-minifi-cpp/minifi-python-examples'
+            self.models_path  = '/var/lib/nifi-minifi-cpp/models'
+            self.minifi_controller_path = '/usr/bin/minifi-controller'
         else:
-            self.minifi_sh_path = '/opt/minifi/nifi-minifi-cpp-' + MinifiLocations.MINIFI_VERSION + '/bin/minifi.sh'
-            self.config_path = '/opt/minifi/nifi-minifi-cpp-' + MinifiLocations.MINIFI_VERSION + '/conf/config.yml'
-            self.properties_path = '/opt/minifi/nifi-minifi-cpp-' + MinifiLocations.MINIFI_VERSION + '/conf/minifi.properties'
-            self.log_properties_path = '/opt/minifi/nifi-minifi-cpp-' + MinifiLocations.MINIFI_VERSION + '/conf/minifi-log.properties'
-            self.uid_properties_path = '/opt/minifi/nifi-minifi-cpp-' + MinifiLocations.MINIFI_VERSION + '/conf/minifi-uid.properties'
+            self.minifi_sh_path = '/opt/minifi/minifi-current/bin/minifi.sh'
+            self.config_path = '/opt/minifi/minifi-current/conf/config.yml'
+            self.properties_path = '/opt/minifi/minifi-current/conf/minifi.properties'
+            self.log_properties_path = '/opt/minifi/minifi-current/conf/minifi-log.properties'
+            self.uid_properties_path = '/opt/minifi/minifi-current/conf/minifi-uid.properties'
+            self.minifi_python_dir_path = '/opt/minifi/minifi-current/minifi-python'
+            self.minifi_python_examples = '/opt/minifi/minifi-current/minifi-python-examples'
+            self.minifi_python_venv_parent = '/opt/minifi/minifi-current'
+            self.models_path = '/opt/minifi/minifi-current/models'
+            self.minifi_controller_path = '/opt/minifi/minifi-current/bin/minifi-controller'
 
 
 class MinifiContainer(FlowContainer):
@@ -176,9 +186,9 @@ class MinifiContainer(FlowContainer):
                 f.write("controller.socket.local.any.interface=false\n")
 
             if self.options.use_nifi_python_processors_with_virtualenv or self.options.remove_python_requirements_txt or self.options.use_nifi_python_processors_without_dependencies:
-                f.write("nifi.python.virtualenv.directory=/opt/minifi/minifi-current/venv\n")
+                f.write("nifi.python.virtualenv.directory={minifi_python_venv_parent}/venv\n".format(minifi_python_venv_parent=MinifiContainer.MINIFI_LOCATIONS.minifi_python_venv_parent))
             elif self.options.use_nifi_python_processors_with_virtualenv_packages_installed:
-                f.write("nifi.python.virtualenv.directory=/opt/minifi/minifi-current/venv-with-langchain\n")
+                f.write("nifi.python.virtualenv.directory={minifi_python_venv_parent}/venv-with-langchain\n".format(minifi_python_venv_parent=MinifiContainer.MINIFI_LOCATIONS.minifi_python_venv_parent))
 
             if self.options.use_nifi_python_processors_with_virtualenv or self.options.remove_python_requirements_txt:
                 f.write("nifi.python.install.packages.automatically=true\n")
@@ -222,7 +232,7 @@ class MinifiContainer(FlowContainer):
             image = 'apacheminificpp:' + MinifiContainer.MINIFI_TAG_PREFIX + MinifiContainer.MINIFI_VERSION
 
         if self.options.use_flow_config_from_url:
-            self.command = ["/bin/sh", "-c", "rm " + MinifiContainer.MINIFI_ROOT + "/conf/config.yml && ./bin/minifi.sh run"]
+            self.command = ["/bin/sh", "-c", "rm " + MinifiContainer.MINIFI_LOCATIONS.config_path + " && ./bin/minifi.sh run"]
 
         ports = {}
         if self.options.enable_prometheus or self.options.enable_prometheus_with_ssl:
