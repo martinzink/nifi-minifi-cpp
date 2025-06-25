@@ -41,6 +41,7 @@ include(CMakeDependentOption)
 include(CheckIncludeFile)
 include(FeatureSummary)
 include(ExternalProject)
+include(GNUInstallDirs)
 
 # Provide custom modules for the project
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -589,34 +590,45 @@ set(CPACK_SOURCE_IGNORE_FILES
 
 # Generate binary assembly. Exclude conf for windows since we'll be doing the work in the WiX template
 if (NOT WIN32)
-    install(FILES conf/minifi.properties conf/minifi-log.properties conf/minifi-uid.properties conf/config.yml
-        DESTINATION conf
-        COMPONENT bin)
+    if (MINIFI_PACKAGING_TYPE STREQUAL "RPM")
+        message(STATUS "Configuring for FHS/RPM package installation.")
+        install(FILES fhs_conf/minifi.properties fhs_conf/minifi-log.properties fhs_conf/minifi-uid.properties fhs_conf/minifi.config
+                DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/${PROJECT_NAME}
+                COMPONENT bin)
+        install(FILES fips/openssl.cnf fips/README.md
+                DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/${PROJECT_NAME}/fips
+                COMPONENT bin)
+        install(PROGRAMS bin/minifi.sh DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-    install(FILES fips/openssl.cnf fips/README.md
-        DESTINATION fips
-        COMPONENT bin)
-
-    install(DIRECTORY extensions/python/pythonprocessors/
-        DESTINATION minifi-python
-        COMPONENT bin)
-
-    install(DIRECTORY extensions/python/pythonprocessor-examples/
-        DESTINATION minifi-python-examples
-        COMPONENT bin)
-
-    install(PROGRAMS bin/minifi.sh
-            DESTINATION bin
-            COMPONENT bin)
-
-    if (APPLE)
-        install(FILES bin/minifi.plist
-            DESTINATION bin
-            COMPONENT bin)
-    else()
-        install(FILES bin/minifi.service
+    elseif (MINIFI_PACKAGING_TYPE STREQUAL "TGZ")
+        message(STATUS "Configuring for self-contained TGZ package installation.")
+        install(PROGRAMS bin/minifi.sh DESTINATION bin)
+        install(FILES conf/minifi.properties conf/minifi-log.properties conf/minifi-uid.properties conf/config.yml
+                DESTINATION conf
+                COMPONENT bin)
+        install(FILES fips/openssl.cnf fips/README.md
+                DESTINATION fips
+                COMPONENT bin)
+        install(DIRECTORY extensions/python/pythonprocessors/
+                DESTINATION minifi-python
+                COMPONENT bin)
+        install(DIRECTORY extensions/python/pythonprocessor-examples/
+                DESTINATION minifi-python-examples
+                COMPONENT bin)
+        install(PROGRAMS bin/minifi.sh
                 DESTINATION bin
                 COMPONENT bin)
+        if (APPLE)
+            install(FILES bin/minifi.plist
+                    DESTINATION bin
+                    COMPONENT bin)
+        else()
+            install(FILES bin/minifi.service
+                    DESTINATION bin
+                    COMPONENT bin)
+        endif()
+    else()
+        message(FATAL_ERROR "Invalid MINIFI_PACKAGING_TYPE")
     endif()
 endif()
 
@@ -634,8 +646,17 @@ if (WIN32)
     set(CPACK_GENERATOR "WIX")
     set(CPACK_WIX_UPGRADE_GUID "FE29F801-3486-4E9E-AFF9-838C1A5C8D59")
     set(CPACK_WIX_PRODUCT_ICON "${CMAKE_CURRENT_SOURCE_DIR}/msi/minifi-logo-ico.ico")
-else()
+elseif(APPLE)
     set(CPACK_GENERATOR "TGZ")
+else()
+    if (MINIFI_PACKAGING_TYPE STREQUAL "RPM")
+        set(CPACK_GENERATOR "RPM")
+        set(CPACK_RPM_PACKAGE_NAME "apache-nifi-minifi-cpp")
+    elseif (MINIFI_PACKAGING_TYPE STREQUAL "TGZ")
+        set(CPACK_GENERATOR "TGZ")
+    else()
+        message(FATAL_ERROR "Invalid MINIFI_PACKAGING_TYPE")
+    endif()
 endif()
 set(CPACK_COMPONENT_INCLUDE_TOPLEVEL_DIRECTORY 1)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Apache NiFi MiNiFi C++ version ${VERSION}")
