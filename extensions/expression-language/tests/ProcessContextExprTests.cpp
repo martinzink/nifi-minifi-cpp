@@ -27,6 +27,7 @@
 #include "core/RelationshipDefinition.h"
 #include "unit/TestBase.h"
 #include "unit/Catch.h"
+#include "unit/TestUtils.h"
 
 namespace org::apache::nifi::minifi {
 
@@ -58,6 +59,7 @@ REGISTER_RESOURCE(DummyProcessor, Processor);
 }  // namespace org::apache::nifi::minifi
 
 TEST_CASE("ProcessContextExpr can update existing processor properties", "[setProperty][getProperty]") {
+  using minifi::test::utils::CHECK_EXPECTED;
   TestController test_controller;
   std::shared_ptr<TestPlan> test_plan = test_controller.createPlan();
   [[maybe_unused]] minifi::core::Processor* dummy_processor = test_plan->addProcessor("DummyProcessor", "dummy_processor");
@@ -67,36 +69,36 @@ TEST_CASE("ProcessContextExpr can update existing processor properties", "[setPr
   SECTION("Set and get simple property") {
     SECTION("Using a Property reference parameter") {
       REQUIRE(context->setProperty(minifi::DummyProcessor::SimpleProperty, "foo"));
-      CHECK(context->getProperty(minifi::DummyProcessor::SimpleProperty, nullptr) == "foo");
+      CHECK_EXPECTED(context->getProperty(minifi::DummyProcessor::SimpleProperty, nullptr), "foo");
 
       REQUIRE(context->setProperty(minifi::DummyProcessor::SimpleProperty, "bar"));
-      CHECK(context->getProperty(minifi::DummyProcessor::SimpleProperty, nullptr) == "bar");
+      CHECK_EXPECTED(context->getProperty(minifi::DummyProcessor::SimpleProperty, nullptr), "bar");
     }
 
     SECTION("Using a string parameter") {
       REQUIRE(context->setProperty(minifi::DummyProcessor::SimpleProperty, "foo"));
-      CHECK(context->getProperty(minifi::DummyProcessor::SimpleProperty, nullptr) == "foo");
+      CHECK_EXPECTED(context->getProperty(minifi::DummyProcessor::SimpleProperty, nullptr), "foo");
 
       REQUIRE(context->setProperty(minifi::DummyProcessor::SimpleProperty, "bar"));
-      CHECK(context->getProperty(minifi::DummyProcessor::SimpleProperty, nullptr) == "bar");
+      CHECK_EXPECTED(context->getProperty(minifi::DummyProcessor::SimpleProperty, nullptr), "bar");
     }
   }
 
   SECTION("Set and get expression language property") {
     SECTION("Using a Property reference parameter") {
       REQUIRE(context->setProperty(minifi::DummyProcessor::ExpressionLanguageProperty, "foo"));
-      CHECK(context->getProperty(minifi::DummyProcessor::ExpressionLanguageProperty, nullptr) == "foo");
+      CHECK_EXPECTED(context->getProperty(minifi::DummyProcessor::ExpressionLanguageProperty, nullptr), "foo");
 
       REQUIRE(context->setProperty(minifi::DummyProcessor::ExpressionLanguageProperty, "bar"));
-      CHECK(context->getProperty(minifi::DummyProcessor::ExpressionLanguageProperty, nullptr) == "bar");
+      CHECK_EXPECTED(context->getProperty(minifi::DummyProcessor::ExpressionLanguageProperty, nullptr), "bar");
     }
 
     SECTION("Using a string parameter") {
       REQUIRE(context->setProperty(minifi::DummyProcessor::ExpressionLanguageProperty, "foo"));
-      CHECK(context->getProperty(minifi::DummyProcessor::ExpressionLanguageProperty, nullptr) == "foo");
+      CHECK_EXPECTED(context->getProperty(minifi::DummyProcessor::ExpressionLanguageProperty, nullptr), "foo");
 
       REQUIRE(context->setProperty(minifi::DummyProcessor::ExpressionLanguageProperty, "bar"));
-      CHECK(context->getProperty(minifi::DummyProcessor::ExpressionLanguageProperty, nullptr) == "bar");
+      CHECK_EXPECTED(context->getProperty(minifi::DummyProcessor::ExpressionLanguageProperty, nullptr), "bar");
     }
   }
 }

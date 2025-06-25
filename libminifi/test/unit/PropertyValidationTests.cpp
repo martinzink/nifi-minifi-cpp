@@ -20,8 +20,12 @@
 #include "core/PropertyDefinitionBuilder.h"
 #include "minifi-cpp/core/PropertyValidator.h"
 #include "utils/PropertyErrors.h"
+#include "unit/TestUtils.h"
 
 namespace org::apache::nifi::minifi::core {
+
+using test::utils::CHECK_EXPECTED;
+using test::utils::CHECK_UNEXPECTED;
 
 
 TEST_CASE("Converting invalid PropertyValue") {
@@ -31,7 +35,7 @@ TEST_CASE("Converting invalid PropertyValue") {
       .build();
   Property property{property_definition};
   CHECK_FALSE(property.setValue("not int").has_value());
-  CHECK(property.getValue() == "0");
+  CHECK(*property.getValue() == "0");
 }
 
 TEST_CASE("Parsing int has baggage after") {
@@ -41,7 +45,7 @@ TEST_CASE("Parsing int has baggage after") {
       .build();
   Property property{property_definition};
   CHECK_FALSE(property.setValue("not int").has_value());
-  CHECK(property.getValue() == "0");
+  CHECK(*property.getValue() == "0");
 }
 
 TEST_CASE("Parsing int has spaces") {
@@ -51,7 +55,7 @@ TEST_CASE("Parsing int has spaces") {
       .build();
   Property property{property_definition};
   CHECK(property.setValue("  55  ").has_value());
-  CHECK(property.getValue() == "  55  ");
+  CHECK(*property.getValue() == "  55  ");
   CHECK_FALSE(property.setValue("  10000000000000000000  "));
 }
 
@@ -62,7 +66,7 @@ TEST_CASE("Parsing bool has baggage after") {
       .build();
   Property property{property_definition};
   CHECK_FALSE(property.setValue("false almost bool").has_value());
-  CHECK(property.getValue() == "true");
+  CHECK(*property.getValue() == "true");
 }
 
 TEST_CASE("NON_BLANK_VALIDATOR test") {
@@ -134,7 +138,7 @@ TEST_CASE("Missing Required With Default") {
   const Property property{property_definition};
   TestConfigurableComponent component;
   component.setSupportedProperties(std::array<PropertyReference, 1>{property_definition});
-  CHECK(component.getProperty(property.getName()) == "default");
+  CHECK(component.getProperty(property.getName()).value() == "default");
 }
 
 TEST_CASE("Missing Required Without Default") {
@@ -142,7 +146,7 @@ TEST_CASE("Missing Required Without Default") {
   const Property property{property_definition};
   TestConfigurableComponent component;
   component.setSupportedProperties(std::array<PropertyReference, 1>{property_definition});
-  CHECK(component.getProperty(property.getName()).error() == core::PropertyErrorCode::PropertyNotSet);
+  CHECK_UNEXPECTED(component.getProperty(property.getName()), core::PropertyErrorCode::PropertyNotSet);
 }
 
 TEST_CASE("Missing Optional Without Default") {
@@ -163,7 +167,7 @@ TEST_CASE("Valid Optional Without Default") {
   component.setSupportedProperties(std::array<PropertyReference, 1>{property_definition});
   CHECK(component.setProperty(property.getName(), "some data"));
   std::string value;
-  CHECK(component.getProperty(property.getName()) == "some data");
+  CHECK_EXPECTED(component.getProperty(property.getName()), "some data");
 }
 
 TEST_CASE("Invalid With Default") {
@@ -175,7 +179,7 @@ TEST_CASE("Invalid With Default") {
   TestConfigurableComponent component;
   component.setSupportedProperties(std::array<PropertyReference, 1>{property_definition});
   CHECK(component.setProperty(property.getName(), "banana").error() == core::PropertyErrorCode::ValidationFailed);
-  CHECK(component.getProperty(property.getName()) == "true");
+  CHECK_EXPECTED(component.getProperty(property.getName()), "true");
 }
 
 TEST_CASE("Valid With Default") {
@@ -187,7 +191,7 @@ TEST_CASE("Valid With Default") {
   TestConfigurableComponent component;
   component.setSupportedProperties(std::array<PropertyReference, 1>{property_definition});
   CHECK(component.setProperty("prop", "23"));
-  CHECK(component.getProperty(property.getName()) == "23");
+  CHECK_EXPECTED(component.getProperty(property.getName()), "23");
 }
 
 TEST_CASE("Write Invalid Then Override With Valid") {
@@ -198,9 +202,9 @@ TEST_CASE("Write Invalid Then Override With Valid") {
   const Property property{property_definition};
   TestConfigurableComponent component;
   component.setSupportedProperties(std::array<PropertyReference, 1>{property_definition});
-  CHECK(component.setProperty(property.getName(), "banana").error() == core::PropertyErrorCode::ValidationFailed);
+  CHECK_UNEXPECTED(component.setProperty(property.getName(), "banana"), core::PropertyErrorCode::ValidationFailed);
   CHECK(component.setProperty(property.getName(), "98"));
-  CHECK(component.getProperty(property.getName()) == "98");
+  CHECK_EXPECTED(component.getProperty(property.getName()), "98");
 }
 
 TEST_CASE("TimePeriodValue Property") {
@@ -210,7 +214,7 @@ TEST_CASE("TimePeriodValue Property") {
   const Property property{property_definition};
   TestConfigurableComponent component;
   component.setSupportedProperties(std::array<PropertyReference, 1>{property_definition});
-  CHECK(component.getProperty(property.getName()) == "10 minutes");
+  CHECK_EXPECTED(component.getProperty(property.getName()), "10 minutes");
   CHECK(component.setProperty(property.getName(), "20").error() == core::PropertyErrorCode::ValidationFailed);
 }
 

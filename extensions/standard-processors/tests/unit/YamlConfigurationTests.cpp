@@ -1132,8 +1132,8 @@ NiFi Properties Overrides: {}
   REQUIRE(flow);
   auto* proc = flow->findProcessorByName("TailFile");
   REQUIRE(proc);
-  REQUIRE(proc->getProperty("Batch Size") == "12");
-  REQUIRE(proc->getProperty("Lookup frequency") == "12 min");
+  utils::CHECK_EXPECTED(proc->getProperty("Batch Size"), "12");
+  utils::CHECK_EXPECTED(proc->getProperty("Lookup frequency"), "12 min");
 }
 
 TEST_CASE("Yaml config should not replace parameter from different parameter context", "[YamlConfiguration]") {
@@ -1422,12 +1422,12 @@ Process Groups:
   REQUIRE(flow);
   auto* proc = flow->findProcessorByName("TailFile");
   REQUIRE(proc);
-  CHECK(proc->getProperty("Batch Size") == "1");
-  CHECK(proc->getProperty("Lookup frequency") == "12 min");
+  utils::CHECK_EXPECTED(proc->getProperty("Batch Size"), "1");
+  utils::CHECK_EXPECTED(proc->getProperty("Lookup frequency"), "12 min");
   auto* subproc = flow->findProcessorByName("SubTailFile");
   REQUIRE(subproc);
-  CHECK(subproc->getProperty("Batch Size") == "12");
-  CHECK(subproc->getProperty("Lookup frequency") == "1 sec");
+  utils::CHECK_EXPECTED(subproc->getProperty("Batch Size"), "12");
+  utils::CHECK_EXPECTED(subproc->getProperty("Lookup frequency"), "1 sec");
 }
 
 TEST_CASE("Subprocessgroups cannot inherit parameters from parent processgroup", "[YamlConfiguration]") {
@@ -1647,7 +1647,7 @@ Parameter Context Name: my-context
   CHECK((*values)[0] == "value1");
   CHECK((*values)[1] == "value2");
 
-  REQUIRE(proc->getDynamicProperty("My Dynamic Property") == "value1");
+  REQUIRE("value1" == proc->getDynamicProperty("My Dynamic Property"));
 }
 
 TEST_CASE("Test sensitive parameters in sensitive properties", "[YamlConfiguration]") {
@@ -1689,8 +1689,8 @@ Parameter Context Name: my-context
   REQUIRE(flow);
   auto* proc = flow->findProcessorByName("DummyProcessor");
   REQUIRE(proc);
-  REQUIRE(proc->getProperty("Simple Property") == "simple");
-  REQUIRE(proc->getProperty("Sensitive Property") == "value1");
+  utils::CHECK_EXPECTED(proc->getProperty("Simple Property"), "simple");
+  utils::CHECK_EXPECTED(proc->getProperty("Sensitive Property"), "value1");
 }
 
 TEST_CASE("Test sensitive parameters in sensitive property value sequence", "[YamlConfiguration]") {
@@ -1791,8 +1791,8 @@ Parameter Context Name: my-context
   auto* controller = flow->findControllerService("SSLContextService");
   REQUIRE(controller);
   auto impl = controller->getControllerServiceImplementation();
-  CHECK(impl->getProperty("Passphrase").value() == "secret1!!1!");
-  CHECK(impl->getProperty("Private Key").value() == "/opt/secrets/private-key.pem");
+  utils::CHECK_EXPECTED(impl->getProperty("Passphrase"), "secret1!!1!");
+  utils::CHECK_EXPECTED(impl->getProperty("Private Key"), "/opt/secrets/private-key.pem");
 }
 
 TEST_CASE("Parameters can be used in controller services in nested process groups", "[YamlConfiguration]") {
@@ -1849,8 +1849,8 @@ Process Groups:
   REQUIRE(controller);
   auto impl = controller->getControllerServiceImplementation();
   REQUIRE(impl);
-  CHECK(impl->getProperty("Passphrase").value() == "secret1!!1!");
-  CHECK(impl->getProperty("Private Key").value() == "/opt/secrets/private-key.pem");
+  utils::CHECK_EXPECTED(impl->getProperty("Passphrase"), "secret1!!1!");
+  utils::CHECK_EXPECTED(impl->getProperty("Private Key"), "/opt/secrets/private-key.pem");
 }
 
 TEST_CASE("Test parameter context inheritance", "[YamlConfiguration]") {
@@ -1901,8 +1901,8 @@ Parameter Context Name: inherited-context
   REQUIRE(flow);
   auto* proc = flow->findProcessorByName("DummyProcessor");
   REQUIRE(proc);
-  REQUIRE(proc->getProperty("Simple Property") == "old_value");
-  REQUIRE(proc->getProperty("Sensitive Property") == "value1");
+  utils::CHECK_EXPECTED(proc->getProperty("Simple Property"), "old_value");
+  utils::CHECK_EXPECTED(proc->getProperty("Sensitive Property"), "value1");
 }
 
 TEST_CASE("Parameter context can not inherit from a itself", "[YamlConfiguration]") {
@@ -2196,8 +2196,8 @@ Parameter Context Name: dummycontext
 
   auto* proc = flow->findProcessorByName("DummyProcessor");
   REQUIRE(proc);
-  REQUIRE(proc->getProperty("Sensitive Property") == "value1");
-  REQUIRE(proc->getProperty("Simple Property") == "value3");
+  utils::CHECK_EXPECTED(proc->getProperty("Sensitive Property"), "value1");
+  utils::CHECK_EXPECTED(proc->getProperty("Simple Property"), "value3");
 }
 
 TEST_CASE("If sensitive parameter scope is set to selected sensitive parameter list is required", "[YamlConfiguration]") {
@@ -2273,7 +2273,7 @@ Parameter Context Name: dummycontext
 
   auto* proc = flow->findProcessorByName("DummyProcessor");
   REQUIRE(proc);
-  REQUIRE(proc->getProperty("Sensitive Property") == "value1");
+  utils::CHECK_EXPECTED(proc->getProperty("Sensitive Property"), "value1");
 }
 
 TEST_CASE("Parameter context can be inherited from parameter provider generated parameter context", "[YamlConfiguration]") {
@@ -2321,7 +2321,7 @@ Parameter Context Name: my-context
 
   auto* proc = flow->findProcessorByName("DummyProcessor");
   REQUIRE(proc);
-  REQUIRE(proc->getProperty("Simple Property") == "value1");
+  utils::CHECK_EXPECTED(proc->getProperty("Simple Property"), "value1");
 }
 
 TEST_CASE("Parameter context names cannot conflict with parameter provider generated parameter context names", "[YamlConfiguration]") {
