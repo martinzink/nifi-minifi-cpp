@@ -51,10 +51,29 @@ class MinifiOptions:
         self.download_llama_model = False
 
 
+class MinifiLocations:
+    MINIFI_TAG_PREFIX = os.environ['MINIFI_TAG_PREFIX']
+    MINIFI_VERSION = os.environ['MINIFI_VERSION']
+
+    def __init__(self):
+        if "rpm" in MinifiLocations.MINIFI_TAG_PREFIX:
+            self.minifi_sh_path = '/usr/bin/minifi.sh'
+            self.config_path = '/etc/nifi-minifi-cpp/config.yml'
+            self.properties_path = '/etc/nifi-minifi-cpp/minifi.properties'
+            self.log_properties_path = '/etc/nifi-minifi-cpp/minifi-log.properties'
+            self.uid_properties_path = '/etc/nifi-minifi-cpp/minifi-uid.properties'
+        else:
+            self.minifi_sh_path = '/opt/minifi/nifi-minifi-cpp-' + MinifiLocations.MINIFI_VERSION + '/bin/minifi.sh'
+            self.config_path = '/opt/minifi/nifi-minifi-cpp-' + MinifiLocations.MINIFI_VERSION + '/conf/config.yml'
+            self.properties_path = '/opt/minifi/nifi-minifi-cpp-' + MinifiLocations.MINIFI_VERSION + '/conf/minifi.properties'
+            self.log_properties_path = '/opt/minifi/nifi-minifi-cpp-' + MinifiLocations.MINIFI_VERSION + '/conf/minifi-log.properties'
+            self.uid_properties_path = '/opt/minifi/nifi-minifi-cpp-' + MinifiLocations.MINIFI_VERSION + '/conf/minifi-uid.properties'
+
+
 class MinifiContainer(FlowContainer):
     MINIFI_TAG_PREFIX = os.environ['MINIFI_TAG_PREFIX']
     MINIFI_VERSION = os.environ['MINIFI_VERSION']
-    MINIFI_ROOT = '/opt/minifi/nifi-minifi-cpp-' + MINIFI_VERSION
+    MINIFI_LOCATIONS = MinifiLocations()
 
     def __init__(self, feature_context, config_dir, options, name, vols, network, image_store, command=None):
         self.options = options
@@ -173,10 +192,10 @@ class MinifiContainer(FlowContainer):
         self._create_properties()
         if not self.options.use_flow_config_from_url:
             self._create_config()
-            self.vols[os.path.join(self.container_specific_config_dir, 'config.yml')] = {"bind": os.path.join(MinifiContainer.MINIFI_ROOT, 'conf', 'config.yml'), "mode": "rw"}
+            self.vols[os.path.join(self.container_specific_config_dir, 'config.yml')] = {"bind": MinifiContainer.MINIFI_LOCATIONS.config_path, "mode": "rw"}
 
-        self.vols[os.path.join(self.container_specific_config_dir, 'minifi.properties')] = {"bind": os.path.join(MinifiContainer.MINIFI_ROOT, 'conf', 'minifi.properties'), "mode": "rw"}
-        self.vols[os.path.join(self.container_specific_config_dir, 'minifi-log.properties')] = {"bind": os.path.join(MinifiContainer.MINIFI_ROOT, 'conf', 'minifi-log.properties'), "mode": "rw"}
+        self.vols[os.path.join(self.container_specific_config_dir, 'minifi.properties')] = {"bind": MinifiContainer.MINIFI_LOCATIONS.properties_path, "mode": "rw"}
+        self.vols[os.path.join(self.container_specific_config_dir, 'minifi-log.properties')] = {"bind": MinifiContainer.MINIFI_LOCATIONS.log_properties_path, "mode": "rw"}
 
     def deploy(self):
         if not self.set_deployed():
