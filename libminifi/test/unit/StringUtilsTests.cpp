@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include "unit/TestBase.h"
+#include "unit/TestUtils.h"
 #include "unit/Catch.h"
 #include "core/Core.h"
 #include "utils/StringUtils.h"
@@ -603,18 +604,19 @@ TEST_CASE("string::splitToValueAndUnit tests") {
 }
 
 TEST_CASE("string::parseCharacter tests") {
-  CHECK(string::parseCharacter("a") == 'a');
-  CHECK(string::parseCharacter("\\n") == '\n');
-  CHECK(string::parseCharacter("\\t") == '\t');
-  CHECK(string::parseCharacter("\\r") == '\r');
-  CHECK(string::parseCharacter("\\") == '\\');
-  CHECK(string::parseCharacter("\\\\") == '\\');
+  using minifi::test::utils::CHECK_EXPECTED;
+  CHECK_EXPECTED(string::parseCharacter("a"), 'a');
+  CHECK_EXPECTED(string::parseCharacter("\\n"), '\n');
+  CHECK_EXPECTED(string::parseCharacter("\\t"), '\t');
+  CHECK_EXPECTED(string::parseCharacter("\\r"), '\r');
+  CHECK_EXPECTED(string::parseCharacter("\\\\"), '\\');
+  CHECK_EXPECTED(string::parseCharacter("\\\\"), '\\');
 
   CHECK_FALSE(string::parseCharacter("\\s").has_value());
   CHECK_FALSE(string::parseCharacter("\\?").has_value());
   CHECK_FALSE(string::parseCharacter("abc").has_value());
   CHECK_FALSE(string::parseCharacter("\\nd").has_value());
-  CHECK(string::parseCharacter("") == std::nullopt);
+  CHECK_EXPECTED(string::parseCharacter(""), std::nullopt);
 }
 
 TEST_CASE("string::replaceEscapedCharacters tests") {

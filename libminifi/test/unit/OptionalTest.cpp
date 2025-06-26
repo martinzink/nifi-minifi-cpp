@@ -88,7 +88,7 @@ TEST_CASE("optional toExpected") {
   nonstd::expected<int, int> expected_from_null_opt_int = opt_without_value | utils::toExpected(9);
 
   REQUIRE(expected_from_value_ec);
-  REQUIRE(expected_from_value_int)
+  REQUIRE(expected_from_value_int);
   CHECK(*expected_from_value_ec == 5);
   CHECK(*expected_from_value_int == 5);
 

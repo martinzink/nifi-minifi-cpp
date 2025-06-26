@@ -385,11 +385,13 @@ TEST_CASE("Validating data transfer speed") {
 }
 
 TEST_CASE("Data transfer speed parsing") {
-  CHECK(processors::invoke_http::parseDataTransferSpeed("10 kB/s") == 10_KiB);
-  CHECK(processors::invoke_http::parseDataTransferSpeed("20 MB/s") == 20_MiB);
-  CHECK(processors::invoke_http::parseDataTransferSpeed("19 TB/s") == 19_TiB);
-  CHECK(processors::invoke_http::parseDataTransferSpeed("1KBinvalidsuffix") == nonstd::make_unexpected(make_error_code(core::ParsingErrorCode::GeneralParsingError)));
-  CHECK(processors::invoke_http::parseDataTransferSpeed("1KB") == nonstd::make_unexpected(make_error_code(core::ParsingErrorCode::GeneralParsingError)));
+  using minifi::test::utils::CHECK_EXPECTED;
+  using minifi::test::utils::CHECK_UNEXPECTED;
+  CHECK_EXPECTED(processors::invoke_http::parseDataTransferSpeed("10 kB/s"), 10_KiB);
+  CHECK_EXPECTED(processors::invoke_http::parseDataTransferSpeed("20 MB/s"), 20_MiB);
+  CHECK_EXPECTED(processors::invoke_http::parseDataTransferSpeed("19 TB/s"), 19_TiB);
+  CHECK_UNEXPECTED(processors::invoke_http::parseDataTransferSpeed("1KBinvalidsuffix"), make_error_code(core::ParsingErrorCode::GeneralParsingError));
+  CHECK_UNEXPECTED(processors::invoke_http::parseDataTransferSpeed("1KB"), make_error_code(core::ParsingErrorCode::GeneralParsingError));
 }
 
 TEST_CASE("InvokeHTTP: invalid characters are removed from outgoing HTTP headers", "[InvokeHTTP][http][attribute][header][sanitize]") {

@@ -1647,7 +1647,7 @@ Parameter Context Name: my-context
   CHECK((*values)[0] == "value1");
   CHECK((*values)[1] == "value2");
 
-  REQUIRE(proc->getDynamicProperty("My Dynamic Property") == "value1");
+  REQUIRE("value1" == proc->getDynamicProperty("My Dynamic Property"));
 }
 
 TEST_CASE("Test sensitive parameters in sensitive properties", "[YamlConfiguration]") {
