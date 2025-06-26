@@ -19,19 +19,16 @@
 #include <map>
 #include <memory>
 #include <chrono>
-#include "core/repository/VolatileContentRepository.h"
 #include "core/ProcessGroup.h"
 #include "core/Processor.h"
 #include "core/yaml/YamlConfiguration.h"
 #include "TailFile.h"
 #include "unit/Catch.h"
-#include "utils/StringUtils.h"
 #include "unit/ConfigurationTestController.h"
 #include "Funnel.h"
 #include "core/Resource.h"
 #include "utils/crypto/property_encryption/PropertyEncryptionUtils.h"
 #include "unit/TestUtils.h"
-#include "unit/DummyParameterProvider.h"
 #include "catch2/generators/catch_generators.hpp"
 
 
@@ -153,8 +150,8 @@ TEST_CASE("NiFi flow json format is correctly parsed") {
   CHECK(proc->isAutoTerminated({"one", ""}));
   CHECK(proc->isAutoTerminated({"two", ""}));
   CHECK_FALSE(proc->isAutoTerminated({"three", ""}));
-  CHECK(proc->getProperty("File Size") == "10 B");
-  CHECK(proc->getProperty("Batch Size") == "12");
+  utils::CHECK_EXPECTED(proc->getProperty("File Size"), "10 B");
+  utils::CHECK_EXPECTED(proc->getProperty("Batch Size"), "12");
 
   // verify funnel
   auto* funnel = dynamic_cast<minifi::Funnel*>(flow->findProcessorByName("CoolFunnel"));
@@ -170,7 +167,7 @@ TEST_CASE("NiFi flow json format is correctly parsed") {
   CHECK(port->getInstances().front().host_ == "localhost");
   CHECK(port->getInstances().front().port_ == 8090);
   CHECK(port->getInstances().front().protocol_ == "https://");
-  CHECK(port->getProperty("Port UUID") == "00000000-0000-0000-0000-000000000005");
+  utils::CHECK_EXPECTED(port->getProperty("Port UUID"), "00000000-0000-0000-0000-000000000005");
 
   // verify connection
   std::map<std::string, minifi::Connection*> connection_map;
@@ -554,12 +551,12 @@ TEST_CASE("Parameters can be used in nested process groups") {
 
   auto* proc = flow->findProcessorByName("MyGenFF");
   REQUIRE(proc);
-  CHECK(proc->getProperty("File Size") == "1 MB");
-  CHECK(proc->getProperty("Batch Size") == "12");
+  utils::CHECK_EXPECTED(proc->getProperty("File Size"), "1 MB");
+  utils::CHECK_EXPECTED(proc->getProperty("Batch Size"), "12");
   auto* subproc = flow->findProcessorByName("SubGenFF");
   REQUIRE(subproc);
-  CHECK(subproc->getProperty("File Size") == "10 B");
-  CHECK(subproc->getProperty("Batch Size") == "1");
+  utils::CHECK_EXPECTED(subproc->getProperty("File Size"), "10 B");
+  utils::CHECK_EXPECTED(subproc->getProperty("Batch Size"), "1");
 }
 
 TEST_CASE("Subprocessgroups cannot inherit parameters from parent processgroup") {
@@ -871,7 +868,7 @@ TEST_CASE("Test sensitive parameters in sensitive properties") {
 
   auto* proc = flow->findProcessorByName("MyProcessor");
   REQUIRE(proc);
-  CHECK(proc->getProperty("Sensitive Property") == "value1");
+  utils::CHECK_EXPECTED(proc->getProperty("Sensitive Property"), "value1");
 }
 
 TEST_CASE("Test sensitive parameters in sensitive property value sequence") {
@@ -1043,7 +1040,7 @@ TEST_CASE("NiFi flow json can use alternative targetUris field") {
   } else {
     CHECK(port->getInstances().empty());
   }
-  CHECK(port->getProperty("Port UUID") == "00000000-0000-0000-0000-000000000005");
+  utils::CHECK_EXPECTED(port->getProperty("Port UUID"), "00000000-0000-0000-0000-000000000005");
 }
 
 TEST_CASE("Test parameters in controller services") {
@@ -1099,8 +1096,8 @@ TEST_CASE("Test parameters in controller services") {
   auto* controller = flow->findControllerService("SSLContextService");
   REQUIRE(controller);
   auto impl = controller->getControllerServiceImplementation();
-  CHECK(impl->getProperty("Passphrase").value() == "secret1!!1!");
-  CHECK(impl->getProperty("Private Key").value() == "/opt/secrets/private-key.pem");
+  utils::CHECK_EXPECTED(impl->getProperty("Passphrase"), "secret1!!1!");
+  utils::CHECK_EXPECTED(impl->getProperty("Private Key"), "/opt/secrets/private-key.pem");
 }
 
 TEST_CASE("Parameters can be used in controller services in nested process groups") {
@@ -1161,8 +1158,8 @@ TEST_CASE("Parameters can be used in controller services in nested process group
   REQUIRE(controller);
   auto impl = controller->getControllerServiceImplementation();
   REQUIRE(impl);
-  CHECK(impl->getProperty("Passphrase").value() == "secret1!!1!");
-  CHECK(impl->getProperty("Private Key").value() == "/opt/secrets/private-key.pem");
+  utils::CHECK_EXPECTED(impl->getProperty("Passphrase"), "secret1!!1!");
+  utils::CHECK_EXPECTED(impl->getProperty("Private Key"), "/opt/secrets/private-key.pem");
 }
 
 TEST_CASE("Test parameter context inheritance") {
@@ -1226,8 +1223,8 @@ TEST_CASE("Test parameter context inheritance") {
 
   auto* proc = flow->findProcessorByName("MyProcessor");
   REQUIRE(proc);
-  CHECK(proc->getProperty("Sensitive Property") == "value1");
-  CHECK(proc->getProperty("Simple Property") == "old_value");
+  utils::CHECK_EXPECTED(proc->getProperty("Sensitive Property"), "value1");
+  utils::CHECK_EXPECTED(proc->getProperty("Simple Property"), "old_value");
 }
 
 TEST_CASE("Parameter context can not inherit from a itself") {
@@ -1583,8 +1580,8 @@ TEST_CASE("Parameter providers can be configured to select which parameters to b
 
   auto* proc = flow->findProcessorByName("MyProcessor");
   REQUIRE(proc);
-  CHECK(proc->getProperty("Sensitive Property") == "value1");
-  CHECK(proc->getProperty("Simple Property") == "value3");
+  utils::CHECK_EXPECTED(proc->getProperty("Sensitive Property"), "value1");
+  utils::CHECK_EXPECTED(proc->getProperty("Simple Property"), "value3");
 }
 
 TEST_CASE("If sensitive parameter scope is set to selected sensitive parameter list is required") {
@@ -1670,7 +1667,7 @@ TEST_CASE("Parameter providers can be configured to make all parameters sensitiv
 
   auto* proc = flow->findProcessorByName("MyProcessor");
   REQUIRE(proc);
-  CHECK(proc->getProperty("Sensitive Property") == "value1");
+  utils::CHECK_EXPECTED(proc->getProperty("Sensitive Property"), "value1");
 }
 
 TEST_CASE("Parameter context can be inherited from parameter provider generated parameter context") {
@@ -1729,7 +1726,7 @@ TEST_CASE("Parameter context can be inherited from parameter provider generated 
 
   auto* proc = flow->findProcessorByName("MyProcessor");
   REQUIRE(proc);
-  CHECK(proc->getProperty("Simple Property") == "value1");
+  utils::CHECK_EXPECTED(proc->getProperty("Simple Property"), "value1");
 }
 
 TEST_CASE("Parameter context names cannot conflict with parameter provider generated parameter context names") {

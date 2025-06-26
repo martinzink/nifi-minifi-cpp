@@ -35,13 +35,13 @@ TEST_CASE("net::reverseDnsLookup", "[net][dns][reverseDnsLookup]") {
       SKIP("IPv6 is disabled");
     auto dns_google_hostname = net::reverseDnsLookup(asio::ip::make_address("2001:4860:4860::8888"));
     REQUIRE(dns_google_hostname.has_value());
-    CHECK(dns_google_hostname == "dns.google");
+    CHECK(*dns_google_hostname == "dns.google");
   }
 
   SECTION("dns.google IPv4") {
     auto dns_google_hostname = net::reverseDnsLookup(asio::ip::make_address("8.8.8.8"));
     REQUIRE(dns_google_hostname.has_value());
-    CHECK(dns_google_hostname == "dns.google");
+    CHECK(*dns_google_hostname == "dns.google");
   }
 
   SECTION("Unresolvable address IPv6") {
@@ -49,13 +49,13 @@ TEST_CASE("net::reverseDnsLookup", "[net][dns][reverseDnsLookup]") {
       SKIP("IPv6 is disabled");
     auto unresolvable_hostname = net::reverseDnsLookup(asio::ip::make_address("2001:db8::"));
     REQUIRE(unresolvable_hostname.has_value());
-    CHECK(unresolvable_hostname == "2001:db8::");
+    CHECK(*unresolvable_hostname == "2001:db8::");
   }
 
   SECTION("Unresolvable address IPv4") {
     auto unresolvable_hostname = net::reverseDnsLookup(asio::ip::make_address("192.0.2.0"));
     REQUIRE(unresolvable_hostname.has_value());
-    CHECK(unresolvable_hostname == "192.0.2.0");
+    CHECK(*unresolvable_hostname == "192.0.2.0");
   }
 }
 

@@ -224,6 +224,20 @@ uint16_t scheduleProcessorOnRandomPort(const std::shared_ptr<TestPlan>& test_pla
   return processor.getPort();
 }
 
+template<typename T, typename E, typename U>
+requires requires(const T& t, const U& u) { { t == u } -> std::convertible_to<bool>; }
+void CHECK_EXPECTED(const std::expected<T, E>& actual, const U& expected) {
+  REQUIRE(actual.has_value());
+  CHECK(actual.value() == expected);
+}
+
+template<typename T, typename E, typename U>
+requires requires(const E& e, const U& u) { { e == u } -> std::convertible_to<bool>; }
+void CHECK_UNEXPECTED(const std::expected<T, E>& actual, const U& unexpected) {
+  REQUIRE_FALSE(actual.has_value());
+  CHECK(actual.error() == unexpected);
+}
+
 inline bool runningAsUnixRoot() {
 #ifdef WIN32
   return false;
