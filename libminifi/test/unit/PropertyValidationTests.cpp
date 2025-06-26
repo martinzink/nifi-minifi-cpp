@@ -35,7 +35,7 @@ TEST_CASE("Converting invalid PropertyValue") {
       .build();
   Property property{property_definition};
   CHECK_FALSE(property.setValue("not int").has_value());
-  CHECK(property.getValue() == "0");
+  CHECK(*property.getValue() == "0");
 }
 
 TEST_CASE("Parsing int has baggage after") {
@@ -45,7 +45,7 @@ TEST_CASE("Parsing int has baggage after") {
       .build();
   Property property{property_definition};
   CHECK_FALSE(property.setValue("not int").has_value());
-  CHECK(property.getValue() == "0");
+  CHECK(*property.getValue() == "0");
 }
 
 TEST_CASE("Parsing int has spaces") {
@@ -55,7 +55,7 @@ TEST_CASE("Parsing int has spaces") {
       .build();
   Property property{property_definition};
   CHECK(property.setValue("  55  ").has_value());
-  CHECK(property.getValue() == "  55  ");
+  CHECK(*property.getValue() == "  55  ");
   CHECK_FALSE(property.setValue("  10000000000000000000  "));
 }
 
@@ -66,7 +66,7 @@ TEST_CASE("Parsing bool has baggage after") {
       .build();
   Property property{property_definition};
   CHECK_FALSE(property.setValue("false almost bool").has_value());
-  CHECK(property.getValue() == "true");
+  CHECK(*property.getValue() == "true");
 }
 
 TEST_CASE("NON_BLANK_VALIDATOR test") {
