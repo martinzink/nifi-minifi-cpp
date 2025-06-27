@@ -51,5 +51,7 @@ FetchContent_Declare(google-cloud-cpp
         URL      https://github.com/googleapis/google-cloud-cpp/archive/refs/tags/v2.38.0.tar.gz
         URL_HASH SHA256=f1493b2dce9b379714342f2be7ccb483d70d13aac09d4a90ae3b4756693b72fc
         PATCH_COMMAND "${PC}")
-add_compile_definitions(_SILENCE_CXX20_REL_OPS_DEPRECATION_WARNING _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING CURL_STATICLIB)
+if (WIN32)
+    add_compile_definitions(_SILENCE_CXX20_REL_OPS_DEPRECATION_WARNING _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING CURL_STATICLIB)
+endif()
 FetchContent_MakeAvailable(google-cloud-cpp)
