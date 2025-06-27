@@ -16,9 +16,23 @@
 # under the License.
 
 function(use_bundled_libazure SOURCE_DIR BINARY_DIR)
-    set(PATCH_FILE "${SOURCE_DIR}/thirdparty/azure-sdk-cpp/remove-amqp.patch")
+    set(PATCH_FILE_1 "${SOURCE_DIR}/thirdparty/azure-sdk-cpp/remove-amqp.patch")
+    set(PATCH_FILE_2 "${SOURCE_DIR}/thirdparty/azure-sdk-cpp/wil.patch")
+
     set(PC ${Bash_EXECUTABLE} -c "set -x && \
-            (\"${Patch_EXECUTABLE}\" -p1 -N -i \"${PATCH_FILE}\")")
+            (\"${Patch_EXECUTABLE}\" -p1 -N -i \"${PATCH_FILE_1}\") &&\
+            (\"${Patch_EXECUTABLE}\" -p1 -N -i \"${PATCH_FILE_2}\")")
+
+    if (WIN32)
+        include(FetchContent)
+
+        FetchContent_Declare(
+                wil
+                URL      https://github.com/microsoft/wil/archive/refs/tags/v1.0.250325.1.tar.gz
+                URL_HASH SHA256=c9e667d5f86ded43d17b5669d243e95ca7b437e3a167c170805ffd4aa8a9a786
+        )
+        FetchContent_MakeAvailable(wil)
+    endif()
     # Define byproducts
     set(INSTALL_DIR "${BINARY_DIR}/thirdparty/azure-sdk-cpp-install")
     if (WIN32)
