@@ -22,5 +22,6 @@ FetchContent_Declare(Fmt
         URL  https://github.com/fmtlib/fmt/archive/refs/tags/11.2.0.tar.gz
         URL_HASH SHA256=bc23066d87ab3168f27cef3e97d545fa63314f5c79df5ea444d41d56f962c6af
         OVERRIDE_FIND_PACKAGE
+        SYSTEM
         )
 FetchContent_MakeAvailable(Fmt)

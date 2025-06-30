@@ -43,6 +43,7 @@ FetchContent_Declare(couchbase-cxx-client
     URL      https://github.com/couchbase/couchbase-cxx-client/releases/download/1.1.0/couchbase-cxx-client-1.1.0.tar.gz
     URL_HASH SHA256=bd3a7f1492e242b239acd965eed4472cecb0319d40d05480f97cdec705960ba0
     PATCH_COMMAND "${PC}"
+    SYSTEM
 )
 FetchContent_MakeAvailable(couchbase-cxx-client)
 

@@ -19,9 +19,12 @@
 include(FetchContent)
 
 set(SPDLOG_FMT_EXTERNAL ON CACHE STRING "" FORCE)
+set(SPDLOG_SYSTEM_INCLUDES ON CACHE STRING "" FORCE)
+
 FetchContent_Declare(Spdlog
         URL  https://github.com/gabime/spdlog/archive/refs/tags/v1.15.1.tar.gz
         URL_HASH SHA256=25c843860f039a1600f232c6eb9e01e6627f7d030a2ae5e232bdd3c9205d26cc
         OVERRIDE_FIND_PACKAGE
+        SYSTEM
         )
 FetchContent_MakeAvailable(Spdlog)

@@ -26,6 +26,7 @@ if (WIN32)
             wil
             URL      https://github.com/microsoft/wil/archive/refs/tags/v1.0.250325.1.tar.gz
             URL_HASH SHA256=c9e667d5f86ded43d17b5669d243e95ca7b437e3a167c170805ffd4aa8a9a786
+            SYSTEM
     )
     FetchContent_MakeAvailable(wil)
 endif()
@@ -47,6 +48,7 @@ FetchContent_Declare(asdkext
     URL      https://github.com/Azure/azure-sdk-for-cpp/archive/refs/tags/azure-storage-files-datalake_12.12.0.tar.gz
     URL_HASH SHA256=b25d85a85b71d6a14b0321b3bfaeeb558ba4515c5ecf7a89c9696fdc8b4a6183
     PATCH_COMMAND "${PC}"
+    SYSTEM
 )
 
 if (WIN32)
