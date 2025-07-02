@@ -35,6 +35,7 @@ get_target_property(RDKAFKA_INCLUDE_DIRS rdkafka INCLUDE_DIRECTORIES)
 target_include_directories(minifi-rdkafka-extensions SYSTEM PUBLIC ${RDKAFKA_INCLUDE_DIRS})
 target_link_libraries(minifi-rdkafka-extensions rdkafka)
 
+
 register_extension(minifi-rdkafka-extensions "RDKAFKA EXTENSIONS" RDKAFKA-EXTENSIONS "This Enables librdkafka functionality including PublishKafka" "extensions/kafka/tests")
 
 register_extension_linter(minifi-rdkafka-extensions-linter)
