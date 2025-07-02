@@ -18,8 +18,6 @@
 include(FetchContent)
 include(Zstd)
 
-include(LZ4)
-
 set(WITH_SSL "ON" CACHE STRING "" FORCE)
 set(WITH_SASL "OFF" CACHE STRING "" FORCE)
 set(WITH_ZSTD "ON" CACHE STRING "" FORCE)
@@ -35,9 +33,12 @@ set(WITH_DEVEL "OFF" CACHE STRING "" FORCE)
 
 set(PATCH_FILE_1 "${CMAKE_SOURCE_DIR}/thirdparty/librdkafka/0001-remove-findLZ4-and-findZSTD.patch")
 set(PATCH_FILE_2 "${CMAKE_SOURCE_DIR}/thirdparty/librdkafka/0002-undef-X509_NAME.patch")
+set(PATCH_FILE_3 "${CMAKE_SOURCE_DIR}/thirdparty/librdkafka/0003-remove_FindLZ4_installation.patch")
 set(PC ${Bash_EXECUTABLE}  -c "set -x &&\
         (\\\"${Patch_EXECUTABLE}\\\" -p1 -R -s -f --dry-run -i \\\"${PATCH_FILE_1}\\\" || \\\"${Patch_EXECUTABLE}\\\" -p1 -N -i \\\"${PATCH_FILE_1}\\\") &&\
-        (\\\"${Patch_EXECUTABLE}\\\" -p1 -R -s -f --dry-run -i \\\"${PATCH_FILE_2}\\\" || \\\"${Patch_EXECUTABLE}\\\" -p1 -N -i \\\"${PATCH_FILE_2}\\\")")
+        (\\\"${Patch_EXECUTABLE}\\\" -p1 -R -s -f --dry-run -i \\\"${PATCH_FILE_2}\\\" || \\\"${Patch_EXECUTABLE}\\\" -p1 -N -i \\\"${PATCH_FILE_2}\\\") &&\
+        (\\\"${Patch_EXECUTABLE}\\\" -p1 -R -s -f --dry-run -i \\\"${PATCH_FILE_3}\\\" || \\\"${Patch_EXECUTABLE}\\\" -p1 -N -i \\\"${PATCH_FILE_3}\\\")")
+
 
 FetchContent_Declare(libkafka
         URL https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.10.1.tar.gz
