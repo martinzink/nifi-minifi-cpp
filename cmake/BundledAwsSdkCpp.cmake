@@ -92,7 +92,6 @@ function(use_bundled_libaws SOURCE_DIR BINARY_DIR)
             LIST_SEPARATOR % # This is needed for passing semicolon-separated lists
             CMAKE_ARGS ${AWS_SDK_CPP_CMAKE_ARGS}
             PATCH_COMMAND ${AWS_SDK_CPP_PATCH_COMMAND}
-            INSTALL_COMMAND ""
             BUILD_BYPRODUCTS "${AWSSDK_LIBRARIES_LIST}"
             EXCLUDE_FROM_ALL TRUE
             DOWNLOAD_NO_PROGRESS TRUE
