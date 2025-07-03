@@ -18,6 +18,8 @@
 include(FetchContent)
 include(Zstd)
 
+include(LZ4)
+
 set(WITH_SSL "ON" CACHE STRING "" FORCE)
 set(WITH_SASL "OFF" CACHE STRING "" FORCE)
 set(WITH_ZSTD "ON" CACHE STRING "" FORCE)
@@ -46,10 +48,13 @@ FetchContent_Declare(libkafka
         PATCH_COMMAND "${PC}"
         INSTALL_COMMAND ""
 )
+
 FetchContent_MakeAvailable(libkafka)
 
 get_target_property(ZSTD_INCLUDE_DIRS zstd::zstd INCLUDE_DIRECTORIES)
+get_target_property(LZ4_INCLUDE_DIRS lz4::lz4 INCLUDE_DIRECTORIES)
 
 target_include_directories(rdkafka SYSTEM PRIVATE ${ZSTD_INCLUDE_DIRS})
+target_include_directories(rdkafka SYSTEM PRIVATE ${LZ4_INCLUDE_DIRS})
 
-target_link_libraries(rdkafka INTERFACE zstd::zstd)
+target_link_libraries(rdkafka INTERFACE zstd::zstd lz4::lz4)
