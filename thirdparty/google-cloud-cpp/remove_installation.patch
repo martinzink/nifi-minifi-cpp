@@ -1,0 +1,78 @@
+Subject: [PATCH] remove export
+---
+Index: google/cloud/google_cloud_cpp_common.cmake
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/google/cloud/google_cloud_cpp_common.cmake b/google/cloud/google_cloud_cpp_common.cmake
+--- a/google/cloud/google_cloud_cpp_common.cmake	(revision e9eb0d1d8295966e7bca38c0ddf6529299db4f2b)
++++ b/google/cloud/google_cloud_cpp_common.cmake	(date 1751633167917)
+@@ -233,11 +233,7 @@
+
+ create_bazel_config(google_cloud_cpp_common YEAR 2018)
+
+-# Export the CMake targets to make it easy to create configuration files.
+-install(
+-    EXPORT google_cloud_cpp_common-targets
+-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/google_cloud_cpp_common"
+-    COMPONENT google_cloud_cpp_development)
++# Removed EXPORT of google_cloud_cpp_common-targets
+
+ # Install the libraries and headers in the locations determined by
+ # GNUInstallDirs
+@@ -314,11 +310,7 @@
+         DESTINATION "include/google/cloud/mocks"
+         COMPONENT google_cloud_cpp_development)
+
+-    # Export the CMake targets to make it easy to create configuration files.
+-    install(
+-        EXPORT google_cloud_cpp_mocks-targets
+-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/google_cloud_cpp_mocks"
+-        COMPONENT google_cloud_cpp_development)
++    # Removed EXPORT of google_cloud_cpp_mocks-targets
+
+     install(
+         TARGETS google_cloud_cpp_mocks
+Index: google/cloud/google_cloud_cpp_rest_internal.cmake
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/google/cloud/google_cloud_cpp_rest_internal.cmake b/google/cloud/google_cloud_cpp_rest_internal.cmake
+--- a/google/cloud/google_cloud_cpp_rest_internal.cmake	(revision e9eb0d1d8295966e7bca38c0ddf6529299db4f2b)
++++ b/google/cloud/google_cloud_cpp_rest_internal.cmake	(date 1751633114501)
+@@ -169,11 +169,7 @@
+ add_library(google-cloud-cpp::rest_internal ALIAS
+             google_cloud_cpp_rest_internal)
+
+-# Export the CMake targets to make it easy to create configuration files.
+-install(
+-    EXPORT google_cloud_cpp_rest_internal-targets
+-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/google_cloud_cpp_rest_internal"
+-    COMPONENT google_cloud_cpp_development)
++# # Removed EXPORT of google_cloud_cpp_rest_internal-targets
+
+ # Install the libraries and headers in the locations determined by
+ # GNUInstallDirs
+Index: google/cloud/storage/google_cloud_cpp_storage.cmake
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/google/cloud/storage/google_cloud_cpp_storage.cmake b/google/cloud/storage/google_cloud_cpp_storage.cmake
+--- a/google/cloud/storage/google_cloud_cpp_storage.cmake	(revision e9eb0d1d8295966e7bca38c0ddf6529299db4f2b)
++++ b/google/cloud/storage/google_cloud_cpp_storage.cmake	(date 1751633070673)
+@@ -313,11 +313,7 @@
+
+ create_bazel_config(google_cloud_cpp_storage)
+
+-# Export the CMake targets to make it easy to create configuration files.
+-install(
+-    EXPORT storage-targets
+-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/google_cloud_cpp_storage"
+-    COMPONENT google_cloud_cpp_development)
++# Removed EXPORT of storage-targets
+
+ install(
+     TARGETS google_cloud_cpp_storage
