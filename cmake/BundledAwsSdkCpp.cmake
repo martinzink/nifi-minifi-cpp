@@ -18,6 +18,17 @@
 include(FetchContent)
 
 function(use_bundled_libaws)
+    set(PATCH_FILE_1 "${CMAKE_SOURCE_DIR}/thirdparty/aws-sdk-cpp/dll-export-injection.patch")
+    set(PATCH_FILE_2 "${CMAKE_SOURCE_DIR}/thirdparty/aws-sdk-cpp/shutdown-fix.patch")
+    set(PATCH_FILE_3 "${CMAKE_SOURCE_DIR}/thirdparty/aws-sdk-cpp/bundle-openssl.patch")
+    set(PATCH_FILE_4 "${CMAKE_SOURCE_DIR}/thirdparty/aws-sdk-cpp/fix-finding-s2n.patch")
+
+    set(PC ${Bash_EXECUTABLE}  -c "set -x &&\
+        (\\\"${Patch_EXECUTABLE}\\\" -p1 -R -s -f --dry-run -i \\\"${PATCH_FILE_1}\\\" || \\\"${Patch_EXECUTABLE}\\\" -p1 -N -i \\\"${PATCH_FILE_1}\\\") &&\
+        (\\\"${Patch_EXECUTABLE}\\\" -p1 -R -s -f --dry-run -i \\\"${PATCH_FILE_2}\\\" || \\\"${Patch_EXECUTABLE}\\\" -p1 -N -i \\\"${PATCH_FILE_2}\\\") &&\
+        (\\\"${Patch_EXECUTABLE}\\\" -p1 -R -s -f --dry-run -i \\\"${PATCH_FILE_3}\\\" || \\\"${Patch_EXECUTABLE}\\\" -p1 -N -i \\\"${PATCH_FILE_3}\\\") &&\
+        (\\\"${Patch_EXECUTABLE}\\\" -p1 -R -s -f --dry-run -i \\\"${PATCH_FILE_4}\\\" || \\\"${Patch_EXECUTABLE}\\\" -p1 -N -i \\\"${PATCH_FILE_4}\\\")")
+
     # --- Step 1: Set the AWS SDK's options before fetching ---
     # This controls how the dependency will build itself.
     set(BUILD_ONLY "s3;kinesis" CACHE STRING "" FORCE)
@@ -27,7 +38,6 @@ function(use_bundled_libaws)
     # This prevents the dependency from trying to install itself,
     # which is critical for our RPM packaging.
     set(CMAKE_INSTALL_PREFIX "" CACHE STRING "Disable install step" FORCE)
-    set(CUSTOM_OPENSSL_INSTALL_DIR "${CMAKE_BINARY_DIR}/thirdparty/openssl-install")
 
 
     # --- Step 2: Declare and fetch the content ---
@@ -35,10 +45,8 @@ function(use_bundled_libaws)
     FetchContent_Declare(aws-sdk-cpp
             GIT_REPOSITORY "https://github.com/aws/aws-sdk-cpp.git"
             GIT_TAG "1.11.530"
-            CMAKE_ARGS
-            # This line tells the AWS SDK build (and its sub-dependencies like s2n)
-            # to find OpenSSL in the directory you specified.
-            -DOpenSSL_ROOT_DIR=${CUSTOM_OPENSSL_INSTALL_DIR}
+            UPDATE_COMMAND git submodule update --init --recursive && git -C "./crt/aws-crt-cpp/crt/s2n" checkout v1.5.15
+            PATCH_COMMAND "${PC}"
     )
     FetchContent_MakeAvailable(aws-sdk-cpp)
 
