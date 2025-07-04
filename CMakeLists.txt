@@ -632,13 +632,19 @@ if (NOT WIN32)
     endif()
 endif()
 
-install(FILES LICENSE NOTICE
-    DESTINATION .
-    COMPONENT bin)
 file(GLOB markdown_docs "*.md")
-install(FILES ${markdown_docs}
-    DESTINATION .
-    COMPONENT bin)
+if (MINIFI_PACKAGING_TYPE STREQUAL "RPM")
+    install(FILES LICENSE NOTICE ${markdown_docs}
+            DESTINATION ${CMAKE_INSTALL_DOCDIR}
+            COMPONENT bin)
+elseif (MINIFI_PACKAGING_TYPE STREQUAL "TGZ")
+    install(FILES LICENSE NOTICE ${markdown_docs}
+            DESTINATION .
+            COMPONENT bin)
+else()
+    message(FATAL_ERROR "Invalid MINIFI_PACKAGING_TYPE")
+endif()
+
 
 include(CPackComponent)
 
