@@ -27,6 +27,7 @@ function(use_bundled_libaws)
     # This prevents the dependency from trying to install itself,
     # which is critical for our RPM packaging.
     set(CMAKE_INSTALL_PREFIX "" CACHE STRING "Disable install step" FORCE)
+    set(CUSTOM_OPENSSL_INSTALL_DIR "${CMAKE_BINARY_DIR}/thirdparty/openssl-install")
 
 
     # --- Step 2: Declare and fetch the content ---
@@ -34,6 +35,10 @@ function(use_bundled_libaws)
     FetchContent_Declare(aws-sdk-cpp
             GIT_REPOSITORY "https://github.com/aws/aws-sdk-cpp.git"
             GIT_TAG "1.11.530"
+            CMAKE_ARGS
+            # This line tells the AWS SDK build (and its sub-dependencies like s2n)
+            # to find OpenSSL in the directory you specified.
+            -DOpenSSL_ROOT_DIR=${CUSTOM_OPENSSL_INSTALL_DIR}
     )
     FetchContent_MakeAvailable(aws-sdk-cpp)
 
