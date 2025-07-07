@@ -58,4 +58,4 @@ if (NOT WIN32)
     endif()
 endif()
 
-install(TARGETS minificontroller RUNTIME DESTINATION bin COMPONENT bin)
+install(TARGETS minificontroller RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT bin)
