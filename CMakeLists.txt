@@ -599,6 +599,10 @@ if (NOT WIN32)
                 DESTINATION /${CMAKE_INSTALL_SYSCONFDIR}/${PROJECT_NAME}/fips
                 COMPONENT bin)
         install(PROGRAMS bin/minifi.sh DESTINATION ${CMAKE_INSTALL_BINDIR})
+        install(FILES bin/minifi.service
+                DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/system
+                COMPONENT bin
+        )
 
     elseif (MINIFI_PACKAGING_TYPE STREQUAL "TGZ")
         message(STATUS "Configuring for self-contained TGZ package installation.")
