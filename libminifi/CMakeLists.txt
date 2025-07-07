@@ -107,7 +107,7 @@ if (WIN32)
 else()
     if (MINIFI_PACKAGING_TYPE STREQUAL "RPM")
         install(TARGETS core-minifi
-                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}
+                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/nifi-minifi-cpp
                 COMPONENT bin)
     elseif (MINIFI_PACKAGING_TYPE STREQUAL "TGZ")
         install(TARGETS core-minifi LIBRARY DESTINATION bin COMPONENT bin)

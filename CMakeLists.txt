@@ -593,10 +593,10 @@ if (NOT WIN32)
     if (MINIFI_PACKAGING_TYPE STREQUAL "RPM")
         message(STATUS "Configuring for FHS/RPM package installation.")
         install(FILES fhs_conf/minifi.properties fhs_conf/minifi-log.properties fhs_conf/minifi-uid.properties fhs_conf/minifi.config
-                DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/${PROJECT_NAME}
+                DESTINATION /${CMAKE_INSTALL_SYSCONFDIR}/${PROJECT_NAME}
                 COMPONENT bin)
         install(FILES fips/openssl.cnf fips/README.md
-                DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/${PROJECT_NAME}/fips
+                DESTINATION /${CMAKE_INSTALL_SYSCONFDIR}/${PROJECT_NAME}/fips
                 COMPONENT bin)
         install(PROGRAMS bin/minifi.sh DESTINATION ${CMAKE_INSTALL_BINDIR})
 
