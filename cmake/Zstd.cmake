@@ -19,10 +19,7 @@ include(FetchContent)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/zstd/dummy")
 
-set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "Disable zstd command-line programs" FORCE)
-set(ZSTD_BUILD_MANPAGES OFF CACHE BOOL "Disable zstd man pages" FORCE)
-set(ZSTD_BUILD_SHARED OFF CACHE BOOL "Disable zstd shared library" FORCE)
-set(ZSTD_BUILD_STATIC ON CACHE BOOL "Enable zstd static library" FORCE)
+set(ZSTD_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 
 set(PC "")
 if (WIN32)
@@ -31,11 +28,10 @@ if (WIN32)
 endif()
 
 FetchContent_Declare(zstd
-    URL             https://github.com/facebook/zstd/archive/refs/tags/v1.5.2.tar.gz
-    URL_HASH        SHA256=f7de13462f7a82c29ab865820149e778cbfe01087b3a55b5332707abf9db4a6e
-    PATCH_COMMAND   "${PC}"
-    INSTALL_COMMAND ""
-    SOURCE_SUBDIR   build/cmake
+    URL            https://github.com/facebook/zstd/archive/refs/tags/v1.5.2.tar.gz
+    URL_HASH       SHA256=f7de13462f7a82c29ab865820149e778cbfe01087b3a55b5332707abf9db4a6e
+    PATCH_COMMAND  "${PC}"
+    SOURCE_SUBDIR  build/cmake
 )
 
 FetchContent_MakeAvailable(zstd)

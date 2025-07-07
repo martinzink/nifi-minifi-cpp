@@ -108,6 +108,22 @@ def build_type_menu(minifi_options: MinifiOptions, _package_manager: PackageMana
     return False
 
 
+def build_type_menu(minifi_options: MinifiOptions, _package_manager: PackageManager) -> bool:
+    questions = [
+        inquirer.List(
+            "build_type",
+            message="Build type",
+            choices=minifi_options.build_type.possible_values,
+        ),
+    ]
+
+    answers = inquirer.prompt(questions)
+    minifi_options.build_type.value = answers["build_type"]
+    minifi_options.save_option_state()
+    return False
+
+
+
 def build_dir_menu(minifi_options: MinifiOptions, _package_manager: PackageManager) -> bool:
     questions = [
         inquirer.Path('build_dir',

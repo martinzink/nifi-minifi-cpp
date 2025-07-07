@@ -15,10 +15,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-# TODO(mzink)
-return()
-
+#
 if (NOT (ENABLE_ALL OR ENABLE_GRAFANA_LOKI))
     return()
 endif()

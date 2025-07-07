@@ -22,7 +22,7 @@
 #include <optional>
 #include <string>
 
-#include "aws/core/auth/AWSCredentialsProvider.h"
+#include "aws/core/auth/AWSCredentials.h"
 #include "utils/AWSInitializer.h"
 #include "core/logging/Logger.h"
 #include "core/logging/LoggerFactory.h"
