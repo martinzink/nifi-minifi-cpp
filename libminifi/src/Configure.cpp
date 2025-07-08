@@ -135,6 +135,15 @@ bool ConfigureImpl::commitChanges() {
   return success;
 }
 
+const Locations& ConfigureImpl::getLocations() const {
+  throw std::invalid_argument("TODO");
+}
+
+void ConfigureImpl::setLocations(std::shared_ptr<Locations>) {
+  throw std::invalid_argument("TODO");
+}
+
+
 gsl::not_null<std::shared_ptr<Configure>> Configure::create() {
   return gsl::make_not_null<std::shared_ptr<Configure>>(std::make_shared<ConfigureImpl>());
 }

@@ -39,7 +39,7 @@ bool DatabaseContentRepository::initialize(const std::shared_ptr<minifi::Configu
   if (configuration->get(Configure::nifi_dbcontent_repository_directory_default, value) && !value.empty()) {
     directory_ = value;
   } else {
-    directory_ = (configuration->getHome() / "dbcontentrepository").string();
+    directory_ = (configuration->getLocations().getWorkingDir() / "dbcontentrepository").string();
   }
   auto purge_period_str = utils::string::trim(configuration->get(Configure::nifi_dbcontent_repository_purge_period).value_or("1 s"));
   if (purge_period_str == "0") {
@@ -50,7 +50,7 @@ bool DatabaseContentRepository::initialize(const std::shared_ptr<minifi::Configu
     logger_->log_error("Malformed delete period value, expected time format: '{}'", purge_period_str);
     purge_period_ = std::chrono::seconds{1};
   }
-  const auto encrypted_env = createEncryptingEnv(utils::crypto::EncryptionManager{configuration->getHome()}, DbEncryptionOptions{directory_, ENCRYPTION_KEY_NAME});
+  const auto encrypted_env = createEncryptingEnv(utils::crypto::EncryptionManager{configuration->getLocations().getWorkingDir()}, DbEncryptionOptions{directory_, ENCRYPTION_KEY_NAME});
   logger_->log_info("Using {} DatabaseContentRepository", encrypted_env ? "encrypted" : "plaintext");
 
   setCompactionPeriod(configuration);

@@ -80,7 +80,7 @@ TEST_CASE("Alert system forwards logs") {
   AlertHandler handler(agent_id);
   harness.setUrl("http://localhost:0/api/alerts", &handler);
   harness.getConfiguration()->set(minifi::Configuration::nifi_c2_agent_identifier, agent_id);
-  harness.getConfiguration()->setHome(dir.getPath());
+  harness.getConfiguration()->setLocations(std::make_shared<minifi::LocationsImpl>(dir.getPath()));
 
   auto log_props = std::make_shared<logging::LoggerProperties>();
   log_props->set("appender.alert1", "alert");

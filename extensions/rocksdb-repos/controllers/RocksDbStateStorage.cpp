@@ -60,9 +60,9 @@ void RocksDbStateStorage::onEnable() {
   auto_persistor_.start(always_persist, auto_persistence_interval, [this] { return persistNonVirtual(); });
   db_.reset();
 
-  auto encrypted_env = createEncryptingEnv(utils::crypto::EncryptionManager{configuration_->getHome()}, core::repository::DbEncryptionOptions{directory_, ENCRYPTION_KEY_NAME});
+  auto encrypted_env = createEncryptingEnv(utils::crypto::EncryptionManager{configuration_->getLocations().getWorkingDir()}, core::repository::DbEncryptionOptions{directory_, ENCRYPTION_KEY_NAME});
   if (!encrypted_env) {
-    encrypted_env = createEncryptingEnv(utils::crypto::EncryptionManager{configuration_->getHome()}, core::repository::DbEncryptionOptions{directory_, ENCRYPTION_KEY_NAME_OLD});
+    encrypted_env = createEncryptingEnv(utils::crypto::EncryptionManager{configuration_->getLocations().getWorkingDir()}, core::repository::DbEncryptionOptions{directory_, ENCRYPTION_KEY_NAME_OLD});
   }
   logger_->log_info("Using {} RocksDbStateStorage", encrypted_env ? "encrypted" : "plaintext");
 

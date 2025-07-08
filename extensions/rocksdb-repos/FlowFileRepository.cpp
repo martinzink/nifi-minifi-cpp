@@ -210,7 +210,7 @@ bool FlowFileRepository::initialize(const std::shared_ptr<Configure> &configure)
 
   setCompactionPeriod(configure);
 
-  const auto encrypted_env = createEncryptingEnv(utils::crypto::EncryptionManager{configure->getHome()}, DbEncryptionOptions{directory_, ENCRYPTION_KEY_NAME});
+  const auto encrypted_env = createEncryptingEnv(utils::crypto::EncryptionManager{configure->getLocations().getWorkingDir()}, DbEncryptionOptions{directory_, ENCRYPTION_KEY_NAME});
   logger_->log_info("Using {} FlowFileRepository", encrypted_env ? "encrypted" : "plaintext");
 
   verify_checksums_in_rocksdb_reads_ = (configure->get(Configure::nifi_flowfile_repository_rocksdb_read_verify_checksums) | utils::andThen(&utils::string::toBool)).value_or(false);

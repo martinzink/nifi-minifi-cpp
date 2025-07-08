@@ -52,6 +52,8 @@ class LoggerProperties : public PropertiesImpl {
     return sinks_;
   }
 
+  std::filesystem::path getLogDir() const { throw std::invalid_argument("TODO(mzink)"); }
+
  private:
   std::map<std::string, std::shared_ptr<spdlog::sinks::sink>> sinks_;
 };

@@ -90,7 +90,7 @@ TEST_CASE("Decryptor can decrypt a configuration file", "[decryptSensitiveProper
 
   minifi::ConfigureImpl configuration{decryptor};
   std::filesystem::path resources_dir{TEST_RESOURCES};
-  configuration.setHome(resources_dir);
+  configuration.setLocations(std::make_shared<minifi::LocationsImpl>(resources_dir));
   configuration.loadConfigureFile("encrypted.minifi.properties");
   REQUIRE_FALSE(configuration.getConfiguredKeys().empty());
 

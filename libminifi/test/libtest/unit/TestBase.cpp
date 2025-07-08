@@ -717,7 +717,7 @@ TestController::TestController()
 std::shared_ptr<TestPlan> TestController::createPlan(PlanConfig config) {
   if (!config.configuration) {
     config.configuration = minifi::Configure::create();
-    config.configuration->setHome(createTempDirectory());
+    config.configuration->setLocations(std::make_shared<minifi::LocationsImpl>(createTempDirectory()));
     config.configuration->set(minifi::Configure::nifi_state_storage_local_class_name, "VolatileMapStateStorage");
     config.configuration->set(minifi::Configure::nifi_dbcontent_repository_directory_default, createTempDirectory().string());
   }

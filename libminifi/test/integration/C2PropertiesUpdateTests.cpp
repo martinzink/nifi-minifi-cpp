@@ -140,7 +140,6 @@ TEST_CASE("C2PropertiesUpdateTests", "[c2test]") {
   // this sets the ostream logger
   auto log_test_controller = LogTestController::getInstance(logger_properties);
 
-  logger_properties->setHome(home_dir);
   logger_properties->loadConfigureFile("conf/minifi-log.properties");
   core::logging::LoggerConfiguration::getConfiguration().initialize(logger_properties);
 
@@ -213,7 +212,7 @@ TEST_CASE("C2PropertiesUpdateTests", "[c2test]") {
     }
   });
 
-  harness.getConfiguration()->setHome(home_dir.string());
+  harness.getConfiguration()->setLocations(std::make_shared<minifi::LocationsImpl>(home_dir.string()));
   harness.getConfiguration()->loadConfigureFile("conf/minifi.properties");
   ConfigTestAccessor::call_setLoggerProperties(harness.getConfiguration(), logger_properties);
 
