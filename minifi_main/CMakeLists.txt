@@ -84,7 +84,7 @@ if (NOT WIN32)
 
     if (MINIFI_PACKAGING_TYPE STREQUAL "RPM")
         set_target_properties(minifiexe PROPERTIES
-                INSTALL_RPATH "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}")
+                INSTALL_RPATH "/usr/${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}")
 
     else()
         if (APPLE)
