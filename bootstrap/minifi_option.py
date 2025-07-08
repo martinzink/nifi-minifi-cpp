@@ -30,9 +30,6 @@ class MinifiOptions:
         self.cmake_override = ""
         self.build_type = CMakeCacheValue("Specifies the build type on single-configuration generators",
                                           "CMAKE_BUILD_TYPE", "STRING", "Release")
-        if platform.system() == "Linux":
-            self.cpack_type = CMakeCacheValue("Specifies the package generator","MINIFI", "STRING", "TARGZ")
-            self.cpack_type.possible_values = ["RPM", "TARGZ"]
         self.build_type.possible_values = ["Release", "Debug", "RelWithDebInfo", "MinSizeRel"]
         additional_build_options = ["DOCKER_BUILD_ONLY", "DOCKER_SKIP_TESTS", "SKIP_TESTS", "PORTABLE"]
         self.use_ninja = CMakeCacheValue("Specifies if CMake should use the Ninja generator or the system default", "USE_NINJA", "BOOL", "ON")
