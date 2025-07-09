@@ -111,3 +111,16 @@ std::filesystem::path determineMinifiHome(const std::shared_ptr<logging::Logger>
 
   return minifi_home;
 }
+
+std::shared_ptr<minifi::Locations> determineLocations(const std::shared_ptr<logging::Logger>& logger) {
+  if (const auto minifi_home_env = utils::Environment::getEnvironmentVariable(MINIFI_HOME_ENV_KEY)) {
+    if (minifi_home_env == "FHS") {
+      return minifi::LocationsImpl::createForFHS();
+    }
+  }
+  const auto minifi_home = determineMinifiHome(logger);
+  if (minifi_home.empty()) {
+    return nullptr;
+  }
+  return minifi::LocationsImpl::createFromMinifiHome(minifi_home);
+}

@@ -22,10 +22,13 @@ namespace org::apache::nifi::minifi {
 class Locations {
 public:
   virtual ~Locations() = default;
-  virtual std::filesystem::path getWorkingDir() const = 0;
-  virtual std::filesystem::path getLockPath() const = 0;
-  virtual std::filesystem::path getLogPropertiesPath() const = 0;
-  virtual std::filesystem::path getUidPropertiesPath() const = 0;
-  virtual std::filesystem::path getPropertiesPath() const = 0;
+  [[nodiscard]] virtual std::filesystem::path getWorkingDir() const = 0;
+  [[nodiscard]] virtual std::filesystem::path getLockPath() const = 0;
+  [[nodiscard]] virtual std::filesystem::path getLogPropertiesPath() const = 0;
+  [[nodiscard]] virtual std::filesystem::path getUidPropertiesPath() const = 0;
+  [[nodiscard]] virtual std::filesystem::path getPropertiesPath() const = 0;
+  [[nodiscard]] virtual std::filesystem::path getFipsPath() const = 0;
+
+  [[nodiscard]] virtual std::string toString() const = 0;
 };
 }  // namespace org::apache::nifi::minifi

@@ -135,12 +135,12 @@ bool ConfigureImpl::commitChanges() {
   return success;
 }
 
-const Locations& ConfigureImpl::getLocations() const {
-  throw std::invalid_argument("TODO");
+std::shared_ptr<const Locations> ConfigureImpl::getLocations() const {
+  return locations_;
 }
 
-void ConfigureImpl::setLocations(std::shared_ptr<Locations>) {
-  throw std::invalid_argument("TODO");
+void ConfigureImpl::setLocations(std::shared_ptr<const Locations> locations) {
+  locations_ = std::move(locations);
 }
 
 

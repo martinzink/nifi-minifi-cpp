@@ -267,28 +267,25 @@ int main(int argc, char **argv) {
     return -1;
   }
 #endif
-  // Determine MINIFI_HOME
-  const auto minifiHome = determineMinifiHome(logger);
-  if (minifiHome.empty()) {
-    // determineMinifiHome already logged everything we need
+  const auto locations = determineLocations(logger);
+  if (!locations) {
+    // determineLocations already logged everything we need
     return -1;
   }
 
-  const auto locations = minifi::LocationsImpl(minifiHome);
-
-  utils::FileMutex minifi_home_mtx(locations.getLockPath());
+  utils::FileMutex minifi_home_mtx(locations->getLockPath());
   std::unique_lock minifi_home_lock(minifi_home_mtx, std::defer_lock);
   try {
     minifi_home_lock.lock();
   } catch (const std::exception& ex) {
-    logger->log_error("Could not acquire LOCK '{}', maybe another minifi instance is running: {}", locations.getLockPath(), ex.what());
+    logger->log_error("Could not acquire LOCK '{}', maybe another minifi instance is running: {}", locations->getLockPath(), ex.what());
     std::exit(1);
   }
   // chdir to MINIFI_HOME
   std::error_code current_path_error;
-  std::filesystem::current_path(locations.getWorkingDir(), current_path_error);
+  std::filesystem::current_path(locations->getWorkingDir(), current_path_error);
   if (current_path_error) {
-    logger->log_error("Failed to change working directory to {}", locations.getWorkingDir());
+    logger->log_error("Failed to change working directory to {}", locations->getWorkingDir());
     return -1;
   }
 
@@ -314,18 +311,18 @@ int main(int argc, char **argv) {
     std::string content_repo_class = "filesystemrepository";
 
     auto log_properties = std::make_shared<core::logging::LoggerProperties>();
-    log_properties->loadConfigureFile(locations.getLogPropertiesPath(), "nifi.log.");
+    log_properties->loadConfigureFile(locations->getLogPropertiesPath(), "nifi.log.");
 
     logger_configuration.initialize(log_properties);
 
     std::shared_ptr<minifi::Properties> uid_properties = std::make_shared<minifi::PropertiesImpl>("UID properties");
-    uid_properties->loadConfigureFile(locations.getUidPropertiesPath());
+    uid_properties->loadConfigureFile(locations->getUidPropertiesPath());
     utils::IdGenerator::getIdGenerator()->initialize(uid_properties);
 
     // Make a record of minifi home in the configured log file.
-    logger->log_info("MINIFI_HOME={}", minifiHome);
+    logger->log_info("MiNiFi Locations={}", locations->toString());
 
-    auto decryptor = minifi::Decryptor::create(minifiHome);
+    auto decryptor = minifi::Decryptor::create(locations->getWorkingDir());
     if (decryptor) {
       logger->log_info("Found encryption key, will decrypt sensitive properties in the configuration");
     } else {
@@ -333,10 +330,11 @@ int main(int argc, char **argv) {
     }
 
     const std::shared_ptr<minifi::Configure> configure = std::make_shared<minifi::ConfigureImpl>(std::move(decryptor), std::move(log_properties));
-    configure->loadConfigureFile(locations.getPropertiesPath());
+    configure->setLocations(locations);
+    configure->loadConfigureFile(locations->getPropertiesPath());
     overridePropertiesFromCommandLine(argument_parser, configure);
 
-    minifi::fips::initializeFipsMode(configure, minifiHome, logger);
+    minifi::fips::initializeFipsMode(configure, locations->getFipsPath(), logger);
 
     minifi::core::extension::ExtensionManagerImpl::get().initialize(configure);
 
@@ -393,7 +391,7 @@ int main(int argc, char **argv) {
 
     auto filesystem = std::make_shared<utils::file::FileSystem>(
         should_encrypt_flow_config,
-        utils::crypto::EncryptionProvider::create(minifiHome));
+        utils::crypto::EncryptionProvider::create(locations->getWorkingDir()));
 
     auto asset_manager = std::make_unique<utils::file::AssetManager>(*configure);
     auto bulletin_store = std::make_unique<core::BulletinStore>(*configure);
@@ -405,7 +403,7 @@ int main(int argc, char **argv) {
           .configuration = configure,
           .path = configure->get(minifi::Configure::nifi_flow_configuration_file),
           .filesystem = filesystem,
-          .sensitive_values_encryptor = utils::crypto::EncryptionProvider::createSensitivePropertiesEncryptor(minifiHome),
+          .sensitive_values_encryptor = utils::crypto::EncryptionProvider::createSensitivePropertiesEncryptor(locations->getWorkingDir()),
           .asset_manager = asset_manager.get(),
           .bulletin_store = bulletin_store.get()
       }, nifi_configuration_class_name);

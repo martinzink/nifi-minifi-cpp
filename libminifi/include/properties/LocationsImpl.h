@@ -18,31 +18,63 @@
 
 #include "minifi-cpp/properties/Locations.h"
 #include "Defaults.h"
+#include "fmt/format.h"
 
 namespace org::apache::nifi::minifi {
-class LocationsImpl : public Locations {
+class LocationsImpl final : public Locations {
+  struct M {
+    std::filesystem::path working_dir_;
+    std::filesystem::path lock_path_;
+    std::filesystem::path log_properties_path_;
+    std::filesystem::path uid_properties_path_;
+    std::filesystem::path properties_path_;
+    std::filesystem::path log_path_;
+    std::filesystem::path fips_path_;
+  } m;
+
+  explicit LocationsImpl(M m) : m(std::move(m)) {}
+
 public:
-  explicit LocationsImpl(const std::filesystem::path& minifi_home) {
-    working_dir_ = minifi_home;
-    lock_path_ = minifi_home / "LOCK";
-    log_properties_path_ = minifi_home / DEFAULT_LOG_PROPERTIES_FILE;
-    uid_properties_path_ = minifi_home / DEFAULT_UID_PROPERTIES_FILE;
-    properties_path_ = minifi_home / DEFAULT_NIFI_PROPERTIES_FILE;
-    log_path_ = minifi_home / "logs";
+  static std::shared_ptr<LocationsImpl> createFromMinifiHome(const std::filesystem::path& minifi_home) {
+    return std::shared_ptr<LocationsImpl>(new LocationsImpl(M{
+      .working_dir_ = minifi_home,
+      .lock_path_ = minifi_home / "LOCK",
+      .log_properties_path_ = minifi_home / DEFAULT_LOG_PROPERTIES_FILE,
+      .uid_properties_path_ = minifi_home / DEFAULT_UID_PROPERTIES_FILE,
+      .properties_path_ = minifi_home / DEFAULT_NIFI_PROPERTIES_FILE,
+      .log_path_ = minifi_home / "logs",
+      .fips_path_ = minifi_home / "fips"
+    }));
   }
 
-  std::filesystem::path getWorkingDir() const override { return working_dir_; }
-  std::filesystem::path getLockPath() const override { return lock_path_; }
-  std::filesystem::path getLogPropertiesPath() const override { return log_properties_path_; }
-  std::filesystem::path getUidPropertiesPath() const override { return uid_properties_path_; }
-  std::filesystem::path getPropertiesPath() const override { return properties_path_; }
+  static std::shared_ptr<LocationsImpl> createForFHS() {
+    return std::shared_ptr<LocationsImpl>(new LocationsImpl(M{
+        .working_dir_ = "/var/lib/nifi-minifi-cpp",
+        .lock_path_ = "/var/lib/nifi-minifi-cpp",
+        .log_properties_path_ = "/etc/nifi-minifi-cpp/minifi-log.properties",
+        .uid_properties_path_ = "/etc/nifi-minifi-cpp/minifi-uid.properties",
+        .properties_path_ = "/etc/nifi-minifi-cpp/minifi.properties",
+        .log_path_ = "/var/log/nifi-minifi-cpp",
+        .fips_path_ = "/var/lib/nifi-minifi-cpp/fips"
+    }));
+  }
 
-private:
-  std::filesystem::path working_dir_;
-  std::filesystem::path lock_path_;
-  std::filesystem::path log_properties_path_;
-  std::filesystem::path uid_properties_path_;
-  std::filesystem::path properties_path_;
-  std::filesystem::path log_path_;
+  [[nodiscard]] std::filesystem::path getWorkingDir() const override { return m.working_dir_; }
+  [[nodiscard]] std::filesystem::path getLockPath() const override { return m.lock_path_; }
+  [[nodiscard]] std::filesystem::path getLogPropertiesPath() const override { return m.log_properties_path_; }
+  [[nodiscard]] std::filesystem::path getUidPropertiesPath() const override { return m.uid_properties_path_; }
+  [[nodiscard]] std::filesystem::path getPropertiesPath() const override { return m.properties_path_; }
+  [[nodiscard]] std::filesystem::path getFipsPath() const override { return m.fips_path_; }
+  [[nodiscard]] std::string toString() const override {
+    return fmt::format(
+      R"(Locations {{ working dir: "{}", lock path: "{}", log properties path: "{}", uid properties path: "{}", properties path: "{}", fips path: "{}" }})",
+      getWorkingDir().string(),
+      getLockPath().string(),
+      getLogPropertiesPath().string(),
+      getUidPropertiesPath().string(),
+      getPropertiesPath().string(),
+      getFipsPath().string()
+    );
+  }
 };
 }  // namespace org::apache::nifi::minifi
