@@ -310,7 +310,7 @@ int main(int argc, char **argv) {
     std::string nifi_configuration_class_name = "adaptiveconfiguration";
     std::string content_repo_class = "filesystemrepository";
 
-    auto log_properties = std::make_shared<core::logging::LoggerProperties>();
+    auto log_properties = std::make_shared<core::logging::LoggerProperties>(locations->getLogsDirs());
     log_properties->loadConfigureFile(locations->getLogPropertiesPath(), "nifi.log.");
 
     logger_configuration.initialize(log_properties);

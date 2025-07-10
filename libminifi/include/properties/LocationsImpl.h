@@ -28,7 +28,7 @@ class LocationsImpl final : public Locations {
     std::filesystem::path log_properties_path_;
     std::filesystem::path uid_properties_path_;
     std::filesystem::path properties_path_;
-    std::filesystem::path log_path_;
+    std::filesystem::path logs_dir_;
     std::filesystem::path fips_path_;
   } m;
 
@@ -42,7 +42,7 @@ class LocationsImpl final : public Locations {
       .log_properties_path_ = minifi_home / DEFAULT_LOG_PROPERTIES_FILE,
       .uid_properties_path_ = minifi_home / DEFAULT_UID_PROPERTIES_FILE,
       .properties_path_ = minifi_home / DEFAULT_NIFI_PROPERTIES_FILE,
-      .log_path_ = minifi_home / "logs",
+      .logs_dir_ = minifi_home / "logs",
       .fips_path_ = minifi_home / "fips"
     }));
   }
@@ -50,11 +50,11 @@ class LocationsImpl final : public Locations {
   static std::shared_ptr<LocationsImpl> createForFHS() {
     return std::shared_ptr<LocationsImpl>(new LocationsImpl(M{
         .working_dir_ = "/var/lib/nifi-minifi-cpp",
-        .lock_path_ = "/var/lib/nifi-minifi-cpp",
+        .lock_path_ = "/var/lib/nifi-minifi-cpp/LOCK",
         .log_properties_path_ = "/etc/nifi-minifi-cpp/minifi-log.properties",
         .uid_properties_path_ = "/etc/nifi-minifi-cpp/minifi-uid.properties",
         .properties_path_ = "/etc/nifi-minifi-cpp/minifi.properties",
-        .log_path_ = "/var/log/nifi-minifi-cpp",
+        .logs_dir_ = "/var/log/nifi-minifi-cpp",
         .fips_path_ = "/var/lib/nifi-minifi-cpp/fips"
     }));
   }
@@ -65,6 +65,7 @@ class LocationsImpl final : public Locations {
   [[nodiscard]] std::filesystem::path getUidPropertiesPath() const override { return m.uid_properties_path_; }
   [[nodiscard]] std::filesystem::path getPropertiesPath() const override { return m.properties_path_; }
   [[nodiscard]] std::filesystem::path getFipsPath() const override { return m.fips_path_; }
+  [[nodiscard]] std::filesystem::path getLogsDirs() const override { return m.logs_dir_; }
   [[nodiscard]] std::string toString() const override {
     return fmt::format(
       R"(Locations {{ working dir: "{}", lock path: "{}", log properties path: "{}", uid properties path: "{}", properties path: "{}", fips path: "{}" }})",

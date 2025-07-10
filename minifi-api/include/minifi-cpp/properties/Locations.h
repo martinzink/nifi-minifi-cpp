@@ -28,6 +28,7 @@ public:
   [[nodiscard]] virtual std::filesystem::path getUidPropertiesPath() const = 0;
   [[nodiscard]] virtual std::filesystem::path getPropertiesPath() const = 0;
   [[nodiscard]] virtual std::filesystem::path getFipsPath() const = 0;
+  [[nodiscard]] virtual std::filesystem::path getLogsDirs() const = 0;
 
   [[nodiscard]] virtual std::string toString() const = 0;
 };
