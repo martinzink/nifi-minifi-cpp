@@ -603,8 +603,8 @@ if (NOT WIN32)
                 DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/system
                 COMPONENT bin
         )
-        install(DIRECTORY DESTINATION /${CMAKE_INSTALL_LOCALSTATEDIR}/lib/${PROJECT_NAME})
-        install(DIRECTORY DESTINATION /${CMAKE_INSTALL_LOCALSTATEDIR}/log/${PROJECT_NAME})
+        install(DIRECTORY DESTINATION /${CMAKE_INSTALL_LOCALSTATEDIR}/lib/${PROJECT_NAME} COMPONENT bin)
+        install(DIRECTORY DESTINATION /${CMAKE_INSTALL_LOCALSTATEDIR}/log/${PROJECT_NAME} COMPONENT bin)
 
     elseif (MINIFI_PACKAGING_TYPE STREQUAL "TGZ")
         message(STATUS "Configuring for self-contained TGZ package installation.")
