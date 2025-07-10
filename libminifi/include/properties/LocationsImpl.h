@@ -34,7 +34,7 @@ class LocationsImpl final : public Locations {
 
   explicit LocationsImpl(M m) : m(std::move(m)) {}
 
-public:
+ public:
   static std::shared_ptr<LocationsImpl> createFromMinifiHome(const std::filesystem::path& minifi_home) {
     return std::shared_ptr<LocationsImpl>(new LocationsImpl(M{
       .working_dir_ = minifi_home,
@@ -73,8 +73,7 @@ public:
       getLogPropertiesPath().string(),
       getUidPropertiesPath().string(),
       getPropertiesPath().string(),
-      getFipsPath().string()
-    );
+      getFipsPath().string());
   }
 };
 }  // namespace org::apache::nifi::minifi

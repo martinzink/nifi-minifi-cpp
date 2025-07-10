@@ -588,13 +588,10 @@ set(CPACK_SOURCE_IGNORE_FILES
     "\\\\.ropeproject"
 )
 
-# Generate binary assembly. Exclude conf for windows since we'll be doing the work in the WiX template
+add_subdirectory(conf)
 if (NOT WIN32)
     if (MINIFI_PACKAGING_TYPE STREQUAL "RPM")
         message(STATUS "Configuring for FHS/RPM package installation.")
-        install(FILES fhs_conf/minifi.properties fhs_conf/minifi-log.properties fhs_conf/minifi-uid.properties fhs_conf/minifi.config
-                DESTINATION /${CMAKE_INSTALL_SYSCONFDIR}/${PROJECT_NAME}
-                COMPONENT bin)
         install(FILES fips/openssl.cnf fips/README.md
                 DESTINATION /${CMAKE_INSTALL_SYSCONFDIR}/${PROJECT_NAME}/fips
                 COMPONENT bin)
@@ -609,9 +606,6 @@ if (NOT WIN32)
     elseif (MINIFI_PACKAGING_TYPE STREQUAL "TGZ")
         message(STATUS "Configuring for self-contained TGZ package installation.")
         install(PROGRAMS bin/minifi.sh DESTINATION bin)
-        install(FILES conf/minifi.properties conf/minifi-log.properties conf/minifi-uid.properties conf/config.yml
-                DESTINATION conf
-                COMPONENT bin)
         install(FILES fips/openssl.cnf fips/README.md
                 DESTINATION fips
                 COMPONENT bin)

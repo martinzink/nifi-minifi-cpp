@@ -33,7 +33,7 @@ std::filesystem::path getRootFromConfigure(const Configure& configuration) {
   if (const auto locations = configuration.getLocations()) {
     return locations->getWorkingDir() / "asset";
   }
-  return std::filesystem::path("") / "asset";  // TODO (mzink)
+  return std::filesystem::path("") / "asset";
 }
 
 AssetManager::AssetManager(const Configure& configuration)
