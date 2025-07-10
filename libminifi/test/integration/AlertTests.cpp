@@ -82,7 +82,7 @@ TEST_CASE("Alert system forwards logs") {
   harness.getConfiguration()->set(minifi::Configuration::nifi_c2_agent_identifier, agent_id);
   harness.getConfiguration()->setLocations(minifi::LocationsImpl::createFromMinifiHome(dir.getPath()));
 
-  auto log_props = std::make_shared<logging::LoggerProperties>();
+  auto log_props = std::make_shared<logging::LoggerProperties>(dir.getPath() / "logs");
   log_props->set("appender.alert1", "alert");
   log_props->set("appender.alert1.url", harness.getC2RestUrl());
   log_props->set("appender.alert1.filter", ".*<begin>(.*)<end>.*");

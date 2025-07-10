@@ -136,7 +136,7 @@ TEST_CASE("C2PropertiesUpdateTests", "[c2test]") {
   C2HeartbeatHandler hb_handler{};
   C2AcknowledgeHandler ack_handler{};
 
-  auto logger_properties = std::make_shared<core::logging::LoggerProperties>();
+  auto logger_properties = std::make_shared<core::logging::LoggerProperties>(home_dir / "logs");
   // this sets the ostream logger
   auto log_test_controller = LogTestController::getInstance(logger_properties);
 
