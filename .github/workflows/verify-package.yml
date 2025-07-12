@@ -54,7 +54,7 @@ jobs:
   docker-tests:
     name: "${{ matrix.platform.name }} (${{ matrix.arch }})${{ inputs.enable_fips && ' (FIPS Mode)' || '' }}"
     runs-on: ${{ matrix.arch == 'x86_64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
-    timeout-minutes: 180
+    timeout-minutes: 240
     needs: build-packages
     strategy:
       fail-fast: false
