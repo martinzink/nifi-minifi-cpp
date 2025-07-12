@@ -204,7 +204,7 @@ Feature: Executing Couchbase operations from MiNiFi-C++
     When a Couchbase server is started
     And all instances start up
 
-    Then a flowfile with the JSON content '{"field1": "value1", "field2": "value2"}' is placed in the monitored directory in less than 6000 seconds
+    Then a flowfile with the JSON content '{"field1": "value1", "field2": "value2"}' is placed in the monitored directory in less than 60 seconds
     And the Minifi logs contain the following message: "key:couchbase.bucket value:test_bucket" in less than 10 seconds
     And the Minifi logs contain the following message: "key:couchbase.doc.id value:test_doc_id" in less than 1 seconds
     And the Minifi logs match the following regex: "key:couchbase.doc.cas value:[1-9][0-9]*" in less than 1 seconds
@@ -233,7 +233,7 @@ Feature: Executing Couchbase operations from MiNiFi-C++
     When a Couchbase server is started
     And all instances start up
 
-    Then a flowfile with the JSON content '{"field1": "value1", "field2": "value2"}' is placed in the monitored directory in less than 6000 seconds
+    Then a flowfile with the JSON content '{"field1": "value1", "field2": "value2"}' is placed in the monitored directory in less than 60 seconds
     And the Minifi logs contain the following message: "key:couchbase.bucket value:test_bucket" in less than 10 seconds
     And the Minifi logs contain the following message: "key:couchbase.doc.id value:test_doc_id" in less than 1 seconds
     And the Minifi logs match the following regex: "key:couchbase.doc.cas value:[1-9][0-9]*" in less than 1 seconds
