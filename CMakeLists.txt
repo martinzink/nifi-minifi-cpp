@@ -39,6 +39,7 @@ set(DOCKER_TAGS "" CACHE STRING "Comma separated tags to override default docker
 
 include(CMakeDependentOption)
 include(CheckIncludeFile)
+include(CheckIncludeFile)
 include(FeatureSummary)
 include(ExternalProject)
 include(GNUInstallDirs)
@@ -249,6 +250,10 @@ include(BundledLibSodium)
 use_bundled_libsodium("${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}")
 
 list(APPEND MINIFI_CPP_COMPILE_DEFINITIONS SODIUM_STATIC=1)
+list(APPEND MINIFI_CPP_COMPILE_DEFINITIONS "RPM_CONFIG_DIR=\"/${CMAKE_INSTALL_SYSCONFDIR}/${PROJECT_NAME}\"")
+list(APPEND MINIFI_CPP_COMPILE_DEFINITIONS "RPM_LOG_DIR=\"/${CMAKE_INSTALL_LOCALSTATEDIR}/log/${PROJECT_NAME}\"")
+list(APPEND MINIFI_CPP_COMPILE_DEFINITIONS "RPM_WORK_DIR=\"/${CMAKE_INSTALL_LOCALSTATEDIR}/lib/${PROJECT_NAME}\"")
+list(APPEND MINIFI_CPP_COMPILE_DEFINITIONS "RPM_LIB_DIR=\"/usr/${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}\"")
 
 # zlib
 include(GetZLIB)

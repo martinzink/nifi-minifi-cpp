@@ -26,7 +26,7 @@ constexpr std::string_view MINIFI_HOME_ENV_KEY = "MINIFI_HOME";
 namespace org::apache::nifi::minifi::utils {
 inline std::string getDefaultExtensionsPattern() {
   constexpr std::string_view DEFAULT_EXTENSION_PATH = "../extensions/*";
-  constexpr std::string_view DEFAULT_EXTENSION_PATH_RPM = "/usr/lib64/nifi-minifi-cpp/extensions/*";
+  constexpr std::string_view DEFAULT_EXTENSION_PATH_RPM = RPM_LIB_DIR "/extensions/*";
   if (Environment::getEnvironmentVariable(MINIFI_HOME_ENV_KEY.data()) == "FHS" || file::get_executable_path().parent_path() == "/usr/bin") {
     return std::string(DEFAULT_EXTENSION_PATH_RPM);
   }
@@ -35,7 +35,7 @@ inline std::string getDefaultExtensionsPattern() {
 
 inline std::filesystem::path getMinifiDir() {
   if (Environment::getEnvironmentVariable(MINIFI_HOME_ENV_KEY.data()) == "FHS" || file::get_executable_path().parent_path() == "/usr/bin") {
-    return "/var/lib/nifi-minifi-cpp";
+    return RPM_WORK_DIR;
   }
   return Environment::getEnvironmentVariable(MINIFI_HOME_ENV_KEY.data()).value_or("");
 }

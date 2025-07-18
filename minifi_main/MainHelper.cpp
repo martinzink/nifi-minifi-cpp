@@ -128,14 +128,14 @@ Locations getFromMinifiHome(const std::filesystem::path& minifi_home) {
 
 Locations getFromFHS() {
   return {
-      .working_dir_ = "/var/lib/nifi-minifi-cpp",
-      .lock_path_ = "/var/lib/nifi-minifi-cpp/LOCK",
-      .log_properties_path_ = "/etc/nifi-minifi-cpp/minifi-log.properties",
-      .uid_properties_path_ = "/etc/nifi-minifi-cpp/minifi-uid.properties",
-      .properties_path_ = "/etc/nifi-minifi-cpp/minifi.properties",
-      .logs_dir_ = "/var/log/nifi-minifi-cpp",
-      .fips_bin_path_ = "/usr/lib64/nifi-minifi-cpp/fips",
-      .fips_conf_path_ = "/etc/nifi-minifi-cpp/fips"
+      .working_dir_ =  std::filesystem::path(RPM_WORK_DIR),
+      .lock_path_ = std::filesystem::path(RPM_WORK_DIR) / "LOCK",
+      .log_properties_path_ = std::filesystem::path(RPM_CONFIG_DIR) / "minifi-log.properties",
+      .uid_properties_path_ = std::filesystem::path(RPM_CONFIG_DIR) / "minifi-uid.properties",
+      .properties_path_ = std::filesystem::path(RPM_CONFIG_DIR) / "minifi.properties",
+      .logs_dir_ = std::filesystem::path(RPM_LOG_DIR),
+      .fips_bin_path_ = std::filesystem::path(RPM_LIB_DIR) / "fips",
+      .fips_conf_path_ = std::filesystem::path(RPM_CONFIG_DIR) / "fips"
   };
 }
 
