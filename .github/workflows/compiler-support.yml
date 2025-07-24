@@ -42,6 +42,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y lsb-release wget software-properties-common gnupg python3-venv
           wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- ${{ matrix.clang_version }}
+          sudo apt-get install -y libc++-${{ matrix.clang_version }}-dev libc++abi-${{ matrix.clang_version }}-dev
 
       - name: 'Verify Clang installation'
         run: clang-${{ matrix.clang_version }} --version
