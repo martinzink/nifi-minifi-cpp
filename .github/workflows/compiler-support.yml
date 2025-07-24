@@ -1,6 +1,5 @@
-name: 'Build on Ubuntu (x86 or ARM)'
+name: 'Check supported Compilers'
 
-# This workflow is triggered manually from the Actions tab
 on:
   workflow_dispatch:
     inputs:
@@ -12,20 +11,17 @@ on:
 
 jobs:
   build:
-    # The job name dynamically shows the OS, Clang version, and architecture
-    name: Build on ${{ matrix.os }} w/ Clang ${{ matrix.clang_version }} (${{ inputs.use_arm && 'ARM' || 'x86' }})
+    name: Clang ${{ matrix.clang_version }} on ${{ matrix.os }}${{ inputs.use_arm && '-arm' || '' }}
 
     strategy:
       fail-fast: false
       matrix:
-        # The 'include' key lets us define specific combinations of variables
         include:
           - os: ubuntu-22.04
             clang_version: 16
           - os: ubuntu-24.04
             clang_version: 20
 
-    # Conditionally select the runner based on the matrix and the 'use_arm' input
     runs-on: ${{ matrix.os }}${{ inputs.use_arm && '-arm' || '' }}
 
     steps:
@@ -48,7 +44,6 @@ jobs:
         run: clang-${{ matrix.clang_version }} --version
 
       - name: 'Build Project'
-        # This step uses the clang version from the matrix to set environment variables
         run: |
           export CC=clang-${{ matrix.clang_version }}
           export CXX=clang++-${{ matrix.clang_version }}
