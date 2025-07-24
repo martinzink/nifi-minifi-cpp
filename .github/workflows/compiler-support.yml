@@ -13,7 +13,7 @@ on:
 jobs:
   build:
     # The job name dynamically shows the OS, Clang version, and architecture
-    name: Build on ${{ matrix.os }} w/ Clang ${{ matrix.clang_version }} (${{ github.event.inputs.use_arm && 'ARM' || 'x86' }})
+    name: Build on ${{ matrix.os }} w/ Clang ${{ matrix.clang_version }} (${{ inputs.use_arm && 'ARM' || 'x86' }})
 
     strategy:
       fail-fast: false
@@ -26,7 +26,7 @@ jobs:
             clang_version: 20
 
     # Conditionally select the runner based on the matrix and the 'use_arm' input
-    runs-on: ${{ matrix.os }}${{ github.event.inputs.use_arm && '-arm' || '' }}
+    runs-on: ${{ matrix.os }}${{ inputs.use_arm && '-arm' || '' }}
 
     steps:
       - name: 'Checkout repository code'
