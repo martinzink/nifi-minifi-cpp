@@ -1,0 +1,59 @@
+name: 'Build on Ubuntu (x86 or ARM)'
+
+# This workflow is triggered manually from the Actions tab
+on:
+  workflow_dispatch:
+    inputs:
+      use_arm:
+        description: 'Use ARM64 runners'
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    # The job name dynamically shows the OS, Clang version, and architecture
+    name: Build on ${{ matrix.os }} w/ Clang ${{ matrix.clang_version }} (${{ github.event.inputs.use_arm && 'ARM' || 'x86' }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # The 'include' key lets us define specific combinations of variables
+        include:
+          - os: ubuntu-22.04
+            clang_version: 16
+          - os: ubuntu-24.04
+            clang_version: 20
+
+    # Conditionally select the runner based on the matrix and the 'use_arm' input
+    runs-on: ${{ matrix.os }}${{ github.event.inputs.use_arm && '-arm' || '' }}
+
+    steps:
+      - name: 'Checkout repository code'
+        uses: actions/checkout@v4
+
+      - name: 'Display runner information'
+        run: |
+          echo "This job is running on: ${{ runner.os }}"
+          echo "Processor Architecture: $(uname -m)"
+
+      - name: 'Install Clang ${{ matrix.clang_version }} and Dependencies'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lsb-release wget software-properties-common gnupg python3-venv
+          wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- ${{ matrix.clang_version }}
+
+      - name: 'Verify Clang installation'
+        run: clang-${{ matrix.clang_version }} --version
+
+      - name: 'Build Project'
+        # This step uses the clang version from the matrix to set environment variables
+        run: |
+          export CC=clang-${{ matrix.clang_version }}
+          export CXX=clang++-${{ matrix.clang_version }}
+          export CXXFLAGS="-stdlib=libc++"
+          export LDFLAGS="-stdlib=libc++"
+          python3 -m venv venv && source venv/bin/activate \
+            && pip install -r requirements.txt \
+            && python main.py --noninteractive --skip-compiler-install
+        working-directory: bootstrap
