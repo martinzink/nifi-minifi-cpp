@@ -10,9 +10,8 @@ on:
         default: false
 
 jobs:
-  build:
-    name: Clang ${{ matrix.clang_version }} on ${{ matrix.os }}${{ inputs.use_arm && '-arm' || '' }}
-
+  build-clang:
+    name: Clang ${{ matrix.clang_version }} on ${{ matrix.os }}${{ inputs.use_arm == 'true' && '-arm' || '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -21,9 +20,7 @@ jobs:
             clang_version: 16
           - os: ubuntu-24.04
             clang_version: 20
-
-    runs-on: ${{ matrix.os }}${{ inputs.use_arm && '-arm' || '' }}
-
+    runs-on: ${{ matrix.os }}${{ inputs.use_arm == 'true' && '-arm' || '' }}
     steps:
       - name: 'Checkout repository code'
         uses: actions/checkout@v4
@@ -43,12 +40,52 @@ jobs:
       - name: 'Verify Clang installation'
         run: clang-${{ matrix.clang_version }} --version
 
-      - name: 'Build Project'
+      - name: 'Build Project with Clang'
         run: |
           export CC=clang-${{ matrix.clang_version }}
           export CXX=clang++-${{ matrix.clang_version }}
           export CXXFLAGS="-stdlib=libc++"
           export LDFLAGS="-stdlib=libc++"
+          python3 -m venv venv && source venv/bin/activate \
+            && pip install -r requirements.txt \
+            && python main.py --noninteractive --skip-compiler-install
+        working-directory: bootstrap
+
+  build-gcc:
+    name: GCC ${{ matrix.gcc_version }} on ${{ matrix.os }}${{ inputs.use_arm == 'true' && '-arm' || '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            gcc_version: 12
+          - os: ubuntu-24.04
+            gcc_version: 15
+    runs-on: ${{ matrix.os }}${{ inputs.use_arm == 'true' && '-arm' || '' }}
+    steps:
+      - name: 'Checkout repository code'
+        uses: actions/checkout@v4
+
+      - name: 'Display runner information'
+        run: |
+          echo "This job is running on: ${{ runner.os }}"
+          echo "Processor Architecture: $(uname -m)"
+
+      - name: 'Install GCC ${{ matrix.gcc_version }} and Dependencies'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y software-properties-common python3-venv
+          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install -y gcc-${{ matrix.gcc_version }} g++-${{ matrix.gcc_version }}
+
+      - name: 'Verify GCC installation'
+        run: gcc-${{ matrix.gcc_version }} --version
+
+      - name: 'Build Project with GCC'
+        run: |
+          export CC=gcc-${{ matrix.gcc_version }}
+          export CXX=g++-${{ matrix.gcc_version }}
           python3 -m venv venv && source venv/bin/activate \
             && pip install -r requirements.txt \
             && python main.py --noninteractive --skip-compiler-install
