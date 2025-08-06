@@ -1,0 +1,33 @@
+From d7493fb6ada0d7d6ed24b2a9f204d07d1ef3057f Mon Sep 17 00:00:00 2001
+From: Yann Collet <Cyan4973@users.noreply.github.com>
+Date: Sat, 24 May 2025 19:26:28 +0000
+Subject: [PATCH] Update CMake version requirements to support broader
+ compatibility
+
+This commit:
+- Maintains CMake compatibility with older systems by keeping the minimum version at 3.5
+- Sets the maximum policy version to 4.0.2 to ensure consistent behavior with newer CMake versions
+- Adds a comment explaining the version range specification purpose
+- Ensures future-proofing as newer CMake versions will use the 4.0.2 policy set
+---
+ build/cmake/CMakeLists.txt | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/build/cmake/CMakeLists.txt b/build/cmake/CMakeLists.txt
+index eb7007b4..c861b50a 100644
+--- a/build/cmake/CMakeLists.txt
++++ b/build/cmake/CMakeLists.txt
+@@ -10,7 +10,9 @@
+ # LZ4's CMake support is maintained by Evan Nemerson; when filing
+ # bugs please mention @nemequ to make sure I see it.
+ 
+-cmake_minimum_required(VERSION 2.8.12)
++# Use range version specification for policy control while maintaining 
++# compatibility with older CMake versions
++cmake_minimum_required(VERSION 3.5...4.0.2)
+ 
+ set(LZ4_TOP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
+ 
+-- 
+2.39.5 (Apple Git-154)
+

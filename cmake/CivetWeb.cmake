@@ -27,9 +27,12 @@ set(CIVETWEB_ENABLE_LUA "OFF" CACHE STRING "" FORCE)
 set(CIVETWEB_ENABLE_CXX "ON" CACHE STRING "" FORCE)
 set(CIVETWEB_ALLOW_WARNINGS "ON" CACHE STRING "" FORCE)
 set(CIVETWEB_ENABLE_ASAN "OFF" CACHE STRING "" FORCE)
-set(PATCH_FILE "${CMAKE_SOURCE_DIR}/thirdparty/civetweb/openssl3.patch")
+set(PATCH_FILE_1 "${CMAKE_SOURCE_DIR}/thirdparty/civetweb/openssl3.patch")
+set(PATCH_FILE_2 "${CMAKE_SOURCE_DIR}/thirdparty/civetweb/Bump-minimum-CMake-version-to-3.10.patch")
+
 set(PC ${Bash_EXECUTABLE}  -c "set -x &&\
-        (\\\"${Patch_EXECUTABLE}\\\" -p1 -R -s -f --dry-run -i \\\"${PATCH_FILE}\\\" || \\\"${Patch_EXECUTABLE}\\\" -p1 -N -i \\\"${PATCH_FILE}\\\")")
+        (\\\"${Patch_EXECUTABLE}\\\" -p1 -R -s -f --dry-run -i \\\"${PATCH_FILE_1}\\\" || \\\"${Patch_EXECUTABLE}\\\" -p1 -N -i \\\"${PATCH_FILE_1}\\\") &&\
+        (\\\"${Patch_EXECUTABLE}\\\" -p1 -R -s -f --dry-run -i \\\"${PATCH_FILE_2}\\\" || \\\"${Patch_EXECUTABLE}\\\" -p1 -N -i \\\"${PATCH_FILE_2}\\\")")
 
 FetchContent_Declare(civetweb
     URL      https://github.com/civetweb/civetweb/archive/refs/tags/v1.16.tar.gz

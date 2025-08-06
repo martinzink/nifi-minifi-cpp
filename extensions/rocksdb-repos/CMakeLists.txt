@@ -30,7 +30,7 @@ file(GLOB SOURCES  "*.cpp" "controllers/*.cpp" "database/*.cpp" "encryption/*.cp
 
 add_minifi_library(minifi-rocksdb-repos SHARED ${SOURCES})
 
-target_link_libraries(minifi-rocksdb-repos PUBLIC RocksDB::RocksDB)
+target_link_libraries(minifi-rocksdb-repos PUBLIC rocksdb)
 target_link_libraries(minifi-rocksdb-repos PUBLIC minifi-api minifi-extension-framework Threads::Threads)
 target_link_libraries(minifi-rocksdb-repos PRIVATE $<LINK_ONLY:core-minifi>)
 

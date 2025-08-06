@@ -17,8 +17,6 @@
 
 include(FetchContent)
 
-list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/zstd/dummy")
-
 set(ZSTD_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 
 set(PC "")
@@ -28,30 +26,19 @@ if (WIN32)
 endif()
 
 FetchContent_Declare(zstd
-    URL            https://github.com/facebook/zstd/archive/refs/tags/v1.5.2.tar.gz
-    URL_HASH       SHA256=f7de13462f7a82c29ab865820149e778cbfe01087b3a55b5332707abf9db4a6e
+    URL            https://github.com/facebook/zstd/archive/refs/tags/v1.5.7.tar.gz
+    URL_HASH       SHA256=37d7284556b20954e56e1ca85b80226768902e2edabd3b649e9e72c0c9012ee3
     PATCH_COMMAND  "${PC}"
     SOURCE_SUBDIR  build/cmake
+    OVERRIDE_FIND_PACKAGE
     SYSTEM
 )
 
 FetchContent_MakeAvailable(zstd)
 
-if (NOT TARGET zstd::zstd)
+if(NOT TARGET ZSTD::ZSTD)
+    add_library(ZSTD::ZSTD ALIAS libzstd_static)
     add_library(zstd::zstd ALIAS libzstd_static)
 endif()
 
-# Set variables
-set(ZSTD_FOUND "YES" CACHE STRING "" FORCE)
-set(ZSTD_INCLUDE_DIRS "${zstd_SOURCE_DIR}/lib" CACHE STRING "" FORCE)
-if (WIN32)
-    set(ZSTD_LIBRARIES "${zstd_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}/zstd_static.lib" CACHE STRING "" FORCE)
-    set(ZSTD_LIBRARY "${zstd_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}/zstd_static.lib" CACHE STRING "" FORCE)
-else()
-    set(ZSTD_LIBRARIES "${zstd_BINARY_DIR}/lib/libzstd.a" CACHE STRING "" FORCE)
-    set(ZSTD_LIBRARY "${zstd_BINARY_DIR}/lib/libzstd.a" CACHE STRING "" FORCE)
-endif()
-
-# Set exported variables for FindPackage.cmake
-set(PASSTHROUGH_VARIABLES ${PASSTHROUGH_VARIABLES} "-DEXPORTED_ZSTD_INCLUDE_DIRS=${ZSTD_INCLUDE_DIRS}" CACHE STRING "" FORCE)
-set(PASSTHROUGH_VARIABLES ${PASSTHROUGH_VARIABLES} "-DEXPORTED_ZSTD_LIBRARIES=${ZSTD_LIBRARIES}" CACHE STRING "" FORCE)
+find_package(zstd REQUIRED)

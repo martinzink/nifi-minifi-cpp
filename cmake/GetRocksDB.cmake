@@ -25,7 +25,6 @@ function(get_rocksdb SOURCE_DIR BINARY_DIR)
 
         if (BUILD_ROCKSDB)
             include(BundledRocksDB)
-            use_bundled_rocksdb(${SOURCE_DIR} ${BINARY_DIR})
         else()
             list(APPEND CMAKE_MODULE_PATH "${SOURCE_DIR}/cmake/rocksdb/sys")
             find_package(RocksDB REQUIRED)

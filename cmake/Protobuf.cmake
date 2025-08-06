@@ -17,6 +17,7 @@
 include(FetchContent)
 
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(protobuf_INSTALL OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
     protobuf

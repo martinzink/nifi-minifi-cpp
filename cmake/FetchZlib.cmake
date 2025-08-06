@@ -15,20 +15,19 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# Dummy zstd find for when we use bundled version
-if(NOT zstd_FOUND)
-    set(zstd_FOUND "YES" CACHE STRING "" FORCE)
-    set(ZSTD_INCLUDE_DIR "${EXPORTED_ZSTD_INCLUDE_DIRS}" CACHE STRING "" FORCE)
-    set(ZSTD_INCLUDE_DIRS "${EXPORTED_ZSTD_INCLUDE_DIRS}" CACHE STRING "" FORCE)
-    set(ZSTD_LIBRARIES "${EXPORTED_ZSTD_LIBRARIES}" CACHE STRING "" FORCE)
-    set(ZSTD_LIBRARY "${EXPORTED_ZSTD_LIBRARIES}" CACHE STRING "" FORCE)
+include(FetchContent)
+
+FetchContent_Declare(zlib
+        URL            https://github.com/madler/zlib/archive/v1.3.1.tar.gz
+        URL_HASH       SHA256=17e88863f3600672ab49182f217281b6fc4d3c762bde361935e436a95214d05c
+        OVERRIDE_FIND_PACKAGE
+        SYSTEM
+)
+
+FetchContent_MakeAvailable(zlib)
+
+if(NOT TARGET ZLIB::ZLIB)
+    add_library(ZLIB::ZLIB ALIAS zlibstatic)
 endif()
 
-if(NOT TARGET zstd::zstd)
-    add_library(zstd::zstd STATIC IMPORTED)
-    set_target_properties(zstd::zstd PROPERTIES
-            INTERFACE_INCLUDE_DIRECTORIES "${ZSTD_INCLUDE_DIRS}")
-    set_target_properties(zstd::zstd PROPERTIES
-            IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-            IMPORTED_LOCATION "${ZSTD_LIBRARIES}")
-endif()
+find_package(ZLIB REQUIRED)

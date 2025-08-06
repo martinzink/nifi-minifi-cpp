@@ -15,94 +15,39 @@
 # specific language governing permissions and limitations
 # under the License.
 
-function(use_bundled_rocksdb SOURCE_DIR BINARY_DIR)
-    message("Using bundled RocksDB")
+include(FetchZlib)
+if (NOT WIN32)
+    include(Zstd)
+    include(LZ4)
+endif()
 
-    if (NOT WIN32)
-        include(Zstd)
-        include(LZ4)
-    endif()
+set(PATCH_FILE_1 "${SOURCE_DIR}/thirdparty/rocksdb/all/patches/dboptions_equality_operator.patch")
+set(PATCH_FILE_2 "${SOURCE_DIR}/thirdparty/rocksdb/all/patches/c++23_fixes.patch")
 
-    set(PATCH_FILE_1 "${SOURCE_DIR}/thirdparty/rocksdb/all/patches/dboptions_equality_operator.patch")
-    set(PATCH_FILE_2 "${SOURCE_DIR}/thirdparty/rocksdb/all/patches/c++23_fixes.patch")
-
-    set(PC ${Bash_EXECUTABLE} -c "set -x &&\
+set(PC ${Bash_EXECUTABLE} -c "set -x &&\
             (\"${Patch_EXECUTABLE}\" -p1 -R -s -f --dry-run -i \"${PATCH_FILE_1}\" || \"${Patch_EXECUTABLE}\" -p1 -N -i \"${PATCH_FILE_1}\") &&\
             (\"${Patch_EXECUTABLE}\" -p1 -R -s -f --dry-run -i \"${PATCH_FILE_2}\" || \"${Patch_EXECUTABLE}\" -p1 -N -i \"${PATCH_FILE_2}\") ")
 
 
-# Define byproducts
-    if (WIN32)
-        set(BYPRODUCT "lib/rocksdb.lib")
-    else()
-        include(GNUInstallDirs)
-        string(REPLACE "/" ";" LIBDIR_LIST ${CMAKE_INSTALL_LIBDIR})
-        list(GET LIBDIR_LIST 0 LIBDIR)
-        set(BYPRODUCT "${LIBDIR}/librocksdb.a")
-    endif()
+FetchContent_Declare(rocksdb
+        URL "https://github.com/facebook/rocksdb/archive/refs/tags/v10.5.1.tar.gz"
+        URL_HASH "SHA256=7ec942baab802b2845188d02bc5d4e42c29236e61bcbc08f5b3a6bdd92290c22"
+        SYSTEM
+)
 
-    # Set build options
-    set(ROCKSDB_CMAKE_ARGS ${PASSTHROUGH_CMAKE_ARGS}
-            "-DCMAKE_INSTALL_PREFIX=${BINARY_DIR}/thirdparty/rocksdb-install"
-            -DWITH_TESTS=OFF
-            -DWITH_TOOLS=ON
-            -DWITH_GFLAGS=OFF
-            -DUSE_RTTI=1
-            -DROCKSDB_BUILD_SHARED=OFF
-            -DFAIL_ON_WARNINGS=OFF
-            )
-    if(PORTABLE)
-        list(APPEND ROCKSDB_CMAKE_ARGS -DPORTABLE=ON)
-    endif()
-    if(WIN32)
-        list(APPEND ROCKSDB_CMAKE_ARGS
-                -DROCKSDB_INSTALL_ON_WINDOWS=ON
-                -DWITH_XPRESS=ON)
-    else()
-        list(APPEND ROCKSDB_CMAKE_ARGS
-                -DWITH_ZLIB=ON
-                -DWITH_BZ2=ON
-                -DWITH_ZSTD=ON
-                -DWITH_LZ4=ON)
-    endif()
 
-    append_third_party_passthrough_args(ROCKSDB_CMAKE_ARGS "${ROCKSDB_CMAKE_ARGS}")
+set(PAHO_BUILD_STATIC ON CACHE BOOL "" FORCE)
+set(WITH_TESTS OFF CACHE BOOL "" FORCE)
+set(WITH_TOOLS OFF CACHE BOOL "" FORCE)
+set(WITH_BENCHMARK_TOOLS OFF CACHE BOOL "" FORCE)
+set(WITH_GFLAGS OFF CACHE BOOL "" FORCE)
+set(USE_RTTI ON CACHE BOOL "" FORCE)
+set(ROCKSDB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+set(FAIL_ON_WARNINGS OFF CACHE BOOL "" FORCE)
+set(WITH_ZLIB ON CACHE BOOL "" FORCE)
+set(WITH_BZ2 ON CACHE BOOL "" FORCE)
+set(WITH_ZSTD ON CACHE BOOL "" FORCE)
+set(WITH_LZ4 ON CACHE BOOL "" FORCE)
+set(WITH_SNAPPY OFF CACHE BOOL "" FORCE)
 
-    # Build project
-    ExternalProject_Add(
-            rocksdb-external
-            URL "https://github.com/facebook/rocksdb/archive/refs/tags/v10.2.1.tar.gz"
-            URL_HASH "SHA256=d1ddfd3551e649f7e2d180d5a6a006d90cfde56dcfe1e548c58d95b7f1c87049"
-            SOURCE_DIR "${BINARY_DIR}/thirdparty/rocksdb-src"
-            CMAKE_ARGS ${ROCKSDB_CMAKE_ARGS}
-            PATCH_COMMAND ${PC}
-            BUILD_BYPRODUCTS "${BINARY_DIR}/thirdparty/rocksdb-install/${BYPRODUCT}"
-            EXCLUDE_FROM_ALL TRUE
-            LIST_SEPARATOR % # This is needed for passing semicolon-separated lists
-            DOWNLOAD_NO_PROGRESS TRUE
-            TLS_VERIFY TRUE
-    )
-
-    # Set variables
-    set(ROCKSDB_FOUND "YES" CACHE STRING "" FORCE)
-    set(ROCKSDB_INCLUDE_DIR "${BINARY_DIR}/thirdparty/rocksdb-install/include" CACHE STRING "" FORCE)
-    set(ROCKSDB_LIBRARY "${BINARY_DIR}/thirdparty/rocksdb-install/${BYPRODUCT}" CACHE STRING "" FORCE)
-    set(ROCKSDB_LIBRARIES ${ROCKSDB_LIBRARY} CACHE STRING "" FORCE)
-
-    # Create imported targets
-    add_library(RocksDB::RocksDB STATIC IMPORTED)
-    set_target_properties(RocksDB::RocksDB PROPERTIES IMPORTED_LOCATION "${ROCKSDB_LIBRARY}")
-    if (NOT WIN32)
-        add_dependencies(rocksdb-external ZLIB::ZLIB BZip2::BZip2 zstd::zstd lz4::lz4)
-    endif()
-    add_dependencies(RocksDB::RocksDB rocksdb-external)
-    file(MAKE_DIRECTORY ${ROCKSDB_INCLUDE_DIR})
-    target_include_directories(RocksDB::RocksDB INTERFACE ${ROCKSDB_INCLUDE_DIR})
-    set_property(TARGET RocksDB::RocksDB APPEND PROPERTY INTERFACE_LINK_LIBRARIES Threads::Threads)
-    target_link_libraries(RocksDB::RocksDB INTERFACE Threads::Threads)
-    if(WIN32)
-        target_link_libraries(RocksDB::RocksDB INTERFACE Rpcrt4.lib Cabinet.lib)
-    else()
-        target_link_libraries(RocksDB::RocksDB INTERFACE ZLIB::ZLIB BZip2::BZip2 zstd::zstd lz4::lz4)
-    endif()
-endfunction(use_bundled_rocksdb)
+FetchContent_MakeAvailable(rocksdb)
