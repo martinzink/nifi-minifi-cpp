@@ -1,0 +1,38 @@
+From b3b6da6a88b4bd2fca21096374f0484822be85ba Mon Sep 17 00:00:00 2001
+From: Niklas Fiekas <niklas.fiekas@backscattering.de>
+Date: Sun, 17 Nov 2024 16:33:35 +0100
+Subject: [PATCH] Bump minimum CMake version to 3.10
+
+---
+ CMakeLists.txt                              | 7 ++-----
+ examples/linux_ws_server_cpp/CMakeLists.txt | 2 +-
+ 2 files changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c5368c08..413d590a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,8 +1,5 @@
+-# Use at least CMake 3.3
+-cmake_minimum_required (VERSION 3.3.0)
+-cmake_policy(VERSION 3.2.2)
+-cmake_policy(SET CMP0054 NEW)
+-cmake_policy(SET CMP0057 NEW)
++cmake_minimum_required(VERSION 3.10)
++cmake_policy(VERSION 3.10)
+ 
+ # Set up the project
+ project (civetweb)
+diff --git a/examples/linux_ws_server_cpp/CMakeLists.txt b/examples/linux_ws_server_cpp/CMakeLists.txt
+index 6a71798e..8f765ac5 100644
+--- a/examples/linux_ws_server_cpp/CMakeLists.txt
++++ b/examples/linux_ws_server_cpp/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.5.1)
++cmake_minimum_required(VERSION 3.10)
+ project(linux_ws_server)
+ 
+ set(TARGET_NAME ${PROJECT_NAME})
+-- 
+2.39.5 (Apple Git-154)
+
