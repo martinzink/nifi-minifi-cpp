@@ -34,6 +34,7 @@ class RecordSetReader : public virtual controller::ControllerService {
     .artifact = "minifi-system",
     .group = "org.apache.nifi.minifi",
     .type = "org.apache.nifi.minifi.core.RecordSetReader",
+    .description = "Reads a RecordSet from a FlowFile and deserializes so the data can be processed"
   };
 
   virtual nonstd::expected<RecordSet, std::error_code> read(const std::shared_ptr<FlowFile>& flow_file, ProcessSession& session) = 0;

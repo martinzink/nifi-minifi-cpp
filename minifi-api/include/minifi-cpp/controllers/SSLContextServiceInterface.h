@@ -40,6 +40,7 @@ class SSLContextServiceInterface : public virtual core::controller::ControllerSe
     .artifact = "minifi-system",
     .group = "org.apache.nifi.minifi",
     .type = "org.apache.nifi.minifi.controllers.SSLContextServiceInterface",
+    .description = "Controller service that provides SSL/TLS capabilities to consuming interfaces"
   };
 
   virtual const std::filesystem::path& getCertificateFile() const = 0;
