@@ -24,6 +24,10 @@ struct ControllerServiceApiDefinition {
   std::string_view artifact;
   std::string_view group;
   std::string_view type;
+  std::string_view description;
+
+  auto operator<=>(const ControllerServiceApiDefinition&) const = default;
 };
+
 
 }  // namespace org::apache::nifi::minifi::core

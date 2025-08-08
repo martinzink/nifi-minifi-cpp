@@ -99,11 +99,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->)license";
 
-void writeHeader(std::ostream& docs, const std::vector<std::pair<std::string, minifi::ClassDescription>>& class_descriptions) {
+void writeHeader(std::ostream& docs, const std::span<std::pair<std::string, minifi::ClassDescription>>& class_descriptions) {
   docs << APACHE_LICENSE;
 
   docs << "\n\n## Table of Contents\n\n";
-  for (const auto& [name, documentation] : class_descriptions) {
+  for (const auto& [name, _documentation] : class_descriptions) {
+    docs << "- [" << name << "](#" << name << ")\n";
+  }
+}
+
+void writeHeader2(std::ostream& docs, const std::span<const std::string_view> names) {
+  docs << APACHE_LICENSE;
+
+  docs << "\n\n## Table of Contents\n\n";
+  for (const auto& name : names) {
     docs << "- [" << name << "](#" << name << ")\n";
   }
 }
@@ -184,12 +193,16 @@ std::string lowercaseFirst(const std::pair<std::string, minifi::ClassDescription
 namespace org::apache::nifi::minifi::docs {
 
 void AgentDocs::generate(const std::filesystem::path& docs_dir) {
+  std::set<core::ControllerServiceApiDefinition> controller_service_apis;
   std::vector<std::pair<std::string, minifi::ClassDescription>> controller_services;
   std::vector<std::pair<std::string, minifi::ClassDescription>> processors;
   std::vector<std::pair<std::string, minifi::ClassDescription>> parameter_providers;
   for (const auto &group : minifi::AgentBuild::getExtensions()) {
     struct Components descriptions = build_description_.getClassDescriptions(group);
     for (const auto &controller_service_description : descriptions.controller_services_) {
+      for (const auto& api_impl : controller_service_description.api_implementations) {
+        controller_service_apis.insert(api_impl);
+      }
       controller_services.emplace_back(extractClassName(controller_service_description.full_name_), controller_service_description);
     }
     for (const auto &processor_description : descriptions.processors_) {
@@ -204,7 +217,8 @@ void AgentDocs::generate(const std::filesystem::path& docs_dir) {
   std::ranges::sort(parameter_providers, std::less(), lowercaseFirst);
 
   std::ofstream controllers_md(docs_dir / "CONTROLLERS.md");
-  writeHeader(controllers_md, controller_services);
+  auto controller_service_names = controller_services | ranges::views::transform([](const auto& controller_service) { return controller_service.first;});
+  writeHeader2(controllers_md, controller_service_names);
   for (const auto& [name, documentation] : controller_services) {
     writeName(controllers_md, name);
     writeDescription(controllers_md, documentation);
