@@ -29,10 +29,13 @@
 #include "core/Core.h"
 #include "core/Relationship.h"
 #include "minifi-cpp/core/PropertyValidator.h"
+#include "range/v3/algorithm/contains.hpp"
 #include "range/v3/algorithm/lexicographical_compare.hpp"
 #include "range/v3/range/conversion.hpp"
 #include "range/v3/view/concat.hpp"
+#include "range/v3/view/filter.hpp"
 #include "range/v3/view/join.hpp"
+#include "range/v3/view/map.hpp"
 #include "range/v3/view/transform.hpp"
 #include "utils/StringUtils.h"
 
@@ -40,7 +43,11 @@ namespace {
 
 namespace minifi = org::apache::nifi::minifi;
 
-std::string_view extractSimpleName (const std::string_view full_name) {
+std::string formatAsLink(const std::string_view name, const std::string_view target, const std::string_view file = "") {
+  return fmt::format("[{}]({}#{})", name, file, minifi::utils::string::toLower(std::string{target}));
+}
+
+std::string_view extractSimpleName(const std::string_view full_name) {
   auto const pos = full_name.find_last_of('.');
 
   if (pos == std::string_view::npos) {
@@ -61,10 +68,13 @@ std::string formatAllowedValues(const minifi::core::Property& property) {
   if (property.getValidator().getEquivalentNifiStandardValidatorName() == minifi::core::StandardPropertyValidators::BOOLEAN_VALIDATOR.getEquivalentNifiStandardValidatorName()) {
     return "true<br/>false";
   }
-  if (const auto& allowed_types = property.getAllowedTypes(); !allowed_types.empty()) {
-    return allowed_types
-        | ranges::views::join(std::string_view{"<br/>"})
-        | ranges::to<std::string>();
+  if (auto allowed_types = property.getAllowedTypes(); !allowed_types.empty()) {
+    ranges::transform(allowed_types, allowed_types.begin(), [](auto& allowed_type) -> std::string {
+      minifi::utils::string::replaceAll(allowed_type, "::", ".");
+      allowed_type = extractSimpleName(allowed_type);
+      return formatAsLink(allowed_type, allowed_type, "CONTROLLERS.md");
+    });
+    return allowed_types | ranges::views::join(std::string_view{"<br/>"}) | ranges::to<std::string>();
   }
   const auto allowed_values = property.getAllowedValues();
   return allowed_values
@@ -117,15 +127,32 @@ void writeHeader(std::ostream& docs, const ranges::range auto& names)
 
   docs << "\n\n## Table of Contents\n\n";
   for (const auto& name : names) {
-    docs << "- [" << name << "](#" << name << ")\n";
+    docs << "- " << formatAsLink(name, name) <<"\n";
   }
 }
 
-void writeInterfaceList(std::ostream& docs, const ranges::range auto& names)
+void writeInterfaceListToC(std::ostream& docs, const ranges::range auto& names)
     requires std::convertible_to<ranges::range_value_t<decltype(names)>, std::string_view> {
+  if (names.empty()) { return; }
   docs << "- [Interfaces](#interfaces)\n";
   for (const auto& name : names) {
-    docs << "  - [" << name << "](#" << name << ")\n";
+    docs << "  - " << formatAsLink(name, name) <<"\n";
+  }
+}
+
+void writeInterfaceList(std::ostream& docs,
+    const std::set<minifi::core::ControllerServiceApiDefinition>& interfaces,
+    const std::vector<std::pair<std::string, minifi::ClassDescription>>& controller_services) {
+  if (interfaces.empty()) { return; }
+
+  docs << "\n\n## Interfaces\n";
+  for (const auto& interface : interfaces) {
+    docs << "\n### " << extractSimpleName(interface.type) << "\n";
+    docs << interface.description << "\n";
+    auto implementations = controller_services | ranges::views::filter([interface](const auto& cs) { return ranges::contains(cs.second.api_implementations, interface);});
+    for (const auto& impl_name: implementations | ranges::views::keys) {
+      docs << "- " << formatAsLink(impl_name, impl_name) << "\n";
+    }
   }
 }
 
@@ -195,7 +222,7 @@ void writeOutputAttributes(std::ostream& docs, const minifi::ClassDescription& d
 void writeApiImplementations(std::ostream& docs, const minifi::ClassDescription& documentation) {
   if (documentation.api_implementations.empty()) { return; }
   for (const auto api : documentation.api_implementations) {
-    docs << "\n###Implements " << extractSimpleName(api.type);
+    docs << "\n### Implements " << formatAsLink(extractSimpleName(api.type), extractSimpleName(api.type));
   }
 }
 
@@ -243,7 +270,7 @@ void AgentDocs::generate(const std::filesystem::path& docs_dir) {
     return controller_service_pair.first;
   });
   writeHeader(controllers_md, controller_service_name_views);
-  writeInterfaceList(controllers_md, controller_service_api_name_views);
+  writeInterfaceListToC(controllers_md, controller_service_api_name_views);
 
   for (const auto& [name, documentation] : controller_services) {
     writeName(controllers_md, name);
@@ -251,16 +278,11 @@ void AgentDocs::generate(const std::filesystem::path& docs_dir) {
     writeDescription(controllers_md, documentation.description_);
     writeProperties(controllers_md, documentation);
   }
-  if (!controllers_services_apis.empty()) {
-    controllers_md << "## Interfaces"
-    for (const auto& api : controller_service_apis) {
-      writeName(controllers_md, extractSimpleName(api.type));
-      writeDescription(controllers_md, api.description);
-    }
-  }
+
+  writeInterfaceList(controllers_md, controller_service_apis, controller_services);
 
   std::ofstream processors_md(docs_dir / "PROCESSORS.md");
-  const auto processor_names = processors | ranges::views::transform([](const auto& processor) { return processor.first;}) | ranges::to<std::vector<std::string_view>>();
+  const auto processor_names = processors | ranges::views::transform([](const auto& processor) -> const std::string& { return processor.first;});
   writeHeader(processors_md, processor_names);
   for (const auto& [name, documentation] : processors) {
     writeName(processors_md, name);
@@ -272,7 +294,7 @@ void AgentDocs::generate(const std::filesystem::path& docs_dir) {
   }
 
   std::ofstream parameter_providers_md(docs_dir / "PARAMETER_PROVIDERS.md");
-  const auto parameter_provider_names = parameter_providers | ranges::views::transform([](const auto& parameter_provider) { return parameter_provider.first;}) | ranges::to<std::vector<std::string_view>>();
+  const auto parameter_provider_names = parameter_providers | ranges::views::transform([](const auto& parameter_provider) -> const std::string& { return parameter_provider.first;});
   writeHeader(parameter_providers_md, parameter_provider_names);
   for (const auto& [name, documentation] : parameter_providers) {
     writeName(parameter_providers_md, name);

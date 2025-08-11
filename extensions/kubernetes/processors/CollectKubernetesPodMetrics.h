@@ -38,6 +38,7 @@ class CollectKubernetesPodMetrics : public core::ProcessorImpl {
 
   EXTENSIONAPI static constexpr auto KubernetesControllerService = core::PropertyDefinitionBuilder<>::createProperty("Kubernetes Controller Service")
     .withDescription("Controller service which provides Kubernetes functionality")
+    .withAllowedTypes<controllers::KubernetesControllerService>()
     .isRequired(true)
     .build();
   EXTENSIONAPI static constexpr auto Properties = std::to_array<core::PropertyReference>({KubernetesControllerService});

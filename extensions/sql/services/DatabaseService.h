@@ -59,6 +59,13 @@ class DatabaseService : public core::controller::ControllerServiceImpl {
       .build();
   EXTENSIONAPI static constexpr auto Properties = std::to_array<core::PropertyReference>({ConnectionString});
 
+  EXTENSIONAPI static constexpr auto ProvidesApi = core::ControllerServiceApiDefinition{
+    .artifact = "minifi-system",
+    .group = "org.apache.nifi.minifi",
+    .type = "org.apache.nifi.minifi.sql.controllers.DatabaseService",
+    .description = "Database service"
+  };
+
   void initialize() override;
 
   void yield() override {

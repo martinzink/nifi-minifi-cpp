@@ -32,6 +32,7 @@
 #include "core/Processor.h"
 #include "core/logging/Logger.h"
 #include "storage/AzureStorageCredentials.h"
+#include "controllerservices/AzureStorageCredentialsService.h"
 
 namespace org::apache::nifi::minifi::azure::processors {
 
@@ -39,6 +40,7 @@ class AzureStorageProcessorBase : public core::ProcessorImpl {
  public:
   EXTENSIONAPI static constexpr auto AzureStorageCredentialsService = core::PropertyDefinitionBuilder<>::createProperty("Azure Storage Credentials Service")
       .withDescription("Name of the Azure Storage Credentials Service used to retrieve the connection string from.")
+      .withAllowedTypes<controllers::AzureStorageCredentialsService>()
       .build();
   EXTENSIONAPI static constexpr auto Properties = std::to_array<core::PropertyReference>({AzureStorageCredentialsService});
 

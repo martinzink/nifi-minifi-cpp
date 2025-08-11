@@ -35,8 +35,8 @@ class SQLProcessor: public core::ProcessorImpl {
  public:
   EXTENSIONAPI static constexpr auto DBControllerService = core::PropertyDefinitionBuilder<>::createProperty("DB Controller Service")
       .withDescription("Database Controller Service.")
+      .withAllowedTypes<sql::controllers::DatabaseService>()
       .isRequired(true)
-      .supportsExpressionLanguage(true)
       .build();
   EXTENSIONAPI static constexpr auto Properties = std::to_array<core::PropertyReference>({DBControllerService});
 
