@@ -144,7 +144,7 @@ TEST_CASE("Double quoted attribute expression", "[expressionLanguageTestDoubleQu
 }
 
 TEST_CASE("Hostname function", "[expressionLanguageTestHostnameFunction]") {
-  auto expr = expression::compile("text_before${\n\t hostname ()\n\t }text_after");
+  auto expr = expression::compile("text_before_${\n\t hostname ()\n\t }text_after");
 
   std::array<char, 1024> hostname{};
   gethostname(hostname.data(), 1023);
@@ -153,7 +153,7 @@ TEST_CASE("Hostname function", "[expressionLanguageTestHostnameFunction]") {
   expected.append("text_after");
 
   auto flow_file_a = std::make_shared<core::FlowFileImpl>();
-  REQUIRE(expected == expr(expression::Parameters{ flow_file_a.get() }).asString());
+  CHECK(expected == expr(expression::Parameters{ flow_file_a.get() }).asString());
 }
 
 TEST_CASE("ToUpper function", "[expressionLanguageTestToUpperFunction]") {
