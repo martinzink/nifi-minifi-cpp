@@ -13,19 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from common import create_processor, setUpSslContextServiceForProcessor
 from filesystem_validation.FileSystemObserver import FileSystemObserver
 from minifi.core.RemoteProcessGroup import RemoteProcessGroup
 from ssl_utils.SSL_cert_utils import make_server_cert
 from minifi.core.Funnel import Funnel
 
 from minifi.controllers.SSLContextService import SSLContextService
-from minifi.controllers.GCPCredentialsControllerService import GCPCredentialsControllerService
-from minifi.controllers.ElasticsearchCredentialsService import ElasticsearchCredentialsService
-from minifi.controllers.ODBCService import ODBCService
-from minifi.controllers.KubernetesControllerService import KubernetesControllerService
 from minifi.controllers.JsonRecordSetWriter import JsonRecordSetWriter
 from minifi.controllers.JsonTreeReader import JsonTreeReader
-from minifi.controllers.CouchbaseClusterService import CouchbaseClusterService
 
 from behave import given, then, when
 from behave.model_describe import ModelDescriptor
@@ -35,7 +31,6 @@ import logging
 import time
 import uuid
 import humanfriendly
-import OpenSSL.crypto
 
 import os
 
@@ -53,23 +48,11 @@ def step_impl(context, subdir):
     os.chmod(output_dir, 0o777)
 
 
-def __create_processor(context, processor_type, processor_name, property_name, property_value, container_name, engine='minifi-cpp'):
-    container = context.test.acquire_container(context=context, name=container_name, engine=engine)
-    processor = locate("minifi.processors." + processor_type + "." + processor_type)(context=context)
-    processor.set_name(processor_name)
-    if property_name is not None:
-        processor.set_property(property_name, property_value)
-    context.test.add_node(processor)
-    # Assume that the first node declared is primary unless specified otherwise
-    if not container.get_start_nodes():
-        container.add_start_node(processor)
-
-
 # MiNiFi cluster setups
 @given("a {processor_type} processor with the name \"{processor_name}\" and the \"{property_name}\" property set to \"{property_value}\" in a \"{minifi_container_name}\" flow")
 @given("a {processor_type} processor with the name \"{processor_name}\" and the \"{property_name}\" property set to \"{property_value}\" in the \"{minifi_container_name}\" flow")
 def step_impl(context, processor_type, processor_name, property_name, property_value, minifi_container_name):
-    __create_processor(context, processor_type, processor_name, property_name, property_value, minifi_container_name)
+    create_processor(context, processor_type, processor_name, property_name, property_value, minifi_container_name)
 
 
 @given(
@@ -77,50 +60,50 @@ def step_impl(context, processor_type, processor_name, property_name, property_v
 @given(
     "a {processor_type} processor with the name \"{processor_name}\" and the \"{property_name}\" property set to \"{property_value}\" in the \"{minifi_container_name}\" flow with engine \"{engine_name}\"")
 def step_impl(context, processor_type, processor_name, property_name, property_value, minifi_container_name, engine_name):
-    __create_processor(context, processor_type, processor_name, property_name, property_value, minifi_container_name, engine_name)
+    create_processor(context, processor_type, processor_name, property_name, property_value, minifi_container_name, engine_name)
 
 
 @given("a {processor_type} processor with the \"{property_name}\" property set to \"{property_value}\" in a \"{minifi_container_name}\" flow")
 @given("a {processor_type} processor with the \"{property_name}\" property set to \"{property_value}\" in the \"{minifi_container_name}\" flow")
 def step_impl(context, processor_type, property_name, property_value, minifi_container_name):
-    __create_processor(context, processor_type, processor_type, property_name, property_value, minifi_container_name)
+    create_processor(context, processor_type, processor_type, property_name, property_value, minifi_container_name)
 
 
 @given("a {processor_type} processor the \"{property_name}\" property set to \"{property_value}\" in the \"{minifi_container_name}\" flow with engine \"{engine_name}\"")
 def step_impl(context, processor_type, property_name, property_value, minifi_container_name, engine_name):
-    __create_processor(context, processor_type, processor_type, property_name, property_value, minifi_container_name, engine_name)
+    create_processor(context, processor_type, processor_type, property_name, property_value, minifi_container_name, engine_name)
 
 
 @given("a {processor_type} processor with the \"{property_name}\" property set to \"{property_value}\"")
 def step_impl(context, processor_type, property_name, property_value):
-    __create_processor(context, processor_type, processor_type, property_name, property_value, "minifi-cpp-flow")
+    create_processor(context, processor_type, processor_type, property_name, property_value, "minifi-cpp-flow")
 
 
 @given("a {processor_type} processor with the name \"{processor_name}\" and the \"{property_name}\" property set to \"{property_value}\"")
 def step_impl(context, processor_type, property_name, property_value, processor_name):
-    __create_processor(context, processor_type, processor_name, property_name, property_value, "minifi-cpp-flow")
+    create_processor(context, processor_type, processor_name, property_name, property_value, "minifi-cpp-flow")
 
 
 @given("a {processor_type} processor with the name \"{processor_name}\" in the \"{minifi_container_name}\" flow")
 def step_impl(context, processor_type, processor_name, minifi_container_name):
-    __create_processor(context, processor_type, processor_name, None, None, minifi_container_name)
+    create_processor(context, processor_type, processor_name, None, None, minifi_container_name)
 
 
 @given("a {processor_type} processor with the name \"{processor_name}\" in the \"{minifi_container_name}\" flow with engine \"{engine_name}\"")
 def step_impl(context, processor_type, processor_name, minifi_container_name, engine_name):
-    __create_processor(context, processor_type, processor_name, None, None, minifi_container_name, engine_name)
+    create_processor(context, processor_type, processor_name, None, None, minifi_container_name, engine_name)
 
 
 @given("a {processor_type} processor with the name \"{processor_name}\"")
 def step_impl(context, processor_type, processor_name):
-    __create_processor(context, processor_type, processor_name, None, None, "minifi-cpp-flow")
+    create_processor(context, processor_type, processor_name, None, None, "minifi-cpp-flow")
 
 
 @given("a {processor_type} processor in the \"{minifi_container_name}\" flow")
 @given("a {processor_type} processor in a \"{minifi_container_name}\" flow")
 @given("a {processor_type} processor set up in a \"{minifi_container_name}\" flow")
 def step_impl(context, processor_type, minifi_container_name):
-    __create_processor(context, processor_type, processor_type, None, None, minifi_container_name)
+    create_processor(context, processor_type, processor_type, None, None, minifi_container_name)
 
 
 @given("a {processor_type} processor")
@@ -132,14 +115,7 @@ def step_impl(context, processor_type, minifi_container_name):
 @given("a {processor_type} processor set up to communicate with the Splunk HEC instance")
 @given("a {processor_type} processor set up to communicate with the kinesis server")
 def step_impl(context, processor_type):
-    __create_processor(context, processor_type, processor_type, None, None, "minifi-cpp-flow")
-
-
-@given("a {processor_type} processor in a Kubernetes cluster")
-@given("a {processor_type} processor in the Kubernetes cluster")
-def step_impl(context, processor_type):
-    __create_processor(context, processor_type, processor_type, None, None, "kubernetes", "kubernetes")
-
+    create_processor(context, processor_type, processor_type, None, None, "minifi-cpp-flow")
 
 @given("a set of processors in the \"{minifi_container_name}\" flow")
 def step_impl(context, minifi_container_name):
@@ -359,13 +335,6 @@ def step_impl(context):
     context.test.disable_openssl_fips_mode_in_minifi()
 
 
-# HTTP proxy setup
-@given("the http proxy server is set up")
-@given("a http proxy server is set up accordingly")
-def step_impl(context):
-    context.test.acquire_container(context=context, name="http-proxy", engine="http-proxy")
-
-
 # TLS
 @given("an ssl context service is set up for {processor_name}")
 @given("an ssl context service with a manual CA cert file is set up for {processor_name}")
@@ -405,98 +374,6 @@ def step_impl(context):
     container.add_controller(json_record_set_reader)
 
 
-# Kubernetes
-def __set_up_the_kubernetes_controller_service(context, processor_name, service_property_name, properties):
-    kubernetes_controller_service = KubernetesControllerService("Kubernetes Controller Service", properties)
-    processor = context.test.get_node_by_name(processor_name)
-    processor.controller_services.append(kubernetes_controller_service)
-    processor.set_property(service_property_name, kubernetes_controller_service.name)
-
-
-@given("the {processor_name} processor has a {service_property_name} which is a Kubernetes Controller Service")
-@given("the {processor_name} processor has an {service_property_name} which is a Kubernetes Controller Service")
-def step_impl(context, processor_name, service_property_name):
-    __set_up_the_kubernetes_controller_service(context, processor_name, service_property_name, {})
-
-
-@given("the {processor_name} processor has a {service_property_name} which is a Kubernetes Controller Service with the \"{property_name}\" property set to \"{property_value}\"")
-@given("the {processor_name} processor has an {service_property_name} which is a Kubernetes Controller Service with the \"{property_name}\" property set to \"{property_value}\"")
-def step_impl(context, processor_name, service_property_name, property_name, property_value):
-    __set_up_the_kubernetes_controller_service(context, processor_name, service_property_name, {property_name: property_value})
-
-
-# MQTT setup
-@when("an MQTT broker is set up in correspondence with the PublishMQTT")
-@given("an MQTT broker is set up in correspondence with the PublishMQTT")
-@given("an MQTT broker is set up in correspondence with the ConsumeMQTT")
-@given("an MQTT broker is set up in correspondence with the PublishMQTT and ConsumeMQTT")
-def step_impl(context):
-    context.test.acquire_container(context=context, name="mqtt-broker", engine="mqtt-broker")
-    context.test.start('mqtt-broker')
-
-
-# s3 setup
-@given("a s3 server is set up in correspondence with the PutS3Object")
-@given("a s3 server is set up in correspondence with the DeleteS3Object")
-def step_impl(context):
-    context.test.acquire_container(context=context, name="s3-server", engine="s3-server")
-
-
-@given("a kinesis server is set up in correspondence with the PutKinesisStream")
-def step_impl(context):
-    context.test.acquire_container(context=context, name="kinesis-server", engine="kinesis-server")
-
-
-# azure storage setup
-@given("an Azure storage server is set up")
-def step_impl(context):
-    context.test.acquire_container(context=context, name="azure-storage-server", engine="azure-storage-server")
-
-
-# syslog client
-@given(u'a Syslog client with {protocol} protocol is setup to send logs to minifi')
-def step_impl(context, protocol):
-    client_name = "syslog-" + protocol.lower() + "-client"
-    context.test.acquire_container(context=context, name=client_name, engine=client_name)
-
-
-# google cloud storage setup
-@given("a Google Cloud storage server is set up")
-@given("a Google Cloud storage server is set up with some test data")
-@given('a Google Cloud storage server is set up and a single object with contents "preloaded data" is present')
-def step_impl(context):
-    context.test.acquire_container(context=context, name="fake-gcs-server", engine="fake-gcs-server")
-
-
-# elasticsearch
-@given('an Elasticsearch server is set up and running')
-@given('an Elasticsearch server is set up and a single document is present with "preloaded_id" in "my_index"')
-@given('an Elasticsearch server is set up and a single document is present with "preloaded_id" in "my_index" with "value1" in "field1"')
-def step_impl(context):
-    context.test.start_elasticsearch(context)
-    context.test.create_doc_elasticsearch(context.test.get_container_name_with_postfix("elasticsearch"), "my_index", "preloaded_id")
-
-
-# opensearch
-@given('an Opensearch server is set up and running')
-@given('an Opensearch server is set up and a single document is present with "preloaded_id" in "my_index"')
-@given('an Opensearch server is set up and a single document is present with "preloaded_id" in "my_index" with "value1" in "field1"')
-def step_impl(context):
-    context.test.start_opensearch(context)
-    context.test.add_elastic_user_to_opensearch(context.test.get_container_name_with_postfix("opensearch"))
-    context.test.create_doc_elasticsearch(context.test.get_container_name_with_postfix("opensearch"), "my_index", "preloaded_id")
-
-
-def setUpSslContextServiceForProcessor(context, processor_name: str):
-    minifi_crt_file = '/tmp/resources/minifi_client.crt'
-    minifi_key_file = '/tmp/resources/minifi_client.key'
-    root_ca_crt_file = '/tmp/resources/root_ca.crt'
-    ssl_context_service = SSLContextService(cert=minifi_crt_file, ca_cert=root_ca_crt_file, key=minifi_key_file)
-    processor = context.test.get_node_by_name(processor_name)
-    processor.controller_services.append(ssl_context_service)
-    processor.set_property("SSL Context Service", ssl_context_service.name)
-
-
 def setUpSslContextServiceForRPG(context, rpg_name: str):
     minifi_crt_file = '/tmp/resources/minifi_client.crt'
     minifi_key_file = '/tmp/resources/minifi_client.key'
@@ -508,105 +385,10 @@ def setUpSslContextServiceForRPG(context, rpg_name: str):
     rpg.add_property("SSL Context Service", ssl_context_service.name)
 
 
-@given(u'a SSL context service is set up for PostElasticsearch and Elasticsearch')
-def step_impl(context):
-    setUpSslContextServiceForProcessor(context, "PostElasticsearch")
-
-
-@given(u'a SSL context service is set up for PostElasticsearch and Opensearch')
-def step_impl(context):
-    root_ca_crt_file = '/tmp/resources/root_ca.crt'
-    ssl_context_service = SSLContextService(ca_cert=root_ca_crt_file)
-    post_elasticsearch_json = context.test.get_node_by_name("PostElasticsearch")
-    post_elasticsearch_json.controller_services.append(ssl_context_service)
-    post_elasticsearch_json.set_property("SSL Context Service", ssl_context_service.name)
-
-
-@given(u'an ElasticsearchCredentialsService is set up for PostElasticsearch with Basic Authentication')
-def step_impl(context):
-    elasticsearch_credential_service = ElasticsearchCredentialsService()
-    post_elasticsearch_json = context.test.get_node_by_name("PostElasticsearch")
-    post_elasticsearch_json.controller_services.append(elasticsearch_credential_service)
-    post_elasticsearch_json.set_property("Elasticsearch Credentials Provider Service", elasticsearch_credential_service.name)
-
-
-@given(u'an ElasticsearchCredentialsService is set up for PostElasticsearch with ApiKey')
-def step_impl(context):
-    api_key = context.test.elastic_generate_apikey("elasticsearch")
-    elasticsearch_credential_service = ElasticsearchCredentialsService(api_key)
-    post_elasticsearch_json = context.test.get_node_by_name("PostElasticsearch")
-    post_elasticsearch_json.controller_services.append(elasticsearch_credential_service)
-    post_elasticsearch_json.set_property("Elasticsearch Credentials Provider Service", elasticsearch_credential_service.name)
-
-
-# splunk hec
-@given("a Splunk HEC is set up and running")
-def step_impl(context):
-    context.test.start_splunk(context)
-
-
 # TCP client
 @given('a TCP client is set up to send a test TCP message to minifi')
 def step_impl(context):
     context.test.acquire_container(context=context, name="tcp-client", engine="tcp-client")
-
-
-@given("SSL is enabled for the Splunk HEC and the SSL context service is set up for PutSplunkHTTP and QuerySplunkIndexingStatus")
-def step_impl(context):
-    minifi_crt_file = '/tmp/resources/minifi_client.crt'
-    minifi_key_file = '/tmp/resources/minifi_client.key'
-    root_ca_crt_file = '/tmp/resources/root_ca.crt'
-    ssl_context_service = SSLContextService(name='SSLContextService', cert=minifi_crt_file, ca_cert=root_ca_crt_file, key=minifi_key_file)
-
-    splunk_cert, splunk_key = make_server_cert(context.test.get_container_name_with_postfix("splunk"), context.root_ca_cert, context.root_ca_key)
-    put_splunk_http = context.test.get_node_by_name("PutSplunkHTTP")
-    put_splunk_http.controller_services.append(ssl_context_service)
-    put_splunk_http.set_property("SSL Context Service", ssl_context_service.name)
-    query_splunk_indexing_status = context.test.get_node_by_name("QuerySplunkIndexingStatus")
-    query_splunk_indexing_status.controller_services.append(ssl_context_service)
-    query_splunk_indexing_status.set_property("SSL Context Service", ssl_context_service.name)
-    context.test.enable_splunk_hec_ssl('splunk', OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, splunk_cert), OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, splunk_key), OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, context.root_ca_cert))
-
-
-@given(u'the {processor_one} processor is set up with a GCPCredentialsControllerService to communicate with the Google Cloud storage server')
-def step_impl(context, processor_one):
-    gcp_controller_service = GCPCredentialsControllerService(credentials_location="Use Anonymous credentials")
-    p1 = context.test.get_node_by_name(processor_one)
-    p1.controller_services.append(gcp_controller_service)
-    p1.set_property("GCP Credentials Provider Service", gcp_controller_service.name)
-    processor = context.test.get_node_by_name(processor_one)
-    processor.set_property("Endpoint Override URL", f"fake-gcs-server-{context.feature_id}:4443")
-
-
-@given(u'the {processor_one} and the {processor_two} processors are set up with a GCPCredentialsControllerService to communicate with the Google Cloud storage server')
-def step_impl(context, processor_one, processor_two):
-    gcp_controller_service = GCPCredentialsControllerService(credentials_location="Use Anonymous credentials")
-    p1 = context.test.get_node_by_name(processor_one)
-    p2 = context.test.get_node_by_name(processor_two)
-    p1.controller_services.append(gcp_controller_service)
-    p1.set_property("GCP Credentials Provider Service", gcp_controller_service.name)
-    p2.controller_services.append(gcp_controller_service)
-    p2.set_property("GCP Credentials Provider Service", gcp_controller_service.name)
-    processor_one = context.test.get_node_by_name(processor_one)
-    processor_one.set_property("Endpoint Override URL", f"fake-gcs-server-{context.feature_id}:4443")
-    processor_two = context.test.get_node_by_name(processor_two)
-    processor_two.set_property("Endpoint Override URL", f"fake-gcs-server-{context.feature_id}:4443")
-
-
-# SQL
-@given("an ODBCService is setup up for {processor_name} with the name \"{service_name}\"")
-def step_impl(context, processor_name, service_name):
-    odbc_service = ODBCService(name=service_name,
-                               connection_string="Driver={{PostgreSQL ANSI}};Server={server_hostname};Port=5432;Database=postgres;Uid=postgres;Pwd=password;".format(server_hostname=context.test.get_container_name_with_postfix("postgresql-server")))
-    processor = context.test.get_node_by_name(processor_name)
-    processor.controller_services.append(odbc_service)
-    processor.set_property("DB Controller Service", odbc_service.name)
-
-
-@given("a PostgreSQL server is set up")
-def step_impl(context):
-    context.test.enable_sql_in_minifi()
-    context.test.acquire_container(context=context, name="postgresql-server", engine="postgresql-server")
 
 
 # OPC UA
@@ -782,73 +564,6 @@ def step_impl(context, url):
     context.test.check_http_proxy_access('http-proxy', url)
 
 
-@then("there is a record on the kinesis server with \"{record_data}\"")
-def step_impl(context, record_data):
-    context.test.check_kinesis_server_record_data("kinesis-server", record_data)
-
-
-@then("the object on the s3 server is \"{object_data}\"")
-def step_impl(context, object_data):
-    context.test.check_s3_server_object_data("s3-server", object_data)
-
-
-@then("the object on the s3 server is present and matches the original hash")
-def step_impl(context):
-    context.test.check_s3_server_large_object_data("s3-server")
-
-
-@then("the object content type on the s3 server is \"{content_type}\" and the object metadata matches use metadata")
-def step_impl(context, content_type):
-    context.test.check_s3_server_object_metadata("s3-server", content_type)
-
-
-@then("the object bucket on the s3 server is empty")
-def step_impl(context):
-    context.test.check_empty_s3_bucket("s3-server")
-
-
-# Azure
-@when("test blob \"{blob_name}\" with the content \"{content}\" is created on Azure blob storage")
-def step_impl(context, blob_name, content):
-    context.test.add_test_blob(blob_name, content, False)
-
-
-@when("test blob \"{blob_name}\" with the content \"{content}\" and a snapshot is created on Azure blob storage")
-def step_impl(context, blob_name, content):
-    context.test.add_test_blob(blob_name, content, True)
-
-
-@when("test blob \"{blob_name}\" is created on Azure blob storage")
-def step_impl(context, blob_name):
-    context.test.add_test_blob(blob_name, "", False)
-
-
-@when("test blob \"{blob_name}\" is created on Azure blob storage with a snapshot")
-def step_impl(context, blob_name):
-    context.test.add_test_blob(blob_name, "", True)
-
-
-@then("the object on the Azure storage server is \"{object_data}\"")
-def step_impl(context, object_data):
-    context.test.check_azure_storage_server_data("azure-storage-server", object_data)
-
-
-@then("the Azure blob storage becomes empty in {timeout_seconds:d} seconds")
-def step_impl(context, timeout_seconds):
-    context.test.check_azure_blob_storage_is_empty(timeout_seconds)
-
-
-@then("the blob and snapshot count becomes {blob_and_snapshot_count:d} in {timeout_seconds:d} seconds")
-def step_impl(context, blob_and_snapshot_count, timeout_seconds):
-    context.test.check_azure_blob_and_snapshot_count(blob_and_snapshot_count, timeout_seconds)
-
-
-# SQL
-@then("the query \"{query}\" returns {number_of_rows:d} rows in less than {timeout_seconds:d} seconds on the PostgreSQL server")
-def step_impl(context, query, number_of_rows, timeout_seconds):
-    context.test.check_query_results(context.test.get_container_name_with_postfix("postgresql-server"), query, number_of_rows, timeout_seconds)
-
-
 @then("the Minifi logs contain the following message: \"{log_message}\" in less than {duration}")
 @then("the Minifi logs contain the following message: '{log_message}' in less than {duration}")
 def step_impl(context, log_message, duration):
@@ -876,91 +591,10 @@ def step_impl(context, log_message, duration):
     context.test.check_container_log_contents("opcua-server", log_message, humanfriendly.parse_timespan(duration))
 
 
-# MQTT
-@then("the MQTT broker has a log line matching \"{log_pattern}\"")
-def step_impl(context, log_pattern):
-    context.test.check_container_log_matches_regex('mqtt-broker', log_pattern, 60, count=1)
-
-
-@then("the MQTT broker has {log_count} log lines matching \"{log_pattern}\"")
-def step_impl(context, log_count, log_pattern):
-    context.test.check_container_log_matches_regex('mqtt-broker', log_pattern, 60, count=int(log_count))
-
 
 @then("the \"{minifi_container_name}\" flow has a log line matching \"{log_pattern}\" in less than {duration}")
 def step_impl(context, minifi_container_name, log_pattern, duration):
     context.test.check_container_log_matches_regex(minifi_container_name, log_pattern, humanfriendly.parse_timespan(duration), count=1)
-
-
-# Google Cloud Storage
-@then('an object with the content \"{content}\" is present in the Google Cloud storage')
-def step_imp(context, content):
-    context.test.check_google_cloud_storage("fake-gcs-server", content)
-
-
-@then("the test bucket of Google Cloud Storage is empty")
-def step_impl(context):
-    context.test.check_empty_gcs_bucket("fake-gcs-server")
-
-
-# Splunk
-@then('an event is registered in Splunk HEC with the content \"{content}\"')
-def step_imp(context, content):
-    context.test.check_splunk_event("splunk", content)
-
-
-@then('an event is registered in Splunk HEC with the content \"{content}\" with \"{source}\" set as source and \"{source_type}\" set as sourcetype and \"{host}\" set as host')
-def step_imp(context, content, source, source_type, host):
-    attr = {"source": source, "sourcetype": source_type, "host": host}
-    context.test.check_splunk_event_with_attributes("splunk", content, attr)
-
-
-# Prometheus
-@given("a Prometheus server is set up")
-def step_impl(context):
-    context.test.acquire_container(context=context, name="prometheus", engine="prometheus")
-
-
-@given("a Prometheus server is set up with SSL")
-def step_impl(context):
-    context.test.acquire_container(context=context, name="prometheus", engine="prometheus-ssl")
-
-
-@then("\"{metric_class}\" are published to the Prometheus server in less than {timeout_seconds:d} seconds")
-@then("\"{metric_class}\" is published to the Prometheus server in less than {timeout_seconds:d} seconds")
-def step_impl(context, metric_class, timeout_seconds):
-    context.test.check_metric_class_on_prometheus(metric_class, timeout_seconds)
-
-
-@then("\"{metric_class}\" processor metric is published to the Prometheus server in less than {timeout_seconds:d} seconds for \"{processor_name}\" processor")
-def step_impl(context, metric_class, timeout_seconds, processor_name):
-    context.test.check_processor_metric_on_prometheus(metric_class, timeout_seconds, processor_name)
-
-
-@then("all Prometheus metric types are only defined once")
-def step_impl(context):
-    context.test.check_all_prometheus_metric_types_are_defined_once()
-
-
-@then("Elasticsearch is empty")
-def step_impl(context):
-    context.test.check_empty_elastic(context.test.get_container_name_with_postfix("elasticsearch"))
-
-
-@then(u'Elasticsearch has a document with "{doc_id}" in "{index}" that has "{value}" set in "{field}"')
-def step_impl(context, doc_id, index, value, field):
-    context.test.check_elastic_field_value(context.test.get_container_name_with_postfix("elasticsearch"), index_name=index, doc_id=doc_id, field_name=field, field_value=value)
-
-
-@then("Opensearch is empty")
-def step_impl(context):
-    context.test.check_empty_elastic(f"opensearch-{context.feature_id}")
-
-
-@then(u'Opensearch has a document with "{doc_id}" in "{index}" that has "{value}" set in "{field}"')
-def step_impl(context, doc_id, index, value, field):
-    context.test.check_elastic_field_value(f"opensearch-{context.feature_id}", index_name=index, doc_id=doc_id, field_name=field, field_value=value)
-
 
 # MiNiFi C2 Server
 @given("a ssl context service is set up for MiNiFi C2 server")
@@ -1159,43 +793,7 @@ def step_impl(context):
     context.execute_steps(f"then debug bundle can be retrieved through MiNiFi controller in the \"minifi-cpp-flow-{context.feature_id}\" flow")
 
 
-# Grafana Loki
-@given("a Grafana Loki server is set up")
-def step_impl(context):
-    context.test.acquire_container(context=context, name="grafana-loki-server", engine="grafana-loki-server")
 
-
-@given("a Grafana Loki server with SSL is set up")
-def step_impl(context):
-    context.test.enable_ssl_in_grafana_loki()
-    context.test.acquire_container(context=context, name="grafana-loki-server", engine="grafana-loki-server")
-
-
-@given("a Grafana Loki server is set up with multi-tenancy enabled")
-def step_impl(context):
-    context.test.enable_multi_tenancy_in_grafana_loki()
-    context.test.acquire_container(context=context, name="grafana-loki-server", engine="grafana-loki-server")
-
-
-@then("\"{lines}\" lines are published to the Grafana Loki server in less than {timeout_seconds:d} seconds")
-@then("\"{lines}\" line is published to the Grafana Loki server in less than {timeout_seconds:d} seconds")
-def step_impl(context, lines: str, timeout_seconds: int):
-    context.test.check_lines_on_grafana_loki(lines.split(";"), timeout_seconds, False)
-
-
-@then("\"{lines}\" lines are published to the \"{tenant_id}\" tenant on the Grafana Loki server in less than {timeout_seconds:d} seconds")
-@then("\"{lines}\" line is published to the \"{tenant_id}\" tenant on the Grafana Loki server in less than {timeout_seconds:d} seconds")
-def step_impl(context, lines: str, tenant_id: str, timeout_seconds: int):
-    context.test.check_lines_on_grafana_loki(lines.split(";"), timeout_seconds, False, tenant_id)
-
-
-@then("\"{lines}\" lines are published using SSL to the Grafana Loki server in less than {timeout_seconds:d} seconds")
-@then("\"{lines}\" line is published using SSL to the Grafana Loki server in less than {timeout_seconds:d} seconds")
-def step_impl(context, lines: str, timeout_seconds: int):
-    context.test.check_lines_on_grafana_loki(lines.split(";"), timeout_seconds, True)
-
-
-@given(u'a SSL context service is set up for Grafana Loki processor \"{processor_name}\"')
 @given(u'a SSL context service is set up for the following processor: \"{processor_name}\"')
 def step_impl(context, processor_name: str):
     setUpSslContextServiceForProcessor(context, processor_name)
@@ -1204,13 +802,6 @@ def step_impl(context, processor_name: str):
 @given(u'a SSL context service is set up for the following remote process group: \"{remote_process_group}\"')
 def step_impl(context, remote_process_group: str):
     setUpSslContextServiceForRPG(context, remote_process_group)
-
-
-# Nginx reverse proxy
-@given(u'a reverse proxy is set up to forward requests to the Grafana Loki server')
-def step_impl(context):
-    context.test.acquire_container(context=context, name="reverse-proxy", engine="reverse-proxy")
-
 
 # Python
 @given("python with langchain is installed on the MiNiFi agent {install_mode}")
@@ -1247,66 +838,6 @@ def step_impl(context, parameter_context_name, parameter_name, parameter_value):
 def step_impl(context, parameter_context_name):
     container = context.test.acquire_container(context=context, name='minifi-cpp-flow', engine='minifi-cpp')
     container.set_parameter_context_name(parameter_context_name)
-
-
-# Modbus
-@given(u'there is an accessible PLC with modbus enabled')
-def step_impl(context):
-    context.test.acquire_container(context=context, name="diag-slave-tcp", engine="diag-slave-tcp")
-    context.test.start('diag-slave-tcp')
-
-
-@given(u'PLC register has been set with {modbus_cmd} command')
-def step_impl(context, modbus_cmd):
-    context.test.set_value_on_plc_with_modbus(context.test.get_container_name_with_postfix('diag-slave-tcp'), modbus_cmd)
-
-
-# Couchbase
-@when(u'a Couchbase server is started')
-def step_impl(context):
-    context.test.start_couchbase_server(context)
-
-
-@given("a CouchbaseClusterService is setup up with the name \"{service_name}\"")
-def step_impl(context, service_name):
-    couchbase_cluster_controller_service = CouchbaseClusterService(
-        name=service_name,
-        connection_string="couchbase://{server_hostname}".format(server_hostname=context.test.get_container_name_with_postfix("couchbase-server")))
-    container = context.test.acquire_container(context=context, name="minifi-cpp-flow")
-    container.add_controller(couchbase_cluster_controller_service)
-
-
-@given("a CouchbaseClusterService is set up up with SSL connection with the name \"{service_name}\"")
-def step_impl(context, service_name):
-    ssl_context_service = SSLContextService(name="SSLContextService",
-                                            ca_cert='/tmp/resources/root_ca.crt')
-    container = context.test.acquire_container(context=context, name="minifi-cpp-flow")
-    container.add_controller(ssl_context_service)
-    couchbase_cluster_controller_service = CouchbaseClusterService(
-        name=service_name,
-        connection_string="couchbases://{server_hostname}".format(server_hostname=context.test.get_container_name_with_postfix("couchbase-server")),
-        ssl_context_service=ssl_context_service)
-    container.add_controller(couchbase_cluster_controller_service)
-
-
-@then("a document with id \"{doc_id}\" in bucket \"{bucket_name}\" is present with data '{data}' of type \"{data_type}\" in Couchbase")
-def step_impl(context, doc_id: str, bucket_name: str, data: str, data_type: str):
-    context.test.check_is_data_present_on_couchbase(doc_id, bucket_name, data, data_type)
-
-
-@given("a CouchbaseClusterService is setup up using mTLS authentication with the name \"{service_name}\"")
-def step_impl(context, service_name):
-    ssl_context_service = SSLContextService(name="SSLContextService",
-                                            cert='/tmp/resources/clientuser.crt',
-                                            key='/tmp/resources/clientuser.key',
-                                            ca_cert='/tmp/resources/root_ca.crt')
-    container = context.test.acquire_container(context=context, name="minifi-cpp-flow")
-    container.add_controller(ssl_context_service)
-    couchbase_cluster_controller_service = CouchbaseClusterService(
-        name=service_name,
-        connection_string="couchbases://{server_hostname}".format(server_hostname=context.test.get_container_name_with_postfix("couchbase-server")),
-        ssl_context_service=ssl_context_service)
-    container.add_controller(couchbase_cluster_controller_service)
 
 
 @given("a LlamaCpp model is present on the MiNiFi host")

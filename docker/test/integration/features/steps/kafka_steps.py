@@ -19,7 +19,6 @@ import logging
 import binascii
 import time
 
-
 @given("a kafka producer workflow publishing files placed in \"{directory}\" to a broker exactly once")
 def publish_producer_workflow(context, directory):
     context.execute_steps("""

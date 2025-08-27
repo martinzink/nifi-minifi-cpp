@@ -12,6 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import hashlib
+
 import docker
 import logging
 import sys
@@ -21,15 +23,35 @@ import os
 import io
 import uuid
 
+from docker.types import IPAMPool, IPAMConfig
+
 
 class DockerCommunicator:
     def __init__(self):
         self.client = docker.from_env()
 
     def create_docker_network(self, feature_id: str):
+        hasher = hashlib.md5(feature_id.encode('utf-8'))
+        third_octet = 2 + (int(hasher.hexdigest(), 16) % 250)
+        subnet_address = f"192.168.{third_octet}.0/24"
+        gateway_address = f"192.168.{third_octet}.1"
+
+        ipam_pool = IPAMPool(
+            subnet=subnet_address,
+            gateway=gateway_address
+        )
+        ipam_config = IPAMConfig(
+            pool_configs=[ipam_pool]
+        )
+
         net_name = 'minifi_integration_test_network-' + feature_id
-        logging.debug('Creating network: %s', net_name)
-        return self.client.networks.create(net_name)
+        network = self.client.networks.create(
+            name=net_name,
+            ipam=ipam_config,
+            check_duplicate=True
+        )
+        logging.info(f"Successfully created network '{net_name}' with ID: {network.id}")
+        return network
 
     @staticmethod
     def get_stdout_encoding():
