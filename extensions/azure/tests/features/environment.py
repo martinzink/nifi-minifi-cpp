@@ -14,9 +14,12 @@
 # limitations under the License.
 
 
-from ..core.Processor import Processor
+from minifi_test_framework.core.hooks import common_before_scenario
+from minifi_test_framework.core.hooks import common_after_scenario
 
 
-class AttributesToJSON(Processor):
-    def __init__(self, context):
-        super(AttributesToJSON, self).__init__(context=context, clazz='AttributesToJSON')
+def before_scenario(context, scenario):
+    common_before_scenario(context, scenario)
+
+def after_scenario(context, scenario):
+    common_after_scenario(context, scenario)

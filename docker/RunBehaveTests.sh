@@ -142,14 +142,14 @@ fi
   fi
 
 # Create virtual environment for testing
-if [[ ! -d ./test-env-py3 ]]; then
-  echo "Creating virtual environment in ./test-env-py3" 1>&2
-  virtualenv --python=python3 ./test-env-py3
+if [[ ! -d ./behave_venv ]]; then
+  echo "Creating virtual environment in ./behave_venv" 1>&2
+  virtualenv --python=python3 ./behave_venv
 fi
 
 echo "Activating virtual environment..." 1>&2
 # shellcheck disable=SC1091
-. ./test-env-py3/bin/activate
+. ./behave_venv/bin/activate
 pip install --trusted-host pypi.python.org --upgrade pip setuptools
 
 # Install test dependencies
@@ -171,13 +171,9 @@ if ! command swig -version &> /dev/null; then
   exit 1
 fi
 
-pip install -r "${docker_dir}/requirements.txt"
+pip install -e "${docker_dir}/../behave_framework"
 
-TEST_DIRECTORY="${docker_dir}/test/integration"
-export TEST_DIRECTORY
-
-# Add --no-logcapture to see logs interleaved with the test output
-BEHAVE_OPTS=(--show-progress-bar --logging-level INFO --parallel-processes "${_arg_parallel_processes}" --parallel-scheme feature -o "${PWD}/behavex_output" -t "${_arg_tags_to_run}")
+BEHAVE_OPTS=(--show-progress-bar --logging-level INFO --parallel-processes "${_arg_parallel_processes}" --parallel-scheme feature -o "${PWD}/behavex_output_2" -t "${_arg_tags_to_run}")
 if ! test -z "${_arg_tags_to_exclude}"
 then
   IFS=','
@@ -190,6 +186,5 @@ fi
 
 echo "${BEHAVE_OPTS[@]}"
 
-cd "${docker_dir}/test/integration"
 exec
-  behavex "${BEHAVE_OPTS[@]}"
+  behavex "${BEHAVE_OPTS[@]}" "${docker_dir}/../extensions/standard-processors/tests/features ${docker_dir}/../extensions/aws/tests/features ${docker_dir}/../extensions/azure/tests/features ${docker_dir}/../extensions/sql/tests/features"
