@@ -66,6 +66,7 @@ __pycache__/
 /logs
 packaging/msi/WixWin.wsi
 docker/behavex_output
+output
 
 .vs/**
 *.swp
