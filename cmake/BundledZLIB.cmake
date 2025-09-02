@@ -39,7 +39,7 @@ function(use_bundled_zlib SOURCE_DIR BINARY_DIR)
     ExternalProject_Add(
             zlib-external
             URL "https://github.com/madler/zlib/archive/v1.3.1.tar.gz"
-            URL_HASH "SHA256=9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23"
+            URL_HASH "SHA256=17e88863f3600672ab49182f217281b6fc4d3c762bde361935e436a95214d05c"
             SOURCE_DIR "${BINARY_DIR}/thirdparty/zlib-src"
             CMAKE_ARGS ${ZLIB_CMAKE_ARGS}
             BUILD_BYPRODUCTS "${BINARY_DIR}/thirdparty/zlib-install/${BYPRODUCT}"
