@@ -15,12 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-function(get_zlib SOURCE_DIR BINARY_DIR)
-    if(MINIFI_ZLIB_SOURCE STREQUAL "CONAN")
-        message("Using Conan to install zlib")
-    elseif(MINIFI_ZLIB_SOURCE STREQUAL "BUILD")
-        message("Using CMake to build zlib from source")
-        include(FetchZLib)
-    endif()
-    find_package(ZLIB REQUIRED)
-endfunction(get_zlib)
+include(FetchContent)
+
+FetchContent_Declare(zlib
+        URL            https://github.com/madler/zlib/archive/v1.3.1.tar.gz
+        URL_HASH       SHA256=17e88863f3600672ab49182f217281b6fc4d3c762bde361935e436a95214d05c
+        OVERRIDE_FIND_PACKAGE
+        SYSTEM
+)
+
+FetchContent_MakeAvailable(zlib)
+if(NOT TARGET ZLIB::ZLIB)
+    add_library(ZLIB::ZLIB ALIAS zlib)
+endif()
