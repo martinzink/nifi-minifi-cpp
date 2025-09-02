@@ -33,17 +33,17 @@ function(use_bundled_zlib SOURCE_DIR BINARY_DIR)
     # Set build options
     set(ZLIB_CMAKE_ARGS ${PASSTHROUGH_CMAKE_ARGS}
             "-DCMAKE_INSTALL_PREFIX=${BINARY_DIR}/thirdparty/zlib-install"
-            )
+    )
 
     # Build project
     ExternalProject_Add(
-        zlib-external
-        URL "https://github.com/madler/zlib/archive/v1.2.11.tar.gz"
-        URL_HASH "SHA256=629380c90a77b964d896ed37163f5c3a34f6e6d897311f1df2a7016355c45eff"
-        SOURCE_DIR "${BINARY_DIR}/thirdparty/zlib-src"
-        CMAKE_ARGS ${ZLIB_CMAKE_ARGS}
-        BUILD_BYPRODUCTS "${BINARY_DIR}/thirdparty/zlib-install/${BYPRODUCT}"
-        EXCLUDE_FROM_ALL TRUE
+            zlib-external
+            URL "https://github.com/madler/zlib/archive/v1.3.1.tar.gz"
+            URL_HASH "SHA256=9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23"
+            SOURCE_DIR "${BINARY_DIR}/thirdparty/zlib-src"
+            CMAKE_ARGS ${ZLIB_CMAKE_ARGS}
+            BUILD_BYPRODUCTS "${BINARY_DIR}/thirdparty/zlib-install/${BYPRODUCT}"
+            EXCLUDE_FROM_ALL TRUE
     )
 
     # Set variables
