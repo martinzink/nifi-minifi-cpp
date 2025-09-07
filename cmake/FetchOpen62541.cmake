@@ -1,4 +1,3 @@
-#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,24 +14,16 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-#
 
-if (NOT (ENABLE_ALL OR ENABLE_SQL))
-    return()
-endif()
+include(FetchContent)
 
-include(${CMAKE_SOURCE_DIR}/extensions/ExtensionHeader.txt)
 
-include_directories(SYSTEM ../../thirdparty/rapidjson-1.1.0/include/ ../../thirdparty/rapidjson-1.1.0/include/rapidjson)
-include_directories(".")
+FetchContent_Declare(open62541
+        URL "https://github.com/open62541/open62541/archive/refs/tags/v1.4.13.tar.gz"
+        URL_HASH "SHA256=491f8c526ecd6f2240f29cf3a00b0498587474b8f0ced1b074589f54533542aa"
+        OVERRIDE_FIND_PACKAGE
+        SYSTEM
+)
 
-file(GLOB SOURCES  "*.cpp" "services/*.cpp" "processors/*.cpp"  "data/*.cpp")
+FetchContent_MakeAvailable(open62541)
 
-add_minifi_library(minifi-sql SHARED ${SOURCES})
-
-include(FetchSoci)
-
-target_link_libraries(minifi-sql soci_core)
-target_link_libraries(minifi-sql ${LIBMINIFI} Threads::Threads)
-
-register_extension(minifi-sql "SQL EXTENSIONS" SQL-EXTENSIONS "Enables the SQL Suite of Tools" "extensions/sql/tests")

@@ -1,0 +1,24 @@
+Subject: [PATCH] add ROCKSDB_INSTALL
+---
+Index: CMakeLists.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt	(revision c007dd1da63fadc6bd0f34c7b8314cc29e7a42bd)
++++ b/CMakeLists.txt	(date 1757182556127)
+@@ -1203,10 +1203,12 @@
+ endif()
+ 
+ # Installation and packaging
++option(ROCKSDB_INSTALL "Enable install target" ON)
++
+ if(WIN32)
+   option(ROCKSDB_INSTALL_ON_WINDOWS "Enable install target on Windows" OFF)
+ endif()
+-if(NOT WIN32 OR ROCKSDB_INSTALL_ON_WINDOWS)
++if(ROCKSDB_INSTALL AND (NOT WIN32 OR ROCKSDB_INSTALL_ON_WINDOWS))
+   if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+     if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+       # Change default installation prefix on Linux to /usr

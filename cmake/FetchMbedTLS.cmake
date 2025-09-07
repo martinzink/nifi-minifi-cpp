@@ -15,11 +15,20 @@
 # specific language governing permissions and limitations
 # under the License.
 
-if(NOT MBEDTLS_FOUND)
-    set(MBEDTLS_FOUND "YES" CACHE STRING "" FORCE)
-    set(MBEDTLS_INCLUDE_DIRS "${EXPORTED_MBEDTLS_INCLUDE_DIRS}" CACHE STRING "" FORCE)
-    set(MBEDTLS_LIBRARIES ${EXPORTED_MBEDTLS_LIBRARIES} CACHE STRING "" FORCE)
-    set(MBEDTLS_LIBRARY "${EXPORTED_MBEDTLS_LIBRARY}" CACHE STRING "" FORCE)
-    set(MBEDX509_LIBRARY "${EXPORTED_MBEDX509_LIBRARY}" CACHE STRING "" FORCE)
-    set(MBEDCRYPTO_LIBRARY "${EXPORTED_MBEDCRYPTO_LIBRARY}" CACHE STRING "" FORCE)
-endif()
+include(FetchContent)
+
+
+FetchContent_Declare(mbedtls
+        GIT_REPOSITORY  "https://github.com/Mbed-TLS/mbedtls/"
+        GIT_TAG         "c765c831e5c2a0971410692f92f7a81d6ec65ec2"
+        GIT_SUBMODULES_RECURSE TRUE
+        OVERRIDE_FIND_PACKAGE
+        SYSTEM
+)
+
+set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
+set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+
+
+FetchContent_MakeAvailable(mbedtls)
+

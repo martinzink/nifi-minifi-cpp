@@ -1,4 +1,3 @@
-#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,24 +14,18 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-#
 
-if (NOT (ENABLE_ALL OR ENABLE_SQL))
-    return()
-endif()
+include(FetchContent)
 
-include(${CMAKE_SOURCE_DIR}/extensions/ExtensionHeader.txt)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 
-include_directories(SYSTEM ../../thirdparty/rapidjson-1.1.0/include/ ../../thirdparty/rapidjson-1.1.0/include/rapidjson)
-include_directories(".")
+FetchContent_Declare(yamlcpp
+        GIT_REPOSITORY  https://github.com/jbeder/yaml-cpp
+        GIT_TAG         aa8d4e4750ec9fe9f8cc680eb90f1b15955c817e
+        OVERRIDE_FIND_PACKAGE
+        SYSTEM
+)
 
-file(GLOB SOURCES  "*.cpp" "services/*.cpp" "processors/*.cpp"  "data/*.cpp")
-
-add_minifi_library(minifi-sql SHARED ${SOURCES})
-
-include(FetchSoci)
-
-target_link_libraries(minifi-sql soci_core)
-target_link_libraries(minifi-sql ${LIBMINIFI} Threads::Threads)
-
-register_extension(minifi-sql "SQL EXTENSIONS" SQL-EXTENSIONS "Enables the SQL Suite of Tools" "extensions/sql/tests")
+FetchContent_MakeAvailable(yamlcpp)
