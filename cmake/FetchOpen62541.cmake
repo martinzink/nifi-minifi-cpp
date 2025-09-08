@@ -23,7 +23,17 @@ FetchContent_Declare(open62541
         URL_HASH "SHA256=491f8c526ecd6f2240f29cf3a00b0498587474b8f0ced1b074589f54533542aa"
         OVERRIDE_FIND_PACKAGE
         SYSTEM
+        EXCLUDE_FROM_ALL
 )
 
-FetchContent_MakeAvailable(open62541)
+set(UA_ENABLE_ENCRYPTION ON CACHE BOOL "" FORCE)
+set(UA_FORCE_WERROR OFF CACHE BOOL "" FORCE)
+set(UA_ENABLE_DEBUG_SANITIZER OFF CACHE BOOL "" FORCE)
+set(UA_ENABLE_ENCRYPTION_MBEDTLS ON CACHE BOOL "" FORCE)
 
+include(FetchMbedTLS)
+find_package(mbedTLS REQUIRED)
+set(MBEDTLS_INCLUDE_DIRS ${mbedtls_SOURCE_DIR}/include CACHE STRING "" FORCE)
+
+FetchContent_MakeAvailable(open62541)
+target_link_libraries(open62541 PRIVATE mbedtls)

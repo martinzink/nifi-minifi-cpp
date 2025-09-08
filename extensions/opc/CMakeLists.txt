@@ -23,7 +23,6 @@ endif()
 include(FetchMbedTLS)
 include(FetchOpen62541)
 
-
 include(${CMAKE_SOURCE_DIR}/extensions/ExtensionHeader.txt)
 
 include_directories(include)

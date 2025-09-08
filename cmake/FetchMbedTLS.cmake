@@ -24,6 +24,7 @@ FetchContent_Declare(mbedtls
         GIT_SUBMODULES_RECURSE TRUE
         OVERRIDE_FIND_PACKAGE
         SYSTEM
+        EXCLUDE_FROM_ALL
 )
 
 set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
