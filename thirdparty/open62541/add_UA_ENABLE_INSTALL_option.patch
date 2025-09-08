@@ -1,0 +1,257 @@
+Subject: [PATCH] add UA_ENABLE_INSTALL option
+---
+Index: CMakeLists.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt	(revision 484348f3076da13a9d0971f3d66ffe57ab3b7a90)
++++ b/CMakeLists.txt	(date 1757318203547)
+@@ -109,6 +109,7 @@
+ option(UA_ENABLE_XML_ENCODING "Enable XML encoding (EXPERIMENTAL)" OFF)
+ option(UA_ENABLE_NODESETLOADER "Enable nodesetLoader public API" OFF)
+ option(UA_ENABLE_DATATYPES_ALL "Generate all datatypes for namespace zero (uses more binary space)" ON)
++option(UA_ENABLE_INSTALL "Enables installation targets" ON)
+ 
+ if(UA_INFORMATION_MODEL_AUTOLOAD AND NOT UA_ENABLE_NODESETLOADER AND NOT UA_BUILD_FUZZING)
+     set(UA_ENABLE_NODESET_INJECTOR ON)
+@@ -1476,130 +1477,132 @@
+ # specify install location with `-DCMAKE_INSTALL_PREFIX=xyz`
+ # Enable shared library with `-DBUILD_SHARED_LIBS=ON`
+ 
+-if(UA_ENABLE_AMALGAMATION)
+-    install(CODE "MESSAGE(FATAL_ERROR \"Installation with UA_ENABLE_AMALGAMATION=ON is not possible.\")")
+-endif()
++if(UA_ENABLE_INSTALL)
++    if(UA_ENABLE_AMALGAMATION)
++        install(CODE "MESSAGE(FATAL_ERROR \"Installation with UA_ENABLE_AMALGAMATION=ON is not possible.\")")
++    endif()
+ 
+-# export library (either static or shared depending on BUILD_SHARED_LIBS)
+-install(TARGETS open62541
+-        EXPORT open62541Targets
+-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+-        INCLUDES DESTINATION include)
++    # export library (either static or shared depending on BUILD_SHARED_LIBS)
++    install(TARGETS open62541
++            EXPORT open62541Targets
++            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++            INCLUDES DESTINATION include)
+ 
+-set(open62541_install_tools_dir share/open62541)
+-set(open62541_install_schema_dir share/open62541/schema)
++    set(open62541_install_tools_dir share/open62541)
++    set(open62541_install_schema_dir share/open62541/schema)
+ 
+-# Create open62541Config.cmake
+-include(CMakePackageConfigHelpers)
+-set(cmake_configfile_install ${CMAKE_INSTALL_LIBDIR}/cmake/open62541)
+-configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake/open62541Config.cmake.in"
+-                              "${CMAKE_CURRENT_BINARY_DIR}/open62541Config.cmake"
+-                              INSTALL_DESTINATION "${cmake_configfile_install}"
+-                              PATH_VARS open62541_install_tools_dir
+-                                        open62541_install_schema_dir)
+-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/open62541Config.cmake"
+-              "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake/open62541Macros.cmake"
+-        DESTINATION "${cmake_configfile_install}")
++    # Create open62541Config.cmake
++    include(CMakePackageConfigHelpers)
++    set(cmake_configfile_install ${CMAKE_INSTALL_LIBDIR}/cmake/open62541)
++    configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake/open62541Config.cmake.in"
++                                  "${CMAKE_CURRENT_BINARY_DIR}/open62541Config.cmake"
++                                  INSTALL_DESTINATION "${cmake_configfile_install}"
++                                  PATH_VARS open62541_install_tools_dir
++                                            open62541_install_schema_dir)
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/open62541Config.cmake"
++                  "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake/open62541Macros.cmake"
++            DESTINATION "${cmake_configfile_install}")
+ 
+-# Create open62541ConfigVersion.cmake
+-set(open62541_VERSION)
+-get_target_property(open62541_VERSION open62541 VERSION)
+-write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/open62541ConfigVersion.cmake"
+-                                 VERSION ${open62541_VERSION} COMPATIBILITY AnyNewerVersion)
+-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/open62541ConfigVersion.cmake"
+-        DESTINATION "${cmake_configfile_install}")
++    # Create open62541ConfigVersion.cmake
++    set(open62541_VERSION)
++    get_target_property(open62541_VERSION open62541 VERSION)
++    write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/open62541ConfigVersion.cmake"
++                                     VERSION ${open62541_VERSION} COMPATIBILITY AnyNewerVersion)
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/open62541ConfigVersion.cmake"
++            DESTINATION "${cmake_configfile_install}")
+ 
+-# Create open62541Targets.cmake
+-install(EXPORT open62541Targets
+-        FILE open62541Targets.cmake
+-        DESTINATION "${cmake_configfile_install}"
+-        NAMESPACE open62541::)
+-export(TARGETS open62541
+-       NAMESPACE open62541::
+-       FILE ${CMAKE_CURRENT_BINARY_DIR}/open62541Targets.cmake)
++    # Create open62541Targets.cmake
++    install(EXPORT open62541Targets
++            FILE open62541Targets.cmake
++            DESTINATION "${cmake_configfile_install}"
++            NAMESPACE open62541::)
++    export(TARGETS open62541
++           NAMESPACE open62541::
++           FILE ${CMAKE_CURRENT_BINARY_DIR}/open62541Targets.cmake)
+ 
+-# Generate and install open62541.pc
+-if(UA_ENABLE_AMALGAMATION)
+-    set(PC_EXTRA_CFLAGS "-DUA_ENABLE_AMALGAMATION")
+-endif()
++    # Generate and install open62541.pc
++    if(UA_ENABLE_AMALGAMATION)
++        set(PC_EXTRA_CFLAGS "-DUA_ENABLE_AMALGAMATION")
++    endif()
+ 
+-set(pkgcfgpubliclibs "")
+-foreach(lib ${open62541_PUBLIC_LIBRARIES})
+-    set(pkgcfgpubliclibs "${pkgcfgpubliclibs}-l${lib} ")
+-endforeach()
++    set(pkgcfgpubliclibs "")
++    foreach(lib ${open62541_PUBLIC_LIBRARIES})
++        set(pkgcfgpubliclibs "${pkgcfgpubliclibs}-l${lib} ")
++    endforeach()
+ 
+-if(BUILD_SHARED_LIBS)
+-    foreach(lib ${open62541_LIBRARIES})
+-        set(pkgcfgpubliclibs "${pkgcfgpubliclibs}-l${lib} ")
+-    endforeach()
+-endif()
++    if(BUILD_SHARED_LIBS)
++        foreach(lib ${open62541_LIBRARIES})
++            set(pkgcfgpubliclibs "${pkgcfgpubliclibs}-l${lib} ")
++        endforeach()
++    endif()
+ 
+-configure_file(tools/open62541.pc.in ${PROJECT_BINARY_DIR}/src_generated/open62541.pc @ONLY)
++    configure_file(tools/open62541.pc.in ${PROJECT_BINARY_DIR}/src_generated/open62541.pc @ONLY)
+ 
+-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+-    install(FILES "${PROJECT_BINARY_DIR}/src_generated/open62541.pc"
+-            DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+-endif()
++    if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
++        install(FILES "${PROJECT_BINARY_DIR}/src_generated/open62541.pc"
++                DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
++    endif()
+ 
+-# Install nodeset compiler
+-install(DIRECTORY "tools/certs" "tools/nodeset_compiler"
+-        DESTINATION ${open62541_install_tools_dir}
+-        FILES_MATCHING
+-        PATTERN "*"
+-        PATTERN "__pycache__" EXCLUDE
+-        PATTERN "*.pyc" EXCLUDE
+-        PATTERN ".git*" EXCLUDE
+-        PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE)
++    # Install nodeset compiler
++    install(DIRECTORY "tools/certs" "tools/nodeset_compiler"
++            DESTINATION ${open62541_install_tools_dir}
++            FILES_MATCHING
++            PATTERN "*"
++            PATTERN "__pycache__" EXCLUDE
++            PATTERN "*.pyc" EXCLUDE
++            PATTERN ".git*" EXCLUDE
++            PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE)
+ 
+-# Install schemas
+-# Trailing slash to prevent "schema/schema" nesting
+-install(DIRECTORY ${UA_SCHEMA_DIR}/
+-        DESTINATION ${open62541_install_schema_dir}
+-        FILES_MATCHING
+-        PATTERN "*.xml"
+-        PATTERN "*Types.bsd"
+-        PATTERN "StatusCode.csv"
+-        PATTERN "NodeIds.csv"
+-        PERMISSIONS OWNER_READ GROUP_READ)
++    # Install schemas
++    # Trailing slash to prevent "schema/schema" nesting
++    install(DIRECTORY ${UA_SCHEMA_DIR}/
++            DESTINATION ${open62541_install_schema_dir}
++            FILES_MATCHING
++            PATTERN "*.xml"
++            PATTERN "*Types.bsd"
++            PATTERN "StatusCode.csv"
++            PATTERN "NodeIds.csv"
++            PERMISSIONS OWNER_READ GROUP_READ)
+ 
+-# Install python tools
+-set(UA_install_tools_files "tools/generate_datatypes.py"
+-                           "tools/generate_nodeid_header.py"
+-                           "tools/generate_statuscode_descriptions.py")
+-install(FILES ${UA_install_tools_files} DESTINATION ${open62541_install_tools_dir}
+-        PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE)
++    # Install python tools
++    set(UA_install_tools_files "tools/generate_datatypes.py"
++                               "tools/generate_nodeid_header.py"
++                               "tools/generate_statuscode_descriptions.py")
++    install(FILES ${UA_install_tools_files} DESTINATION ${open62541_install_tools_dir}
++            PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE)
+ 
+-# Recreate the include folder structure from the source also in /usr/include/open62541
+-if(NOT UA_ENABLE_AMALGAMATION)
+-    set(FILES_TO_INSTALL ${exported_headers} ${plugin_headers})
+-    set(BASE_PATH_MAIN "${PROJECT_SOURCE_DIR}/include/open62541")
+-    set(BASE_PATH_PLUGINS "${PROJECT_SOURCE_DIR}/plugins/include/open62541")
+-    set(BASE_PATH_ARCH "${PROJECT_SOURCE_DIR}/arch")
+-    set(BASE_PATH_GENERATED "${PROJECT_BINARY_DIR}/src_generated/open62541")
+-    set(BASE_PATH_DEPS "${PROJECT_SOURCE_DIR}/deps")
++    # Recreate the include folder structure from the source also in /usr/include/open62541
++    if(NOT UA_ENABLE_AMALGAMATION)
++        set(FILES_TO_INSTALL ${exported_headers} ${plugin_headers})
++        set(BASE_PATH_MAIN "${PROJECT_SOURCE_DIR}/include/open62541")
++        set(BASE_PATH_PLUGINS "${PROJECT_SOURCE_DIR}/plugins/include/open62541")
++        set(BASE_PATH_ARCH "${PROJECT_SOURCE_DIR}/arch")
++        set(BASE_PATH_GENERATED "${PROJECT_BINARY_DIR}/src_generated/open62541")
++        set(BASE_PATH_DEPS "${PROJECT_SOURCE_DIR}/deps")
+ 
+-    foreach ( file ${FILES_TO_INSTALL} )
+-        # Construct a relative path by replacing any occurence of the absolute path
+-        set(full_path ${file})
+-        string(REPLACE ${BASE_PATH_MAIN} "" file ${file})
+-        string(REPLACE ${BASE_PATH_PLUGINS} "" file ${file})
+-        string(REPLACE ${BASE_PATH_ARCH} "" file ${file})
+-        string(REPLACE ${BASE_PATH_GENERATED} "" file ${file})
+-        string(REPLACE ${BASE_PATH_DEPS} "" file ${file})
++        foreach ( file ${FILES_TO_INSTALL} )
++            # Construct a relative path by replacing any occurence of the absolute path
++            set(full_path ${file})
++            string(REPLACE ${BASE_PATH_MAIN} "" file ${file})
++            string(REPLACE ${BASE_PATH_PLUGINS} "" file ${file})
++            string(REPLACE ${BASE_PATH_ARCH} "" file ${file})
++            string(REPLACE ${BASE_PATH_GENERATED} "" file ${file})
++            string(REPLACE ${BASE_PATH_DEPS} "" file ${file})
+ 
+-        get_filename_component(dir ${file} DIRECTORY)
++            get_filename_component(dir ${file} DIRECTORY)
+ 
+-        string(FIND "${full_path}" "${BASE_PATH_DEPS}" has_base_path)
+-        if("${has_base_path}" EQUAL 0)
+-            install(FILES ${full_path} DESTINATION include${dir})
+-        else()
+-            install(FILES ${full_path} DESTINATION include/open62541${dir})
+-        endif()
+-    endforeach()
++            string(FIND "${full_path}" "${BASE_PATH_DEPS}" has_base_path)
++            if("${has_base_path}" EQUAL 0)
++                install(FILES ${full_path} DESTINATION include${dir})
++            else()
++                install(FILES ${full_path} DESTINATION include/open62541${dir})
++            endif()
++        endforeach()
++    endif()
++
+ endif()
+-
+ ##################################
+ # Visual Studio Solution Folders #
+ ##################################

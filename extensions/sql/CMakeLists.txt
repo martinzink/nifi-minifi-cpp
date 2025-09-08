@@ -32,7 +32,7 @@ add_minifi_library(minifi-sql SHARED ${SOURCES})
 
 include(FetchSoci)
 
-target_link_libraries(minifi-sql soci_core)
+target_link_libraries(minifi-sql soci_core soci_odbc)
 target_link_libraries(minifi-sql ${LIBMINIFI} Threads::Threads)
 
 register_extension(minifi-sql "SQL EXTENSIONS" SQL-EXTENSIONS "Enables the SQL Suite of Tools" "extensions/sql/tests")
