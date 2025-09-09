@@ -18,17 +18,11 @@
 include(FetchContent)
 
 set(ZSTD_BUILD_SHARED OFF CACHE BOOL "" FORCE)
-
-set(PC "")
-if (WIN32)
-    set(PATCH_FILE "${CMAKE_SOURCE_DIR}/thirdparty/zstd/exclude_gcc_clang_compiler_options_from_windows.patch")
-    set(PC "${Patch_EXECUTABLE}" -p1 -i "${PATCH_FILE}")
-endif()
+set(ZSTD_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(zstd
     URL            https://github.com/facebook/zstd/archive/refs/tags/v1.5.7.tar.gz
     URL_HASH       SHA256=37d7284556b20954e56e1ca85b80226768902e2edabd3b649e9e72c0c9012ee3
-    PATCH_COMMAND  "${PC}"
     SOURCE_SUBDIR  build/cmake
     OVERRIDE_FIND_PACKAGE
     SYSTEM
