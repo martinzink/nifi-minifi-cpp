@@ -129,11 +129,13 @@ class Container:
         exit_code, output = self.exec_run(count_command)
 
         if exit_code != 0:
+            logging.error(f"Error running command '{count_command}': {output}")
             return False
 
         try:
             file_count = int(output.strip())
         except (ValueError, IndexError):
+            logging.error(f"Error parsing output '{output}' from command '{count_command}'")
             return False
 
         if file_count != 1:
@@ -143,12 +145,15 @@ class Container:
         exit_code, output = self.exec_run(content_command)
 
         if exit_code != 0:
+            logging.error(f"Error running command '{content_command}': {output}")
             return False
 
         actual_content = output.strip()
+        logging.debug(f"Comparing: '{actual_content}' vs {expected_content}")
         return actual_content == expected_content.strip()
 
     def get_logs(self) -> str:
+        logging.debug("Getting logs from container '%s'", self.container_name)
         if not self.container:
             return ""
         logs_as_bytes = self.container.logs()
@@ -179,11 +184,13 @@ class Container:
         exit_code, output = self.exec_run(count_command)
 
         if exit_code != 0:
+            logging.error(f"Error running command '{count_command}': {output}")
             return False
 
         try:
             return int(output.strip())
         except (ValueError, IndexError):
+            logging.error(f"Error parsing output '{output}' from command '{count_command}'")
             return -1
 
     def verify_file_contents(self, directory_path: str, expected_contents: list[str]) -> bool:
@@ -196,11 +203,13 @@ class Container:
         exit_code, output = self.exec_run(f"sh -c \"{list_files_command}\"")
 
         if exit_code != 0:
+            logging.error(f"Error running command '{list_files_command}': {output}")
             return False
 
         actual_filepaths = [path for path in output.split('\0') if path]
 
         if len(actual_filepaths) != len(expected_contents):
+            logging.debug(f"Expected {len(expected_contents)} files, but found {len(actual_filepaths)}")
             return False
 
         actual_file_contents = []
