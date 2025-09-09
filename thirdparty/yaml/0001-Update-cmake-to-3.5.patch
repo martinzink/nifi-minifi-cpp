@@ -1,16 +1,28 @@
-From 789acd7dbee272de2017464b5656d6bb3a9fa959 Mon Sep 17 00:00:00 2001
-From: Martin Zink <martin.zink@apache.org>
-Date: Tue, 9 Sep 2025 10:14:49 +0200
-Subject: [PATCH] Update cmake to 3.5
-
+Subject: [PATCH] cmake4 fixes
 ---
- CMakeLists.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Index: src/api.c
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/api.c b/src/api.c
+--- a/src/api.c	(revision 2c891fc7a770e8ba2fec34fc6b545c672beb37e6)
++++ b/src/api.c	(date 1757420083181)
+@@ -1,5 +1,6 @@
 
+ #include "yaml_private.h"
++#include "string.h"
+
+ /*
+  * Get the library version.
+Index: CMakeLists.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 4f81148..7dc7999 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
+--- a/CMakeLists.txt	(revision 2c891fc7a770e8ba2fec34fc6b545c672beb37e6)
++++ b/CMakeLists.txt	(date 1757418791567)
 @@ -1,5 +1,5 @@
  
 -cmake_minimum_required(VERSION 3.0)
@@ -18,6 +30,3 @@ index 4f81148..7dc7999 100644
  project (yaml C)
  
  set (YAML_VERSION_MAJOR 0)
--- 
-2.51.0
-
