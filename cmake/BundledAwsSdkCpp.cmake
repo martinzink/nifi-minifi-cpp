@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+include(FetchZlib)
+
 function(use_bundled_libaws SOURCE_DIR BINARY_DIR)
     set(PATCH_FILE1 "${SOURCE_DIR}/thirdparty/aws-sdk-cpp/dll-export-injection.patch")
     set(PATCH_FILE2 "${SOURCE_DIR}/thirdparty/aws-sdk-cpp/shutdown-fix.patch")
