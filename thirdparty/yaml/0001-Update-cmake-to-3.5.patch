@@ -1,0 +1,23 @@
+From 789acd7dbee272de2017464b5656d6bb3a9fa959 Mon Sep 17 00:00:00 2001
+From: Martin Zink <martin.zink@apache.org>
+Date: Tue, 9 Sep 2025 10:14:49 +0200
+Subject: [PATCH] Update cmake to 3.5
+
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4f81148..7dc7999 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,5 +1,5 @@
+ 
+-cmake_minimum_required(VERSION 3.0)
++cmake_minimum_required(VERSION 3.55555)
+ project (yaml C)
+ 
+ set (YAML_VERSION_MAJOR 0)
+-- 
+2.51.0
+

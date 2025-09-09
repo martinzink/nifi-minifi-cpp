@@ -19,9 +19,15 @@ include(FetchContent)
 
 set(BUILD_TESTING OFF     CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+set(PATCH_FILE "${CMAKE_SOURCE_DIR}/thirdparty/yaml/0001-Update-cmake-to-3.5.patch")
+set(PC ${Bash_EXECUTABLE}  -c "set -x &&\
+        (\\\"${Patch_EXECUTABLE}\\\" -p1 -R -s -f --dry-run -i \\\"${PATCH_FILE}\\\" || \\\"${Patch_EXECUTABLE}\\\" -p1 -N -i \\\"${PATCH_FILE}\\\")")
+
 FetchContent_Declare(yaml
         GIT_REPOSITORY  https://github.com/yaml/libyaml.git
         GIT_TAG         2c891fc7a770e8ba2fec34fc6b545c672beb37e6  # 0.2.5
+        PATCH_COMMAND "${PC}"
         SYSTEM
 )
 
@@ -42,8 +48,8 @@ set(WEBSOCKETS_PC ${Bash_EXECUTABLE} -c "set -x &&\
         (${Patch_EXECUTABLE} -R -p1 -s -f --dry-run -i ${WEBSOCKETS_PATCH_FILE_1} || ${Patch_EXECUTABLE} -p1 -i ${WEBSOCKETS_PATCH_FILE_1}) &&\
         (${Patch_EXECUTABLE} -R -p1 -s -f --dry-run -i ${WEBSOCKETS_PATCH_FILE_2} || ${Patch_EXECUTABLE} -p1 -i ${WEBSOCKETS_PATCH_FILE_2})")
 FetchContent_Declare(websockets
-        URL             https://github.com/warmcat/libwebsockets/archive/refs/tags/v4.3.2.tar.gz
-        URL_HASH        SHA256=6a85a1bccf25acc7e8e5383e4934c9b32a102880d1e4c37c70b27ae2a42406e1
+        URL             https://github.com/warmcat/libwebsockets/archive/refs/tags/v4.4.1.tar.gz
+        URL_HASH        SHA256=472e6cfa77b6f80ff2cc176bc59f6cb2856df7e30e8f31afcbd1fc94ffd2f828
         PATCH_COMMAND "${WEBSOCKETS_PC}"
         SYSTEM
 )
