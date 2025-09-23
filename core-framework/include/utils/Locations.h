@@ -18,9 +18,9 @@
 
 #include <filesystem>
 
+#include "Defaults.h"
 #include "utils/Environment.h"
 #include "file/FileUtils.h"
-#include "Defaults.h"
 
 namespace org::apache::nifi::minifi::utils {
 inline std::string_view getDefaultExtensionsPattern() {

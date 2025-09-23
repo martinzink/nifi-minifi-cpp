@@ -19,7 +19,6 @@
 #include "api/core/Resource.h"
 #include "minifi-cpp/core/FlowFile.h"
 #include "unit/Catch.h"
-#include "unit/ProcessorUtils.h"
 #include "unit/SingleProcessorTestController.h"
 #include "unit/TestBase.h"
 #include "utils/CProcessor.h"
@@ -31,8 +30,8 @@ template<typename T, typename ...Args>
 std::unique_ptr<minifi::core::Processor> make_custom_processor(minifi::core::ProcessorMetadata metadata, Args&&... args) {
   std::unique_ptr<minifi::core::ProcessorApi> processor_impl;
   core::useProcessorClassDescription<T>([&] (MinifiProcessorClassDescription* description) {
-    minifi::utils::useCProcessorClassDescription(description, [&] (auto _, auto c_description) {
-      processor_impl = std::make_unique<minifi::utils::CProcessor>(c_description, metadata, new T(metadata, std::forward<Args>(args)...));
+    minifi::utils::useCProcessorClassDescription(description, [&] (auto, auto c_description) {
+      processor_impl = std::make_unique<minifi::utils::CProcessor>(std::move(c_description), metadata, new T(metadata, std::forward<Args>(args)...));
     });
   });
   return std::make_unique<minifi::core::Processor>(metadata.name, metadata.uuid, std::move(processor_impl));
