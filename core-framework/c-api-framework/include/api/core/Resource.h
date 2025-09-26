@@ -131,7 +131,7 @@ void useProcessorClassDescription(Fn&& fn) {
         try {
           static_cast<Class*>(self)->onTrigger(context_wrapper, session_wrapper);
           return MINIFI_SUCCESS;
-        } catch (std::exception& ex) {
+        } catch (std::exception&) {
           return MINIFI_UNKNOWN_ERROR;
         }
       },
@@ -140,7 +140,7 @@ void useProcessorClassDescription(Fn&& fn) {
         try {
           static_cast<Class*>(self)->onSchedule(context_wrapper);
           return MINIFI_SUCCESS;
-        } catch (std::exception& ex) {
+        } catch (std::exception&) {
           return MINIFI_UNKNOWN_ERROR;
         }
       },
@@ -166,10 +166,10 @@ void useProcessorClassDescription(Fn&& fn) {
 template<typename Class>
 class StaticClassType {
  public:
-  explicit StaticClassType(const std::string& class_name)
-      : name_(class_name) {
+  explicit StaticClassType(std::string class_name)
+      : name_(std::move(class_name)) {
 
-    useProcessorClassDescription<Class>([] (MinifiProcessorClassDescription* proc_description) {
+    useProcessorClassDescription<Class>([] (const MinifiProcessorClassDescription* proc_description) {
       MinifiRegisterProcessorClass(proc_description);
     });
   }

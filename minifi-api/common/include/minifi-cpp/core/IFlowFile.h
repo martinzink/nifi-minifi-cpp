@@ -16,7 +16,8 @@
  */
 #pragma once
 
-#include <string>
+#include <array>
+#include <string_view>
 
 namespace org::apache::nifi::minifi::core {
 
