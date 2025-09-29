@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -26,7 +27,6 @@
 #endif
 
 #include "minifi-c.h"
-#include <string_view>
 #include "core/ClassName.h"
 #include "api/utils/minifi-c-utils.h"
 #include "ProcessContext.h"
@@ -168,7 +168,6 @@ class StaticClassType {
  public:
   explicit StaticClassType(std::string class_name)
       : name_(std::move(class_name)) {
-
     useProcessorClassDescription<Class>([] (const MinifiProcessorClassDescription* proc_description) {
       MinifiRegisterProcessorClass(proc_description);
     });
@@ -193,4 +192,4 @@ class StaticClassType {
 #define REGISTER_PROCESSOR(CLASSNAME) \
         static const auto& CLASSNAME##_registrar = api::core::StaticClassType<CLASSNAME>::get(#CLASSNAME)
 
-}  // namespace org::apache::nifi::minifi::core
+}  // namespace org::apache::nifi::minifi::api::core

@@ -264,20 +264,17 @@ void MinifiRegisterProcessorClass(const MinifiProcessorClassDescription* class_d
 
     minifi::core::ClassLoader::getDefaultClassLoader().getClassLoader(module_name).registerClass(
       c_class_description.name,
-      std::make_unique<CProcessorFactory>(module_name, toString(class_description->full_name), c_class_description)
-    );
+      std::make_unique<CProcessorFactory>(module_name, toString(class_description->full_name), c_class_description));
   });
-
 }
 
-MinifiStatus MinifiProcessContextGetProperty(MinifiProcessContext context, MinifiStringView property_name, MinifiFlowFile flow_file, void(*result_cb)(void* user_ctx, MinifiStringView result), void* user_ctx) {
+MinifiStatus MinifiProcessContextGetProperty(MinifiProcessContext context, MinifiStringView property_name, MinifiFlowFile flow_file,
+    void (*result_cb)(void* user_ctx, MinifiStringView result), void* user_ctx) {
   gsl_Assert(context != MINIFI_NULL);
-  auto result = reinterpret_cast<minifi::core::ProcessContext*>(context)->getProperty(toStringView(property_name), flow_file != MINIFI_NULL ? reinterpret_cast<std::shared_ptr<minifi::core::FlowFile>*>(flow_file)->get() : nullptr);
+  auto result = reinterpret_cast<minifi::core::ProcessContext*>(context)->getProperty(toStringView(property_name),
+      flow_file != MINIFI_NULL ? reinterpret_cast<std::shared_ptr<minifi::core::FlowFile>*>(flow_file)->get() : nullptr);
   if (result) {
-    result_cb(user_ctx, MinifiStringView{
-      .data = result.value().data(),
-      .length = gsl::narrow<uint32_t>(result.value().length())
-    });
+    result_cb(user_ctx, MinifiStringView{.data = result.value().data(), .length = gsl::narrow<uint32_t>(result.value().length())});
     return MINIFI_SUCCESS;
   }
   switch (static_cast<minifi::core::PropertyErrorCode>(result.error().value())) {
@@ -496,4 +493,4 @@ void MinifiFlowFileGetAttributes(MinifiProcessSession session, MinifiFlowFile ff
   }
 }
 
-} // extern "C"
+}  // extern "C"

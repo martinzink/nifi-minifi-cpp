@@ -35,7 +35,7 @@ class CProcessorMetricsWrapper : public minifi::core::ProcessorMetricsImpl {
  public:
   class CProcessorInfoProvider : public ProcessorMetricsImpl::ProcessorInfoProvider {
    public:
-    CProcessorInfoProvider(const CProcessor& source_processor): source_processor_(source_processor) {}
+    explicit CProcessorInfoProvider(const CProcessor& source_processor): source_processor_(source_processor) {}
 
     std::string getProcessorType() const override;
     std::string getName() const override;

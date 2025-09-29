@@ -88,4 +88,4 @@ void ProcessorImpl::onTrigger(ProcessContext& ctx, ProcessSession& session) {
 }
 
 
-}  // namespace org::apache::nifi::minifi::core
+}  // namespace org::apache::nifi::minifi::api::core

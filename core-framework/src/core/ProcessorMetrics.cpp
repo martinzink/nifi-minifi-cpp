@@ -28,7 +28,7 @@ namespace org::apache::nifi::minifi::core {
 namespace {
 class StandardProcessorInfoProvider : public ProcessorMetricsImpl::ProcessorInfoProvider {
  public:
-  StandardProcessorInfoProvider(const ProcessorImpl& source_processor): source_processor_(source_processor) {}
+  explicit StandardProcessorInfoProvider(const ProcessorImpl& source_processor): source_processor_(source_processor) {}
 
   std::string getProcessorType() const override {
     return source_processor_.getProcessorType();
