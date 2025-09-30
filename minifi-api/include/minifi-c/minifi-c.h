@@ -18,6 +18,16 @@
 #ifndef MINIFI_API_INCLUDE_MINIFI_C_MINIFI_C_H_
 #define MINIFI_API_INCLUDE_MINIFI_C_MINIFI_C_H_
 
+#ifdef WIN32
+  #ifdef LIBMINIFI
+    #define MINIFIAPI __declspec(dllexport)
+  #else
+    #define MINIFIAPI __declspec(dllimport)
+  #endif
+#else
+  #define MINIFIAPI
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -180,46 +190,46 @@ typedef enum MinifiStandardPropertyValidator {
   MINIFI_PORT_VALIDATOR = 7
 } MinifiStandardPropertyValidator;
 
-OWNED MinifiExtension MinifiCreateExtension(const MinifiExtensionCreateInfo*);
-void MinifiDestroyExtension(OWNED MinifiExtension);
+MINIFIAPI OWNED MinifiExtension MinifiCreateExtension(const MinifiExtensionCreateInfo*);
+MINIFIAPI void MinifiDestroyExtension(OWNED MinifiExtension);
 
-MinifiPropertyValidator MinifiGetStandardValidator(MinifiStandardPropertyValidator);
-void MinifiRegisterProcessorClass(const MinifiProcessorClassDescription*);
+MINIFIAPI MinifiPropertyValidator MinifiGetStandardValidator(MinifiStandardPropertyValidator);
+MINIFIAPI void MinifiRegisterProcessorClass(const MinifiProcessorClassDescription*);
 
-OWNED MinifiPublishedMetrics MinifiPublishedMetricsCreate(uint32_t count, const MinifiStringView*, const double*);
+MINIFIAPI OWNED MinifiPublishedMetrics MinifiPublishedMetricsCreate(uint32_t count, const MinifiStringView*, const double*);
 
-MinifiStatus MinifiProcessContextGetProperty(MinifiProcessContext, MinifiStringView, MinifiFlowFile, void(*result_cb)(void* user_ctx, MinifiStringView result), void* user_ctx);
-void MinifiProcessContextYield(MinifiProcessContext);
-void MinifiProcessContextGetProcessorName(MinifiProcessContext, void(*result_cb)(void* user_ctx, MinifiStringView result), void* user_ctx);
-MinifiBool MinifiProcessContextHasNonEmptyProperty(MinifiProcessContext, MinifiStringView);
+MINIFIAPI MinifiStatus MinifiProcessContextGetProperty(MinifiProcessContext, MinifiStringView, MinifiFlowFile, void(*result_cb)(void* user_ctx, MinifiStringView result), void* user_ctx);
+MINIFIAPI void MinifiProcessContextYield(MinifiProcessContext);
+MINIFIAPI void MinifiProcessContextGetProcessorName(MinifiProcessContext, void(*result_cb)(void* user_ctx, MinifiStringView result), void* user_ctx);
+MINIFIAPI MinifiBool MinifiProcessContextHasNonEmptyProperty(MinifiProcessContext, MinifiStringView);
 
-void MinifiLoggerSetMaxLogSize(MinifiLogger, int32_t);
-void MinifiLoggerGetId(MinifiLogger, void(*cb)(void* user_ctx, MinifiStringView id), void* user_ctx);
-void MinifiLoggerLogString(MinifiLogger, MinifiLogLevel, MinifiStringView);
-MinifiBool MinifiLoggerShouldLog(MinifiLogger, MinifiLogLevel);
-MinifiLogLevel MinifiLoggerLevel(MinifiLogger);
-int32_t MinifiLoggerGetMaxLogSize(MinifiLogger);
+MINIFIAPI void MinifiLoggerSetMaxLogSize(MinifiLogger, int32_t);
+MINIFIAPI void MinifiLoggerGetId(MinifiLogger, void(*cb)(void* user_ctx, MinifiStringView id), void* user_ctx);
+MINIFIAPI void MinifiLoggerLogString(MinifiLogger, MinifiLogLevel, MinifiStringView);
+MINIFIAPI MinifiBool MinifiLoggerShouldLog(MinifiLogger, MinifiLogLevel);
+MINIFIAPI MinifiLogLevel MinifiLoggerLevel(MinifiLogger);
+MINIFIAPI int32_t MinifiLoggerGetMaxLogSize(MinifiLogger);
 
-OWNED MinifiFlowFile MinifiProcessSessionGet(MinifiProcessSession);
-OWNED MinifiFlowFile MinifiProcessSessionCreate(MinifiProcessSession, MinifiFlowFile);
-void MinifiDestroyFlowFile(OWNED MinifiFlowFile);
-void MinifiProcessSessionTransfer(MinifiProcessSession, MinifiFlowFile, MinifiStringView);
-void MinifiProcessSessionRemove(MinifiProcessSession, MinifiFlowFile);
-MinifiStatus MinifiProcessSessionRead(MinifiProcessSession, MinifiFlowFile, int64_t(*cb)(void* user_ctx, MinifiInputStream), void* user_ctx);
-MinifiStatus MinifiProcessSessionWrite(MinifiProcessSession, MinifiFlowFile, int64_t(*cb)(void* user_ctx, MinifiOutputStream), void* user_ctx);
+MINIFIAPI OWNED MinifiFlowFile MinifiProcessSessionGet(MinifiProcessSession);
+MINIFIAPI OWNED MinifiFlowFile MinifiProcessSessionCreate(MinifiProcessSession, MinifiFlowFile);
+MINIFIAPI void MinifiDestroyFlowFile(OWNED MinifiFlowFile);
+MINIFIAPI void MinifiProcessSessionTransfer(MinifiProcessSession, MinifiFlowFile, MinifiStringView);
+MINIFIAPI void MinifiProcessSessionRemove(MinifiProcessSession, MinifiFlowFile);
+MINIFIAPI MinifiStatus MinifiProcessSessionRead(MinifiProcessSession, MinifiFlowFile, int64_t(*cb)(void* user_ctx, MinifiInputStream), void* user_ctx);
+MINIFIAPI MinifiStatus MinifiProcessSessionWrite(MinifiProcessSession, MinifiFlowFile, int64_t(*cb)(void* user_ctx, MinifiOutputStream), void* user_ctx);
 
-void MinifiConfigureGet(MinifiConfigure, MinifiStringView, void(*cb)(void*, MinifiStringView), void*);
+MINIFIAPI void MinifiConfigureGet(MinifiConfigure, MinifiStringView, void(*cb)(void*, MinifiStringView), void*);
 
-uint64_t MinifiInputStreamSize(MinifiInputStream);
+MINIFIAPI uint64_t MinifiInputStreamSize(MinifiInputStream);
 
-int64_t MinifiInputStreamRead(MinifiInputStream, char*, uint64_t);
-int64_t MinifiOutputStreamWrite(MinifiOutputStream, const char*, uint64_t);
+MINIFIAPI int64_t MinifiInputStreamRead(MinifiInputStream, char*, uint64_t);
+MINIFIAPI int64_t MinifiOutputStreamWrite(MinifiOutputStream, const char*, uint64_t);
 
-void MinifiStatusToString(MinifiStatus, void(*cb)(void* user_ctx, MinifiStringView str), void* user_ctx);
+MINIFIAPI void MinifiStatusToString(MinifiStatus, void(*cb)(void* user_ctx, MinifiStringView str), void* user_ctx);
 
-void MinifiFlowFileSetAttribute(MinifiProcessSession, MinifiFlowFile, MinifiStringView, const MinifiStringView*);
-MinifiBool MinifiFlowFileGetAttribute(MinifiProcessSession, MinifiFlowFile, MinifiStringView, void(*cb)(void* user_ctx, MinifiStringView), void* user_ctx);
-void MinifiFlowFileGetAttributes(MinifiProcessSession, MinifiFlowFile, void(*cb)(void* user_ctx, MinifiStringView, MinifiStringView), void* user_ctx);
+MINIFIAPI void MinifiFlowFileSetAttribute(MinifiProcessSession, MinifiFlowFile, MinifiStringView, const MinifiStringView*);
+MINIFIAPI MinifiBool MinifiFlowFileGetAttribute(MinifiProcessSession, MinifiFlowFile, MinifiStringView, void(*cb)(void* user_ctx, MinifiStringView), void* user_ctx);
+MINIFIAPI void MinifiFlowFileGetAttributes(MinifiProcessSession, MinifiFlowFile, void(*cb)(void* user_ctx, MinifiStringView, MinifiStringView), void* user_ctx);
 
 #ifdef __cplusplus
 }  // extern "C"
