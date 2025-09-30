@@ -155,7 +155,7 @@ void useProcessorClassDescription(Fn&& fn) {
           names.push_back(utils::toStringView(name));
           values.push_back(val);
         }
-        return MinifiPublishedMetricsCreate(metrics.size(), names.data(), values.data());
+        return MinifiPublishedMetricsCreate(gsl::narrow<uint32_t>(metrics.size()), names.data(), values.data());
       }
     }
   };
