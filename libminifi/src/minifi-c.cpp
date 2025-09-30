@@ -33,7 +33,6 @@
 #include "minifi-cpp/core/PropertyValidator.h"
 #include "minifi-cpp/core/logging/Logger.h"
 #include "minifi-cpp/core/state/PublishedMetricProvider.h"
-#include "minifi-cpp/core/state/Value.h"
 #include "minifi-cpp/Exception.h"
 #include "minifi-cpp/core/extension/ExtensionManager.h"
 #include "utils/PropertyErrors.h"
@@ -134,6 +133,11 @@ class CProcessorFactory : public minifi::core::ProcessorFactory {
     return class_name_;
   }
 
+  CProcessorFactory() = delete;
+  CProcessorFactory(const CProcessorFactory&) = delete;
+  CProcessorFactory& operator=(const CProcessorFactory&) = delete;
+  CProcessorFactory(CProcessorFactory&&) = delete;
+  CProcessorFactory& operator=(CProcessorFactory&&) = delete;
   ~CProcessorFactory() override = default;
 
  private:
@@ -164,7 +168,7 @@ class CExtension : public minifi::core::extension::Extension {
 
 namespace org::apache::nifi::minifi::utils {
 
-void useCProcessorClassDescription(const MinifiProcessorClassDescription* class_description, std::function<void(minifi::ClassDescription, minifi::utils::CProcessorClassDescription)> fn) {
+void useCProcessorClassDescription(const MinifiProcessorClassDescription* class_description, const std::function<void(minifi::ClassDescription, minifi::utils::CProcessorClassDescription)>& fn) {
   std::vector<minifi::core::Property> properties;
   properties.reserve(class_description->class_properties_count);
   for (size_t i = 0; i < class_description->class_properties_count; ++i) {
@@ -266,7 +270,7 @@ void MinifiRegisterProcessorClass(const MinifiProcessorClassDescription* class_d
     .version = "1.0.0"
   };
 
-  minifi::utils::useCProcessorClassDescription(class_description, [&] (auto description, auto c_class_description) {
+  minifi::utils::useCProcessorClassDescription(class_description, [&] (const auto& description, const auto& c_class_description) {
     minifi::ExternalBuildDescription::addExternalComponent(bundle, description);
 
     minifi::core::ClassLoader::getDefaultClassLoader().getClassLoader(module_name).registerClass(
@@ -299,9 +303,9 @@ OWNED MinifiExtension MinifiCreateExtension(const MinifiExtensionCreateInfo* ext
   minifi::core::extension::ExtensionManager::get().registerExtension(*extension);
   return reinterpret_cast<OWNED MinifiExtension>(extension);
 }
-void MinifiDestroyExtension(OWNED MinifiExtension extension) {
+void MinifiDestroyExtension(OWNED gsl::owner<MinifiExtension> extension) {
   gsl_Assert(extension != MINIFI_NULL);
-  auto* extension_impl = reinterpret_cast<CExtension*>(extension);
+  auto extension_impl = reinterpret_cast<gsl::owner<CExtension*>>(extension);
   minifi::core::extension::ExtensionManager::get().unregisterExtension(*extension_impl);
   delete extension_impl;
 }
@@ -373,8 +377,8 @@ MinifiLogLevel MinifiLoggerLevel(MinifiLogger logger) {
   gsl_FailFast();
 }
 
-OWNED MinifiPublishedMetrics MinifiPublishedMetricsCreate(const uint32_t count, const MinifiStringView* names, const double* values) {
-  auto* metrics = new std::vector<minifi::state::PublishedMetric>();
+OWNED gsl::owner<MinifiPublishedMetrics> MinifiPublishedMetricsCreate(const uint32_t count, const MinifiStringView* names, const double* values) {
+  const gsl::owner<std::vector<minifi::state::PublishedMetric>*> metrics = new std::vector<minifi::state::PublishedMetric>();
   metrics->reserve(count);
   for (uint32_t i = 0; i < count; i++) {
     metrics->emplace_back(minifi::state::PublishedMetric{toString(names[i]), values[i], {}});
@@ -405,7 +409,7 @@ OWNED MinifiFlowFile MinifiProcessSessionCreate(MinifiProcessSession session, Mi
   return MINIFI_NULL;
 }
 
-void MinifiDestroyFlowFile(OWNED MinifiFlowFile ff) {
+void MinifiDestroyFlowFile(OWNED gsl::owner<MinifiFlowFile> ff) {
   gsl_Assert(ff != MINIFI_NULL);
   delete reinterpret_cast<std::shared_ptr<minifi::core::FlowFile>*>(ff);
 }
