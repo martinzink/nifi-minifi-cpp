@@ -28,3 +28,17 @@ Feature: MiNiFi can execute Lua scripts
 
     When all instances start up
     Then the Minifi logs contain the following message: "Sleeping forever" 3 times after 5 seconds
+
+  Scenario: Lua can reverse incoming flowfile
+    Given a GenerateFlowFile processor with the "Custom Text" property set to "for_lua"
+    And the scheduling period of the GenerateFlowFile processor is set to "1 hour"
+    And the "Data Format" property of the GenerateFlowFile processor is set to "Text"
+    And the "Unique FlowFiles" property of the GenerateFlowFile processor is set to "false"
+    And a ExecuteScript processor with the "Script File" property set to "/tmp/resources/lua/reverse_flow_file_content.lua"
+    And the "Script Engine" property of the ExecuteScript processor is set to "lua"
+    And a PutFile processor with the "Directory" property set to "/tmp/output"
+    And the "success" relationship of the GenerateFlowFile processor is connected to the ExecuteScript
+    And the "success" relationship of the ExecuteScript processor is connected to the PutFile
+
+    When all instances start up
+    Then a flowfile with the content "aul_rof" is placed in the monitored directory in less than 45 seconds
