@@ -57,6 +57,7 @@ void ExecutePythonProcessor::initializeScript() {
 void ExecutePythonProcessor::initialize() {
   initializeScript();
   std::vector<core::Property> properties;
+  properties.reserve(Properties.size() + python_properties_.size());
   for (auto& property : Properties) {
     properties.emplace_back(property);
   }
