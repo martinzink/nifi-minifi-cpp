@@ -20,12 +20,12 @@ import jks
 from OpenSSL import crypto
 from minifi_test_framework.core.helpers import wait_for_condition
 from minifi_test_framework.core.ssl_utils import make_server_cert
-from minifi_test_framework.containers.container import Container
+from minifi_test_framework.containers.container_linux import LinuxContainer
 from minifi_test_framework.containers.file import File
 from minifi_test_framework.core.minifi_test_context import MinifiTestContext
 
 
-class KafkaServer(Container):
+class KafkaServer(LinuxContainer):
     def __init__(self, test_context: MinifiTestContext):
         super().__init__("apache/kafka:4.1.0", f"kafka-server-{test_context.scenario_id}", test_context.network)
         self.environment.append("KAFKA_NODE_ID=1")

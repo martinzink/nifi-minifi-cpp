@@ -16,14 +16,14 @@
 import json
 
 from OpenSSL import crypto
-from minifi_test_framework.containers.container import Container
+from minifi_test_framework.containers.container_linux import LinuxContainer
 from minifi_test_framework.core.minifi_test_context import MinifiTestContext
 from minifi_test_framework.core.helpers import wait_for_condition, retry_check
 from minifi_test_framework.containers.file import File
 from minifi_test_framework.core.ssl_utils import make_server_cert
 
 
-class SplunkContainer(Container):
+class SplunkContainer(LinuxContainer):
     def __init__(self, test_context: MinifiTestContext):
         super().__init__("splunk/splunk:9.2.1-patch2", f"splunk-{test_context.scenario_id}", test_context.network)
         self.user = None

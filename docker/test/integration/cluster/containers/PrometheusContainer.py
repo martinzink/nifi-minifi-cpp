@@ -18,8 +18,7 @@ import tempfile
 import docker.types
 
 from .Container import Container
-from OpenSSL import crypto
-from ssl_utils.SSL_cert_utils import make_cert_without_extended_usage
+from ssl_utils.SSL_cert_utils import make_cert_without_extended_usage, dump_key, dump_cert
 
 
 class PrometheusContainer(Container):
@@ -32,17 +31,17 @@ class PrometheusContainer(Container):
             prometheus_cert, prometheus_key = make_cert_without_extended_usage(f"prometheus-{feature_context.id}", feature_context.root_ca_cert, feature_context.root_ca_key)
 
             self.root_ca_file = tempfile.NamedTemporaryFile(delete=False)
-            self.root_ca_file.write(crypto.dump_certificate(type=crypto.FILETYPE_PEM, cert=feature_context.root_ca_cert))
+            self.root_ca_file.write(dump_cert(feature_context.root_ca_cert))
             self.root_ca_file.close()
             os.chmod(self.root_ca_file.name, 0o644)
 
             self.prometheus_cert_file = tempfile.NamedTemporaryFile(delete=False)
-            self.prometheus_cert_file.write(crypto.dump_certificate(type=crypto.FILETYPE_PEM, cert=prometheus_cert))
+            self.prometheus_cert_file.write(dump_cert(prometheus_cert))
             self.prometheus_cert_file.close()
             os.chmod(self.prometheus_cert_file.name, 0o644)
 
             self.prometheus_key_file = tempfile.NamedTemporaryFile(delete=False)
-            self.prometheus_key_file.write(crypto.dump_privatekey(type=crypto.FILETYPE_PEM, pkey=prometheus_key))
+            self.prometheus_key_file.write(dump_key(prometheus_key))
             self.prometheus_key_file.close()
             os.chmod(self.prometheus_key_file.name, 0o644)
 
