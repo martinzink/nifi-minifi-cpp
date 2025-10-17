@@ -18,14 +18,16 @@
 from behave.runner import Context
 from docker.models.networks import Network
 
-from minifi_test_framework.containers.container import Container
-from minifi_test_framework.containers.minifi_container import MinifiContainer
+from minifi_test_framework.containers.container_protocol import ContainerProtocol
+from minifi_test_framework.containers.minifi_protocol import MinifiProtocol
 
 DEFAULT_MINIFI_CONTAINER_NAME = "minifi-primary"
 
+class MinifiContainer(ContainerProtocol, MinifiProtocol):
+    pass
 
 class MinifiTestContext(Context):
-    containers: dict[str, Container]
+    containers: dict[str, ContainerProtocol]
     scenario_id: str
     network: Network
     minifi_container_image: str
