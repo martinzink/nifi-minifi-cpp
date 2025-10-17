@@ -6,6 +6,7 @@ from typing import Dict, Any, List
 import docker
 import logging
 
+from minifi_test_framework.containers.container_protocol import ContainerProtocol
 from minifi_test_framework.containers.directory import Directory
 from minifi_test_framework.containers.file import File
 from docker.models.networks import Network
@@ -13,8 +14,9 @@ from docker.models.networks import Network
 from minifi_test_framework.containers.host_file import HostFile
 
 
-class Container:
+class LinuxContainer(ContainerProtocol):
     def __init__(self, image_name: str, container_name: str, network: Network):
+        super().__init__()
         self.image_name: str = image_name
         self.container_name: str = container_name
         self.network: Network = network

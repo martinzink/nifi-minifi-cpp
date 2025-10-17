@@ -19,7 +19,9 @@ import os
 
 from behave.model import Scenario
 from behave.runner import Context
-from minifi_test_framework.containers.minifi_container import MinifiContainer
+
+from minifi_test_framework.containers.minifi_fhs_container import MinifiFhsContainer
+from minifi_test_framework.containers.minifi_linux_container import MinifiLinuxContainer
 from minifi_test_framework.core.minifi_test_context import MinifiTestContext
 
 import docker
@@ -49,7 +51,10 @@ def common_before_scenario(context: Context, scenario: Scenario):
     except docker.errors.NotFound:
         pass  # No existing network found, which is good.
     context.network = docker_client.networks.create(network_name)
-    context.minifi_container = MinifiContainer(context.minifi_container_image, context.scenario_id, context.network)
+    if 'MINIFI_INSTALLATION_TYPE=FHS' in str(docker_client.images.get(context.minifi_container_image).history()):
+        context.minifi_container = MinifiFhsContainer(context.minifi_container_image, context.scenario_id, context.network)
+    else:
+        context.minifi_container = MinifiLinuxContainer(context.minifi_container_image, context.scenario_id, context.network)
     context.containers = []
 
 
