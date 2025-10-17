@@ -51,8 +51,9 @@ def wait_for_condition(condition: Callable[[], bool], timeout_seconds: float, ba
             sleep_time = min(1.0, remaining_time)
             if sleep_time > 0:
                 time.sleep(sleep_time)
-    except (Exception,):
+    except Exception as e:
         logging.warning("Exception while waiting for condition")
+        logging.warning(e, exc_info=True)
         log_due_to_failure(context)
         return False
     logging.warning("Timed out after %d seconds while waiting for condition", timeout_seconds)
