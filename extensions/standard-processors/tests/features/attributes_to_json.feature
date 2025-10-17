@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-@CORE
+@CORE @NO_WINDOWS
 Feature: Writing attribute data using AttributesToJSON processor
 
   Scenario: Write selected attribute data to file

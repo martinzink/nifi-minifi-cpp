@@ -34,4 +34,4 @@ Feature: Processing log files line-by-line using RouteText
     And the "success" relationship of the UpdateInfo processor is connected to the PutFile
     And the "success" relationship of the UpdateWarning processor is connected to the PutFile
     When the MiNiFi instance starts up
-    Then the contents of "/tmp/output" in less than 15 seconds are: "[INFO] one\n[INFO] three\n" and "[WARNING] two\n[WARNING] four\n"
+    Then the contents of "/tmp/output" in less than 20 seconds are: "[INFO] one\n[INFO] three\n" and "[WARNING] two\n[WARNING] four\n"

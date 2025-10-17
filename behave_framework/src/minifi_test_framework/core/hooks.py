@@ -23,7 +23,9 @@ from behave.model import Scenario
 from behave.model import Step
 from behave.runner import Context
 
-from minifi_test_framework.containers.minifi_container import MinifiContainer
+from minifi_test_framework.containers.minifi_fhs_container import MinifiFhsContainer
+from minifi_test_framework.containers.minifi_linux_container import MinifiLinuxContainer
+from minifi_test_framework.containers.minifi_win_container import MinifiWindowsContainer
 from minifi_test_framework.core.minifi_test_context import MinifiTestContext
 
 
@@ -34,8 +36,11 @@ def get_minifi_container_image():
         return 'apacheminificpp:' + minifi_tag_prefix + minifi_version
     return "apacheminificpp:behave"
 
-
 def common_before_scenario(context: Context, scenario: Scenario):
+    if "NO_WINDOWS" in scenario.effective_tags and os.name == 'nt':
+        scenario.skip("No windows support")
+        return
+
     if not hasattr(context, "minifi_container_image"):
         context.minifi_container_image = get_minifi_container_image()
 
@@ -51,17 +56,25 @@ def common_before_scenario(context: Context, scenario: Scenario):
     except docker.errors.NotFound:
         pass  # No existing network found, which is good.
     context.network = docker_client.networks.create(network_name)
-    context.minifi_container = MinifiContainer(context.minifi_container_image, context.scenario_id, context.network)
+    if os.name == 'nt':
+        context.minifi_container = MinifiWindowsContainer(context.minifi_container_image, context.scenario_id, context.network)
+    elif 'MINIFI_INSTALLATION_TYPE=FHS' in str(docker_client.images.get(context.minifi_container_image).history()):
+        context.minifi_container = MinifiFhsContainer(context.minifi_container_image, context.scenario_id, context.network)
+    else:
+        context.minifi_container = MinifiLinuxContainer(context.minifi_container_image, context.scenario_id, context.network)
     context.containers = []
     for step in scenario.steps:
         inject_scenario_id(context, step)
 
 
 def common_after_scenario(context: MinifiTestContext, scenario: Scenario):
-    for container in context.containers:
-        container.clean_up()
-    context.minifi_container.clean_up()
-    context.network.remove()
+    if hasattr(context, 'containers'):
+        for container in context.containers:
+            container.clean_up()
+    if hasattr(context, 'minifi_container'):
+        context.minifi_container.clean_up()
+    if hasattr(context, 'network'):
+        context.network.remove()
 
 
 def inject_scenario_id(context: MinifiTestContext, step: Step):
