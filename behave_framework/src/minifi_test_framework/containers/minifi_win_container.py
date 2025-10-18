@@ -4,6 +4,7 @@ from docker.models.networks import Network
 
 from minifi_test_framework.minifi.flow_definition import FlowDefinition
 from minifi_test_framework.containers.file import File
+from minifi_test_framework.containers.directory import Directory
 from .container_windows import WindowsContainer
 from .minifi_protocol import MinifiProtocol
 
@@ -20,10 +21,12 @@ class MinifiWindowsContainer(WindowsContainer, MinifiProtocol):
         self._fill_default_log_properties()
 
     def deploy(self) -> bool:
-        self.files.append(File("C:\\Program Files\\ApacheNiFiMiNiFi\\nifi-minifi-cpp\\conf", "config.yml", self.flow_definition.to_yaml()))
-        self.files.append(File("C:\\Program Files\\ApacheNiFiMiNiFi\\nifi-minifi-cpp\\conf", "minifi.properties", self._get_properties_file_content()))
-        self.files.append(File("C:\\Program Files\\ApacheNiFiMiNiFi\\nifi-minifi-cpp\\conf", "minifi-log.properties", self._get_log_properties_file_content()))
+        conf_dir = Directory("\\Program Files\\ApacheNiFiMiNiFi\\nifi-minifi-cpp\\conf")
+        conf_dir.add_file("config.yml", self.flow_definition.to_yaml())
+        conf_dir.add_file("minifi.properties", self._get_properties_file_content())
+        conf_dir.add_file("minifi-log.properties", self._get_log_properties_file_content())
 
+        self.dirs.append(conf_dir)
         return super().deploy()
 
     def set_property(self, key: str, value: str):

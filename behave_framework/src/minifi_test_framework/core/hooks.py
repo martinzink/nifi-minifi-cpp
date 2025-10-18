@@ -21,7 +21,7 @@ from behave.model import Scenario
 from behave.runner import Context
 
 from minifi_test_framework.containers.minifi_fhs_container import MinifiFhsContainer
-from minifi_test_framework.containers.minifi_linux_container import MinifiLinuxContainer
+from minifi_test_framework.containers.minifi_win_container import MinifiWindowsContainer
 from minifi_test_framework.core.minifi_test_context import MinifiTestContext
 
 import docker
@@ -54,7 +54,7 @@ def common_before_scenario(context: Context, scenario: Scenario):
     if 'MINIFI_INSTALLATION_TYPE=FHS' in str(docker_client.images.get(context.minifi_container_image).history()):
         context.minifi_container = MinifiFhsContainer(context.minifi_container_image, context.scenario_id, context.network)
     else:
-        context.minifi_container = MinifiLinuxContainer(context.minifi_container_image, context.scenario_id, context.network)
+        context.minifi_container = MinifiWindowsContainer(context.minifi_container_image, context.scenario_id, context.network)
     context.containers = []
 
 
@@ -62,4 +62,4 @@ def common_after_scenario(context: MinifiTestContext, scenario: Scenario):
     for container in context.containers:
         container.clean_up()
     context.minifi_container.clean_up()
-    context.network.remove()
+    #context.network.remove()

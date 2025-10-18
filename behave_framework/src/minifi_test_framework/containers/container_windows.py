@@ -1,6 +1,7 @@
 import os
 import shlex
 import tempfile
+from subprocess import check_output
 from typing import Dict, Any, List
 
 import docker
@@ -32,27 +33,21 @@ class WindowsContainer(ContainerProtocol):
         self.ports = None
         self.environment: List[str] = []
 
+
     def deploy(self) -> bool:
         self._temp_dir = tempfile.TemporaryDirectory()
 
         if len(self.files) != 0 or len(self.dirs) != 0 or len(self.host_files) != 0:
-            for file in self.files:
-                temp_path = self._temp_dir.name + "/" + file.host_filename
-                with open(temp_path, "w") as temp_file:
-                    temp_file.write(file.content)
-                self.volumes[temp_path] = {
-                    "bind": file.path + "/" + file.host_filename,
-                    "mode": file.mode
-                }
             for directory in self.dirs:
                 temp_path = self._temp_dir.name + directory.path
+
                 for file_name, content in directory.files.items():
-                    file_path = temp_path + "/" + file_name
+                    file_path = temp_path + "\\" + file_name
                     os.makedirs(temp_path, exist_ok=True)
                     with open(file_path, "w") as temp_file:
                         temp_file.write(content)
                 self.volumes[temp_path] = {
-                    "bind": directory.path,
+                    "bind": "C:" + directory.path,
                     "mode": directory.mode
                 }
             for host_file in self.host_files:
@@ -69,7 +64,7 @@ class WindowsContainer(ContainerProtocol):
             pass
         try:
             print(f"Creating and starting container '{self.container_name}'...")
-            self.container = self.client.containers.run(
+            self.container = self.client.containers.create(
                 image=self.image_name,
                 name=self.container_name,
                 ports=self.ports,
@@ -77,9 +72,15 @@ class WindowsContainer(ContainerProtocol):
                 volumes=self.volumes,
                 network=self.network.name,
                 command=self.command,
-                user=self.user,
                 detach=True  # Always run in the background
             )
+            for file in self.files:
+                temp_path = self._temp_dir.name + "/" + file.host_filename
+                with open(temp_path, "w") as temp_file:
+                    temp_file.write(file.content)
+                check_output(f"docker cp {temp_path} {self.container_name}:C:{file.path}\\{file.host_filename}", shell=True)
+            
+            self.container.start()
         except Exception as e:
             logging.error(f"Error starting container: {e}")
             raise
@@ -90,8 +91,10 @@ class WindowsContainer(ContainerProtocol):
             self.container.remove(force=True)
 
     def exec_run(self, command):
+        logging.info(f"Running cmd {command}")
         if self.container:
             (code, output) = self.container.exec_run(command)
+            logging.info(f"Command {command} returned with {code} and {output}")
             return code, output.decode("utf-8")
         return None, "Container not running."
 
@@ -99,75 +102,72 @@ class WindowsContainer(ContainerProtocol):
         if not self.container:
             return False
 
-        escaped_content = expected_content.replace("\"", "\\\"")
-
-        command = f"sh -c \"grep -l -F -- '{escaped_content}' {directory_path}/*\""
-
+        escaped_content = expected_content.replace("'", "''")
+        
+        command = f"powershell -NonInteractive -NoProfile -Command \"Select-String -Path (Join-Path '{directory_path}' '*') -Pattern '{escaped_content}' -SimpleMatch -List\""
+        
         exit_code, output = self.exec_run(command)
-
         return exit_code == 0
 
     def directory_contains_file_with_regex(self, directory_path: str, regex_str: str) -> bool:
         if not self.container:
             return False
 
-        safe_dir_path = shlex.quote(directory_path)
-        safe_regex_str = shlex.quote(regex_str)
-
-        command = (
-            f"find {safe_dir_path} -maxdepth 1 -type f -print0 | "
-            f"xargs -0 -r grep -l -E -- {safe_regex_str}"
-        )
-
-        exit_code, output = self.exec_run(f"sh -c \"{command}\"")
-
+        escaped_regex = regex_str.replace("'", "''")
+        
+        # Get-ChildItem replaces 'find'. Select-String (without -SimpleMatch) replaces 'grep -E'.
+        command = f"powershell -NonInteractive -NoProfile -Command \"Get-ChildItem -Path '{directory_path}' -File -Depth 0 | Select-String -Pattern '{escaped_regex}' -List\""
+        
+        exit_code, output = self.exec_run(command)
         return exit_code == 0
-
+    
     def path_with_content_exists(self, path: str, content: str) -> bool:
-        count_command = f"sh -c 'cat {path} | grep \"^{content}$\" | wc -l'"
-        exit_code, output = self.exec_run(count_command)
-        if exit_code != 0:
-            logging.error(f"Error running command '{count_command}': {output}")
+        if not self.container:
             return False
 
-        try:
-            file_count = int(output.strip())
-        except (ValueError, IndexError):
-            logging.error(f"Error parsing output '{output}' from command '{count_command}'")
-            return False
-        return file_count == 1
+        escaped_content = content.replace("'", "''")
+        
+        # Find exact line matches (^) and ($) and check if the Count is 1.
+        # A try-catch block makes the PowerShell command more robust against file-not-found.
+        command = (
+            f"powershell -NonInteractive -NoProfile -Command \""
+            f"try {{ "
+            f"  $count = (Select-String -Path '{path}' -Pattern '^{escaped_content}$').Count; "
+            f"  if ($count -eq 1) {{ exit 0 }} else {{ exit 1 }} "
+            f"}} catch {{ exit 2 }}\""
+        )
+        
+        exit_code, output_bytes = self.exec_run(command)
+        if exit_code != 0:
+            logging.error(f"Error running command '{command}': {output_bytes.decode('utf-8')}")
+            
+        return exit_code == 0
 
     def directory_has_single_file_with_content(self, directory_path: str, expected_content: str) -> bool:
         if not self.container:
             return False
 
-        count_command = f"sh -c 'find {directory_path} -maxdepth 1 -type f | wc -l'"
-        exit_code, output = self.exec_run(count_command)
+        escaped_content = expected_content.strip().replace("'", "''")
+
+        # This logic is now combined into a single, robust PowerShell command.
+        # 1. Get files, store in $files.
+        # 2. Check if $files.Count is 1. If not, exit 1.
+        # 3. Get file content (-Raw reads it as one string) and Trim() it.
+        # 4. Compare content and exit 0 (success) or 2 (content mismatch).
+        command_parts = [
+            f"$files = Get-ChildItem -Path '{directory_path}' -File -Depth 0;",
+            "if ($files.Count -ne 1) {{ exit 1 }};",
+            "$actual_content = Get-Content -Path $files[0].FullName -Raw;",
+            f"if ($actual_content.Trim() -eq '{escaped_content}') {{ exit 0 }} else {{ exit 2 }};"
+        ]
+        command = f"powershell -NonInteractive -NoProfile -Command \"{ ' '.join(command_parts) }\""
+
+        exit_code, output_bytes = self.exec_run(command)
 
         if exit_code != 0:
-            logging.error(f"Error running command '{count_command}': {output}")
-            return False
-
-        try:
-            file_count = int(output.strip())
-        except (ValueError, IndexError):
-            logging.error(f"Error parsing output '{output}' from command '{count_command}'")
-            return False
-
-        if file_count != 1:
-            logging.error(f"{directory_path} has too many or too few ({file_count}) files")
-            return False
-
-        content_command = f"sh -c 'cat {directory_path}/*'"
-        exit_code, output = self.exec_run(content_command)
-
-        if exit_code != 0:
-            logging.error(f"Error running command '{content_command}': {output}")
-            return False
-
-        actual_content = output.strip()
-        logging.debug(f"Comparing: '{actual_content}' vs {expected_content}")
-        return actual_content == expected_content.strip()
+            logging.error(f"Check for single file failed (Code {exit_code}): {output_bytes.decode('utf-8')}")
+            
+        return exit_code == 0
 
     def get_logs(self) -> str:
         logging.debug("Getting logs from container '%s'", self.container_name)
@@ -195,54 +195,54 @@ class WindowsContainer(ContainerProtocol):
 
     def get_number_of_files(self, directory_path: str) -> int:
         if not self.container:
-            return False
+            return -1
 
-        count_command = f"sh -c 'find {directory_path} -maxdepth 1 -type f | wc -l'"
-        exit_code, output = self.exec_run(count_command)
+        # (Get-ChildItem ...).Count is the direct PowerShell equivalent of 'find ... | wc -l'
+        command = f"powershell -NonInteractive -NoProfile -Command \"(Get-ChildItem -Path '{directory_path}' -File -Depth 0).Count\""
+        exit_code, output_bytes = self.exec_run(command)
 
         if exit_code != 0:
-            logging.error(f"Error running command '{count_command}': {output}")
-            return False
+            logging.error(f"Error running command '{command}': {output_bytes.decode('utf-8')}")
+            return -1
 
         try:
-            return int(output.strip())
+            return int(output_bytes.decode('utf-8').strip())
         except (ValueError, IndexError):
-            logging.error(f"Error parsing output '{output}' from command '{count_command}'")
+            logging.error(f"Error parsing output '{output_bytes.decode('utf-8')}' from command '{command}'")
             return -1
 
     def verify_file_contents(self, directory_path: str, expected_contents: list[str]) -> bool:
         if not self.container:
             return False
 
-        safe_dir_path = shlex.quote(directory_path)
-        list_files_command = f"find {safe_dir_path} -mindepth 1 -maxdepth 1 -type f -print0"
-
-        exit_code, output = self.exec_run(f"sh -c \"{list_files_command}\"")
+        # 1. Get list of full file paths
+        list_files_command = f"powershell -NonInteractive -NoProfile -Command \"Get-ChildItem -Path '{directory_path}' -File -Depth 0 | Select-Object -ExpandProperty FullName\""
+        exit_code, output_bytes = self.exec_run(list_files_command)
 
         if exit_code != 0:
-            logging.error(f"Error running command '{list_files_command}': {output}")
+            logging.error(f"Error running command '{list_files_command}': {output_bytes.decode('utf-8')}")
             return False
 
-        actual_filepaths = [path for path in output.split('\0') if path]
+        actual_filepaths = [path for path in output_bytes.decode('utf-8').splitlines() if path]
 
         if len(actual_filepaths) != len(expected_contents):
             logging.debug(f"Expected {len(expected_contents)} files, but found {len(actual_filepaths)}")
             return False
 
+        # 2. Get content for each file
         actual_file_contents = []
         for path in actual_filepaths:
-            safe_path = shlex.quote(path)
-            read_command = f"cat {safe_path}"
-
-            exit_code, content = self.exec_run(read_command)
+            # Use -Raw to read the file as a single string
+            read_command = f"powershell -NonInteractive -NoProfile -Command \"Get-Content -Path '{path}' -Raw\""
+            exit_code, content_bytes = self.exec_run(read_command)
 
             if exit_code != 0:
-                error_message = f"Command to read file '{path}' failed with exit code {exit_code}"
-                logging.error(error_message)
+                logging.error(f"Command to read file '{path}' failed with exit code {exit_code}")
                 return False
 
-            actual_file_contents.append(content)
+            actual_file_contents.append(content_bytes.decode('utf-8'))
 
+        # 3. Compare (same as before)
         return sorted(actual_file_contents) == sorted(expected_contents)
 
     def log_app_output(self) -> bool:

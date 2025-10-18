@@ -34,7 +34,6 @@ class LinuxContainer(ContainerProtocol):
 
     def deploy(self) -> bool:
         self._temp_dir = tempfile.TemporaryDirectory()
-
         if len(self.files) != 0 or len(self.dirs) != 0 or len(self.host_files) != 0:
             for file in self.files:
                 temp_path = self._temp_dir.name + "/" + file.host_filename
