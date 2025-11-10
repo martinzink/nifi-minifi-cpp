@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-@CORE
+@CORE @SUPPORTS_WINDOWS
 Feature: Split input text line-by-line using SplitText
 
   Scenario: Split textfile containing header lines specified by line count

@@ -37,7 +37,7 @@ def get_minifi_container_image():
     return "apacheminificpp:behave"
 
 def common_before_scenario(context: Context, scenario: Scenario):
-    if "NO_WINDOWS" in scenario.effective_tags and os.name == 'nt':
+    if not "SUPPORTS_WINDOWS" in scenario.effective_tags and os.name == 'nt':
         scenario.skip("No windows support")
         return
 
