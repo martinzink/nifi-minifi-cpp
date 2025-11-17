@@ -160,7 +160,7 @@ class PythonCreator : public minifi::core::CoreComponentImpl {
     }
     DummyProcessorDescriptor descriptor;
     processor->core::ProcessorImpl::initialize(descriptor);
-    minifi::BundleDetails details;
+    minifi::BundleIdentifier details;
     details.artifact = path.filename().string();
     details.version = processor->getVersion() && !processor->getVersion()->empty() ? *processor->getVersion() : minifi::AgentBuild::VERSION;
     details.group = "python";
