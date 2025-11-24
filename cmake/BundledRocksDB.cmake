@@ -24,11 +24,9 @@ function(use_bundled_rocksdb SOURCE_DIR BINARY_DIR)
     endif()
 
     set(PATCH_FILE_1 "${SOURCE_DIR}/thirdparty/rocksdb/all/patches/dboptions_equality_operator.patch")
-    set(PATCH_FILE_2 "${SOURCE_DIR}/thirdparty/rocksdb/all/patches/c++23_fixes.patch")
 
     set(PC ${Bash_EXECUTABLE} -c "set -x &&\
-            (\"${Patch_EXECUTABLE}\" -p1 -R -s -f --dry-run -i \"${PATCH_FILE_1}\" || \"${Patch_EXECUTABLE}\" -p1 -N -i \"${PATCH_FILE_1}\") &&\
-            (\"${Patch_EXECUTABLE}\" -p1 -R -s -f --dry-run -i \"${PATCH_FILE_2}\" || \"${Patch_EXECUTABLE}\" -p1 -N -i \"${PATCH_FILE_2}\") ")
+            (\"${Patch_EXECUTABLE}\" -p1 -R -s -f --dry-run -i \"${PATCH_FILE_1}\" || \"${Patch_EXECUTABLE}\" -p1 -N -i \"${PATCH_FILE_1}\") ")
 
 
 # Define byproducts
@@ -71,8 +69,8 @@ function(use_bundled_rocksdb SOURCE_DIR BINARY_DIR)
     # Build project
     ExternalProject_Add(
             rocksdb-external
-            URL "https://github.com/facebook/rocksdb/archive/refs/tags/v10.2.1.tar.gz"
-            URL_HASH "SHA256=d1ddfd3551e649f7e2d180d5a6a006d90cfde56dcfe1e548c58d95b7f1c87049"
+            URL "https://github.com/facebook/rocksdb/archive/refs/tags/v10.7.5.tar.gz"
+            URL_HASH "SHA256=a9948bf5f00dd1e656fc40c4b0bf39001c3773ad22c56959bdb1c940d10e3d8d"
             SOURCE_DIR "${BINARY_DIR}/thirdparty/rocksdb-src"
             CMAKE_ARGS ${ROCKSDB_CMAKE_ARGS}
             PATCH_COMMAND ${PC}
