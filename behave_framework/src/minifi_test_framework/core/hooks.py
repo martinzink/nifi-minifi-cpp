@@ -90,10 +90,3 @@ def common_after_scenario(context: MinifiTestContext, scenario: Scenario):
     for container in context.containers.values():
         container.clean_up()
     context.network.remove()
-    if hasattr(context, 'containers'):
-        for container in context.containers:
-            container.clean_up()
-    if hasattr(context, 'minifi_container'):
-        context.minifi_container.clean_up()
-    if hasattr(context, 'network'):
-        context.network.remove()

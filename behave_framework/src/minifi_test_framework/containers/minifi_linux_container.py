@@ -1,3 +1,4 @@
+import logging
 from typing import Dict
 
 from docker.models.networks import Network
@@ -9,8 +10,8 @@ from .minifi_protocol import MinifiProtocol
 
 
 class MinifiLinuxContainer(LinuxContainer, MinifiProtocol):
-    def __init__(self, image_name: str, scenario_id: str, network: Network):
-        super().__init__(image_name, f"minifi-{scenario_id}", network)
+    def __init__(self, image_name: str, container_name: str, scenario_id: str, network: Network):
+        super().__init__(image_name, f"{container_name}-{scenario_id}", network)
         self.flow_config_str: str = ""
         self.flow_definition = FlowDefinition()
         self.properties: Dict[str, str] = {}
@@ -20,9 +21,9 @@ class MinifiLinuxContainer(LinuxContainer, MinifiProtocol):
         self._fill_default_log_properties()
 
     def deploy(self) -> bool:
-        self.files.append(File("/opt/minifi/minifi-current/conf", "config.yml", self.flow_definition.to_yaml()))
-        self.files.append(File("/opt/minifi/minifi-current/conf", "minifi.properties", self._get_properties_file_content()))
-        self.files.append(File("/opt/minifi/minifi-current/conf", "minifi-log.properties", self._get_log_properties_file_content()))
+        self.files.append(File("/opt/minifi/minifi-current/conf/config.yml", self.flow_definition.to_yaml()))
+        self.files.append(File("/opt/minifi/minifi-current/conf/minifi.properties", self._get_properties_file_content()))
+        self.files.append(File("/opt/minifi/minifi-current/conf/minifi-log.properties", self._get_log_properties_file_content()))
 
         return super().deploy()
 
@@ -54,3 +55,11 @@ class MinifiLinuxContainer(LinuxContainer, MinifiProtocol):
     def _get_log_properties_file_content(self):
         lines = (f"{key}={value}" for key, value in self.log_properties.items())
         return "\n".join(lines)
+
+    def get_memory_usage(self) -> int | None:
+        exit_code, output = self.exec_run(["awk", "/VmRSS/ { printf \"%d\\n\", $2 }", "/proc/1/status"])
+        if exit_code != 0:
+            return None
+        memory_usage_in_bytes = int(output.strip()) * 1024
+        logging.info(f"MiNiFi memory usage: {memory_usage_in_bytes} bytes")
+        return memory_usage_in_bytes

@@ -15,11 +15,17 @@
 #  limitations under the License.
 #
 
+import os
+import docker
+
 from behave.runner import Context
 from docker.models.networks import Network
 
 from minifi_test_framework.containers.container_protocol import ContainerProtocol
 from minifi_test_framework.containers.minifi_protocol import MinifiProtocol
+from minifi_test_framework.containers.minifi_fhs_container import MinifiFhsContainer
+from minifi_test_framework.containers.minifi_linux_container import MinifiLinuxContainer
+from minifi_test_framework.containers.minifi_win_container import MinifiWindowsContainer
 
 DEFAULT_MINIFI_CONTAINER_NAME = "minifi-primary"
 
@@ -35,7 +41,13 @@ class MinifiTestContext(Context):
 
     def get_or_create_minifi_container(self, container_name: str) -> MinifiContainer:
         if container_name not in self.containers:
-            self.containers[container_name] = MinifiContainer(self.minifi_container_image, container_name, self.scenario_id, self.network)
+            docker_client = docker.client.from_env()
+            if os.name == 'nt':
+                self.containers[container_name] = MinifiWindowsContainer(self.minifi_container_image, container_name, self.scenario_id, self.network)
+            elif 'MINIFI_INSTALLATION_TYPE=FHS' in str(docker_client.images.get(self.minifi_container_image).history()):
+                self.containers[container_name] = MinifiFhsContainer(self.minifi_container_image, container_name, self.scenario_id, self.network)
+            else:
+                self.containers[container_name] = MinifiLinuxContainer(self.minifi_container_image, container_name, self.scenario_id, self.network)
         return self.containers[container_name]
 
     def get_or_create_default_minifi_container(self) -> MinifiContainer:
