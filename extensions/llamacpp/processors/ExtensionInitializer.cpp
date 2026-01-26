@@ -34,6 +34,8 @@ extern "C" MinifiExtension* MinifiInitExtension(MinifiConfig* /*config*/) {
       .user_data = nullptr,
       .processors_count = 1,
       .processors_ptr = &description,
+      .controller_services_count = 0,
+      .controller_services_ptr = nullptr,
     };
     extension = MinifiCreateExtension(minifi::api::utils::toStringView(MINIFI_API_VERSION), &ext_create_info);
   });
