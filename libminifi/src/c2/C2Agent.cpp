@@ -898,6 +898,7 @@ void C2Agent::handle_start_stop(const C2ContentResponse& resp) {
       if (const auto processor_id = resp.getStringArgument("processorId")) {
         executeStartStopOnComponent(processor_id.value());
       } else {
+        update_state = state::UpdateState::NO_OPERATION;
         logger_->log_warn("Processor start/stop request missing 'processorId' argument");
       }
     } else {
