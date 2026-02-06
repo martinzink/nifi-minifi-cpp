@@ -50,7 +50,6 @@ extern "C" MinifiExtension* InitExtension(MinifiConfig* /*config*/) {
     .processors_ptr = nullptr,
     .controller_services_count = 0,
     .controller_services_ptr = nullptr,
-    
   };
   return MinifiCreateExtension(minifi::utils::toStringView(MINIFI_API_VERSION), &ext_create_info);
 }

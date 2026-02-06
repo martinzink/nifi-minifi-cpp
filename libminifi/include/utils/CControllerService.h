@@ -17,8 +17,6 @@
 
 #pragma once
 
-#pragma once
-
 #include <string>
 #include <vector>
 
@@ -48,9 +46,9 @@ class CControllerService final : public core::controller::ControllerServiceApi, 
     : class_description_(std::move(class_description)),
       metadata_(std::move(metadata)) {
     MinifiControllerServiceMetadata c_metadata;
-    auto uuid_str = metadata.uuid.to_string();
+    auto uuid_str = metadata_.uuid.to_string();
     c_metadata.uuid = MinifiStringView{.data = uuid_str.data(), .length = uuid_str.length()};
-    c_metadata.name = MinifiStringView{.data = metadata.name.data(), .length = metadata.name.length()};
+    c_metadata.name = MinifiStringView{.data = metadata_.name.data(), .length = metadata_.name.length()};
     c_metadata.logger = reinterpret_cast<MinifiLogger*>(&metadata_.logger);
     impl_ = class_description_.callbacks.create(c_metadata);
   }
