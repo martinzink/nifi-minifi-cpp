@@ -549,8 +549,8 @@ MinifiStatus MinifiProcessContextGetControllerService(
     void(*cb)(
         void* user_ctx,
         void* service,
-        MinifiStringView group_name,
-        MinifiStringView class_name,
+        MinifiStringView type,
+        MinifiStringView group,
         MinifiStringView version),
     void* user_ctx) {
 
@@ -558,6 +558,9 @@ MinifiStatus MinifiProcessContextGetControllerService(
   const auto context = reinterpret_cast<minifi::core::ProcessContext*>(process_context);
   const auto name_str = std::string{toStringView(controller_service_name)};
   const auto service_shared_ptr = context->getControllerService(name_str, context->getProcessorInfo().getUUID());
+  if (!service_shared_ptr) {
+    return MINIFI_STATUS_UNKNOWN_ERROR;
+  }
   const minifi::utils::CControllerService* c_controller_service = dynamic_cast<minifi::utils::CControllerService*>(&*service_shared_ptr);
   if (c_controller_service) {
     const auto class_description = c_controller_service->getClassDescription();
