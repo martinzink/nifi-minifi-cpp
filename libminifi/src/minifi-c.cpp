@@ -557,8 +557,8 @@ MinifiStatus MinifiProcessContextGetControllerService(
     const auto class_description = c_controller_service->getClassDescription();
     cb(user_ctx,
       c_controller_service->getImpl(),
-      minifiStringView(class_description.group_name),
       minifiStringView(class_description.name),
+      minifiStringView(class_description.group_name),
       minifiStringView(class_description.version));
     return MINIFI_STATUS_SUCCESS;
   }

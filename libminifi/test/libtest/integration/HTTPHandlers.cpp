@@ -22,6 +22,7 @@
 #include "CivetStream.h"
 #include "io/BufferStream.h"
 #include "io/CRCStream.h"
+#include "io/validation.h"
 #include "minifi-cpp/agent/agent_docs.h"
 #include "minifi-cpp/agent/agent_version.h"
 #include "minifi-cpp/utils/gsl.h"
