@@ -93,13 +93,9 @@ class WindowsContainer(ContainerProtocol):
                 "mode": directory.mode
             }
 
-        # 2. Prepare HostFiles
         for host_file in self.host_files:
             container_bind_path = self._normalize_path(host_file.container_path)
-            self.volumes[container_bind_path] = {
-                "bind": host_file.host_path,
-                "mode": host_file.mode
-            }
+            self.volumes[container_bind_path] = {"bind": host_file.host_path, "mode": host_file.mode}
 
         # 3. Cleanup existing container
         try:
