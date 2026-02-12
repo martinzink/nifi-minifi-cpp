@@ -103,4 +103,8 @@ class CControllerService final : public core::controller::ControllerServiceApi, 
   minifi::core::ControllerServiceMetadata metadata_;
 };
 
+void useCControllerServiceClassDescription(const MinifiControllerServiceClassDefinition& class_description,
+    const BundleIdentifier& bundle_id,
+    const std::function<void(ClassDescription, CControllerServiceClassDescription)>& fn);
+
 }  // namespace org::apache::nifi::minifi::utils
