@@ -15,9 +15,8 @@
 
 import logging
 
-from OpenSSL import crypto
 from minifi_test_framework.core.helpers import wait_for_condition, retry_check
-from minifi_test_framework.core.ssl_utils import make_server_cert
+from minifi_test_framework.core.ssl_utils import make_server_cert, dump_cert, dump_key
 from minifi_test_framework.containers.container_linux import LinuxContainer
 from minifi_test_framework.containers.file import File
 from minifi_test_framework.core.minifi_test_context import MinifiTestContext

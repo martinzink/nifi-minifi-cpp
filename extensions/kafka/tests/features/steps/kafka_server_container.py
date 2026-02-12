@@ -17,9 +17,8 @@ import logging
 import re
 import jks
 
-from OpenSSL import crypto
 from minifi_test_framework.core.helpers import wait_for_condition
-from minifi_test_framework.core.ssl_utils import make_server_cert
+from minifi_test_framework.core.ssl_utils import make_server_cert, dump_cert, dump_key
 from minifi_test_framework.containers.container_linux import LinuxContainer
 from minifi_test_framework.containers.file import File
 from minifi_test_framework.core.minifi_test_context import MinifiTestContext
@@ -55,7 +54,7 @@ class KafkaServer(LinuxContainer):
 
         kafka_cert, kafka_key = make_server_cert(self.container_name, test_context.root_ca_cert, test_context.root_ca_key)
 
-        pke = jks.PrivateKeyEntry.new('kafka-broker-cert', [crypto.dump_certificate(crypto.FILETYPE_ASN1, kafka_cert)], crypto.dump_privatekey(crypto.FILETYPE_ASN1, kafka_key), 'rsa_raw')
+        pke = jks.PrivateKeyEntry.new('kafka-broker-cert', [dump_cert(kafka_cert)], dump_key(kafka_key), 'rsa_raw')
         server_keystore = jks.KeyStore.new('jks', [pke])
         server_keystore_content = server_keystore.saves('abcdefgh')
         self.files.append(File("/etc/kafka/secrets/kafka.keystore.jks", server_keystore_content, permissions=0o644))
@@ -63,7 +62,7 @@ class KafkaServer(LinuxContainer):
 
         trusted_cert = jks.TrustedCertEntry.new(
             'root-ca',  # Alias for the certificate
-            crypto.dump_certificate(crypto.FILETYPE_ASN1, test_context.root_ca_cert)
+            dump_cert(test_context.root_ca_cert)
         )
 
         # Create a JKS keystore that will serve as a truststore with the trusted cert entry.

@@ -20,7 +20,7 @@ import tempfile
 import base64
 import tarfile
 import io
-from typing import Union, Optional, Tuple, List, Dict
+from typing import Union, Optional, Tuple, List, Dict, TYPE_CHECKING
 
 import docker
 from docker.models.networks import Network
@@ -30,6 +30,9 @@ from minifi_test_framework.containers.container_protocol import ContainerProtoco
 from minifi_test_framework.containers.directory import Directory
 from minifi_test_framework.containers.file import File
 from minifi_test_framework.containers.host_file import HostFile
+
+if TYPE_CHECKING:
+    from minifi_test_framework.core.minifi_test_context import MinifiTestContext
 
 
 class WindowsContainer(ContainerProtocol):

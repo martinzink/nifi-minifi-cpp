@@ -1,16 +1,12 @@
 import datetime
-import random
-import logging
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 
+
 def gen_cert():
-    """
-    Generate TLS certificate and key for testing (Single self-signed)
-    """
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
     subject = issuer = x509.Name([
@@ -33,6 +29,7 @@ def gen_cert():
     ).sign(key, hashes.SHA256())
 
     return cert, key
+
 
 def make_self_signed_cert(common_name):
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -62,6 +59,7 @@ def make_self_signed_cert(common_name):
     ).sign(key, hashes.SHA256())
 
     return cert, key
+
 
 def _make_cert(common_name, ca_cert, ca_key, extended_key_usage=None):
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -102,17 +100,22 @@ def _make_cert(common_name, ca_cert, ca_key, extended_key_usage=None):
     cert = builder.sign(ca_key, hashes.SHA256())
     return cert, key
 
+
 def make_client_cert(common_name, ca_cert, ca_key):
     return _make_cert(common_name, ca_cert, ca_key, [x509.OID_CLIENT_AUTH])
+
 
 def make_server_cert(common_name, ca_cert, ca_key):
     return _make_cert(common_name, ca_cert, ca_key, [x509.OID_SERVER_AUTH])
 
+
 def make_cert_without_extended_usage(common_name, ca_cert, ca_key):
     return _make_cert(common_name, ca_cert, ca_key, None)
 
+
 def dump_cert(cert):
     return cert.public_bytes(serialization.Encoding.PEM)
+
 
 def dump_key(key):
     return key.private_bytes(

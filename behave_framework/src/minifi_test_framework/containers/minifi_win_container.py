@@ -1,7 +1,5 @@
 from typing import Dict
 
-from docker.models.networks import Network
-
 from minifi_test_framework.core.minifi_test_context import MinifiTestContext
 from minifi_test_framework.minifi.minifi_flow_definition import MinifiFlowDefinition
 from minifi_test_framework.containers.directory import Directory
