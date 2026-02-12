@@ -1,6 +1,6 @@
 LIBRARY core-minifi.dll
 EXPORTS
-  MinifiCreateExtension
+  MinifiCreateExtension_0_1
   MinifiPublishedMetricsCreate
   MinifiProcessContextGetProperty
   MinifiProcessContextGetProcessorName
