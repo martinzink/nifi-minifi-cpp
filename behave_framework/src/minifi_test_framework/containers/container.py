@@ -79,7 +79,7 @@ class Container:
                 self._write_content_to_file(file_path, None, content)
             self.volumes[temp_path] = {"bind": directory.path, "mode": directory.mode}
 
-    def deploy(self, context: "Union[MinifiTestContext, None]") -> bool:
+    def deploy(self, context: MinifiTestContext | None) -> bool:
         self._temp_dir = tempfile.TemporaryDirectory()
         self._configure_volumes_of_container_files()
         self._configure_volumes_of_container_dirs()
