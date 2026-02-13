@@ -229,7 +229,7 @@ void MinifiProcessContextGetProcessorName(MinifiProcessContext* context, void(*c
 MinifiBool MinifiProcessContextHasNonEmptyProperty(MinifiProcessContext* context, MinifiStringView property_name);
 
 MinifiStatus MinifiProcessContextGetControllerService(MinifiProcessContext*, MinifiStringView controller_service_name,
-    void(*cb)(void* user_ctx, void* service, MinifiStringView type, MinifiStringView group, MinifiStringView version), void* user_ctx);
+    MinifiStatus(*cb)(void* user_ctx, void* service, MinifiStringView type, MinifiStringView group, MinifiStringView version), void* user_ctx);
 
 void MinifiLoggerSetMaxLogSize(MinifiLogger*, int32_t);
 void MinifiLoggerLogString(MinifiLogger*, MinifiLogLevel, MinifiStringView);

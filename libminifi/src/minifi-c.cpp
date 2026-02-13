@@ -545,8 +545,8 @@ MinifiStatus MinifiControllerServiceContextGetProperty(MinifiControllerServiceCo
 
 MinifiStatus MinifiProcessContextGetControllerService(
     MinifiProcessContext* process_context,
-    MinifiStringView controller_service_name,
-    void(*cb)(
+    const MinifiStringView controller_service_name,
+    MinifiStatus(*cb)(
         void* user_ctx,
         void* service,
         MinifiStringView type,
@@ -559,19 +559,17 @@ MinifiStatus MinifiProcessContextGetControllerService(
   const auto name_str = std::string{toStringView(controller_service_name)};
   const auto service_shared_ptr = context->getControllerService(name_str, context->getProcessorInfo().getUUID());
   if (!service_shared_ptr) {
-    return MINIFI_STATUS_UNKNOWN_ERROR;
+    return MINIFI_STATUS_VALIDATION_FAILED;
   }
-  const minifi::utils::CControllerService* c_controller_service = dynamic_cast<minifi::utils::CControllerService*>(&*service_shared_ptr);
-  if (c_controller_service) {
+  if (const minifi::utils::CControllerService* c_controller_service = dynamic_cast<minifi::utils::CControllerService*>(&*service_shared_ptr)) {
     const auto class_description = c_controller_service->getClassDescription();
-    cb(user_ctx,
+    return cb(user_ctx,
       c_controller_service->getImpl(),
-      minifiStringView(class_description.group_name),
       minifiStringView(class_description.name),
+      minifiStringView(class_description.group_name),
       minifiStringView(class_description.version));
-    return MINIFI_STATUS_SUCCESS;
   }
-  return MINIFI_STATUS_UNKNOWN_ERROR;  // TODO(mzink) better error handling
+  return MINIFI_STATUS_VALIDATION_FAILED;
 }
 
 
