@@ -35,6 +35,8 @@ Feature: Core flow functionalities
 
     Then at least one file with the content "first_custom_text" is placed in the "/tmp/output" directory in less than 20 seconds
     And at least one file with the content "second_custom_text" is placed in the "/tmp/output" directory in less than 20 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: A funnel can be used as a terminator
     Given a GenerateFlowFile processor with the "Data Format" property set to "Text"
@@ -48,12 +50,16 @@ Feature: Core flow functionalities
     When the MiNiFi instance starts up
     Then the Minifi logs contain the following message: "Using plaintext FlowFileRepository" in less than 5 seconds
     And the Minifi logs contain the following message: "Using plaintext DatabaseContentRepository" in less than 1 second
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: Agent does not crash when using provenance repositories
     Given a GenerateFlowFile processor with the name "generateFlowFile"
     And MiNiFi configuration "nifi.provenance.repository.class.name" is set to "VolatileProvenanceRepository"
     When the MiNiFi instance starts up
     Then the Minifi logs contain the following message: "MiNiFi started" in less than 40 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: Metrics can be logged
     Given a GenerateFlowFile processor
@@ -69,6 +75,8 @@ Feature: Core flow functionalities
     And the Minifi logs contain the following message: '                "size": "0"' in less than 2 seconds
     And the Minifi logs contain the following message: '            },' in less than 2 seconds
     And the Minifi logs contain the following message: '            "provenance": {' in less than 2 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: MiNiFi uses parameter contexts correctly
     Given parameter context name is set to 'my-context'
@@ -93,6 +101,8 @@ Feature: Core flow functionalities
 
     Then the Minifi logs contain the following message: "key:expr-lang-filename value:test_file_name" in less than 60 seconds
     And the Minifi logs contain the following message: "key:is-upper-correct value:true" in less than 60 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
 
   @CORE
@@ -110,4 +120,6 @@ Feature: Core flow functionalities
     And PutFile's success relationship is auto-terminated
     When the MiNiFi instance starts up
     Then at least one file with the content "[{"numbers":[1,2]}]" is placed in the "/tmp/output" directory in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 

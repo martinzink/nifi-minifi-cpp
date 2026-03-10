@@ -35,6 +35,8 @@ Feature: DefragmentText can defragment fragmented data from TailFile
 
     When all instances start up
     Then files with contents "<success_flow_files>" are placed in the "/tmp/output" directory in less than 60 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
     Examples:
       | input_one                                    | input_two                                        | pattern       | pattern location | success_flow_files                                                          |
@@ -62,6 +64,8 @@ Feature: DefragmentText can defragment fragmented data from TailFile
 
     When all instances start up
     Then files with contents "<success_flow_files>" are placed in the "/tmp/output" directory in less than 60 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
     Examples:
       | input_one                                    | input_two                                        | pattern       | pattern location | success_flow_files                                                          |
@@ -84,6 +88,8 @@ Feature: DefragmentText can defragment fragmented data from TailFile
 
     When all instances start up
     Then files with contents "<success_flow_files>" are placed in the "/tmp/output" directory in less than 30 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
     Examples:
       | input                                                        | pattern       | pattern location |  success_flow_files                                   |

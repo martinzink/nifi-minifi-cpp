@@ -31,3 +31,5 @@ Feature: Flow file and content repositories work as expected
     And after 5 seconds have passed
 
     Then MiNiFi's memory usage does not increase by more than 50 MB after 30 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings

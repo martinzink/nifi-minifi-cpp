@@ -42,3 +42,5 @@ Feature: Splitting JSON content using SplitJson processor
     And the Minifi logs contain the following message: "key:fragment.index value:2" in less than 1 seconds
     And the Minifi logs contain the following message: "key:fragment.identifier value:" in less than 1 seconds
     And the Minifi logs contain the following message: "key:segment.original.filename value:" in less than 1 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings

@@ -29,6 +29,8 @@ Feature: Writing JSON path query result to attribute or flow file using Evaluate
     And PutFile's failure relationship is auto-terminated
     When the MiNiFi instance starts up
     Then a file with the JSON content "["The Great Gatsby","1984"]" is placed in the "/tmp/output" directory in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: Write query result to attributes
     Given a GetFile processor with the "Input Directory" property set to "/tmp/input"
@@ -53,3 +55,5 @@ Feature: Writing JSON path query result to attribute or flow file using Evaluate
     And the Minifi logs contain the following message: "key:title value:1984" in less than 10 seconds
     And the Minifi logs contain the following message: "key:author value:null" in less than 1 seconds
     And the Minifi logs do not contain the following message: "key:release" after 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings

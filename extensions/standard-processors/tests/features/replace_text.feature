@@ -30,6 +30,8 @@ Feature: Changing flowfile contents using the ReplaceText processor
     And the "success" relationship of the ReplaceText processor is connected to the PutFile
     When the MiNiFi instance starts up
     Then a single file with the content "<output>" is placed in the "/tmp/output" directory in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
     Examples:
       | input                 | replacement_strategy | search_value | replacement_value | output                    |
@@ -52,6 +54,8 @@ Feature: Changing flowfile contents using the ReplaceText processor
     And the "success" relationship of the ReplaceText processor is connected to the PutFile
     When the MiNiFi instance starts up
     Then a single file with the content "<output>" is placed in the "/tmp/output" directory in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
     Examples:
       | input                      | evaluation_mode      | output                     |

@@ -34,6 +34,8 @@ Feature: MiNiFi Controller functionalities
     And the GenerateFlowFile component is stopped through MiNiFi controller
     Then the GenerateFlowFile component is not running
     And the FlowController component is running
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: If FlowController is stopped all other components are stopped
     Given a GenerateFlowFile processor
@@ -43,6 +45,8 @@ Feature: MiNiFi Controller functionalities
     And the FlowController component is stopped through MiNiFi controller
     Then the GenerateFlowFile component is not running
     And the FlowController component is not running
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: FlowController can be stopped and restarted
     Given a GenerateFlowFile processor
@@ -53,6 +57,8 @@ Feature: MiNiFi Controller functionalities
     And the FlowController component is started through MiNiFi controller
     Then the GenerateFlowFile component is running
     And the FlowController component is running
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: Queue state can be queried
     Given a GenerateFlowFile processor
@@ -64,6 +70,8 @@ Feature: MiNiFi Controller functionalities
     Then connection "GetFile/success/PutFile" can be seen through MiNiFi controller
     And 0 connections can be seen full through MiNiFi controller
     And connection "GetFile/success/PutFile" has 0 size and 2000 max size through MiNiFi controller
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: Manifest can be retrieved
     Given a GenerateFlowFile processor
@@ -71,6 +79,8 @@ Feature: MiNiFi Controller functionalities
     And controller socket properties are set up
     When all instances start up
     Then manifest can be retrieved through MiNiFi controller
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: Debug bundle can be retrieved
     Given a GenerateFlowFile processor
@@ -78,3 +88,5 @@ Feature: MiNiFi Controller functionalities
     And controller socket properties are set up
     When all instances start up
     Then debug bundle can be retrieved through MiNiFi controller
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings

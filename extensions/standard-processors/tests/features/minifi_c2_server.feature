@@ -25,6 +25,8 @@ Feature: MiNiFi can communicate with Apache NiFi MiNiFi C2 server
     Then the MiNiFi C2 server logs contain the following message: "acknowledged with a state of FULLY_APPLIED(DONE)" in less than 30 seconds
     And a single file with the content "test" is placed in the "/tmp/output" directory in less than 10 seconds
     And the Minifi logs do not contain the following message: "Failed to parse json response: The document is empty. at 0" after 0 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: MiNiFi can get flow config from C2 server through flow url when it is not available at start
     Given flow configuration path is set up in flow url property
@@ -34,6 +36,8 @@ Feature: MiNiFi can communicate with Apache NiFi MiNiFi C2 server
     When the MiNiFi instance starts up
     Then the MiNiFi C2 server logs contain the following message: "acknowledged with a state of FULLY_APPLIED(DONE)" in less than 30 seconds
     And a single file with the content "test" is placed in the "/tmp/output" directory in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: MiNiFi flow config is updated from MiNiFi C2 server through SSL with SSL properties
     Given a directory at "/tmp/input" has a file with the content "test"
@@ -43,6 +47,8 @@ Feature: MiNiFi can communicate with Apache NiFi MiNiFi C2 server
     When all instances start up
     Then the MiNiFi C2 server logs contain the following message: "acknowledged with a state of FULLY_APPLIED(DONE)" in less than 60 seconds
     And a single file with the content "test" is placed in the "/tmp/output" directory in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: MiNiFi flow config is updated from MiNiFi C2 server with overriden parameter context
     Given a GetFile processor with the name "GetFile1" and the "Input Directory" property set to "${INPUT_DIR}"
@@ -55,3 +61,5 @@ Feature: MiNiFi can communicate with Apache NiFi MiNiFi C2 server
     Then the MiNiFi C2 server logs contain the following message: "acknowledged with a state of FULLY_APPLIED(DONE)" in less than 30 seconds
     And a single file with the content "test" is placed in the "/tmp/output" directory in less than 10 seconds
     And the Minifi logs do not contain the following message: "Failed to parse json response: The document is empty. at 0" after 0 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings

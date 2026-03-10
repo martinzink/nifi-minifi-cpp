@@ -28,6 +28,8 @@ Feature: File system operations are handled by the GetFile, PutFile, ListFile an
     And PutFile's success relationship is auto-terminated
     When the MiNiFi instance starts up
     Then a single file with the content "test" is placed in the "/tmp/output" directory in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: PutFile does not overwrite a file that already exists
     Given a GetFile processor with the "Input Directory" property set to "/tmp/input"
@@ -59,6 +61,8 @@ Feature: File system operations are handled by the GetFile, PutFile, ListFile an
     And a directory at "/tmp/input" has a file with the content "test"
     When the MiNiFi instance starts up
     Then a single file with the content "test" is placed in the "/tmp/output" directory in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: List and fetch files from a directory in a simple flow
     Given a file with filename "test_file.log" and content "Test message" is present in "/tmp/input"
@@ -73,3 +77,5 @@ Feature: File system operations are handled by the GetFile, PutFile, ListFile an
     And PutFile's success relationship is auto-terminated
     When the MiNiFi instance starts up
     Then files with contents "Test message" and "Another test message" are placed in the "/tmp/output" directory in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings

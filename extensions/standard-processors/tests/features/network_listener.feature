@@ -27,3 +27,5 @@ Feature: Minifi C++ can act as a network listener
 
     When all instances start up
     Then at least one file with the content "test_tcp_message" is placed in the "/tmp/output" directory in less than 20 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings

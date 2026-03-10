@@ -35,3 +35,5 @@ Feature: Processing log files line-by-line using RouteText
     And the "success" relationship of the UpdateWarning processor is connected to the PutFile
     When the MiNiFi instance starts up
     Then files with contents "[INFO] one\n[INFO] three\n" and "[WARNING] two\n[WARNING] four\n" are placed in the "/tmp/output" directory in less than 15 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings

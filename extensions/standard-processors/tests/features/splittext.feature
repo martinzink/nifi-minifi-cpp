@@ -29,6 +29,8 @@ Feature: Split input text line-by-line using SplitText
     And the "splits" relationship of the SplitText processor is connected to the PutFile
     When the MiNiFi instance starts up
     Then files with contents "[HEADER]header line 1\n[HEADER]header line 2\nDATA LINE 1,[HEADER]header line 1\n[HEADER]header line 2\nDATA LINE 2,[HEADER]header line 1\n[HEADER]header line 2" are placed in the "/tmp/output" directory in less than 15 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: Split textfile containing header lines specified by header line marker characters
     Given a GetFile processor with the "Input Directory" property set to "/tmp/input"
@@ -43,3 +45,5 @@ Feature: Split input text line-by-line using SplitText
     And PutFile's success relationship is auto-terminated
     When the MiNiFi instance starts up
     Then files with contents "[HEADER]header line 1\n[HEADER]header line 2\nA BIT LONGER DATA LINE 1,[HEADER]header line 1\n[HEADER]header line 2\nDATA 2\nDATA 3" are placed in the "/tmp/output" directory in less than 15 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings

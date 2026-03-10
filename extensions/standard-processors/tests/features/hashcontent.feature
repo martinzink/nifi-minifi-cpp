@@ -32,6 +32,8 @@ Feature: Hash value is added to Flowfiles by HashContent processor
     And LogAttribute's success relationship is auto-terminated
     When the MiNiFi instance starts up
     Then the Minifi logs contain the following message: "key:hash value:<hash_value>" in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
     Examples:
       | content | hash_algorithm | hash_value                                                       |
@@ -53,6 +55,8 @@ Feature: Hash value is added to Flowfiles by HashContent processor
     And PutFile's success relationship is auto-terminated
     When the MiNiFi instance starts up
     Then at least one empty file is placed in the "/tmp/output" directory in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: HashContent can use MD5 in FIPS mode
     Given OpenSSL FIPS mode is enabled in MiNiFi
@@ -68,3 +72,5 @@ Feature: Hash value is added to Flowfiles by HashContent processor
     And LogAttribute's success relationship is auto-terminated
     When the MiNiFi instance starts up
     Then the Minifi logs contain the following message: "key:hash value:1F3870BE274F6C49B3E31A0C6728957F" in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings

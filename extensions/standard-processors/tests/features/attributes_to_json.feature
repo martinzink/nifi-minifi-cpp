@@ -26,5 +26,9 @@ Feature: Writing attribute data using AttributesToJSON processor
     And the "success" relationship of the GetFile processor is connected to the AttributesToJSON
     And the "success" relationship of the AttributesToJSON processor is connected to the PutFile
     And PutFile's success relationship is auto-terminated
+
     When the MiNiFi instance starts up
     Then a file with the JSON content "{"invalid":null,"filename":"test_file.log"}" is placed in the "/tmp/output" directory in less than 20 seconds
+
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings

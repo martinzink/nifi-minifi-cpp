@@ -43,3 +43,5 @@ Feature: Minifi C++ can act as a modbus tcp master
 
     When the MiNiFi instance starts up
     Then at least one file with the JSON content "{"foo":123,"bar":1.75,"baz":["M", "i", "N", "i", "F", "i"]}" is placed in the "/tmp/output" directory in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings

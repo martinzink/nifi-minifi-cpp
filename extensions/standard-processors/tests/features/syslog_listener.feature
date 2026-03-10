@@ -31,6 +31,8 @@ Feature: Minifi C++ can act as a syslog listener
 
     When both instances start up
     Then at least one file in "/tmp/output" content match the following regex: "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.*13.*sample_log$" in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: A syslog client can send messages to Minifi over TCP
     Given a ListenSyslog processor
@@ -43,3 +45,5 @@ Feature: Minifi C++ can act as a syslog listener
 
     When both instances start up
     Then at least 1 file is placed in the "/tmp/output" directory in less than 10 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
