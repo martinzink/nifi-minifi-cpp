@@ -127,12 +127,12 @@ Extension::~Extension() {
     // Keep class descriptions if library is still in memory
     dlclose(check);
   } else {
-    ClassDescriptionRegistry::clearClassDescriptionsForBundle(name_);
+    ClassDescriptionRegistry::clearClassDescriptionsForBundle(library_name_);
   }
 #else
-  HMODULE handle = GetModuleHandleA(name_.c_str());
+  HMODULE handle = GetModuleHandleA(library_name_.c_str());
   if (handle == nullptr) {
-    ClassDescriptionRegistry::clearClassDescriptionsForBundle(name_);
+    ClassDescriptionRegistry::clearClassDescriptionsForBundle(library_name_);
   }
 #endif
 }

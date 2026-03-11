@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include  <string>
+#include <cinttypes>
 
 namespace org::apache::nifi::minifi::core::extension {
 
