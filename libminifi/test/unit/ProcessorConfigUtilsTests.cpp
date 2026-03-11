@@ -95,8 +95,8 @@ namespace {
 class TestControllerService : public controller::ControllerServiceBase, public core::controller::ControllerServiceHandle {
  public:
   using ControllerServiceBase::ControllerServiceBase;
-  ControllerServiceHandle* getControllerServiceHandle() override {return this;}
-  bool supportsDynamicProperties() const override {return false;}
+  ControllerServiceHandle* getControllerServiceHandle() override { return this; }
+  [[nodiscard]] bool supportsDynamicProperties() const override { return false; }
 };
 
 const std::shared_ptr test_controller_service = []() {
@@ -164,16 +164,16 @@ TEST_CASE("Parse controller service property") {
   SECTION("Optional controller service property") {
     SECTION("... is valid") {
       REQUIRE(processor->setProperty(property.name, "TestControllerService"));
-      const auto value = utils::parseOptionalControllerService<TestControllerService>(context, property, processor->getUUID());;
+      const auto value = utils::parseOptionalControllerService<TestControllerService>(context, property, processor->getUUID());
       CHECK(value.get() == test_controller_service->getImplementation<TestControllerService>());
     }
     SECTION("... is missing") {
-      const auto value = utils::parseOptionalControllerService<TestControllerService>(context, property, processor->getUUID());;
+      const auto value = utils::parseOptionalControllerService<TestControllerService>(context, property, processor->getUUID());
       CHECK(value == nullptr);
     }
     SECTION("... is blank") {
       REQUIRE(processor->setProperty(property.name, ""));
-      const auto value = utils::parseOptionalControllerService<TestControllerService>(context, property, processor->getUUID());;
+      const auto value = utils::parseOptionalControllerService<TestControllerService>(context, property, processor->getUUID());
       CHECK(value == nullptr);
     }
     SECTION("... is invalid") {
