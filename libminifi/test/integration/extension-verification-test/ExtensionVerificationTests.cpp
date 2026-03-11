@@ -1,5 +1,5 @@
 /**
-*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,28 +18,29 @@
 
 #define CUSTOM_EXTENSION_INIT
 
-#include "unit/TestBase.h"
-#include "unit/Catch.h"
-#include "unit/TestUtils.h"
-#include "core/extension/ExtensionManager.h"
 #include "core/extension/ApiVersion.h"
+#include "core/extension/ExtensionManager.h"
+#include "unit/Catch.h"
+#include "unit/TestBase.h"
+#include "unit/TestUtils.h"
 
 namespace minifi = org::apache::nifi::minifi;
 
 class ExtensionLoadingTestController {
  public:
-  ExtensionLoadingTestController(std::string pattern): extension_manager_{[&] () {
-    LogTestController::getInstance().clear();
-    LogTestController::getInstance().setTrace<core::extension::ExtensionManager>();
-    LogTestController::getInstance().setTrace<core::extension::Extension>();
-    minifi::core::extension::test_setAgentApiVersion(10);
-    minifi::core::extension::test_setMinSupportedApiVersion(5);
-    auto config = minifi::Configure::create();
-    config->set(minifi::Configuration::nifi_extension_path, pattern);
-    return config;
-  }()} {}
+  explicit ExtensionLoadingTestController(std::string pattern)
+      : extension_manager_{[&]() {
+          LogTestController::getInstance().clear();
+          LogTestController::getInstance().setTrace<core::extension::ExtensionManager>();
+          LogTestController::getInstance().setTrace<core::extension::Extension>();
+          minifi::core::extension::test_setAgentApiVersion(10);
+          minifi::core::extension::test_setMinSupportedApiVersion(5);
+          auto config = minifi::Configure::create();
+          config->set(minifi::Configuration::nifi_extension_path, pattern);
+          return config;
+        }()} {}
 
- core::extension::ExtensionManager extension_manager_;
+  core::extension::ExtensionManager extension_manager_;
 };
 
 TEST_CASE("Can load cpp-api extensions with same build id") {
@@ -88,4 +89,3 @@ TEST_CASE("Can't load c-api extensions with no MinifiCreateExtension call") {
   ExtensionLoadingTestController controller{"*test-extension-loading-create-not-called*"};
   REQUIRE(minifi::test::utils::verifyLogLinePresenceInPollTime(0s, "Failed to initialize extension 'test-extension-loading-create-not-called'"));
 }
-

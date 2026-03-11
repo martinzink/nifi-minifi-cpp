@@ -1,5 +1,5 @@
 /**
-*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,12 +28,12 @@ extern "C" const uint32_t MinifiApiVersion = MINIFI_TEST_API_VERSION;
 
 extern "C" void MinifiInitExtension(MinifiExtension* extension, MinifiConfig* /*config*/) {
   MinifiExtensionCreateInfo ext_create_info{
-    .name = minifi::api::utils::toStringView(MAKESTRING(EXTENSION_NAME)),
-    .version = minifi::api::utils::toStringView(MAKESTRING(EXTENSION_VERSION)),
-    .deinit = nullptr,
-    .user_data = nullptr,
-    .processors_count = 0,
-    .processors_ptr = nullptr,
+      .name = minifi::api::utils::toStringView(MAKESTRING(EXTENSION_NAME)),
+      .version = minifi::api::utils::toStringView(MAKESTRING(EXTENSION_VERSION)),
+      .deinit = nullptr,
+      .user_data = nullptr,
+      .processors_count = 0,
+      .processors_ptr = nullptr,
   };
   MinifiCreateExtension(extension, &ext_create_info);
 }
