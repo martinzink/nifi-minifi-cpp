@@ -34,6 +34,8 @@ Feature: MiNiFi can publish metrics to Prometheus server
     And "DeviceInfoNode" is published to the Prometheus server in less than 60 seconds
     And "AgentStatus" is published to the Prometheus server in less than 60 seconds
     And all Prometheus metric types are only defined once
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: Published metrics are scraped by Prometheus server through SSL connection
     Given a GetFile processor with the name "GetFile1" and the "Input Directory" property set to "/tmp/input"
@@ -52,6 +54,8 @@ Feature: MiNiFi can publish metrics to Prometheus server
     And "FlowInformation" is published to the Prometheus server in less than 60 seconds
     And "DeviceInfoNode" is published to the Prometheus server in less than 60 seconds
     And "AgentStatus" is published to the Prometheus server in less than 60 seconds
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
 
   Scenario: Multiple GetFile metrics are reported by Prometheus
     Given a GetFile processor with the name "GetFile1" and the "Input Directory" property set to "/tmp/input"
@@ -67,3 +71,5 @@ Feature: MiNiFi can publish metrics to Prometheus server
     When all instances start up
     Then "GetFileMetrics" processor metric is published to the Prometheus server in less than 60 seconds for "GetFile1" processor
     And "GetFileMetrics" processor metric is published to the Prometheus server in less than 60 seconds for "GetFile2" processor
+    And the Minifi logs do not contain errors
+    And the Minifi logs do not contain warnings
