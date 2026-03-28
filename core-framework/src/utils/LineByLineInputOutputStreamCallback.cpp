@@ -38,9 +38,9 @@ io::ReadWriteResult LineByLineInputOutputStreamCallback::operator()(const std::s
     return io::ReadWriteResult::zero();
   }
 
-  const auto bytes_read = gsl::narrow<int64_t>(input_.size());
+  const uint64_t bytes_read = input_.size();
 
-  std::size_t total_bytes_written = 0;
+  uint64_t total_bytes_written = 0;
   bool is_first_line = true;
   readLine();
   do {
@@ -54,9 +54,8 @@ io::ReadWriteResult LineByLineInputOutputStreamCallback::operator()(const std::s
     is_first_line = false;
   } while (!isLastLine());
 
-  const auto bytes_written = gsl::narrow<int64_t>(total_bytes_written);
 
-  return io::ReadWriteResult(bytes_read, bytes_written);
+  return { bytes_read, total_bytes_written };
 }
 
 int64_t LineByLineInputOutputStreamCallback::readInput(io::InputStream& stream) {
