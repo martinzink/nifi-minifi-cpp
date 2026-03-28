@@ -34,7 +34,7 @@ FileWriterCallback::~FileWriterCallback() {
   std::filesystem::remove(temp_path_, remove_error);
 }
 
-io::ExpectedCallbackReturn FileWriterCallback::operator()(const std::shared_ptr<io::InputStream>& stream) {
+io::IoResult FileWriterCallback::operator()(const std::shared_ptr<io::InputStream>& stream) {
   write_succeeded_ = false;
   size_t size = 0;
   std::array<std::byte, 1024> buffer{};
@@ -43,7 +43,7 @@ io::ExpectedCallbackReturn FileWriterCallback::operator()(const std::shared_ptr<
 
   do {
     const auto read = stream->read(buffer);
-    if (io::isError(read)) return nonstd::make_unexpected(MINIFI_IO_ERROR);
+    if (io::isError(read)) return io::IoResult::error();
     if (read == 0) break;
     tmp_file_os.write(reinterpret_cast<char *>(buffer.data()), gsl::narrow<std::streamsize>(read));
     size += read;
@@ -55,7 +55,7 @@ io::ExpectedCallbackReturn FileWriterCallback::operator()(const std::shared_ptr<
     write_succeeded_ = true;
   }
 
-  return io::i64ToExpectedCallbackReturn(gsl::narrow<int64_t>(size));
+  return io::IoResult::fromSizeT(size);
 }
 
 bool FileWriterCallback::commit() {

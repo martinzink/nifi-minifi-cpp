@@ -31,12 +31,12 @@
 namespace org::apache::nifi::minifi {
 namespace internal {
 
-inline io::ExpectedCallbackReturn pipe(io::InputStream& src, io::OutputStream& dst) {
+inline io::IoResult pipe(io::InputStream& src, io::OutputStream& dst) {
   std::array<std::byte, utils::configuration::DEFAULT_BUFFER_SIZE> buffer{};
   uint64_t totalTransferred = 0;
   while (true) {
     const auto readRet = src.read(buffer);
-    if (io::isError(readRet)) return nonstd::make_unexpected(static_cast<MinifiIoStatus>(readRet));
+    if (io::isError(readRet)) return io::IoResult::error();
     if (readRet == 0) break;
     auto remaining = readRet;
     size_t transferred = 0;
@@ -48,14 +48,14 @@ inline io::ExpectedCallbackReturn pipe(io::InputStream& src, io::OutputStream& d
       //     - the number of bytes read or
       //     - the number of bytes wrote
       if (io::isError(writeRet)) {
-        return nonstd::make_unexpected(MINIFI_IO_ERROR);
+        return io::IoResult::error();
       }
       transferred += writeRet;
       remaining -= writeRet;
     }
     totalTransferred += transferred;
   }
-  return gsl::narrow<uint64_t>(totalTransferred);
+  return io::IoResult::fromU64(totalTransferred);
 }
 
 }  // namespace internal
@@ -64,7 +64,7 @@ class InputStreamPipe {
  public:
   explicit InputStreamPipe(io::OutputStream& output) : output_(&output) {}
 
-  io::ExpectedCallbackReturn operator()(const std::shared_ptr<io::InputStream>& stream) const {
+  io::IoResult operator()(const std::shared_ptr<io::InputStream>& stream) const {
     return internal::pipe(*stream, *output_);
   }
 
@@ -76,7 +76,7 @@ class OutputStreamPipe {
  public:
   explicit OutputStreamPipe(io::InputStream& input) : input_(&input) {}
 
-  io::ExpectedCallbackReturn operator()(const std::shared_ptr<io::OutputStream>& stream) const {
+  io::IoResult operator()(const std::shared_ptr<io::OutputStream>& stream) const {
     return internal::pipe(*input_, *stream);
   }
 

@@ -107,12 +107,12 @@ void FetchSFTP::onTrigger(core::ProcessContext& context, core::ProcessSession& s
 
   /* Download file */
   try {
-    session.write(flow_file, [&remote_file, &client](const std::shared_ptr<io::OutputStream>& stream) -> io::ExpectedCallbackReturn {
+    session.write(flow_file, [&remote_file, &client](const std::shared_ptr<io::OutputStream>& stream) -> io::IoResult {
       auto bytes_read = client->getFile(remote_file.generic_string(), *stream);
       if (!bytes_read) {
         throw utils::SFTPException{client->getLastError()};
       }
-      return io::i64ToExpectedCallbackReturn(gsl::narrow<int64_t>(*bytes_read));
+      return io::IoResult::fromU64(*bytes_read);
     });
   } catch (const utils::SFTPException& ex) {
     logger_->log_debug("{}", ex.what());

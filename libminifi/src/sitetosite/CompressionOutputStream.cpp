@@ -103,7 +103,7 @@ size_t CompressionOutputStream::compressAndWrite() {
   }
 
   // Write the compressed data
-  ret = minifi::io::expectedCallbackReturnToI64(internal::pipe(buffer_stream, internal_stream_));
+  ret = minifi::io::IoResult(internal::pipe(buffer_stream, internal_stream_)).toI64(); // TODO(mzink) feels wrong
   if (io::isError(ret)) {
     return ret;
   }

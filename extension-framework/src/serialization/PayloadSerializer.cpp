@@ -21,7 +21,7 @@
 
 namespace org::apache::nifi::minifi {
 
-io::ExpectedCallbackReturn PayloadSerializer::serialize(const std::shared_ptr<core::FlowFile>& flowFile, const std::shared_ptr<io::OutputStream>& out) {
+io::IoResult PayloadSerializer::serialize(const std::shared_ptr<core::FlowFile>& flowFile, const std::shared_ptr<io::OutputStream>& out) {
   return reader_(flowFile, InputStreamPipe{*out});
 }
 

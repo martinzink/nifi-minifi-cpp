@@ -16,13 +16,15 @@
  */
 #pragma once
 
+#include <cinttypes>
 #include <functional>
 #include <memory>
 #include <optional>
-#include <cinttypes>
-#include "minifi-cpp/utils/gsl.h"
 
+#include "../../../../../../../../../Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Security.framework/Headers/cssmconfig.h"
 #include "../../minifi-api/include/minifi-c/minifi-c.h"
+#include "Stream.h"
+#include "minifi-cpp/utils/gsl.h"
 #include "utils/expected.h"
 
 namespace org::apache::nifi::minifi::io {
@@ -38,10 +40,10 @@ struct ReadWriteResult {
 class IoResult {
 public:
   IoResult() = delete;
-  IoResult(const IoResult&) = delete;
-  IoResult(IoResult&&) = delete;
-  IoResult& operator=(IoResult&&) = delete;
-  IoResult& operator=(const IoResult&) = delete;
+  IoResult(const IoResult&) = default;
+  IoResult(IoResult&&) = default;
+  IoResult& operator=(IoResult&&) = default;
+  IoResult& operator=(const IoResult&) = default;
 
   virtual ~IoResult() = default;
 
@@ -59,66 +61,48 @@ public:
     return IoResult(gsl::narrow<uint64_t>(i64_val));
   }
 
+  static IoResult fromSizeT(size_t val) {
+    if (isError(val)) {
+      return IoResult::error();
+    }
+    return IoResult(gsl::narrow<uint64_t>(val));
+  }
+
+  static IoResult fromU64(uint64_t u64_val) {
+    return IoResult(u64_val);
+  }
+
+  [[nodiscard]] int64_t toI64() const {
+    if (result_.has_value()) {
+      return gsl::narrow<int64_t>(*result_);
+    }
+    return result_.error();
+  }
+
+  [[nodiscard]] bool is_cancelled() const {
+    return !result_ && result_.error() == MINIFI_IO_CANCEL;
+  }
+
+  bool operator()() const {
+    return result_.has_value();
+  }
+
+  bool operator!() const {
+    return !result_.has_value();
+  }
+
+  uint64_t operator*() const {
+    return *result_;
+  }
+
 private:
   explicit IoResult(nonstd::expected<uint64_t, MinifiIoStatus> result) : result_(std::move(result)) {}
 
   nonstd::expected<uint64_t, MinifiIoStatus> result_;
 };
 
-using ExpectedCallbackReturn = nonstd::expected<uint64_t, MinifiIoStatus>;
-
-inline ExpectedCallbackReturn i64ToExpectedCallbackReturn(int64_t i64_val) {
-  if (i64_val < 0) {
-    return nonstd::make_unexpected(static_cast<MinifiIoStatus>(i64_val));
-  }
-  return gsl::narrow<uint64_t>(i64_val);
-}
-
-inline int64_t expectedCallbackReturnToI64(const nonstd::expected<uint64_t, MinifiIoStatus>& expected_val) {
-  if (expected_val.has_value()) {
-    return gsl::narrow<int64_t>(*expected_val);
-  }
-  return expected_val.error();
-}
-
-class StrictOutputStreamCallback {
-public:
-  template <typename Callable,
-            typename ActualRet = std::invoke_result_t<Callable, const std::shared_ptr<io::OutputStream>&>>
-  StrictOutputStreamCallback(Callable&& c) : func_(std::forward<Callable>(c)) {
-    static_assert(std::is_same_v<ActualRet, ExpectedCallbackReturn>,
-        "FATAL: Callback return type mismatch! You must return exactly nonstd::expected<uint64_t, MinifiIoStatus>. "
-        "Implicit conversions (like bool or int to expected) are strictly forbidden here.");
-  }
-
-  ExpectedCallbackReturn operator()(const std::shared_ptr<io::OutputStream>& os) const {
-    return func_(os);
-  }
-
-private:
-  std::function<ExpectedCallbackReturn(const std::shared_ptr<io::OutputStream>&)> func_;
-};
-
-class StrictInputStreamCallback {
-public:
-  template <typename Callable,
-            typename ActualRet = std::invoke_result_t<Callable, const std::shared_ptr<io::InputStream>&>>
-  StrictInputStreamCallback(Callable&& c) : func_(std::forward<Callable>(c)) {
-    static_assert(std::is_same_v<ActualRet, ExpectedCallbackReturn>,
-        "FATAL: Callback return type mismatch! You must return exactly nonstd::expected<uint64_t, MinifiIoStatus>. "
-        "Implicit conversions (like bool or int to expected) are strictly forbidden here.");
-  }
-
-  ExpectedCallbackReturn operator()(const std::shared_ptr<io::InputStream>& os) const {
-    return func_(os);
-  }
-
-private:
-  std::function<ExpectedCallbackReturn(const std::shared_ptr<io::InputStream>&)> func_;
-};
-
-using OutputStreamCallback = StrictOutputStreamCallback;
-using InputStreamCallback = StrictInputStreamCallback;
+using OutputStreamCallback = std::function<IoResult(const std::shared_ptr<OutputStream>& output_stream)>;
+using InputStreamCallback =  std::function<IoResult(const std::shared_ptr<InputStream>& output_stream)>;
 using InputOutputStreamCallback = std::function<std::optional<ReadWriteResult>(const std::shared_ptr<InputStream>& input_stream, const std::shared_ptr<OutputStream>& output_stream)>;
 
 }  // namespace org::apache::nifi::minifi::io

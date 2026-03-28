@@ -32,19 +32,19 @@ namespace org::apache::nifi::minifi::utils {
 class JsonInputCallback {
  public:
   explicit JsonInputCallback(rapidjson::Document& document) : document_(document) {}
-  io::ExpectedCallbackReturn operator()(const std::shared_ptr<io::InputStream>& stream) {
+  io::IoResult operator()(const std::shared_ptr<io::InputStream>& stream) {
     std::string content;
     content.resize(stream->size());
-    const auto read_ret = stream->read(as_writable_bytes(std::span(content)));
+    const size_t read_ret = stream->read(as_writable_bytes(std::span(content)));
     if (io::isError(read_ret)) {
-      return nonstd::make_unexpected(MINIFI_IO_ERROR);
+      return io::IoResult::error();
     }
     rapidjson::ParseResult parse_result = document_.Parse<rapidjson::kParseStopWhenDoneFlag>(content.data());
     if (parse_result.IsError()) {
-      return nonstd::make_unexpected(MINIFI_IO_ERROR);
+      return io::IoResult::error();
     }
 
-    return io::i64ToExpectedCallbackReturn(read_ret);
+    return io::IoResult::fromSizeT(read_ret);
   }
  private:
   rapidjson::Document& document_;
@@ -55,14 +55,14 @@ class JsonOutputCallback {
   explicit JsonOutputCallback(rapidjson::Document&& root, std::optional<uint8_t> decimal_places)
       : root_(std::move(root)), decimal_places_(decimal_places) {}
 
-  io::ExpectedCallbackReturn operator()(const std::shared_ptr<io::OutputStream>& stream) const {
+  io::IoResult operator()(const std::shared_ptr<io::OutputStream>& stream) const {
     rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     if (decimal_places_.has_value())
       writer.SetMaxDecimalPlaces(decimal_places_.value());
     root_.Accept(writer);
     const auto write_return = stream->write(reinterpret_cast<const uint8_t*>(buffer.GetString()), buffer.GetSize());
-    return io::i64ToExpectedCallbackReturn(gsl::narrow<int64_t>(write_return));
+    return io::IoResult::fromSizeT(write_return);
   }
 
  protected:

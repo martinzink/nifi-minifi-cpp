@@ -131,35 +131,35 @@ void CompressContent::processFlowFile(const std::shared_ptr<core::FlowFile>& flo
   std::shared_ptr<core::FlowFile> result = session.create(flowFile.get());
   bool success = true;
   if (encapsulateInTar_) {
-    std::function<io::ExpectedCallbackReturn(const std::shared_ptr<io::InputStream>&, const std::shared_ptr<io::OutputStream>&)> transformer;
+    std::function<io::IoResult(const std::shared_ptr<io::InputStream>&, const std::shared_ptr<io::OutputStream>&)> transformer;
 
     if (compressMode_ == compress_content::CompressionMode::compress) {
       std::string filename;
       flowFile->getAttribute(core::SpecialFlowAttribute::FILENAME, filename);
-      transformer = [&, filename] (const std::shared_ptr<io::InputStream>& in, const std::shared_ptr<io::OutputStream>& out) -> io::ExpectedCallbackReturn {
+      transformer = [&, filename] (const std::shared_ptr<io::InputStream>& in, const std::shared_ptr<io::OutputStream>& out) -> io::IoResult {
         io::WriteArchiveStreamImpl compressor(compressLevel_, compressFormat, out);
         if (!compressor.newEntry({filename, in->size()})) {
-          return -1;
+          return io::IoResult::error();
         }
         return internal::pipe(*in, compressor);
       };
     } else {
-      transformer = [&] (const std::shared_ptr<io::InputStream>& in, const std::shared_ptr<io::OutputStream>& out) -> io::ExpectedCallbackReturn {
+      transformer = [&] (const std::shared_ptr<io::InputStream>& in, const std::shared_ptr<io::OutputStream>& out) -> io::IoResult {
         io::ReadArchiveStreamImpl decompressor(in);
         if (!decompressor.nextEntry()) {
           success = false;
-          return 0;  // prevents a session rollback
+          return io::IoResult::fromU64(0);  // prevents a session rollback
         }
         auto ret = internal::pipe(decompressor, *out);
         if (!ret) {
           success = false;
-          return 0;  // prevents a session rollback
+          return io::IoResult::fromU64(0);  // prevents a session rollback
         }
         return ret;
       };
     }
     session.write(result, [&] (const auto& out) {
-      return io::i64ToExpectedCallbackReturn(session.read(flowFile, [&] (const auto& in) {
+      return io::IoResult::fromI64(session.read(flowFile, [&] (const auto& in) {
         return transformer(in, out);
       }));
     });

@@ -37,7 +37,7 @@ class ByteInputCallback {
  public:
   virtual ~ByteInputCallback() = default;
 
-  virtual io::ExpectedCallbackReturn operator()(const std::shared_ptr<io::InputStream>& stream) {
+  virtual io::IoResult operator()(const std::shared_ptr<io::InputStream>& stream) {
     stream->seek(0);
 
     if (stream->size() > 0) {
@@ -45,7 +45,7 @@ class ByteInputCallback {
       stream->read(vec);
     }
 
-    return io::i64ToExpectedCallbackReturn(gsl::narrow<int64_t>(vec.size()));
+    return io::IoResult::fromSizeT(vec.size());
   }
 
   virtual void close() { }

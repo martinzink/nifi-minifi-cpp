@@ -57,43 +57,43 @@ size_t FlowFileV3Serializer::writeString(const std::string &str, const std::shar
   return sum;
 }
 
-io::ExpectedCallbackReturn FlowFileV3Serializer::serialize(const std::shared_ptr<core::FlowFile>& flowFile, const std::shared_ptr<io::OutputStream>& out) {
+io::IoResult FlowFileV3Serializer::serialize(const std::shared_ptr<core::FlowFile>& flowFile, const std::shared_ptr<io::OutputStream>& out) {
   size_t sum = 0;
   {
     const auto ret = out->write(MAGIC_HEADER, sizeof(MAGIC_HEADER));
-    if (io::isError(ret)) return nonstd::make_unexpected(MINIFI_IO_ERROR);
-    if (ret != sizeof(MAGIC_HEADER)) return nonstd::make_unexpected(MINIFI_IO_ERROR);
+    if (io::isError(ret)) return io::IoResult::error();
+    if (ret != sizeof(MAGIC_HEADER)) return io::IoResult::error();
     sum += ret;
   }
   const auto& attributes = flowFile->getAttributes();
   {
     const auto ret = writeLength(attributes.size(), out);
-    if (io::isError(ret)) return nonstd::make_unexpected(MINIFI_IO_ERROR);
+    if (io::isError(ret)) return io::IoResult::error();
     sum += ret;
   }
   for (const auto& attrIt : attributes) {
     {
       const auto ret = writeString(attrIt.first, out);
-      if (io::isError(ret)) return nonstd::make_unexpected(MINIFI_IO_ERROR);
+      if (io::isError(ret)) return io::IoResult::error();
       sum += ret;
     }
     {
       const auto ret = writeString(attrIt.second, out);
-      if (io::isError(ret)) return nonstd::make_unexpected(MINIFI_IO_ERROR);
+      if (io::isError(ret)) return io::IoResult::error();
       sum += ret;
     }
   }
   {
     const auto ret = out->write(flowFile->getSize());
-    if (io::isError(ret)) return nonstd::make_unexpected(MINIFI_IO_ERROR);
+    if (io::isError(ret)) return io::IoResult::error();
     sum += ret;
   }
   {
     const auto ret = reader_(flowFile, InputStreamPipe{*out});
     if (!ret) return ret;
-    sum += gsl::narrow<size_t>(*ret);
+    sum += gsl::narrow<size_t>(ret.toI64());
   }
-  return io::i64ToExpectedCallbackReturn(gsl::narrow<int64_t>(sum));
+  return io::IoResult::fromSizeT(sum);
 }
 
 }  // namespace org::apache::nifi::minifi

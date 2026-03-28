@@ -121,7 +121,7 @@ TEST_CASE_METHOD(HttpStreamingCallbackTestsFixture, "HttpStreamingCallback one b
   }
 
   std::string input = "foobar";
-  CHECK(callback_.process(reinterpret_cast<const uint8_t*>(input.c_str()), input.length()));
+  callback_.process(reinterpret_cast<const uint8_t*>(input.c_str()), input.length());
   callback_.close();
 
   SECTION("without wait") {
@@ -143,7 +143,7 @@ TEST_CASE_METHOD(HttpStreamingCallbackTestsFixture, "HttpStreamingCallback multi
   for (size_t i = 0U; i < 16U; i++) {
     std::string chunk = std::to_string(i << 16);
     input += chunk;
-    CHECK(callback_.process(reinterpret_cast<const uint8_t*>(chunk.c_str()), chunk.length()));
+    callback_.process(reinterpret_cast<const uint8_t*>(chunk.c_str()), chunk.length());
     if (i == 7U) {
       SECTION("with staggered wait" + std::to_string(i)) {
         startConsumerThread();

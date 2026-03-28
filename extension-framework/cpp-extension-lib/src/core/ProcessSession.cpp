@@ -17,7 +17,6 @@
 
 #include "api/core/ProcessSession.h"
 
-#include "../../../../../../../../Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Security.framework/Headers/cssmconfig.h"
 #include "api/core/FlowFile.h"
 #include "api/utils/minifi-c-utils.h"
 #include "io/InputStream.h"
@@ -96,10 +95,9 @@ void ProcessSession::write(FlowFile& flow_file, const io::OutputStreamCallback& 
       impl_,
       flow_file.get(),
       [](void* data, MinifiOutputStream* output) -> int64_t {
-        const nonstd::expected<uint64_t, MinifiIoStatus> result =
+        const auto result =
             (*static_cast<const io::OutputStreamCallback*>(data))(std::make_shared<MinifiOutputStreamWrapper>(output));
-        if (!result.has_value()) { return result.error(); }
-        return gsl::narrow<int64_t>(*result);
+        return result.toI64();
       },
       const_cast<io::OutputStreamCallback*>(&callback));
   if (status != MINIFI_STATUS_SUCCESS) { throw minifi::Exception(minifi::FILE_OPERATION_EXCEPTION, "Failed to process flowfile content"); }
@@ -110,10 +108,9 @@ void ProcessSession::read(FlowFile& flow_file, const io::InputStreamCallback& ca
       impl_,
       flow_file.get(),
       [](void* data, MinifiInputStream* input) -> int64_t {
-        const nonstd::expected<uint64_t, MinifiIoStatus> result =
+        const auto result =
             (*static_cast<const io::InputStreamCallback*>(data))(std::make_shared<MinifiInputStreamWrapper>(input));
-        if (!result.has_value()) { return result.error(); }
-        return gsl::narrow<int64_t>(*result);
+        return result.toI64();
       },
       const_cast<io::InputStreamCallback*>(&callback));
   if (status != MINIFI_STATUS_SUCCESS) { throw minifi::Exception(minifi::FILE_OPERATION_EXCEPTION, "Failed to process flowfile content"); }
@@ -153,21 +150,18 @@ void ProcessSession::writeBuffer(FlowFile& flow_file, std::span<const char> buff
 }
 
 void ProcessSession::writeBuffer(FlowFile& flow_file, std::span<const std::byte> buffer) {
-  write(flow_file, [buffer](const std::shared_ptr<io::OutputStream>& output_stream) -> nonstd::expected<uint64_t, MinifiIoStatus> {
+  write(flow_file, [buffer](const std::shared_ptr<io::OutputStream>& output_stream) -> io::IoResult {
     const auto write_status = output_stream->write(buffer);
-    if (io::isError(write_status)) {
-      return nonstd::make_unexpected(static_cast<MinifiIoStatus>(write_status));
-    }
-    return gsl::narrow<uint64_t>(write_status);
+    return io::IoResult::fromSizeT(write_status);
   });
 }
 
 std::vector<std::byte> ProcessSession::readBuffer(FlowFile& flow_file) {
   std::vector<std::byte> result;
-  read(flow_file, [&result](const std::shared_ptr<io::InputStream>& input_stream) -> io::ExpectedCallbackReturn{
+  read(flow_file, [&result](const std::shared_ptr<io::InputStream>& input_stream) -> io::IoResult {
     result.resize(input_stream->size());
-    const auto read_status = gsl::narrow<int64_t>(input_stream->read(result));
-    return io::i64ToExpectedCallbackReturn(read_status);
+    const auto read_status = input_stream->read(result);
+    return io::IoResult::fromSizeT(read_status);
   });
   return result;
 }
