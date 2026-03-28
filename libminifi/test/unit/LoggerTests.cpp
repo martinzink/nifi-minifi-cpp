@@ -202,7 +202,7 @@ std::string decompress(const std::unique_ptr<minifi::io::InputStream>& input) {
   input->seek(0);
   auto output = std::make_unique<minifi::io::BufferStream>();
   auto decompressor = std::make_shared<minifi::io::ZlibDecompressStream>(gsl::make_not_null(output.get()));
-  minifi::internal::pipe(*input, *decompressor);
+  CHECK(minifi::internal::pipe(*input, *decompressor));
   decompressor->close();
   return utils::span_to<std::string>(utils::as_span<const char>(output->getBuffer()));
 }

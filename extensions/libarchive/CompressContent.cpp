@@ -131,12 +131,12 @@ void CompressContent::processFlowFile(const std::shared_ptr<core::FlowFile>& flo
   std::shared_ptr<core::FlowFile> result = session.create(flowFile.get());
   bool success = true;
   if (encapsulateInTar_) {
-    std::function<int64_t(const std::shared_ptr<io::InputStream>&, const std::shared_ptr<io::OutputStream>&)> transformer;
+    std::function<io::ExpectedCallbackReturn(const std::shared_ptr<io::InputStream>&, const std::shared_ptr<io::OutputStream>&)> transformer;
 
     if (compressMode_ == compress_content::CompressionMode::compress) {
       std::string filename;
       flowFile->getAttribute(core::SpecialFlowAttribute::FILENAME, filename);
-      transformer = [&, filename] (const std::shared_ptr<io::InputStream>& in, const std::shared_ptr<io::OutputStream>& out) -> int64_t {
+      transformer = [&, filename] (const std::shared_ptr<io::InputStream>& in, const std::shared_ptr<io::OutputStream>& out) -> io::ExpectedCallbackReturn {
         io::WriteArchiveStreamImpl compressor(compressLevel_, compressFormat, out);
         if (!compressor.newEntry({filename, in->size()})) {
           return -1;
@@ -144,14 +144,14 @@ void CompressContent::processFlowFile(const std::shared_ptr<core::FlowFile>& flo
         return internal::pipe(*in, compressor);
       };
     } else {
-      transformer = [&] (const std::shared_ptr<io::InputStream>& in, const std::shared_ptr<io::OutputStream>& out) -> int64_t {
+      transformer = [&] (const std::shared_ptr<io::InputStream>& in, const std::shared_ptr<io::OutputStream>& out) -> io::ExpectedCallbackReturn {
         io::ReadArchiveStreamImpl decompressor(in);
         if (!decompressor.nextEntry()) {
           success = false;
           return 0;  // prevents a session rollback
         }
         auto ret = internal::pipe(decompressor, *out);
-        if (ret < 0) {
+        if (!ret) {
           success = false;
           return 0;  // prevents a session rollback
         }
@@ -159,9 +159,9 @@ void CompressContent::processFlowFile(const std::shared_ptr<core::FlowFile>& flo
       };
     }
     session.write(result, [&] (const auto& out) {
-      return session.read(flowFile, [&] (const auto& in) {
+      return io::i64ToExpectedCallbackReturn(session.read(flowFile, [&] (const auto& in) {
         return transformer(in, out);
-      });
+      }));
     });
   } else {
     CompressContent::GzipWriteCallback callback(compressMode_, compressLevel_, flowFile, session);

@@ -73,13 +73,12 @@ void FetchAzureDataLakeStorage::onTrigger(core::ProcessContext& context, core::P
 
   auto fetched_flow_file = session.create(flow_file.get());
   std::optional<uint64_t> result;
-  session.write(fetched_flow_file, [&, this](const std::shared_ptr<io::OutputStream>& output_stream) -> int64_t {
+  session.write(fetched_flow_file, [&, this](const std::shared_ptr<io::OutputStream>& output_stream) -> io::ExpectedCallbackReturn {
     result = azure_data_lake_storage_.fetchFile(*params, *output_stream);
     if (!result) {
-      return 0;
+      return 0;  // TODO(mzink) what to do with you? cancel maybe?
     }
-
-    return gsl::narrow<int64_t>(*result);
+    return *result;
   });
 
   if (result == std::nullopt) {

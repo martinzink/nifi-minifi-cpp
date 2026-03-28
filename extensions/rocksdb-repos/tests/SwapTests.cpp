@@ -58,12 +58,12 @@ class OutputProcessor : public core::ProcessorImpl {
     auto id = std::to_string(next_id_++);
     auto ff = session.create();
     ff->addAttribute("index", id);
-    session.write(ff, [&] (const std::shared_ptr<minifi::io::OutputStream>& output) -> int64_t {
+    session.write(ff, [&] (const std::shared_ptr<minifi::io::OutputStream>& output) -> io::ExpectedCallbackReturn {
       auto ret = output->write(as_bytes(std::span(id)));
       if (minifi::io::isError(ret)) {
-        return -1;
+        return nonstd::make_unexpected(MINIFI_IO_ERROR);
       }
-      return gsl::narrow<int64_t>(ret);
+      return minifi::io::i64ToExpectedCallbackReturn(gsl::narrow<int64_t>(ret));
     });
     session.transfer(ff, Success);
     flow_files_.push_back(ff);

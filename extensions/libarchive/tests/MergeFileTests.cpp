@@ -108,8 +108,8 @@ class FixedBuffer {
     return gsl::narrow<int64_t>(total_read);
   }
 
-  int64_t operator()(const std::shared_ptr<minifi::io::InputStream>& stream) {
-    return write(*stream, capacity_);
+  minifi::io::ExpectedCallbackReturn operator()(const std::shared_ptr<minifi::io::InputStream>& stream) {
+    return minifi::io::i64ToExpectedCallbackReturn(write(*stream, capacity_));
   }
 
  private:
@@ -763,7 +763,7 @@ TEST_CASE("FlowFile serialization", "[testFlowFileSerialization]") {
       writeString(demarcator, result);
     }
     first = false;
-    usedSerializer->serialize(ff, result);
+    CHECK(usedSerializer->serialize(ff, result));
   }
   writeString(footer, result);
 

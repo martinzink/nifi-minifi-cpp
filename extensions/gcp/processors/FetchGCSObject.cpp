@@ -37,7 +37,7 @@ class FetchFromGCSCallback {
         client_(client) {
   }
 
-  int64_t operator()(const std::shared_ptr<io::OutputStream>& stream) {
+  io::ExpectedCallbackReturn operator()(const std::shared_ptr<io::OutputStream>& stream) {
     auto reader = client_.ReadObject(bucket_, key_, encryption_key_, generation_, gcs::IfGenerationNotMatch(0));
     auto set_members = gsl::finally([&]{
       status_ = reader.status();
@@ -50,7 +50,7 @@ class FetchFromGCSCallback {
     std::string contents{std::istreambuf_iterator<char>{reader}, {}};
     const auto write_ret = gsl::narrow<int64_t>(stream->write(gsl::make_span(contents).as_span<std::byte>()));
     reader.Close();
-    return write_ret;
+    return io::i64ToExpectedCallbackReturn(write_ret);
   }
 
   [[nodiscard]] auto getStatus() const noexcept { return status_; }

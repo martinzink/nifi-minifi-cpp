@@ -248,7 +248,7 @@ class ReadCallback {
   ReadCallback& operator=(const ReadCallback&) = delete;
   ~ReadCallback() = default;
 
-  int64_t operator()(const std::shared_ptr<io::InputStream>& stream) {
+  io::ExpectedCallbackReturn operator()(const std::shared_ptr<io::InputStream>& stream) {
     std::vector<std::byte> buffer;
 
     buffer.resize(max_seg_size_);
@@ -703,7 +703,7 @@ void PublishKafka::onTrigger(core::ProcessContext& context, core::ProcessSession
 
     if (!callback.called_) {
       // workaround: call callback since ProcessSession doesn't do so for empty flow files without resource claims
-      callback(nullptr);
+      const auto lmp = callback(nullptr); // TODO(mzink)
     }
 
     if (flowFile->getSize() == 0 && failEmptyFlowFiles) {

@@ -250,7 +250,7 @@ TEST_CASE("TestSiteToSiteVerifySend using flowfile data", "[S2S]") {
   session->write(flow_file, [&](const std::shared_ptr<io::OutputStream>& output_stream) {
     std::span<const std::byte> span{reinterpret_cast<const std::byte*>(payload.data()), payload.size()};
     output_stream->write(span);
-    return payload.size();
+    return io::i64ToExpectedCallbackReturn(span.size());
   });
   flow_file->updateAttribute("filename", "myfile");
   flow_file->updateAttribute("flow.id", "test");
@@ -339,7 +339,7 @@ void initializeMockRemoteClientReceiveDataResponses(SiteToSiteResponder& collect
 
       io::BufferStream compressed_stream;
       io::ZlibCompressStream compression_stream(gsl::make_not_null(&compressed_stream), io::ZlibCompressionFormat::ZLIB, Z_BEST_SPEED);
-      internal::pipe(buffer_stream, compression_stream);
+      CHECK(internal::pipe(buffer_stream, compression_stream));
       compression_stream.close();
       std::vector<std::byte> compressed_data;
       auto compressed_size = compressed_stream.size();

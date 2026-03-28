@@ -109,7 +109,7 @@ void MotionDetector::onTrigger(core::ProcessContext& context, core::ProcessSessi
   }
   cv::Mat frame;
 
-  session.read(flow_file, [&frame](const std::shared_ptr<io::InputStream>& input_stream) -> int64_t {
+  session.read(flow_file, [&frame](const std::shared_ptr<io::InputStream>& input_stream) -> io::ExpectedCallbackReturn {
     std::vector<uchar> image_buf;
     image_buf.resize(input_stream->size());
     const auto ret = input_stream->read(as_writable_bytes(std::span(image_buf)));
@@ -117,7 +117,7 @@ void MotionDetector::onTrigger(core::ProcessContext& context, core::ProcessSessi
       throw std::runtime_error("ImageReadCallback failed to fully read flow file input stream");
     }
     frame = cv::imdecode(image_buf, -1);
-    return gsl::narrow<int64_t>(ret);
+    return io::i64ToExpectedCallbackReturn(gsl::narrow<int64_t>(ret));
   });
 
   if (frame.empty()) {
@@ -148,11 +148,11 @@ void MotionDetector::onTrigger(core::ProcessContext& context, core::ProcessSessi
 
   session.putAttribute(*flow_file, "filename", filename);
 
-  session.write(flow_file, [&frame, this](const auto& output_stream) -> int64_t {
+  session.write(flow_file, [&frame, this](const auto& output_stream) -> io::ExpectedCallbackReturn {
     std::vector<uchar> image_buf;
     imencode(image_encoding_, frame, image_buf);
     const auto ret = output_stream->write(image_buf.data(), image_buf.size());
-    return io::isError(ret) ? -1 : gsl::narrow<int64_t>(ret);
+    return io::i64ToExpectedCallbackReturn(gsl::narrow<int64_t>(ret));
   });
   session.transfer(flow_file, Success);
   logger_->log_trace("Finish motion detecting");

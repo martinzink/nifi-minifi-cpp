@@ -698,7 +698,7 @@ std::vector<std::byte> TestPlan::getContentAsBytes(const core::FlowFile& flow_fi
   const auto content_claim = flow_file.getResourceClaim();
   const auto content_stream = content_repo_->read(*content_claim);
   const auto output_stream = std::make_shared<minifi::io::BufferStream>();
-  minifi::internal::pipe(*content_stream, *output_stream);
+  CHECK(minifi::internal::pipe(*content_stream, *output_stream));
   return ranges::to<std::vector>(output_stream->getBuffer());
 }
 
@@ -706,7 +706,7 @@ std::string TestPlan::getContent(const minifi::core::FlowFile& file) const {
   const auto content_claim = file.getResourceClaim();
   const auto content_stream = content_repo_->read(*content_claim);
   const auto output_stream = std::make_shared<minifi::io::BufferStream>();
-  minifi::internal::pipe(*content_stream, *output_stream);
+  CHECK(minifi::internal::pipe(*content_stream, *output_stream));
   return utils::span_to<std::string>(minifi::utils::as_span<const char>(output_stream->getBuffer()));
 }
 

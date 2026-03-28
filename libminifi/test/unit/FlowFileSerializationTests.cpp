@@ -48,9 +48,9 @@ TEST_CASE("Payload Serializer", "[testPayload]") {
   flowFile->addAttribute("second", "two");
 
   minifi::PayloadSerializer serializer([&] (const std::shared_ptr<core::FlowFile>&, const minifi::io::InputStreamCallback& cb) {
-    return cb(contentStream);
+    return minifi::io::expectedCallbackReturnToI64(cb(contentStream));
   });
-  serializer.serialize(flowFile, result);
+  CHECK(serializer.serialize(flowFile, result));
   const auto serialized = utils::span_to<std::string>(utils::as_span<const char>(result->getBuffer()));
   REQUIRE(serialized == content);
 }
@@ -68,9 +68,9 @@ TEST_CASE("FFv3 Serializer", "[testFFv3]") {
   flowFile->addAttribute("second", "two");
 
   minifi::FlowFileV3Serializer serializer([&] (const std::shared_ptr<core::FlowFile>&, const minifi::io::InputStreamCallback& cb) {
-    return cb(contentStream);
+    return minifi::io::expectedCallbackReturnToI64(cb(contentStream));
   });
-  serializer.serialize(flowFile, result);
+  CHECK(serializer.serialize(flowFile, result));
   const auto serialized = utils::span_to<std::string>(utils::as_span<const char>(result->getBuffer()));
 
   std::string expected = "NiFiFF3";

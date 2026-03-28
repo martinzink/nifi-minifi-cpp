@@ -142,7 +142,7 @@ class ConsumeMQTT : public processors::AbstractMQTTProcessor {
       , logger_(std::move(logger)) {
     }
 
-    int64_t operator() (const std::shared_ptr<io::OutputStream>& stream);
+    io::ExpectedCallbackReturn operator() (const std::shared_ptr<io::OutputStream>& stream);
 
     [[nodiscard]] bool getSuccessStatus() const {
       return success_status_;

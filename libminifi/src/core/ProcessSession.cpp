@@ -185,11 +185,11 @@ std::shared_ptr<core::FlowFile> ProcessSessionImpl::clone(const FlowFile& parent
   if (record) {
     logger_->log_debug("Cloned parent flow files {} to {}, with {}:{}", parent.getUUIDStr(), record->getUUIDStr(), offset, size);
     if (parent.getResourceClaim()) {
-      write(record, [&] (const std::shared_ptr<io::OutputStream>& output) -> int64_t {
-        return read(parent, [&] (const std::shared_ptr<io::InputStream>& input) -> int64_t {
+      write(record, [&] (const std::shared_ptr<io::OutputStream>& output) -> io::ExpectedCallbackReturn {
+        return io::i64ToExpectedCallbackReturn(read(parent, [&] (const std::shared_ptr<io::InputStream>& input) -> io::ExpectedCallbackReturn {
           io::StreamSlice slice(input, offset, size);
-          return minifi::internal::pipe(slice, *output);
-        });
+          return io::expectedCallbackReturnToI64(internal::pipe(slice, *output));
+        }));
       });
     }
     provenance_report_->clone(parent, *record);
@@ -258,15 +258,17 @@ void ProcessSessionImpl::write(core::FlowFile &flow, const io::OutputStreamCallb
       throw Exception(FILE_OPERATION_EXCEPTION, "Failed to open flowfile content for write");
     }
     const auto callback_result = callback(stream);
-    if (callback_result == MinifiIoStatus::MINIFI_IO_CANCEL) {
-      stream->close();
-      content_session_->remove(claim);
-      claim.reset();
-      return;
-    }
+    if (!callback_result.has_value()) {
+      if (callback_result.error() == MinifiIoStatus::MINIFI_IO_CANCEL) {
+        stream->close();
+        content_session_->remove(claim);
+        claim.reset();
+        return;
+      }
 
-    if (callback_result < 0) {
-      throw Exception(FILE_OPERATION_EXCEPTION, "Failed to process flowfile content");
+      if (callback_result.error() < 0) {
+        throw Exception(FILE_OPERATION_EXCEPTION, "Failed to process flowfile content");
+      }
     }
 
     flow.setSize(stream->size());
@@ -295,8 +297,8 @@ void ProcessSessionImpl::writeBuffer(const std::shared_ptr<core::FlowFile>& flow
 
 void ProcessSessionImpl::writeBuffer(const std::shared_ptr<core::FlowFile>& flow_file, std::span<const std::byte> buffer) {
   write(flow_file, [buffer](const std::shared_ptr<io::OutputStream>& output_stream) {
-    const auto write_status = output_stream->write(buffer);
-    return io::isError(write_status) ? -1 : gsl::narrow<int64_t>(write_status);
+    const auto write_status = gsl::narrow<int64_t>(output_stream->write(buffer));
+    return io::i64ToExpectedCallbackReturn(write_status);
   });
 }
 
@@ -326,7 +328,7 @@ void ProcessSessionImpl::append(const std::shared_ptr<core::FlowFile> &flow, con
     // this prevents an issue if we write, above, with zero length.
     if (stream_size_before_callback > 0)
       stream->seek(stream_size_before_callback);
-    if (callback(stream) < 0) {
+    if (!callback(stream).has_value()) {
       throw Exception(FILE_OPERATION_EXCEPTION, "Failed to process flowfile content");
     }
     flow->setSize(flow_file_size + (stream->size() - stream_size_before_callback));
@@ -352,8 +354,8 @@ void ProcessSessionImpl::appendBuffer(const std::shared_ptr<core::FlowFile>& flo
 void ProcessSessionImpl::appendBuffer(const std::shared_ptr<core::FlowFile>& flow_file, std::span<const std::byte> buffer) {
   if (buffer.empty()) { return; }
   append(flow_file, [buffer](const std::shared_ptr<io::OutputStream>& output_stream) {
-    const auto write_status = output_stream->write(buffer);
-    return io::isError(write_status) ? -1 : gsl::narrow<int64_t>(write_status);
+    const auto write_status = gsl::narrow<int64_t>(output_stream->write(buffer));
+    return io::i64ToExpectedCallbackReturn(write_status);
   });
 }
 
@@ -387,13 +389,13 @@ int64_t ProcessSessionImpl::read(const core::FlowFile& flow_file, const io::Inpu
     }
 
     auto ret = callback(flow_file_stream);
-    if (ret < 0) {
+    if (!ret.has_value()) {
       throw Exception(FILE_OPERATION_EXCEPTION, "Failed to process flowfile content");
     }
     if (metrics_) {
-      metrics_->bytesRead() += ret;
+      metrics_->bytesRead() += *ret;
     }
-    return ret;
+    return *ret;
   } catch (const std::exception& exception) {
     logger_->log_debug("Caught Exception {}", exception.what());
     throw;
@@ -456,14 +458,14 @@ int64_t ProcessSessionImpl::readWrite(const std::shared_ptr<core::FlowFile> &flo
 
 detail::ReadBufferResult ProcessSessionImpl::readBuffer(const std::shared_ptr<core::FlowFile>& flow) {
   detail::ReadBufferResult result;
-  result.status = read(flow, [&result, this](const std::shared_ptr<io::InputStream>& input_stream) {
+  result.status = read(flow, [&result, this](const std::shared_ptr<io::InputStream>& input_stream) -> io::ExpectedCallbackReturn {
     result.buffer.resize(input_stream->size());
     const auto read_status = input_stream->read(result.buffer);
     if (read_status != result.buffer.size()) {
       logger_->log_error("readBuffer: {} bytes were requested from the stream but {} bytes were read. Rolling back.", result.buffer.size(), read_status);
       throw Exception(PROCESSOR_EXCEPTION, "Failed to read the entire FlowFile.");
     }
-    return gsl::narrow<int64_t>(read_status);
+    return gsl::narrow<uint64_t>(read_status);
   });
   return result;
 }

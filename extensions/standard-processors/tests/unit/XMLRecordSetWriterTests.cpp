@@ -58,7 +58,7 @@ class XMLRecordSetWriterTestFixture {
       std::vector<std::byte> buffer(input_stream->size());
       input_stream->read(buffer);
       xml_content = std::string(reinterpret_cast<const char*>(buffer.data()), buffer.size());
-      return gsl::narrow<int64_t>(input_stream->size());
+      return minifi::io::i64ToExpectedCallbackReturn(gsl::narrow<int64_t>(input_stream->size()));
     });
     return xml_content;
   }

@@ -31,7 +31,7 @@ FileReaderCallback::FileReaderCallback(std::filesystem::path file_path, const si
     logger_(core::logging::LoggerFactory<FileReaderCallback>::getLogger()) {
 }
 
-int64_t FileReaderCallback::operator()(const std::shared_ptr<io::OutputStream>& output_stream) const {
+io::ExpectedCallbackReturn FileReaderCallback::operator()(const std::shared_ptr<io::OutputStream>& output_stream) const {
   std::vector<char> buffer(buffer_size_);
   uint64_t num_bytes_written = 0;
 
@@ -54,7 +54,7 @@ int64_t FileReaderCallback::operator()(const std::shared_ptr<io::OutputStream>& 
   input_stream.close();
 
   logger_->log_debug("Finished reading {} bytes from the file", num_bytes_written);
-  return gsl::narrow<int64_t>(num_bytes_written);
+  return io::i64ToExpectedCallbackReturn(gsl::narrow<int64_t>(num_bytes_written));
 }
 
 }  // namespace org::apache::nifi::minifi::utils

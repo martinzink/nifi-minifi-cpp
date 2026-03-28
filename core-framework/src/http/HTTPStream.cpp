@@ -64,7 +64,7 @@ size_t HttpStream::write(const uint8_t* value, size_t size) {
     write_started_ = true;
   }
   if (auto http_callback = dynamic_cast<HttpStreamingCallback*>(http_client_->getUploadCallback()))
-    http_callback->process(value, size);
+    const auto asd = http_callback->process(value, size); // TODO(mzink)
   else
     throw std::runtime_error("Invalid http streaming callback");
   return size;
