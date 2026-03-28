@@ -428,7 +428,7 @@ int64_t ProcessSessionImpl::readWrite(const std::shared_ptr<core::FlowFile> &flo
       throw Exception(FILE_OPERATION_EXCEPTION, "Failed to open flowfile content for write");
     }
 
-    auto read_write_result = callback(input_stream, output_stream);
+    const auto read_write_result = callback(input_stream, output_stream);
     if (!read_write_result) {
       throw Exception(FILE_OPERATION_EXCEPTION, "Failed to process flowfile content");
     }
@@ -436,15 +436,15 @@ int64_t ProcessSessionImpl::readWrite(const std::shared_ptr<core::FlowFile> &flo
     input_stream->close();
     output_stream->close();
 
-    flow->setSize(gsl::narrow<uint64_t>(read_write_result->bytes_written));
+    flow->setSize(gsl::narrow<uint64_t>(read_write_result.bytesWritten()));
     flow->setOffset(0);
     flow->setResourceClaim(output_claim);
     if (metrics_) {
-      metrics_->bytesWritten() += read_write_result->bytes_written;
-      metrics_->bytesRead() += read_write_result->bytes_read;
+      metrics_->bytesWritten() += read_write_result.bytesWritten();
+      metrics_->bytesRead() += read_write_result.bytesRead();
     }
 
-    return read_write_result->bytes_written;
+    return gsl::narrow<int64_t>(read_write_result.bytesWritten());
   } catch (const std::exception& exception) {
     logger_->log_debug("Caught exception during process session readWrite, type: {}, what: {}", typeid(exception).name(), exception.what());
     throw;
