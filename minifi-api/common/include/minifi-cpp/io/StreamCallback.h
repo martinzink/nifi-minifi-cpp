@@ -21,7 +21,6 @@
 #include <memory>
 #include <optional>
 
-#include "../../../../../../../../../Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Security.framework/Headers/cssmconfig.h"
 #include "../../minifi-api/include/minifi-c/minifi-c.h"
 #include "Stream.h"
 #include "minifi-cpp/utils/gsl.h"
