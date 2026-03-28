@@ -37,7 +37,7 @@ struct ReadWriteResult {
 };
 
 class IoResult {
-public:
+ public:
   IoResult() = delete;
   IoResult(const IoResult&) = default;
   IoResult(IoResult&&) = default;
@@ -46,66 +46,45 @@ public:
 
   virtual ~IoResult() = default;
 
-  static IoResult error() {
-    return IoResult(nonstd::make_unexpected(MINIFI_IO_ERROR));
-  }
-  static IoResult cancelled() {
-    return IoResult(nonstd::make_unexpected(MINIFI_IO_CANCEL));
-  }
+  static IoResult error() { return IoResult(nonstd::make_unexpected(MINIFI_IO_ERROR)); }
+  static IoResult cancelled() { return IoResult(nonstd::make_unexpected(MINIFI_IO_CANCEL)); }
 
   static IoResult fromI64(int64_t i64_val) {
-    if (i64_val < 0) {
-      return IoResult(nonstd::make_unexpected(static_cast<MinifiIoStatus>(i64_val)));
-    }
+    if (i64_val < 0) { return IoResult(nonstd::make_unexpected(static_cast<MinifiIoStatus>(i64_val))); }
     return IoResult(gsl::narrow<uint64_t>(i64_val));
   }
 
   static IoResult fromSizeT(size_t val) {
-    if (isError(val)) {
-      return IoResult::error();
-    }
+    if (isError(val)) { return IoResult::error(); }
     return IoResult(gsl::narrow<uint64_t>(val));
   }
 
-  static IoResult fromU64(uint64_t u64_val) {
-    return IoResult(u64_val);
-  }
+  static IoResult fromU64(uint64_t u64_val) { return IoResult(u64_val); }
 
   [[nodiscard]] int64_t toI64() const {
-    if (result_.has_value()) {
-      return gsl::narrow<int64_t>(*result_);
-    }
+    if (result_.has_value()) { return gsl::narrow<int64_t>(*result_); }
     return result_.error();
   }
 
-  [[nodiscard]] bool is_cancelled() const {
-    return !result_ && result_.error() == MINIFI_IO_CANCEL;
-  }
+  [[nodiscard]] bool is_cancelled() const { return !result_ && result_.error() == MINIFI_IO_CANCEL; }
 
-  bool operator()() const {
-    return result_.has_value();
-  }
+  bool operator()() const { return result_.has_value(); }
 
-  bool operator!() const {
-    return !result_.has_value();
-  }
+  bool operator!() const { return !result_.has_value(); }
 
-  uint64_t operator*() const {
-    return *result_;
-  }
+  uint64_t operator*() const { return *result_; }
 
-  nonstd::expected<uint64_t, MinifiIoStatus> inner() const {
-    return result_;
-  }
+  nonstd::expected<uint64_t, MinifiIoStatus> inner() const { return result_; }
 
-private:
+ private:
   explicit IoResult(nonstd::expected<uint64_t, MinifiIoStatus> result) : result_(std::move(result)) {}
 
   nonstd::expected<uint64_t, MinifiIoStatus> result_;
 };
 
 using OutputStreamCallback = std::function<IoResult(const std::shared_ptr<OutputStream>& output_stream)>;
-using InputStreamCallback =  std::function<IoResult(const std::shared_ptr<InputStream>& output_stream)>;
-using InputOutputStreamCallback = std::function<std::optional<ReadWriteResult>(const std::shared_ptr<InputStream>& input_stream, const std::shared_ptr<OutputStream>& output_stream)>;
+using InputStreamCallback = std::function<IoResult(const std::shared_ptr<InputStream>& output_stream)>;
+using InputOutputStreamCallback = std::function<std::optional<ReadWriteResult>(const std::shared_ptr<InputStream>& input_stream,
+    const std::shared_ptr<OutputStream>& output_stream)>;
 
 }  // namespace org::apache::nifi::minifi::io
