@@ -41,7 +41,7 @@ std::shared_ptr<io::BaseStream> ContentSessionImpl::append(const std::shared_ptr
   auto new_claim = create();
   auto output = write(new_claim);
   io::StreamSlice input(read(resource_id), 0, offset);
-  const auto pipe_result = internal::pipe(input, *output);  // TODO(mzink) what to do with you?
+  internal::pipe(input, *output);
   on_copy(new_claim);
   return output;
 }

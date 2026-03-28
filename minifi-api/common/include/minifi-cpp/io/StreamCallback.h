@@ -95,6 +95,10 @@ public:
     return *result_;
   }
 
+  nonstd::expected<uint64_t, MinifiIoStatus> inner() const {
+    return result_;
+  }
+
 private:
   explicit IoResult(nonstd::expected<uint64_t, MinifiIoStatus> result) : result_(std::move(result)) {}
 

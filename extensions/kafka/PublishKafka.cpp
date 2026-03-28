@@ -703,7 +703,7 @@ void PublishKafka::onTrigger(core::ProcessContext& context, core::ProcessSession
 
     if (!callback.called_) {
       // workaround: call callback since ProcessSession doesn't do so for empty flow files without resource claims
-      const auto lmp = callback(nullptr); // TODO(mzink)
+      callback(nullptr);
     }
 
     if (flowFile->getSize() == 0 && failEmptyFlowFiles) {
