@@ -75,14 +75,14 @@ class PrettyJsonOutputCallback {
   explicit PrettyJsonOutputCallback(rapidjson::Document&& root, std::optional<uint8_t> decimal_places)
       : root_(std::move(root)), decimal_places_(decimal_places) {}
 
-  int64_t operator()(const std::shared_ptr<io::OutputStream>& stream) const {
+  io::IoResult operator()(const std::shared_ptr<io::OutputStream>& stream) const {
     rapidjson::StringBuffer buffer;
     rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
     if (decimal_places_.has_value())
       writer.SetMaxDecimalPlaces(decimal_places_.value());
     root_.Accept(writer);
     const auto write_return = stream->write(reinterpret_cast<const uint8_t*>(buffer.GetString()), buffer.GetSize());
-    return !io::isError(write_return) ? gsl::narrow<int64_t>(write_return) : -1;
+    return io::IoResult::fromSizeT(write_return);
   }
 
  protected:
