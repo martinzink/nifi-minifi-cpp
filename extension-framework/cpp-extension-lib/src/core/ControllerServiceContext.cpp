@@ -15,31 +15,22 @@
  * limitations under the License.
  */
 
-#pragma once
-
-#include <string>
-
-#include "minifi-c.h"
-#include "nonstd/expected.hpp"
-#include "minifi-cpp/core/PropertyDefinition.h"
-#include "api/core/FlowFile.h"
+#include "api/core/ControllerServiceContext.h"
+#include "api/utils/minifi-c-utils.h"
 
 namespace org::apache::nifi::minifi::api::core {
 
-class ProcessContext {
- public:
-  explicit ProcessContext(MinifiProcessContext* impl): impl_(impl) {}
+nonstd::expected<std::string, std::error_code> ControllerServiceContext::getProperty(const std::string_view name) const {
+  std::optional<std::string> value;
+  const MinifiStatus status = MinifiControllerServiceContextGetProperty(impl_, utils::toStringView(name),
+    [] (void* data, const MinifiStringView result) {
+      (*static_cast<std::optional<std::string>*>(data)) = std::string(result.data, result.length);
+    }, &value);
 
-  nonstd::expected<std::string, std::error_code> getProperty(std::string_view name, const FlowFile* flow_file = nullptr) const;
-  nonstd::expected<std::string, std::error_code> getProperty(const minifi::core::PropertyReference& property_reference, const FlowFile* flow_file = nullptr) const {
-    return getProperty(property_reference.name, flow_file);
+  if (!value) {
+    return nonstd::make_unexpected(utils::make_error_code(status));
   }
-  nonstd::expected<MinifiControllerService*, std::error_code> getControllerService(std::string_view controller_service_name, std::string_view controller_service_class) const;
-
-  bool hasNonEmptyProperty(std::string_view name) const;
-
- private:
-  MinifiProcessContext* impl_;
-};
+  return value.value();
+}
 
 }  // namespace org::apache::nifi::minifi::api::core
