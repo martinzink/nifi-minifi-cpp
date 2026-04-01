@@ -31,7 +31,7 @@ namespace org::apache::nifi::minifi::extensions::llamacpp::processors {
 MinifiStatus RunLlamaCppInference::onScheduleImpl(api::core::ProcessContext& context) {
   model_path_.clear();
   model_path_ = api::utils::parseProperty(context, ModelPath);
-  system_prompt_ = context.getProperty(SystemPrompt).value_or("");
+  system_prompt_ = api::utils::parseOptionalProperty(context, SystemPrompt).value_or("");
 
   LlamaSamplerParams llama_sampler_params;
   llama_sampler_params.temperature = api::utils::parseOptionalFloatProperty(context, Temperature);
