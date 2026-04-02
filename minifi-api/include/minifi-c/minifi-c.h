@@ -41,6 +41,8 @@ extern "C" {
 #define MINIFI_CREATE_EXTENSION_FN MinifiCreateExtension
 #endif
 
+#define MINIFI_SSL_CONTEXT_SERVICE_API "org.apache.nifi.minifi.controllers.SSLContextServiceInterface"
+
 enum : uint32_t {
   MINIFI_API_VERSION = 1
 };
@@ -102,6 +104,8 @@ typedef struct MinifiAgent MinifiAgent;
 
 typedef struct MinifiControllerService MinifiControllerService;
 typedef struct MinifiControllerServiceContext MinifiControllerServiceContext;
+
+typedef struct MinifiSslContextService MinifiSslContextService;
 
 typedef enum MinifiStatus : uint32_t {
   MINIFI_STATUS_SUCCESS = 0,
@@ -229,7 +233,20 @@ MinifiStatus MinifiProcessContextGetProperty(MinifiProcessContext* context, Mini
 MinifiBool MinifiProcessContextHasNonEmptyProperty(MinifiProcessContext* context, MinifiStringView property_name);
 
 MinifiStatus MinifiProcessContextGetControllerService(
-    MinifiProcessContext* process_context, MinifiStringView controller_service_name, MinifiStringView controller_service_type, void** controller_service_out);
+    MinifiProcessContext* process_context, MinifiStringView controller_service_name, MinifiStringView controller_service_type, MinifiControllerService** controller_service_out);
+void MinifiProcessContextGetDynamicProperties(MinifiProcessContext* context,
+    void (*cb)(void* user_ctx, MinifiStringView dynamic_property_name, MinifiStringView dynamic_property_value), void* user_ctx);
+MinifiStatus MinifiProcessContextGetSslContextService(MinifiProcessContext* process_context, MinifiStringView controller_service_name,
+    MinifiSslContextService** ssl_context_service);
+
+MinifiStatus MinifiSslContextServiceGetCertificateFile(MinifiSslContextService* ssl_context_service,
+    void (*cb)(void* user_ctx, MinifiStringView certificate_file), void* user_ctx);
+MinifiStatus MinifiSslContextServiceGetPassphrase(MinifiSslContextService* ssl_context_service,
+    void (*cb)(void* user_ctx, MinifiStringView passphrase), void* user_ctx);
+MinifiStatus MinifiSslContextServiceGetPrivateKeyFile(MinifiSslContextService* ssl_context_service,
+    void (*cb)(void* user_ctx, MinifiStringView private_key_file), void* user_ctx);
+MinifiStatus MinifiSslContextServiceGetCACertificate(MinifiSslContextService* ssl_context_service,
+    void (*cb)(void* user_ctx, MinifiStringView ca_certificate), void* user_ctx);
 
 void MinifiLoggerSetMaxLogSize(MinifiLogger*, int32_t);
 void MinifiLoggerLogString(MinifiLogger*, MinifiLogLevel, MinifiStringView);
@@ -239,6 +256,7 @@ MinifiLogLevel MinifiLoggerLevel(MinifiLogger*);
 MINIFI_OWNED MinifiFlowFile* MinifiProcessSessionGet(MinifiProcessSession*);
 MINIFI_OWNED MinifiFlowFile* MinifiProcessSessionCreate(MinifiProcessSession* session, MinifiFlowFile* parent_flowfile);
 
+MinifiStatus MinifiProcessSessionPenalize(MinifiProcessSession* session, MinifiFlowFile* flowfile);
 MinifiStatus MinifiProcessSessionTransfer(MinifiProcessSession* session, MINIFI_OWNED MinifiFlowFile* flowfile, MinifiStringView relationship_name);
 MinifiStatus MinifiProcessSessionRemove(MinifiProcessSession* session, MINIFI_OWNED MinifiFlowFile* flowfile);
 
@@ -252,10 +270,13 @@ size_t MinifiInputStreamSize(MinifiInputStream*);
 int64_t MinifiInputStreamRead(MinifiInputStream* stream, char* buffer, size_t size);
 int64_t MinifiOutputStreamWrite(MinifiOutputStream* stream, const char* data, size_t size);
 
-MinifiStatus MinifiFlowFileSetAttribute(MinifiProcessSession* session, MinifiFlowFile* flowfile, MinifiStringView attribute_name, const MinifiStringView* attribute_value);
-MinifiBool MinifiFlowFileGetAttribute(MinifiProcessSession* session, MinifiFlowFile* flowfile, MinifiStringView attribute_name,
+MinifiStatus MinifiProcessSessionSetFlowFileAttribute(MinifiProcessSession* session, MinifiFlowFile* flowfile, MinifiStringView attribute_name, const MinifiStringView* attribute_value);
+MinifiBool MinifiProcessSessionGetFlowFileAttribute(MinifiProcessSession* session, MinifiFlowFile* flowfile, MinifiStringView attribute_name,
                                       void(*cb)(void* user_ctx, MinifiStringView attribute_value), void* user_ctx);
-void MinifiFlowFileGetAttributes(MinifiProcessSession* session, MinifiFlowFile* flowfile, void(*cb)(void* user_ctx, MinifiStringView attribute_name, MinifiStringView attribute_value), void* user_ctx);
+void MinifiProcessSessionGetFlowFileAttributes(MinifiProcessSession* session, MinifiFlowFile* flowfile,
+    void (*cb)(void* user_ctx, MinifiStringView attribute_name, MinifiStringView attribute_value), void* user_ctx);
+uint64_t MinifiProcessSessionGetFlowFileSize(MinifiProcessSession* session, MinifiFlowFile* flowfile);
+MinifiStatus MinifiProcessSessionGetFlowFileId(MinifiProcessSession* session, MinifiFlowFile* flowfile, void(*cb)(void* user_ctx, MinifiStringView flow_file_id), void* user_ctx);
 
 MinifiStatus MinifiControllerServiceContextGetProperty(MinifiControllerServiceContext* context,
     MinifiStringView property_name,

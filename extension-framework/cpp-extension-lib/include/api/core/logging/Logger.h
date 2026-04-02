@@ -20,15 +20,14 @@
 #include <iostream>
 #include <string>
 
-#include "fmt/chrono.h"
 #include "minifi-c.h"
 #include "minifi-cpp/core/logging/Logger.h"
 
 namespace org::apache::nifi::minifi::api::core::logging {
 
-class Logger : public minifi::core::logging::Logger {
+class CffiLogger : public minifi::core::logging::Logger {
  public:
-  explicit Logger(MinifiLogger* impl): impl_(impl) {}
+  explicit CffiLogger(MinifiLogger* impl): impl_(impl) {}
 
   void set_max_log_size(int size) override;
   void log_string(minifi::core::logging::LOG_LEVEL level, std::string str) override;

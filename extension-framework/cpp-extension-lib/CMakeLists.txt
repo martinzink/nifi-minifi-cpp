@@ -24,4 +24,4 @@ target_include_directories(minifi-cpp-extension-lib PUBLIC include)
 target_link_libraries(minifi-cpp-extension-lib PUBLIC minifi-core-framework-common minifi-c-api)
 
 add_subdirectory(libtest)
-
+add_subdirectory(mocklib)

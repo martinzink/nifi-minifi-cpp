@@ -1,5 +1,5 @@
-#
 # Licensed to the Apache Software Foundation (ASF) under one
+#
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
 # regarding copyright ownership.  The ASF licenses this file
@@ -17,23 +17,8 @@
 # under the License.
 #
 
-if (NOT (ENABLE_ALL OR ENABLE_KAFKA))
-    return()
-endif ()
+file(GLOB SRC_FILES CONFIGURE_DEPENDS "src/*.cpp")
 
-include(Fetchlibrdkafka)
-
-include(${CMAKE_SOURCE_DIR}/extensions/ExtensionHeader.txt)
-
-file(GLOB SOURCES "*.cpp")
-
-add_minifi_library(minifi-kafka SHARED ${SOURCES})
-
-target_link_libraries(minifi-kafka minifi-cpp-extension-lib Threads::Threads)
-
-get_target_property(RDKAFKA_INCLUDE_DIRS rdkafka INCLUDE_DIRECTORIES)
-target_include_directories(minifi-kafka SYSTEM PUBLIC ${RDKAFKA_INCLUDE_DIRS})
-target_link_libraries(minifi-kafka rdkafka)
-
-register_c_api_extension(minifi-kafka "RDKAFKA EXTENSIONS" RDKAFKA-EXTENSIONS "This Enables librdkafka functionality including PublishKafka" "extensions/kafka/tests")
-
+add_library(libmock-minifi STATIC ${SRC_FILES})
+target_link_libraries(libmock-minifi PUBLIC minifi-cpp-extension-lib minifi-core-framework-common minifi-c-api)
+target_include_directories(libmock-minifi PUBLIC include)

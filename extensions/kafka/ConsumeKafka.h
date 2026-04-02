@@ -28,23 +28,14 @@
 #include "core/PropertyDefinitionBuilder.h"
 #include "minifi-cpp/core/PropertyValidator.h"
 #include "minifi-cpp/core/RelationshipDefinition.h"
-#include "core/logging/LoggerFactory.h"
-#include "io/StreamPipe.h"
 #include "rdkafka.h"
 #include "rdkafka_utils.h"
 #include "utils/ArrayUtils.h"
+#include "api/core/ProcessSession.h"
+#include "api/core/ProcessContext.h"
+#include "minifi-cpp/core/Annotation.h"
 
-namespace org::apache::nifi::minifi::processors::consume_kafka {
-
-class ConsumeKafkaMaxPollTimePropertyValidator final : public minifi::core::PropertyValidator {
- public:
-  constexpr ~ConsumeKafkaMaxPollTimePropertyValidator() override { }  // NOLINT see comment at grandparent
-
-  [[nodiscard]] bool validate(std::string_view input) const override;
-  [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const override { return std::nullopt; }
-};
-
-inline constexpr ConsumeKafkaMaxPollTimePropertyValidator CONSUME_KAFKA_MAX_POLL_TIME_TYPE{};
+namespace org::apache::nifi::minifi::kafka::consume_kafka {
 
 enum class CommitPolicyEnum { NoCommit, AutoCommit, CommitAfterBatch, CommitFromIncomingFlowFiles };
 
@@ -54,11 +45,11 @@ enum class TopicNameFormatEnum { Names, Patterns };
 
 enum class MessageHeaderPolicyEnum { KEEP_FIRST, KEEP_LATEST, COMMA_SEPARATED_MERGE };
 
-}  // namespace org::apache::nifi::minifi::processors::consume_kafka
+}  // namespace org::apache::nifi::minifi::kafka::consume_kafka
 
 namespace magic_enum::customize {
-using org::apache::nifi::minifi::processors::consume_kafka::MessageHeaderPolicyEnum;
-using org::apache::nifi::minifi::processors::consume_kafka::CommitPolicyEnum;
+using org::apache::nifi::minifi::kafka::consume_kafka::MessageHeaderPolicyEnum;
+using org::apache::nifi::minifi::kafka::consume_kafka::CommitPolicyEnum;
 
 template<>
 constexpr customize_t enum_name<CommitPolicyEnum>(const CommitPolicyEnum value) noexcept {
@@ -84,7 +75,7 @@ constexpr customize_t enum_name<MessageHeaderPolicyEnum>(const MessageHeaderPoli
 
 }  // namespace magic_enum::customize
 
-namespace org::apache::nifi::minifi::processors {
+namespace org::apache::nifi::minifi::kafka {
 
 class ConsumeKafka final : public KafkaProcessorBase {
  public:
@@ -153,12 +144,12 @@ class ConsumeKafka final : public KafkaProcessorBase {
           .isRequired(true)
           .build();
   EXTENSIONAPI static constexpr auto KeyAttributeEncoding =
-      core::PropertyDefinitionBuilder<magic_enum::enum_count<utils::KafkaEncoding>()>::createProperty("Key Attribute Encoding")
+      core::PropertyDefinitionBuilder<magic_enum::enum_count<KafkaEncoding>()>::createProperty("Key Attribute Encoding")
           .withDescription(
               "FlowFiles that are emitted have an attribute named 'kafka.key'. This property dictates how the value of the attribute should be "
               "encoded.")
-          .withDefaultValue(magic_enum::enum_name(utils::KafkaEncoding::UTF8))
-          .withAllowedValues(magic_enum::enum_names<utils::KafkaEncoding>())
+          .withDefaultValue(magic_enum::enum_name(KafkaEncoding::UTF8))
+          .withAllowedValues(magic_enum::enum_names<KafkaEncoding>())
           .isRequired(true)
           .build();
   EXTENSIONAPI static constexpr auto MessageDemarcator =
@@ -173,13 +164,13 @@ class ConsumeKafka final : public KafkaProcessorBase {
           .supportsExpressionLanguage(true)
           .build();
   EXTENSIONAPI static constexpr auto MessageHeaderEncoding =
-      core::PropertyDefinitionBuilder<magic_enum::enum_count<utils::KafkaEncoding>()>::createProperty("Message Header Encoding")
+      core::PropertyDefinitionBuilder<magic_enum::enum_count<KafkaEncoding>()>::createProperty("Message Header Encoding")
           .withDescription(
               "Any message header that is found on a Kafka message will be added to the outbound FlowFile as an attribute. This property indicates "
               "the Character Encoding "
               "to use for deserializing the headers.")
-          .withDefaultValue(magic_enum::enum_name(utils::KafkaEncoding::UTF8))
-          .withAllowedValues(magic_enum::enum_names<utils::KafkaEncoding>())
+          .withDefaultValue(magic_enum::enum_name(KafkaEncoding::UTF8))
+          .withAllowedValues(magic_enum::enum_names<KafkaEncoding>())
           .build();
   EXTENSIONAPI static constexpr auto HeadersToAddAsAttributes =
       core::PropertyDefinitionBuilder<>::createProperty("Headers To Add As Attributes")
@@ -215,7 +206,7 @@ class ConsumeKafka final : public KafkaProcessorBase {
           .withDescription(
               "Specifies the maximum amount of time the consumer can use for polling data from the brokers. "
               "Polling is a blocking operation, so the upper limit of this value is specified in 4 seconds.")
-          .withValidator(consume_kafka::CONSUME_KAFKA_MAX_POLL_TIME_TYPE)
+          .withValidator(core::StandardPropertyValidators::TIME_PERIOD_VALIDATOR)
           .withDefaultValue(DEFAULT_MAX_POLL_TIME)
           .isRequired(true)
           .build();
@@ -284,7 +275,6 @@ class ConsumeKafka final : public KafkaProcessorBase {
   EXTENSIONAPI static constexpr auto KafkaOffsetAttribute = core::OutputAttributeDefinition<>{
       "kafka.offset", {Success}, "The offset of the message (or largest offset of the message bundle)"};
 
-  ADD_COMMON_VIRTUAL_FUNCTIONS_FOR_PROCESSORS
 
   using KafkaProcessorBase::KafkaProcessorBase;
 
@@ -294,9 +284,8 @@ class ConsumeKafka final : public KafkaProcessorBase {
   ConsumeKafka& operator=(ConsumeKafka&&) = delete;
   ~ConsumeKafka() override = default;
 
-  void onSchedule(core::ProcessContext& context, core::ProcessSessionFactory& session_factory) override;
-  void onTrigger(core::ProcessContext& context, core::ProcessSession& session) override;
-  void initialize() override;
+  MinifiStatus onScheduleImpl(api::core::ProcessContext& context) override;
+  MinifiStatus onTriggerImpl(api::core::ProcessContext& context, api::core::ProcessSession& session) override;
 
  private:
   struct KafkaMessageLocation {
@@ -308,42 +297,42 @@ class ConsumeKafka final : public KafkaProcessorBase {
   class MessageBundle {
    public:
     MessageBundle() = default;
-    void pushBack(utils::rd_kafka_message_unique_ptr message) {
+    void pushBack(rd_kafka_message_unique_ptr message) {
       largest_offset_ = std::max(largest_offset_, message->offset);
       messages_.push_back(std::move(message));
     }
     [[nodiscard]] int64_t getLargestOffset() const { return largest_offset_; }
 
-    [[nodiscard]] const std::vector<utils::rd_kafka_message_unique_ptr>& getMessages() const { return messages_; }
+    [[nodiscard]] const std::vector<rd_kafka_message_unique_ptr>& getMessages() const { return messages_; }
 
    private:
-    std::vector<utils::rd_kafka_message_unique_ptr> messages_;
+    std::vector<rd_kafka_message_unique_ptr> messages_;
     int64_t largest_offset_ = 0;
   };
   friend struct ::std::hash<KafkaMessageLocation>;
 
   void createTopicPartitionList();
-  void extendConfigFromDynamicProperties(const core::ProcessContext& context) const;
-  void configureNewConnection(core::ProcessContext& context);
+  void extendConfigFromDynamicProperties(const api::core::ProcessContext& context) const;
+  void configureNewConnection(api::core::ProcessContext& context);
   static std::string extractMessage(const rd_kafka_message_t& rkmessage);
   std::unordered_map<KafkaMessageLocation, MessageBundle> pollKafkaMessages();
   std::string resolve_duplicate_headers(const std::vector<std::string>& matching_headers) const;
   std::vector<std::string> get_matching_headers(const rd_kafka_message_t& message, const std::string& header_name) const;
   std::vector<std::pair<std::string, std::string>> getFlowFilesAttributesFromMessageHeaders(const rd_kafka_message_t& message) const;
-  void addAttributesToSingleMessageFlowFile(core::FlowFile& flow_file, const rd_kafka_message_t& message) const;
-  void addAttributesToMessageBundleFlowFile(core::FlowFile& flow_file, const MessageBundle& message_bundle) const;
-  void processMessages(core::ProcessSession& session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles) const;
-  void processMessageBundles(core::ProcessSession& session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles,
+  void addAttributesToSingleMessageFlowFile(api::core::ProcessSession& session, api::core::FlowFile& flow_file, const rd_kafka_message_t& message) const;
+  void addAttributesToMessageBundleFlowFile(api::core::ProcessSession& session, api::core::FlowFile& flow_file, const MessageBundle& message_bundle) const;
+  MinifiStatus processMessages(api::core::ProcessSession& session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles) const;
+  MinifiStatus processMessageBundles(api::core::ProcessSession& session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles,
       std::string_view message_demarcator) const;
 
   void commitOffsetsFromMessages(const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles) const;
-  void commitOffsetsFromIncomingFlowFiles(core::ProcessSession& session) const;
+  void commitOffsetsFromIncomingFlowFiles(api::core::ProcessSession& session) const;
 
   std::vector<std::string> topic_names_{};
   consume_kafka::TopicNameFormatEnum topic_name_format_ = consume_kafka::TopicNameFormatEnum::Names;
 
-  utils::KafkaEncoding key_attribute_encoding_ = utils::KafkaEncoding::UTF8;
-  utils::KafkaEncoding message_header_encoding_ = utils::KafkaEncoding::UTF8;
+  KafkaEncoding key_attribute_encoding_ = KafkaEncoding::UTF8;
+  KafkaEncoding message_header_encoding_ = KafkaEncoding::UTF8;
 
   std::optional<std::string> message_demarcator_;
 
@@ -354,9 +343,9 @@ class ConsumeKafka final : public KafkaProcessorBase {
   std::chrono::milliseconds max_poll_time_milliseconds_{};
   consume_kafka::CommitPolicyEnum commit_policy_ = consume_kafka::CommitPolicyEnum::CommitAfterBatch;
 
-  std::unique_ptr<rd_kafka_t, utils::rd_kafka_consumer_deleter> consumer_;
-  std::unique_ptr<rd_kafka_conf_t, utils::rd_kafka_conf_deleter> conf_;
-  std::unique_ptr<rd_kafka_topic_partition_list_t, utils::rd_kafka_topic_partition_list_deleter> kf_topic_partition_list_;
+  std::unique_ptr<rd_kafka_t, rd_kafka_consumer_deleter> consumer_;
+  std::unique_ptr<rd_kafka_conf_t, rd_kafka_conf_deleter> conf_;
+  std::unique_ptr<rd_kafka_topic_partition_list_t, rd_kafka_topic_partition_list_deleter> kf_topic_partition_list_;
 };
 
-}  // namespace org::apache::nifi::minifi::processors
+}  // namespace org::apache::nifi::minifi::kafka

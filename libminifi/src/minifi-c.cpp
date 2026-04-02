@@ -24,6 +24,7 @@
 #include "core/ProcessorMetrics.h"
 #include "core/extension/ExtensionManager.h"
 #include "minifi-cpp/Exception.h"
+#include "minifi-cpp/controllers/SSLContextServiceInterface.h"
 #include "minifi-cpp/core/Annotation.h"
 #include "minifi-cpp/core/ClassLoader.h"
 #include "minifi-cpp/core/ProcessContext.h"
@@ -35,8 +36,8 @@
 #include "minifi-cpp/core/PropertyValidator.h"
 #include "minifi-cpp/core/logging/Logger.h"
 #include "minifi-cpp/core/state/PublishedMetricProvider.h"
-#include "utils/CProcessor.h"
 #include "utils/CControllerService.h"
+#include "utils/CProcessor.h"
 #include "utils/PropertyErrors.h"
 
 namespace minifi = org::apache::nifi::minifi;
@@ -268,7 +269,7 @@ void useCControllerServiceClassDescription(const MinifiControllerServiceClassDef
   auto name_segments = minifi::utils::string::split(toStringView(class_description.full_name), "::");
   gsl_Assert(!name_segments.empty());
 
-  minifi::ClassDescription description{
+  const minifi::ClassDescription description{
     .type_ = minifi::ResourceType::ControllerService,
     .short_name_ = name_segments.back(),
     .full_name_ = minifi::utils::string::join(".", name_segments),
@@ -441,6 +442,18 @@ MINIFI_OWNED MinifiFlowFile* MinifiProcessSessionCreate(MinifiProcessSession* se
   return MINIFI_NULL;
 }
 
+MinifiStatus MinifiProcessSessionPenalize(MinifiProcessSession* session, MinifiFlowFile* flowfile) {
+  gsl_Assert(session != MINIFI_NULL);
+  gsl_Assert(flowfile !=  MINIFI_NULL);
+  try {
+    reinterpret_cast<minifi::core::ProcessSession*>(session)->penalize(
+        *reinterpret_cast<std::shared_ptr<minifi::core::FlowFile>*>(flowfile));
+    return MINIFI_STATUS_SUCCESS;
+  } catch (...) {
+    return MINIFI_STATUS_UNKNOWN_ERROR;
+  }
+}
+
 MinifiStatus MinifiProcessSessionTransfer(MinifiProcessSession* session, MINIFI_OWNED MinifiFlowFile* flowfile, MinifiStringView relationship_name) {
   gsl_Assert(session != MINIFI_NULL);
   gsl_Assert(flowfile !=  MINIFI_NULL);
@@ -505,7 +518,7 @@ int64_t MinifiOutputStreamWrite(MinifiOutputStream* stream, const char* data, si
   return gsl::narrow<int64_t>(reinterpret_cast<minifi::io::OutputStream*>(stream)->write(as_bytes(std::span(data, size))));
 }
 
-MinifiStatus MinifiFlowFileSetAttribute(MinifiProcessSession* session, MinifiFlowFile* flowfile, MinifiStringView attribute_name, const MinifiStringView* attribute_value) {
+MinifiStatus MinifiProcessSessionSetFlowFileAttribute(MinifiProcessSession* session, MinifiFlowFile* flowfile, MinifiStringView attribute_name, const MinifiStringView* attribute_value) {
   gsl_Assert(session != MINIFI_NULL);
   gsl_Assert(flowfile != MINIFI_NULL);
   if (attribute_value == nullptr) {
@@ -517,7 +530,7 @@ MinifiStatus MinifiFlowFileSetAttribute(MinifiProcessSession* session, MinifiFlo
   return MINIFI_STATUS_SUCCESS;
 }
 
-MinifiBool MinifiFlowFileGetAttribute(MinifiProcessSession* session, MinifiFlowFile* flowfile, MinifiStringView attribute_name,
+MinifiBool MinifiProcessSessionGetFlowFileAttribute(MinifiProcessSession* session, MinifiFlowFile* flowfile, MinifiStringView attribute_name,
                                       void(*cb)(void* user_ctx, MinifiStringView attribute_value), void* user_ctx) {
   gsl_Assert(session != MINIFI_NULL);
   gsl_Assert(flowfile != MINIFI_NULL);
@@ -529,13 +542,27 @@ MinifiBool MinifiFlowFileGetAttribute(MinifiProcessSession* session, MinifiFlowF
   return true;
 }
 
-void MinifiFlowFileGetAttributes(MinifiProcessSession* session, MinifiFlowFile* flowfile,
+void MinifiProcessSessionGetFlowFileAttributes(MinifiProcessSession* session, MinifiFlowFile* flowfile,
                                  void(*cb)(void* user_ctx, MinifiStringView attribute_name, MinifiStringView attribute_value), void* user_ctx) {
   gsl_Assert(session != MINIFI_NULL);
   gsl_Assert(flowfile != MINIFI_NULL);
   for (auto& [key, value] : (*reinterpret_cast<std::shared_ptr<minifi::core::FlowFile>*>(flowfile))->getAttributes()) {
     cb(user_ctx, minifiStringView(key), minifiStringView(value));
   }
+}
+
+uint64_t MinifiProcessSessionGetFlowFileSize(MinifiProcessSession* session, MinifiFlowFile* flowfile) {
+  gsl_Assert(session != MINIFI_NULL);
+  gsl_Assert(flowfile != MINIFI_NULL);
+  return (*reinterpret_cast<std::shared_ptr<minifi::core::FlowFile>*>(flowfile))->getSize();
+}
+
+MinifiStatus MinifiProcessSessionGetFlowFileId(MinifiProcessSession* session, MinifiFlowFile* flowfile, void(*cb)(void* user_ctx, MinifiStringView flow_file_id), void* user_ctx) {
+  gsl_Assert(session != MINIFI_NULL);
+  gsl_Assert(flowfile != MINIFI_NULL);
+  const auto uuid_small_str = (*reinterpret_cast<std::shared_ptr<minifi::core::FlowFile>*>(flowfile))->getUUIDStr();
+  cb(user_ctx, minifiStringView(uuid_small_str.view()));
+  return MINIFI_STATUS_SUCCESS;
 }
 
 MinifiStatus MinifiControllerServiceContextGetProperty(MinifiControllerServiceContext* context, MinifiStringView property_name,
@@ -555,12 +582,11 @@ MinifiStatus MinifiControllerServiceContextGetProperty(MinifiControllerServiceCo
   }
 }
 
-
 MinifiStatus MinifiProcessContextGetControllerService(
     MinifiProcessContext* process_context,
     const MinifiStringView controller_service_name,
     const MinifiStringView controller_service_type,
-    void** controller_service_out) {
+    MinifiControllerService** controller_service_out) {
   if (!controller_service_out) {
     return MINIFI_STATUS_UNKNOWN_ERROR;
   }
@@ -575,12 +601,73 @@ MinifiStatus MinifiProcessContextGetControllerService(
   if (const minifi::utils::CControllerService* c_controller_service = dynamic_cast<minifi::utils::CControllerService*>(&*service_shared_ptr)) {
     const auto class_description = c_controller_service->getClassDescription();
     if (class_description.full_name == toStringView(controller_service_type)) {
-      *controller_service_out = c_controller_service->getImpl();
+      *controller_service_out = static_cast<MinifiControllerService*>(c_controller_service->getImpl());
       return MINIFI_STATUS_SUCCESS;
     }
   }
   return MINIFI_STATUS_VALIDATION_FAILED;
 }
 
+void MinifiProcessContextGetDynamicProperties(MinifiProcessContext* context,
+    void (*cb)(void* user_ctx, MinifiStringView dynamic_property_name, MinifiStringView dynamic_property_value), void* user_ctx) {
+  gsl_Assert(context != MINIFI_NULL);
+  for (auto& [key, value] : reinterpret_cast<minifi::core::ProcessContext*>(context)->getDynamicProperties()) {
+    cb(user_ctx, minifiStringView(key), minifiStringView(value));
+  }
+}
+
+MinifiStatus MinifiProcessContextGetSslContextService(MinifiProcessContext* process_context, const MinifiStringView controller_service_name,
+    MinifiSslContextService** ssl_context_service_out) {
+  gsl_Assert(process_context != MINIFI_NULL);
+  const auto context = reinterpret_cast<minifi::core::ProcessContext*>(process_context);
+  const auto name_str = std::string{toStringView(controller_service_name)};
+  const auto service_shared_ptr = context->getControllerService(name_str, context->getProcessorInfo().getUUID());
+  if (!service_shared_ptr) { return MINIFI_STATUS_VALIDATION_FAILED; }
+  if (const auto ssl_context_service = dynamic_cast<minifi::controllers::SSLContextServiceInterface*>(service_shared_ptr.get())) {
+    *ssl_context_service_out = reinterpret_cast<MinifiSslContextService*>(ssl_context_service);
+    return MINIFI_STATUS_SUCCESS;
+  }
+  return MINIFI_STATUS_VALIDATION_FAILED;
+}
+
+MinifiStatus MinifiSslContextServiceGetCertificateFile(MinifiSslContextService* ssl_context_service,
+    void (*cb)(void* user_ctx, MinifiStringView certificate_file), void* user_ctx) {
+  gsl_Assert(ssl_context_service != MINIFI_NULL);
+  const auto ssl_context = reinterpret_cast<minifi::controllers::SSLContextServiceInterface*>(ssl_context_service);
+  const auto cert_file = ssl_context->getCertificateFile();
+  cb(user_ctx, minifiStringView(cert_file.string()));
+
+  return MINIFI_STATUS_SUCCESS;
+}
+
+MinifiStatus MinifiSslContextServiceGetPassphrase(MinifiSslContextService* ssl_context_service,
+    void (*cb)(void* user_ctx, MinifiStringView passphrase), void* user_ctx) {
+  gsl_Assert(ssl_context_service != MINIFI_NULL);
+  const auto ssl_context = reinterpret_cast<minifi::controllers::SSLContextServiceInterface*>(ssl_context_service);
+  const auto cert_file = ssl_context->getPassphrase();
+  cb(user_ctx, minifiStringView(cert_file));
+
+  return MINIFI_STATUS_SUCCESS;
+}
+
+MinifiStatus MinifiSslContextServiceGetPrivateKeyFile(MinifiSslContextService* ssl_context_service,
+    void (*cb)(void* user_ctx, MinifiStringView private_key_file), void* user_ctx) {
+  gsl_Assert(ssl_context_service != MINIFI_NULL);
+  const auto ssl_context = reinterpret_cast<minifi::controllers::SSLContextServiceInterface*>(ssl_context_service);
+  const auto cert_file = ssl_context->getPrivateKeyFile();
+  cb(user_ctx, minifiStringView(cert_file.string()));
+
+  return MINIFI_STATUS_SUCCESS;
+}
+
+MinifiStatus MinifiSslContextServiceGetCACertificate(MinifiSslContextService* ssl_context_service,
+    void (*cb)(void* user_ctx, MinifiStringView ca_certificate), void* user_ctx) {
+  gsl_Assert(ssl_context_service != MINIFI_NULL);
+  const auto ssl_context = reinterpret_cast<minifi::controllers::SSLContextServiceInterface*>(ssl_context_service);
+  const auto cert_file = ssl_context->getCACertificate();
+  cb(user_ctx, minifiStringView(cert_file.string()));
+
+  return MINIFI_STATUS_SUCCESS;
+}
 
 }  // extern "C"

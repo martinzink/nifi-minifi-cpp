@@ -17,25 +17,20 @@
 
 #pragma once
 
-#include "rdkafka_utils.h"
+#include <map>
+#include <string>
 
-namespace org::apache::nifi::minifi::kafka {
+#include "minifi-cpp/core/logging/Logger.h"
 
-class KafkaTopic {
+namespace org::apache::nifi::minifi::mock {
+class MockLogger : public core::logging::Logger {
  public:
-  explicit KafkaTopic(rd_kafka_topic_unique_ptr&& topic_reference) : topic_reference_(std::move(topic_reference)) {}
+  void set_max_log_size(int) override {}
+  void log_string(const core::logging::LOG_LEVEL level, std::string s) override { logs_[level].emplace_back(std::move(s)); }
+  [[nodiscard]] bool should_log(const core::logging::LOG_LEVEL level) override { return level > log_level_; }
+  [[nodiscard]] core::logging::LOG_LEVEL level() const override { return log_level_; }
 
-  KafkaTopic(const KafkaTopic&) = delete;
-  KafkaTopic& operator=(const KafkaTopic&) = delete;
-  KafkaTopic(KafkaTopic&&) = delete;
-  KafkaTopic& operator=(KafkaTopic&&) = delete;
-
-  ~KafkaTopic() = default;
-
-  [[nodiscard]] rd_kafka_topic_t* getTopic() const { return topic_reference_.get(); }
-
- private:
-  rd_kafka_topic_unique_ptr topic_reference_;
+  core::logging::LOG_LEVEL log_level_ = core::logging::LOG_LEVEL::trace;
+  std::map<core::logging::LOG_LEVEL, std::vector<std::string>> logs_;
 };
-
-}  // namespace org::apache::nifi::minifi::kafka
+}  // namespace org::apache::nifi::minifi::mock

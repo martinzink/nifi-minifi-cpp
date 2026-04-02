@@ -14,28 +14,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #pragma once
 
-#include "rdkafka_utils.h"
+#include <string>
+#include <memory>
+#include <optional>
+#include <filesystem>
 
-namespace org::apache::nifi::minifi::kafka {
+#include "utils/Enum.h"
 
-class KafkaTopic {
- public:
-  explicit KafkaTopic(rd_kafka_topic_unique_ptr&& topic_reference) : topic_reference_(std::move(topic_reference)) {}
+namespace org::apache::nifi::minifi::api::utils::net {
 
-  KafkaTopic(const KafkaTopic&) = delete;
-  KafkaTopic& operator=(const KafkaTopic&) = delete;
-  KafkaTopic(KafkaTopic&&) = delete;
-  KafkaTopic& operator=(KafkaTopic&&) = delete;
-
-  ~KafkaTopic() = default;
-
-  [[nodiscard]] rd_kafka_topic_t* getTopic() const { return topic_reference_.get(); }
-
- private:
-  rd_kafka_topic_unique_ptr topic_reference_;
+enum class ClientAuthOption {
+  NONE,
+  WANT,
+  REQUIRED
 };
 
-}  // namespace org::apache::nifi::minifi::kafka
+struct SslData {
+  std::filesystem::path ca_loc;
+  std::filesystem::path cert_loc;
+  std::filesystem::path key_loc;
+  std::string key_pw;
+
+  bool isValid() const {
+    return !cert_loc.empty() && !key_loc.empty();
+  }
+};
+
+struct SslServerOptions {
+  SslData cert_data;
+  ClientAuthOption client_auth_option;
+
+  SslServerOptions(SslData cert_data, ClientAuthOption client_auth_option)
+      : cert_data(cert_data),
+      client_auth_option(client_auth_option) {}
+};
+
+
+}  // namespace org::apache::nifi::minifi::api::utils::net

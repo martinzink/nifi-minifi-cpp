@@ -17,25 +17,19 @@
 
 #pragma once
 
-#include "rdkafka_utils.h"
+#include <string>
 
-namespace org::apache::nifi::minifi::kafka {
+#include "MockLogger.h"
+#include "minifi-cpp/core/ProcessorMetadata.h"
 
-class KafkaTopic {
- public:
-  explicit KafkaTopic(rd_kafka_topic_unique_ptr&& topic_reference) : topic_reference_(std::move(topic_reference)) {}
+struct MinifiFlowFile{};
 
-  KafkaTopic(const KafkaTopic&) = delete;
-  KafkaTopic& operator=(const KafkaTopic&) = delete;
-  KafkaTopic(KafkaTopic&&) = delete;
-  KafkaTopic& operator=(KafkaTopic&&) = delete;
+namespace org::apache::nifi::minifi::mock {
+inline core::ProcessorMetadata getMockMetadata() {
+  return core::ProcessorMetadata{.uuid = utils::Identifier{}, .name = "Processor", .logger = std::make_shared<MockLogger>()};
+}
 
-  ~KafkaTopic() = default;
-
-  [[nodiscard]] rd_kafka_topic_t* getTopic() const { return topic_reference_.get(); }
-
- private:
-  rd_kafka_topic_unique_ptr topic_reference_;
-};
-
-}  // namespace org::apache::nifi::minifi::kafka
+inline core::ProcessorMetadata metadataWithLogger(std::shared_ptr<core::logging::Logger> logger) {
+  return core::ProcessorMetadata{.uuid = utils::Identifier{}, .name = "Processor", .logger = std::move(logger)};
+}
+}  // namespace org::apache::nifi::minifi::mock
