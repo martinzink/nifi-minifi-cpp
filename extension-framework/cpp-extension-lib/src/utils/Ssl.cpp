@@ -1,5 +1,5 @@
 /**
- * Licensed to the Apache Software Foundation (ASF) under one or more
+* Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
@@ -15,27 +15,11 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "api/utils/Ssl.h"
 
-#include "rdkafka_utils.h"
+namespace org::apache::nifi::minifi::api::utils::net {
+  std::optional<SslData> getSslData(const core::ProcessContext& context, const minifi::core::PropertyReference& ssl_prop) {
+    throw std::logic_error("getSslData not implemented");
+  }
+}  // namespace org::apache::nifi::minifi::api::utils::net
 
-namespace org::apache::nifi::minifi::kafka {
-
-class KafkaTopic {
- public:
-  explicit KafkaTopic(rd_kafka_topic_unique_ptr&& topic_reference) : topic_reference_(std::move(topic_reference)) {}
-
-  KafkaTopic(const KafkaTopic&) = delete;
-  KafkaTopic& operator=(const KafkaTopic&) = delete;
-  KafkaTopic(KafkaTopic&&) = delete;
-  KafkaTopic& operator=(KafkaTopic&&) = delete;
-
-  ~KafkaTopic() = default;
-
-  [[nodiscard]] rd_kafka_topic_t* getTopic() const { return topic_reference_.get(); }
-
- private:
-  rd_kafka_topic_unique_ptr topic_reference_;
-};
-
-}  // namespace org::apache::nifi::minifi::kafka

@@ -113,8 +113,8 @@ void useProcessorClassDescription(Fn&& fn) {
         return static_cast<Class*>(self)->getTriggerWhenEmpty();
       },
       .onTrigger = [] (void* self, MinifiProcessContext* context, MinifiProcessSession* session) -> MinifiStatus {
-        ProcessContext context_wrapper(context);
-        ProcessSession session_wrapper(session);
+        CffiProcessContext context_wrapper(context);
+        CffiProcessSession session_wrapper(session);
         try {
           return static_cast<Class*>(self)->onTrigger(context_wrapper, session_wrapper);
         } catch (...) {
@@ -122,7 +122,7 @@ void useProcessorClassDescription(Fn&& fn) {
         }
       },
       .onSchedule = [] (void* self, MinifiProcessContext* context) -> MinifiStatus {
-        ProcessContext context_wrapper(context);
+        CffiProcessContext context_wrapper(context);
         try {
           return static_cast<Class*>(self)->onSchedule(context_wrapper);
         } catch (...) {

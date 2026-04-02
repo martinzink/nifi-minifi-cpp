@@ -24,11 +24,11 @@
 #include <utility>
 #include <vector>
 
-#include "core/logging/LoggerFactory.h"
 #include "rdkafka.h"
-#include "utils/net/Ssl.h"
+#include "api/utils/Ssl.h"
+#include "minifi-cpp/core/logging/Logger.h"
 
-namespace org::apache::nifi::minifi::utils {
+namespace org::apache::nifi::minifi::kafka {
 
 enum class KafkaEncoding { UTF8, HEX };
 
@@ -93,16 +93,26 @@ void kafka_headers_for_each(const rd_kafka_headers_t& headers, T key_value_handl
   }
 }
 
-void setKafkaConfigurationField(rd_kafka_conf_t& configuration, const std::string& field_name, const std::string& value);
-void print_topics_list(core::logging::Logger& logger, const rd_kafka_topic_partition_list_t& kf_topic_partition_list);
+void setKafkaConfigurationField(rd_kafka_conf_t& configuration, std::string_view field_name, std::string_view value);
 void print_kafka_message(const rd_kafka_message_t& rkmessage, core::logging::Logger& logger);
 std::string get_encoded_string(const std::string& input, KafkaEncoding encoding);
 std::optional<std::string> get_encoded_message_key(const rd_kafka_message_t& message, KafkaEncoding encoding);
 
-}  // namespace org::apache::nifi::minifi::utils
+class KafkaOpaque {
+ public:
+  explicit KafkaOpaque(core::logging::Logger& logger) : logger_(logger) {}
+
+  void print_topics_list(const rd_kafka_topic_partition_list_t& kf_topic_partition_list) const;
+  static void logCallback(const rd_kafka_t* rk, int level, const char* /*fac*/, const char* buf);
+  static void rebalance_cb(rd_kafka_t* rk, rd_kafka_resp_err_t trigger, rd_kafka_topic_partition_list_t* partitions, void* opaque_ptr);
+
+private:
+  core::logging::Logger& logger_;
+};
+}  // namespace org::apache::nifi::minifi::kafka
 
 namespace magic_enum::customize {
-using org::apache::nifi::minifi::utils::KafkaEncoding;
+using org::apache::nifi::minifi::kafka::KafkaEncoding;
 
 template <>
 constexpr customize_t enum_name<KafkaEncoding>(const KafkaEncoding value) noexcept {

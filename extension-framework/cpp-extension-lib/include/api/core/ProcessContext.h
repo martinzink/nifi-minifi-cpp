@@ -28,15 +28,26 @@ namespace org::apache::nifi::minifi::api::core {
 
 class ProcessContext {
  public:
-  explicit ProcessContext(MinifiProcessContext* impl): impl_(impl) {}
+  virtual ~ProcessContext() = default;
 
-  nonstd::expected<std::string, std::error_code> getProperty(std::string_view name, const FlowFile* flow_file = nullptr) const;
+  virtual nonstd::expected<std::string, std::error_code> getProperty(std::string_view name, const FlowFile* flow_file = nullptr) const = 0;
+  virtual nonstd::expected<MinifiControllerService*, std::error_code> getControllerService(std::string_view controller_service_name, std::string_view controller_service_class) const = 0;
+  virtual bool hasNonEmptyProperty(std::string_view name) const = 0;
+  virtual void onDynamicProperties(std::function<void (std::string_view, std::string_view)> fn) const = 0;
+
   nonstd::expected<std::string, std::error_code> getProperty(const minifi::core::PropertyReference& property_reference, const FlowFile* flow_file = nullptr) const {
     return getProperty(property_reference.name, flow_file);
   }
-  nonstd::expected<MinifiControllerService*, std::error_code> getControllerService(std::string_view controller_service_name, std::string_view controller_service_class) const;
+};
 
-  bool hasNonEmptyProperty(std::string_view name) const;
+class CffiProcessContext : public ProcessContext {
+ public:
+  explicit CffiProcessContext(MinifiProcessContext* impl): impl_(impl) {}
+
+  nonstd::expected<std::string, std::error_code> getProperty(std::string_view name, const FlowFile* flow_file = nullptr) const override;
+  nonstd::expected<MinifiControllerService*, std::error_code> getControllerService(std::string_view controller_service_name, std::string_view controller_service_class) const override;
+  void onDynamicProperties(std::function<void (std::string_view, std::string_view)> fn) const override;
+  bool hasNonEmptyProperty(std::string_view name) const override;
 
  private:
   MinifiProcessContext* impl_;

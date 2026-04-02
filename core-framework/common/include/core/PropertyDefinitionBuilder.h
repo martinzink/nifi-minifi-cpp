@@ -27,6 +27,20 @@ namespace org::apache::nifi::minifi::core {
 namespace detail {
 template<typename... Types>
 inline constexpr auto TypeNames = std::array<std::string_view, sizeof...(Types)>{core::className<Types>()...};
+
+template <size_t N>
+struct StringLiteral {
+  char value[N];
+  constexpr StringLiteral(const char (&str)[N]) {
+    for (size_t i = 0; i < N; ++i) {
+      value[i] = str[i];
+    }
+  }
+};
+
+// A variable template that creates permanent static memory for the span to point to
+template <StringLiteral str>
+inline constexpr auto StaticAllowedType = std::array<std::string_view, 1>{std::string_view{str.value, sizeof(str.value) - 1}};
 }
 
 template<size_t NumAllowedValues = 0>
@@ -78,6 +92,12 @@ struct PropertyDefinitionBuilder {
   template<typename... AllowedTypes>
   constexpr PropertyDefinitionBuilder<NumAllowedValues> withAllowedTypes() {
     property.allowed_types = {detail::TypeNames<AllowedTypes...>};
+    return *this;
+  }
+
+  template <detail::StringLiteral TypeName>
+  constexpr PropertyDefinitionBuilder<NumAllowedValues> withAllowedType() {
+    property.allowed_types = detail::StaticAllowedType<TypeName>;
     return *this;
   }
 

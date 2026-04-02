@@ -21,7 +21,7 @@
 
 namespace org::apache::nifi::minifi::api::core {
 
-nonstd::expected<std::string, std::error_code> ProcessContext::getProperty(std::string_view name, const FlowFile* flow_file) const {
+nonstd::expected<std::string, std::error_code> CffiProcessContext::getProperty(std::string_view name, const FlowFile* flow_file) const {
   std::optional<std::string> value;
   MinifiStatus status = MinifiProcessContextGetProperty(impl_, utils::toStringView(name), flow_file ? flow_file->get() : MINIFI_NULL,
     [] (void* data, MinifiStringView result) {
@@ -34,13 +34,13 @@ nonstd::expected<std::string, std::error_code> ProcessContext::getProperty(std::
   return value.value();
 }
 
-bool ProcessContext::hasNonEmptyProperty(std::string_view name) const {
+bool CffiProcessContext::hasNonEmptyProperty(std::string_view name) const {
   return MinifiProcessContextHasNonEmptyProperty(impl_, utils::toStringView(name));
 }
 
-nonstd::expected<MinifiControllerService*, std::error_code> ProcessContext::getControllerService(const std::string_view controller_service_name,
+nonstd::expected<MinifiControllerService*, std::error_code> CffiProcessContext::getControllerService(const std::string_view controller_service_name,
     const std::string_view controller_service_class) const {
-  void* controller_service = nullptr;
+  MinifiControllerService* controller_service = nullptr;
   if (const MinifiStatus status = MinifiProcessContextGetControllerService(impl_,
           utils::toStringView(controller_service_name),
           utils::toStringView(controller_service_class),
@@ -48,7 +48,13 @@ nonstd::expected<MinifiControllerService*, std::error_code> ProcessContext::getC
       status != MINIFI_STATUS_SUCCESS) {
     return nonstd::make_unexpected(utils::make_error_code(status));
   }
-  return static_cast<MinifiControllerService*>(controller_service);
+  return controller_service;
 }
+
+void CffiProcessContext::onDynamicProperties(std::function<void (std::string_view, std::string_view)> fn) const {
+  throw std::logic_error("CffiProcessContext::onDynamicProperties");
+}
+
+
 
 }  // namespace org::apache::nifi::minifi::api::core

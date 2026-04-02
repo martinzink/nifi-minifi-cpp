@@ -18,9 +18,9 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include <string_view>
-#include <optional>
 
 #include "utils/RegexUtils.h"
 #include "utils/net/DNS.h"

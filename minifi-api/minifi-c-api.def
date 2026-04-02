@@ -22,6 +22,6 @@ EXPORTS
   MinifiInputStreamSize
   MinifiInputStreamRead
   MinifiOutputStreamWrite
-  MinifiFlowFileSetAttribute
-  MinifiFlowFileGetAttribute
-  MinifiFlowFileGetAttributes
+  MinifiProcessSessionSetFlowFileAttribute
+  MinifiProcessSessionGetFlowFileAttribute
+  MinifiProcessSessionGetFlowFileAttributes

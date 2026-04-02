@@ -29,11 +29,11 @@ file(GLOB SOURCES "*.cpp")
 
 add_minifi_library(minifi-rdkafka-extensions SHARED ${SOURCES})
 
-target_link_libraries(minifi-rdkafka-extensions ${LIBMINIFI} Threads::Threads)
+target_link_libraries(minifi-rdkafka-extensions minifi-cpp-extension-lib Threads::Threads)
 
 get_target_property(RDKAFKA_INCLUDE_DIRS rdkafka INCLUDE_DIRECTORIES)
 target_include_directories(minifi-rdkafka-extensions SYSTEM PUBLIC ${RDKAFKA_INCLUDE_DIRS})
 target_link_libraries(minifi-rdkafka-extensions rdkafka)
 
-register_extension(minifi-rdkafka-extensions "RDKAFKA EXTENSIONS" RDKAFKA-EXTENSIONS "This Enables librdkafka functionality including PublishKafka" "extensions/kafka/tests")
+register_c_api_extension(minifi-rdkafka-extensions "RDKAFKA EXTENSIONS" RDKAFKA-EXTENSIONS "This Enables librdkafka functionality including PublishKafka" "extensions/kafka/tests")
 

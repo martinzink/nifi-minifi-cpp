@@ -20,27 +20,24 @@
 #include <algorithm>
 #include <ranges>
 
-#include "minifi-cpp/core/FlowFile.h"
-#include "core/ProcessSession.h"
-#include "minifi-cpp/core/PropertyValidator.h"
-#include "core/Resource.h"
-#include "utils/OptionalUtils.h"
-#include "utils/AttributeErrors.h"
-#include "utils/ProcessorConfigUtils.h"
+#include "api/utils/ProcessorConfigUtils.h"
 #include "minifi-cpp/utils/gsl.h"
+#include "utils/AttributeErrors.h"
+#include "utils/Hash.h"
+#include "utils/OptionalUtils.h"
 #include "utils/expected.h"
 
 using namespace std::literals::chrono_literals;
 
 template<>
-struct std::hash<org::apache::nifi::minifi::processors::ConsumeKafka::KafkaMessageLocation> {
-  size_t operator()(const org::apache::nifi::minifi::processors::ConsumeKafka::KafkaMessageLocation& message_location) const noexcept {
+struct std::hash<org::apache::nifi::minifi::kafka::ConsumeKafka::KafkaMessageLocation> {
+  size_t operator()(const org::apache::nifi::minifi::kafka::ConsumeKafka::KafkaMessageLocation& message_location) const noexcept {
     return org::apache::nifi::minifi::utils::hash_combine(std::hash<std::string_view>{}(message_location.topic),
         std::hash<int32_t>{}(message_location.partition));
   }
 };
 
-namespace org::apache::nifi::minifi::processors {
+namespace org::apache::nifi::minifi::kafka {
 // The upper limit for Max Poll Time is 4 seconds. This is because Watchdog would potentially start
 // reporting issues with the processor health otherwise
 bool consume_kafka::ConsumeKafkaMaxPollTimePropertyValidator::validate(const std::string_view input) const {
@@ -48,26 +45,21 @@ bool consume_kafka::ConsumeKafkaMaxPollTimePropertyValidator::validate(const std
   return parsed_time.has_value();
 }
 
-void ConsumeKafka::initialize() {
-  setSupportedProperties(Properties);
-  setSupportedRelationships(Relationships);
-}
-
-void ConsumeKafka::onSchedule(core::ProcessContext& context, core::ProcessSessionFactory&) {
+MinifiStatus ConsumeKafka::onScheduleImpl(api::core::ProcessContext& context) {
   // Required properties
-  topic_names_ = utils::string::splitAndTrim(utils::parseProperty(context, TopicNames), ",");
-  topic_name_format_ = utils::parseEnumProperty<consume_kafka::TopicNameFormatEnum>(context, TopicNameFormat);
-  commit_policy_ = utils::parseEnumProperty<consume_kafka::CommitPolicyEnum>(context, CommitPolicy);
-  key_attribute_encoding_ = utils::parseEnumProperty<utils::KafkaEncoding>(context, KeyAttributeEncoding);
-  message_header_encoding_ = utils::parseEnumProperty<utils::KafkaEncoding>(context, MessageHeaderEncoding);
-  duplicate_header_handling_ = utils::parseEnumProperty<consume_kafka::MessageHeaderPolicyEnum>(context, DuplicateHeaderHandling);
-  max_poll_time_milliseconds_ = utils::parseDurationProperty(context, MaxPollTime);
-  max_poll_records_ = gsl::narrow<uint32_t>(utils::parseU64Property(context, MaxPollRecords));
+  topic_names_ = minifi::utils::string::splitAndTrim(api::utils::parseProperty(context, TopicNames), ",");
+  topic_name_format_ = api::utils::parseEnumProperty<consume_kafka::TopicNameFormatEnum>(context, TopicNameFormat);
+  commit_policy_ = api::utils::parseEnumProperty<consume_kafka::CommitPolicyEnum>(context, CommitPolicy);
+  key_attribute_encoding_ = api::utils::parseEnumProperty<KafkaEncoding>(context, KeyAttributeEncoding);
+  message_header_encoding_ = api::utils::parseEnumProperty<KafkaEncoding>(context, MessageHeaderEncoding);
+  duplicate_header_handling_ = api::utils::parseEnumProperty<consume_kafka::MessageHeaderPolicyEnum>(context, DuplicateHeaderHandling);
+  max_poll_time_milliseconds_ = api::utils::parseDurationProperty(context, MaxPollTime);
+  max_poll_records_ = gsl::narrow<uint32_t>(api::utils::parseU64Property(context, MaxPollRecords));
 
   // Optional properties
-  message_demarcator_ = utils::parseOptionalProperty(context, MessageDemarcator);
-  headers_to_add_as_attributes_ = parseOptionalProperty(context, HeadersToAddAsAttributes)
-      | utils::transform([](const std::string& headers_to_add_str) { return utils::string::splitAndTrim(headers_to_add_str, ","); });
+  message_demarcator_ = api::utils::parseOptionalProperty(context, MessageDemarcator);
+  headers_to_add_as_attributes_ = api::utils::parseOptionalProperty(context, HeadersToAddAsAttributes)
+      | minifi::utils::transform([](const std::string& headers_to_add_str) { return minifi::utils::string::splitAndTrim(headers_to_add_str, ","); });
   if (message_demarcator_ && headers_to_add_as_attributes_) {
     logger_->log_error("Message merging with header extraction is not yet supported");
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Message merging with header extraction is not yet supported");
@@ -76,43 +68,12 @@ void ConsumeKafka::onSchedule(core::ProcessContext& context, core::ProcessSessio
   configureNewConnection(context);
   if (commit_policy_ == consume_kafka::CommitPolicyEnum::CommitFromIncomingFlowFiles) {
     setTriggerWhenEmpty(true);
-  } else if (context.hasIncomingConnections()) {
-    logger_->log_error("Incoming connections are not allowed with {}", magic_enum::enum_name(commit_policy_));
-    throw Exception(PROCESS_SCHEDULE_EXCEPTION, fmt::format("Incoming connections are not allowed with {}", magic_enum::enum_name(commit_policy_)));
   }
+  return MINIFI_STATUS_SUCCESS;
 }
-
-namespace {
-void rebalance_cb(rd_kafka_t* rk, rd_kafka_resp_err_t trigger, rd_kafka_topic_partition_list_t* partitions, void* /*opaque*/) {
-  // Cooperative, incremental assignment is not supported in the current librdkafka version
-  std::shared_ptr<core::logging::Logger> logger{core::logging::LoggerFactory<ConsumeKafka>::getLogger()};
-  logger->log_debug("Rebalance triggered.");
-  rd_kafka_resp_err_t assign_error = RD_KAFKA_RESP_ERR_NO_ERROR;
-  switch (trigger) {
-    case RD_KAFKA_RESP_ERR__ASSIGN_PARTITIONS:
-      logger->log_debug("assigned:");
-      if (logger->should_log(core::logging::LOG_LEVEL::debug)) { utils::print_topics_list(*logger, *partitions); }
-      assign_error = rd_kafka_assign(rk, partitions);
-      break;
-
-    case RD_KAFKA_RESP_ERR__REVOKE_PARTITIONS:
-      logger->log_debug("revoked:");
-      rd_kafka_commit(rk, partitions, /* async = */ 0);  // Sync commit, maybe unnecessary
-      if (logger->should_log(core::logging::LOG_LEVEL::debug)) { utils::print_topics_list(*logger, *partitions); }
-      assign_error = rd_kafka_assign(rk, nullptr);
-      break;
-
-    default:
-      logger->log_debug("failed: {}", rd_kafka_err2str(trigger));
-      assign_error = rd_kafka_assign(rk, nullptr);
-      break;
-  }
-  logger->log_debug("assign failure: {}", rd_kafka_err2str(assign_error));
-}
-}  // namespace
 
 void ConsumeKafka::createTopicPartitionList() {
-  kf_topic_partition_list_ = utils::rd_kafka_topic_partition_list_unique_ptr{
+  kf_topic_partition_list_ = rd_kafka_topic_partition_list_unique_ptr{
       rd_kafka_topic_partition_list_new(gsl::narrow<int>(topic_names_.size()))};
 
   if (topic_name_format_ == consume_kafka::TopicNameFormatEnum::Patterns) {
@@ -136,25 +97,17 @@ void ConsumeKafka::createTopicPartitionList() {
   }
 }
 
-void ConsumeKafka::extendConfigFromDynamicProperties(const core::ProcessContext& context) const {
-  using utils::setKafkaConfigurationField;
-
-  const std::vector<std::string> dynamic_prop_keys = context.getDynamicPropertyKeys();
-  if (dynamic_prop_keys.empty()) { return; }
-  logger_->log_info("Loading {} extra kafka configuration fields from ConsumeKafka dynamic properties:", dynamic_prop_keys.size());
-  for (const std::string& key: dynamic_prop_keys) {
-    std::string value = context.getDynamicProperty(key)
-        | utils::orThrow(fmt::format("This shouldn't happen, dynamic property {} is expected because we just queried the list of dynamic properties", key));
-    logger_->log_info("{}: {}", key.c_str(), value.c_str());
+void ConsumeKafka::extendConfigFromDynamicProperties(const api::core::ProcessContext& context) const {
+  context.onDynamicProperties([&](const std::string_view key, const std::string_view value) {
+    logger_->log_trace("{}: {}", key, value);
     setKafkaConfigurationField(*conf_, key, value);
-  }
+  });
 }
 
-void ConsumeKafka::configureNewConnection(core::ProcessContext& context) {
-  using utils::setKafkaConfigurationField;
-
-  conf_ = {rd_kafka_conf_new(), utils::rd_kafka_conf_deleter()};
+void ConsumeKafka::configureNewConnection(api::core::ProcessContext& context) {
+  conf_ = {rd_kafka_conf_new(), rd_kafka_conf_deleter()};
   if (conf_ == nullptr) { throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Failed to create rd_kafka_conf_t object"); }
+  rd_kafka_conf_set_opaque(conf_.get(), &kafka_opaque_);
 
   // Set rebalance callback for use with coordinated consumer group balancing
   // Rebalance handlers are needed for the initial configuration of the consumer
@@ -162,33 +115,30 @@ void ConsumeKafka::configureNewConnection(core::ProcessContext& context) {
   // Registering a rebalance_cb turns off librdkafka's automatic partition assignment/revocation and instead delegates that
   // responsibility to the application's rebalance_cb.
   if (commit_policy_ != consume_kafka::CommitPolicyEnum::CommitFromIncomingFlowFiles) {
-    rd_kafka_conf_set_rebalance_cb(conf_.get(), rebalance_cb);
+    rd_kafka_conf_set_rebalance_cb(conf_.get(), KafkaOpaque::rebalance_cb);
   }
-
-  // Uncomment this for librdkafka debug logs:
-  // logger_->log_info("Enabling all debug logs for kafka consumer.");
-  // setKafkaConfigurationField(*conf_, "debug", "all");
 
   setKafkaAuthenticationParameters(context, gsl::make_not_null(conf_.get()));
 
-  setKafkaConfigurationField(*conf_, "bootstrap.servers", utils::parseProperty(context, KafkaBrokers));
+  setKafkaConfigurationField(*conf_, "bootstrap.servers", api::utils::parseProperty(context, KafkaBrokers));
   setKafkaConfigurationField(*conf_, "allow.auto.create.topics", "true");
   setKafkaConfigurationField(*conf_,
       "auto.offset.reset",
-      std::string(magic_enum::enum_name(utils::parseEnumProperty<consume_kafka::OffsetResetPolicyEnum>(context, OffsetReset))));
+      std::string(magic_enum::enum_name(api::utils::parseEnumProperty<consume_kafka::OffsetResetPolicyEnum>(context, OffsetReset))));
   setKafkaConfigurationField(*conf_, "enable.auto.commit", std::to_string(commit_policy_ == consume_kafka::CommitPolicyEnum::AutoCommit));
   setKafkaConfigurationField(*conf_, "enable.auto.offset.store", std::to_string(commit_policy_ == consume_kafka::CommitPolicyEnum::AutoCommit));
-  setKafkaConfigurationField(*conf_, "isolation.level", utils::parseBoolProperty(context, HonorTransactions) ? "read_committed" : "read_uncommitted");
-  setKafkaConfigurationField(*conf_, "group.id", utils::parseProperty(context, GroupID));
-  setKafkaConfigurationField(*conf_, "client.id", this->getUUIDStr());
-  setKafkaConfigurationField(*conf_, "session.timeout.ms", std::to_string(utils::parseDurationProperty(context, SessionTimeout).count()));
+  setKafkaConfigurationField(*conf_, "isolation.level", api::utils::parseBoolProperty(context, HonorTransactions) ? "read_committed" : "read_uncommitted");
+  setKafkaConfigurationField(*conf_, "group.id", api::utils::parseProperty(context, GroupID));
+  const std::string_view client_id = "";  // TODO(mzink) generate me
+  setKafkaConfigurationField(*conf_, "client.id", client_id);
+  setKafkaConfigurationField(*conf_, "session.timeout.ms", std::to_string(api::utils::parseDurationProperty(context, SessionTimeout).count()));
   // Twice the default, arbitrarily chosen
   setKafkaConfigurationField(*conf_, "max.poll.interval.ms", "600000");
 
   extendConfigFromDynamicProperties(context);
 
   std::array<char, 512U> errstr{};
-  consumer_ = {rd_kafka_new(RD_KAFKA_CONSUMER, conf_.release(), errstr.data(), errstr.size()), utils::rd_kafka_consumer_deleter()};
+  consumer_ = {rd_kafka_new(RD_KAFKA_CONSUMER, conf_.release(), errstr.data(), errstr.size()), rd_kafka_consumer_deleter()};
   if (consumer_ == nullptr) {
     const std::string error_msg{errstr.data()};
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Failed to create Kafka consumer " + error_msg);
@@ -232,7 +182,7 @@ std::unordered_map<ConsumeKafka::KafkaMessageLocation, ConsumeKafka::MessageBund
   while (message_count < max_poll_records_ && elapsed < max_poll_time_milliseconds_) {
     logger_->log_debug("Polling for new messages for {}...", max_poll_time_milliseconds_);
     const auto timeout_ms = gsl::narrow<int>(std::chrono::duration_cast<std::chrono::milliseconds>(max_poll_time_milliseconds_ - elapsed).count());
-    utils::rd_kafka_message_unique_ptr message{rd_kafka_consumer_poll(consumer_.get(), timeout_ms)};
+    rd_kafka_message_unique_ptr message{rd_kafka_consumer_poll(consumer_.get(), timeout_ms)};
     if (!message) { break; }
     if (RD_KAFKA_RESP_ERR_NO_ERROR != message->err) {
       logger_->log_error("Received message with error {}: {}", magic_enum::enum_underlying(message->err), rd_kafka_err2str(message->err));
@@ -252,7 +202,7 @@ std::string ConsumeKafka::resolve_duplicate_headers(const std::vector<std::strin
   switch (duplicate_header_handling_) {
     case consume_kafka::MessageHeaderPolicyEnum::KEEP_FIRST: return matching_headers.front();
     case consume_kafka::MessageHeaderPolicyEnum::KEEP_LATEST: return matching_headers.back();
-    case consume_kafka::MessageHeaderPolicyEnum::COMMA_SEPARATED_MERGE: return utils::string::join(", ", matching_headers);
+    case consume_kafka::MessageHeaderPolicyEnum::COMMA_SEPARATED_MERGE: return minifi::utils::string::join(", ", matching_headers);
     default: throw Exception(PROCESSOR_EXCEPTION, "\"Duplicate Header Handling\" property not recognized.");
   }
 }
@@ -288,37 +238,37 @@ std::vector<std::pair<std::string, std::string>> ConsumeKafka::getFlowFilesAttri
     const std::vector<std::string> matching_headers = get_matching_headers(message, header_name);
     if (!matching_headers.empty()) {
       attributes_from_headers.emplace_back(header_name,
-          utils::get_encoded_string(resolve_duplicate_headers(matching_headers), message_header_encoding_));
+          get_encoded_string(resolve_duplicate_headers(matching_headers), message_header_encoding_));
     }
   }
   return attributes_from_headers;
 }
 
-void ConsumeKafka::addAttributesToSingleMessageFlowFile(core::FlowFile& flow_file, const rd_kafka_message_t& message) const {
-  flow_file.setAttribute(KafkaCountAttribute.name, "1");
+void ConsumeKafka::addAttributesToSingleMessageFlowFile(api::core::ProcessSession& session, api::core::FlowFile& flow_file, const rd_kafka_message_t& message) const {
+  session.setAttribute(flow_file, KafkaCountAttribute.name, "1");
   if (const auto message_key = get_encoded_message_key(message, key_attribute_encoding_)) {
-    flow_file.setAttribute(KafkaKeyAttribute.name, *message_key);
+    session.setAttribute(flow_file, KafkaKeyAttribute.name, *message_key);
   }
-  flow_file.setAttribute(KafkaOffsetAttribute.name, std::to_string(message.offset));
-  flow_file.setAttribute(KafkaPartitionAttribute.name, std::to_string(message.partition));
-  flow_file.setAttribute(KafkaTopicAttribute.name, rd_kafka_topic_name(message.rkt));
+  session.setAttribute(flow_file, KafkaOffsetAttribute.name, std::to_string(message.offset));
+  session.setAttribute(flow_file, KafkaPartitionAttribute.name, std::to_string(message.partition));
+  session.setAttribute(flow_file, KafkaTopicAttribute.name, rd_kafka_topic_name(message.rkt));
   if (headers_to_add_as_attributes_) {
-    for (const auto& [attr_key, attr_value]: getFlowFilesAttributesFromMessageHeaders(message)) { flow_file.setAttribute(attr_key, attr_value); }
+    for (const auto& [attr_key, attr_value]: getFlowFilesAttributesFromMessageHeaders(message)) { session.setAttribute(flow_file, attr_key, attr_value); }
   }
 }
 
-void ConsumeKafka::addAttributesToMessageBundleFlowFile(core::FlowFile& flow_file, const MessageBundle& message_bundle) const {
+void ConsumeKafka::addAttributesToMessageBundleFlowFile(api::core::ProcessSession& session, api::core::FlowFile& flow_file, const MessageBundle& message_bundle) const {
   gsl_Assert(!headers_to_add_as_attributes_);
-  flow_file.setAttribute(KafkaCountAttribute.name, std::to_string(message_bundle.getMessages().size()));
-  flow_file.setAttribute(KafkaOffsetAttribute.name, std::to_string(message_bundle.getLargestOffset()));
-  flow_file.setAttribute(KafkaPartitionAttribute.name, std::to_string(message_bundle.getMessages().front()->partition));
-  flow_file.setAttribute(KafkaTopicAttribute.name, rd_kafka_topic_name(message_bundle.getMessages().front()->rkt));
+  session.setAttribute(flow_file, KafkaCountAttribute.name, std::to_string(message_bundle.getMessages().size()));
+  session.setAttribute(flow_file, KafkaOffsetAttribute.name, std::to_string(message_bundle.getLargestOffset()));
+  session.setAttribute(flow_file, KafkaPartitionAttribute.name, std::to_string(message_bundle.getMessages().front()->partition));
+  session.setAttribute(flow_file, KafkaTopicAttribute.name, rd_kafka_topic_name(message_bundle.getMessages().front()->rkt));
 }
 
 void ConsumeKafka::commitOffsetsFromMessages(const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles) const {
   if (message_bundles.empty()) { return; }
 
-  const auto partitions = utils::rd_kafka_topic_partition_list_unique_ptr{rd_kafka_topic_partition_list_new(gsl::narrow<int>(message_bundles.size()))};
+  const auto partitions = rd_kafka_topic_partition_list_unique_ptr{rd_kafka_topic_partition_list_new(gsl::narrow<int>(message_bundles.size()))};
 
   for (const auto& [location, message_bundle] : message_bundles) {
     logger_->log_debug("Message bundle offsets: {} {} {}", location.topic, location.partition, message_bundle.getLargestOffset());
@@ -333,21 +283,21 @@ void ConsumeKafka::commitOffsetsFromMessages(const std::unordered_map<KafkaMessa
   }
 }
 
-void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession& session) const {
-  std::vector<std::pair<std::shared_ptr<core::FlowFile>, core::Relationship>> flow_files;
-  while (auto ff = session.get()) { flow_files.push_back({ff, Committed}); }
+void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(api::core::ProcessSession& session) const {
+  std::vector<std::pair<api::core::FlowFile, core::Relationship>> flow_files;
+  while (auto ff = session.get()) { flow_files.emplace_back(std::move(ff), Committed); }
   if (flow_files.empty()) { return; }
 
   std::unordered_map<KafkaMessageLocation, int64_t> max_offsets;
   for (auto& [flow_file, relationship]: std::ranges::reverse_view(flow_files)) {
-    auto topic_name = flow_file->getAttribute(KafkaTopicAttribute.name)
-        | utils::toExpected(make_error_code(core::AttributeErrorCode::MissingAttribute));
-    const auto offset = flow_file->getAttribute(KafkaOffsetAttribute.name)
-        | utils::toExpected(make_error_code(core::AttributeErrorCode::MissingAttribute))
-        | utils::andThen(parsing::parseIntegral<int64_t>);
-    const auto partition = flow_file->getAttribute(KafkaPartitionAttribute.name)
-        | utils::toExpected(make_error_code(core::AttributeErrorCode::MissingAttribute))
-        | utils::andThen(parsing::parseIntegral<int32_t>);
+    auto topic_name = session.getAttribute(flow_file, KafkaTopicAttribute.name)
+        | minifi::utils::toExpected(make_error_code(core::AttributeErrorCode::MissingAttribute));
+    const auto offset = session.getAttribute(flow_file, KafkaOffsetAttribute.name)
+        | minifi::utils::toExpected(make_error_code(core::AttributeErrorCode::MissingAttribute))
+        | minifi::utils::andThen(parsing::parseIntegral<int64_t>);
+    const auto partition = session.getAttribute(flow_file, KafkaPartitionAttribute.name)
+        | minifi::utils::toExpected(make_error_code(core::AttributeErrorCode::MissingAttribute))
+        | minifi::utils::andThen(parsing::parseIntegral<int32_t>);
     if (!topic_name || !offset || !partition) {
       logger_->log_error("Insufficient data for setting offsets. {} : {}, {} : {}, {} : {}",
           KafkaTopicAttribute.name,
@@ -362,13 +312,12 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession& sess
     curr_offset = std::max(curr_offset, *offset);
   }
 
-  const auto partitions = utils::rd_kafka_topic_partition_list_unique_ptr{rd_kafka_topic_partition_list_new(gsl::narrow<int>(max_offsets.size()))};
+  const auto partitions = rd_kafka_topic_partition_list_unique_ptr{rd_kafka_topic_partition_list_new(gsl::narrow<int>(max_offsets.size()))};
 
   for (const auto& [location, max_offset] : max_offsets) {
     rd_kafka_topic_partition_list_add(partitions.get(), location.topic.data(), location.partition)->offset = max_offset + 1;
   }
-  const auto commit_res = rd_kafka_commit(consumer_.get(), partitions.get(), 0);
-  switch (commit_res) {
+  switch (const auto commit_res = rd_kafka_commit(consumer_.get(), partitions.get(), 0)) {
     case RD_KAFKA_RESP_ERR_NO_ERROR: {
       logger_->log_debug("Commit successfully from {} flowfiles", flow_files.size());
       break;
@@ -386,49 +335,49 @@ void ConsumeKafka::commitOffsetsFromIncomingFlowFiles(core::ProcessSession& sess
       throw Exception(PROCESS_SESSION_EXCEPTION, fmt::format("Committing offset failed: {}: {}", magic_enum::enum_underlying(commit_res), rd_kafka_err2str(commit_res)));
     }
   }
-  for (const auto& [ff, relationship]: flow_files) { session.transfer(ff, relationship); }
+  for (auto& [ff, relationship]: flow_files) { session.transfer(std::move(ff), relationship); }
 }
 
-void ConsumeKafka::processMessages(core::ProcessSession& session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles) const {
+MinifiStatus ConsumeKafka::processMessages(api::core::ProcessSession& session, const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles) const {
   for (const auto& msg_bundle: message_bundles | std::views::values) {
     for (const auto& message: msg_bundle.getMessages()) {
       std::string message_content = extractMessage(*message);
       auto flow_file = session.create();
       session.writeBuffer(flow_file, message_content);
-      addAttributesToSingleMessageFlowFile(*flow_file, *message);
-      session.transfer(flow_file, Success);
+      addAttributesToSingleMessageFlowFile(session, flow_file, *message);
+      session.transfer(std::move(flow_file), Success);
     }
   }
-  session.commit();
   if (commit_policy_ == consume_kafka::CommitPolicyEnum::CommitAfterBatch) { commitOffsetsFromMessages(message_bundles); }
+  return MINIFI_STATUS_SUCCESS;
 }
 
-void ConsumeKafka::processMessageBundles(core::ProcessSession& session,
+MinifiStatus ConsumeKafka::processMessageBundles(api::core::ProcessSession& session,
     const std::unordered_map<KafkaMessageLocation, MessageBundle>& message_bundles, const std::string_view message_demarcator) const {
   for (const auto& msg_bundle: message_bundles | std::views::values) {
     auto flow_file = session.create();
-    auto merged_message_content = utils::string::join(message_demarcator, msg_bundle.getMessages(), [](const auto& message) {
+    auto merged_message_content = minifi::utils::string::join(message_demarcator, msg_bundle.getMessages(), [](const auto& message) {
       return extractMessage(*message);
     });
     session.writeBuffer(flow_file, merged_message_content);
-    addAttributesToMessageBundleFlowFile(*flow_file, msg_bundle);
-    session.transfer(flow_file, Success);
+    addAttributesToMessageBundleFlowFile(session, flow_file, msg_bundle);
+    session.transfer(std::move(flow_file), Success);
   }
+  return MINIFI_STATUS_SUCCESS;
 }
 
-void ConsumeKafka::onTrigger(core::ProcessContext&, core::ProcessSession& session) {
+MinifiStatus ConsumeKafka::onTriggerImpl(api::core::ProcessContext&, api::core::ProcessSession& session) {
   if (commit_policy_ == consume_kafka::CommitPolicyEnum::CommitFromIncomingFlowFiles) { commitOffsetsFromIncomingFlowFiles(session); }
   const auto message_bundles = pollKafkaMessages();
   if (message_bundles.empty()) {
     logger_->log_debug("No new messages");
-    return;
+    return MINIFI_STATUS_PROCESSOR_YIELD;
   }
   if (!message_demarcator_) {
-    processMessages(session, message_bundles);
+    return processMessages(session, message_bundles);
   } else {
-    processMessageBundles(session, message_bundles, *message_demarcator_);
+    return processMessageBundles(session, message_bundles, *message_demarcator_);
   }
 }
 
-REGISTER_RESOURCE(ConsumeKafka, Processor);
-}  // namespace org::apache::nifi::minifi::processors
+}  // namespace org::apache::nifi::minifi::kafka
