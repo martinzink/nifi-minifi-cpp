@@ -23,6 +23,7 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <span>
 
 #include "rdkafka.h"
 #include "api/utils/Ssl.h"

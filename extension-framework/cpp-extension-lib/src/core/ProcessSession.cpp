@@ -85,7 +85,7 @@ void CffiProcessSession::penalize(FlowFile& ff) {
 
 void CffiProcessSession::transfer(FlowFile ff, const minifi::core::Relationship& relationship) {
   const auto rel_name = relationship.getName();
-  if (MINIFI_STATUS_SUCCESS != MinifiProcessSessionTransfer(impl_, ff.release(), utils::toStringView(rel_name))) {
+  if (MINIFI_STATUS_SUCCESS != MinifiProcessSessionTransfer(impl_, ff.release(), utils::minifiStringView(rel_name))) {
     throw minifi::Exception(minifi::FILE_OPERATION_EXCEPTION, "Failed to transfer flowfile");
   }
 }
@@ -115,21 +115,21 @@ void CffiProcessSession::read(FlowFile& flow_file, const io::InputStreamCallback
 }
 
 void CffiProcessSession::setAttribute(FlowFile& ff, const std::string_view key, std::string value) {  // NOLINT(performance-unnecessary-value-param)
-  const MinifiStringView value_ref = utils::toStringView(value);
-  if (MINIFI_STATUS_SUCCESS != MinifiProcessSessionSetFlowFileAttribute(impl_, ff.get(), utils::toStringView(key), &value_ref)) {
+  const MinifiStringView value_ref = utils::minifiStringView(value);
+  if (MINIFI_STATUS_SUCCESS != MinifiProcessSessionSetFlowFileAttribute(impl_, ff.get(), utils::minifiStringView(key), &value_ref)) {
     throw minifi::Exception(minifi::FILE_OPERATION_EXCEPTION, "Failed to set attribute");
   }
 }
 
 void CffiProcessSession::removeAttribute(FlowFile& ff, const std::string_view key) {
-  if (MINIFI_STATUS_SUCCESS != MinifiProcessSessionSetFlowFileAttribute(impl_, ff.get(), utils::toStringView(key), nullptr)) {
+  if (MINIFI_STATUS_SUCCESS != MinifiProcessSessionSetFlowFileAttribute(impl_, ff.get(), utils::minifiStringView(key), nullptr)) {
     throw minifi::Exception(minifi::FILE_OPERATION_EXCEPTION, "Failed to remove attribute");
   }
 }
 
 std::optional<std::string> CffiProcessSession::getAttribute(FlowFile& ff, std::string_view key) {
   std::optional<std::string> result;
-  MinifiProcessSessionGetFlowFileAttribute(impl_, ff.get(), utils::toStringView(key), [] (void* user_ctx, MinifiStringView value) {
+  MinifiProcessSessionGetFlowFileAttribute(impl_, ff.get(), utils::minifiStringView(key), [] (void* user_ctx, MinifiStringView value) {
     *static_cast<std::optional<std::string>*>(user_ctx) = std::string{value.data, value.length};
   }, &result);
   return result;

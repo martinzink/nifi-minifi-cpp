@@ -25,7 +25,12 @@ KafkaProcessorBase::KafkaProcessorBase(core::ProcessorMetadata metadata) : Proce
 }
 
 std::optional<api::utils::net::SslData> KafkaProcessorBase::getSslData(api::core::ProcessContext& context) const {
-  return api::utils::net::getSslData(context, SSLContextService);
+  const auto controller_service_name = api::utils::parseOptionalProperty(context, SSLContextService);
+  if (!controller_service_name) {
+    return std::nullopt;
+  }
+
+  return context.getSslData(*controller_service_name) | utils::toOptional();
 }
 
 void KafkaProcessorBase::setKafkaAuthenticationParameters(api::core::ProcessContext& context, gsl::not_null<rd_kafka_conf_t*> config) {
@@ -55,7 +60,7 @@ void KafkaProcessorBase::setKafkaAuthenticationParameters(api::core::ProcessCont
   logger_->log_debug("Kafka sasl.mechanism [{}]", magic_enum::enum_name(sasl_mechanism));
 
   auto setKafkaConfigIfNotEmpty = [this, &context, config](const core::PropertyReference& property, const std::string& kafka_config_name, bool log_value = true) {
-    const std::string value = context.getProperty(property).value_or("");
+    const std::string value = context.getProperty(property, nullptr).value_or("");
     if (!value.empty()) {
       setKafkaConfigurationField(*config, kafka_config_name, value);
       if (log_value) {

@@ -98,10 +98,10 @@ void ConsumeKafka::createTopicPartitionList() {
 }
 
 void ConsumeKafka::extendConfigFromDynamicProperties(const api::core::ProcessContext& context) const {
-  context.onDynamicProperties([&](const std::string_view key, const std::string_view value) {
+  for (auto [key, value] : context.getDynamicProperties()) {
     logger_->log_trace("{}: {}", key, value);
     setKafkaConfigurationField(*conf_, key, value);
-  });
+  }
 }
 
 void ConsumeKafka::configureNewConnection(api::core::ProcessContext& context) {

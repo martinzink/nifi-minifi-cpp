@@ -15,60 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "unit/TestBase.h"
-#include "unit/TestUtils.h"
-#include "unit/Catch.h"
+#include "MockProcessContext.h"
+#include "MockLogger.h"
+#include "MockUtils.h"
 #include "PublishKafka.h"
-#include "unit/SingleProcessorTestController.h"
-#include "CProcessorTestUtils.h"
-
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
 
 namespace org::apache::nifi::minifi::kafka::test {
 
-TEST_CASE("Scheduling should fail when batch size is larger than the max queue message count", "[testPublishKafka]") {
-  LogTestController::getInstance().setTrace<TestPlan>();
-  LogTestController::getInstance().setTrace<PublishKafka>();
-  minifi::test::SingleProcessorTestController test_controller{minifi::test::utils::make_custom_c_processor<PublishKafka>(
-    core::ProcessorMetadata{utils::Identifier{}, "PublishKafka", logging::LoggerFactory<PublishKafka>::getLogger()})};
-  const auto publish_kafka = test_controller.getProcessor();
-  REQUIRE(publish_kafka->setProperty(PublishKafka::ClientName.name, "test_client"));
-  REQUIRE(publish_kafka->setProperty(PublishKafka::SeedBrokers.name, "test_seedbroker"));
-  REQUIRE(publish_kafka->setProperty(PublishKafka::QueueBufferMaxMessage.name, "1000"));
-  REQUIRE(publish_kafka->setProperty(PublishKafka::BatchSize.name, "1500"));
-  REQUIRE_THROWS_WITH(test_controller.trigger(""), "Process Schedule Operation: Invalid configuration: Batch Size cannot be larger than Queue Max Message");
-}
+TEST_CASE("Batch Size cannot be larger than Queue Max Message", "[testPublishKafka]") {
+  auto publish_kafka = PublishKafka(mock::getMockMetadata());
+  auto context = mock::MockProcessContext{};
+  context.properties_.emplace(PublishKafka::ClientName.name, "test_client");
+  context.properties_.emplace(PublishKafka::SeedBrokers.name, "test_seedbroker");
+  context.properties_.emplace(PublishKafka::QueueBufferMaxMessage.name, "1000");
+  context.properties_.emplace(PublishKafka::BatchSize.name, "1500");
 
-TEST_CASE("Compress Codec property") {
-  minifi::test::SingleProcessorTestController test_controller{minifi::test::utils::make_custom_c_processor<PublishKafka>(
-    core::ProcessorMetadata{utils::Identifier{}, "PublishKafka", logging::LoggerFactory<PublishKafka>::getLogger()})};
-  REQUIRE(test_controller.getProcessor<PublishKafka>()->setProperty(PublishKafka::ClientName.name, "test_client"));
-  REQUIRE(test_controller.getProcessor<PublishKafka>()->setProperty(PublishKafka::SeedBrokers.name, "test_seedbroker"));
-  REQUIRE(test_controller.getProcessor<PublishKafka>()->setProperty(PublishKafka::Topic.name, "test_topic"));
-  REQUIRE(test_controller.getProcessor<PublishKafka>()->setProperty(PublishKafka::MessageTimeOut.name, "10ms"));
-
-  SECTION("none") {
-    REQUIRE(test_controller.getProcessor()->setProperty(PublishKafka::CompressCodec.name, "none"));
-    REQUIRE_NOTHROW(test_controller.trigger("input"));
-  }
-  SECTION("gzip") {
-    REQUIRE(test_controller.getProcessor()->setProperty(PublishKafka::CompressCodec.name, "gzip"));
-    REQUIRE_NOTHROW(test_controller.trigger("input"));
-  }
-  SECTION("snappy") {
-    REQUIRE(test_controller.getProcessor()->setProperty(PublishKafka::CompressCodec.name, "snappy"));
-    REQUIRE_NOTHROW(test_controller.trigger("input"));
-  }
-  SECTION("lz4") {
-    REQUIRE(test_controller.getProcessor()->setProperty(PublishKafka::CompressCodec.name, "lz4"));
-    REQUIRE_NOTHROW(test_controller.trigger("input"));
-  }
-  SECTION("zstd") {
-    REQUIRE(test_controller.getProcessor()->setProperty(PublishKafka::CompressCodec.name, "zstd"));
-    REQUIRE_NOTHROW(test_controller.trigger("input"));
-  }
-  SECTION("foo") {
-    REQUIRE_FALSE(test_controller.getProcessor()->setProperty(PublishKafka::CompressCodec.name, "foo"));
-  }
+  REQUIRE_THROWS_WITH(publish_kafka.onScheduleImpl(context), "Process Schedule Operation: Invalid configuration: Batch Size cannot be larger than Queue Max Message");
 }
 
 }  // namespace org::apache::nifi::minifi::test

@@ -17,17 +17,17 @@
 # under the License.
 #
 
-file(GLOB KAFKA_INTEGRATION_TESTS "*.cpp")
+file(GLOB KAFKA_UNIT_TESTS "*.cpp")
 
 SET(EXTENSIONS_TEST_COUNT 0)
-FOREACH (testfile ${KAFKA_INTEGRATION_TESTS})
+FOREACH (testfile ${KAFKA_UNIT_TESTS})
     get_filename_component(testfilename "${testfile}" NAME_WE)
     add_minifi_executable("${testfilename}" "${testfile}")
     target_include_directories(${testfilename} BEFORE PRIVATE "${CMAKE_SOURCE_DIR}/extensions/kafka")
-    createTests("${testfilename}")
+    set_target_properties(${testName} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
     target_link_libraries(${testfilename} Catch2WithMain)
     target_link_libraries(${testfilename} minifi-rdkafka-extensions)
-    target_link_libraries(${testfilename} libminifi-c-unittest)
+    target_link_libraries(${testfilename} libmock-minifi)
     MATH(EXPR EXTENSIONS_TEST_COUNT "${EXTENSIONS_TEST_COUNT}+1")
     add_test(NAME "${testfilename}" COMMAND "${testfilename}" WORKING_DIRECTORY ${TEST_DIR})
     set_tests_properties("${testfilename}" PROPERTIES LABELS "librdkafka;memchecked")

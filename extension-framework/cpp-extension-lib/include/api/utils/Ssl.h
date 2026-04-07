@@ -22,7 +22,6 @@
 #include <filesystem>
 
 #include "utils/Enum.h"
-#include "api/core/ProcessContext.h"
 
 namespace org::apache::nifi::minifi::api::utils::net {
 
@@ -52,6 +51,5 @@ struct SslServerOptions {
       client_auth_option(client_auth_option) {}
 };
 
-std::optional<utils::net::SslData> getSslData(const core::ProcessContext& context, const minifi::core::PropertyReference& ssl_prop);
 
 }  // namespace org::apache::nifi::minifi::api::utils::net

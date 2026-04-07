@@ -1,6 +1,5 @@
 /**
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
+* Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
@@ -15,28 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #pragma once
 
-#include <iostream>
 #include <string>
 
-#include "fmt/chrono.h"
-#include "minifi-c.h"
 #include "minifi-cpp/core/logging/Logger.h"
 
-namespace org::apache::nifi::minifi::api::core::logging {
+namespace org::apache::nifi::minifi::mock {
+class MockLogger : public minifi::core::logging::Logger {
 
-class Logger : public minifi::core::logging::Logger { // TODO(mzink) CffiLogger
- public:
-  explicit Logger(MinifiLogger* impl): impl_(impl) {}
-
-  void set_max_log_size(int size) override;
-  void log_string(minifi::core::logging::LOG_LEVEL level, std::string str) override;
-  bool should_log(minifi::core::logging::LOG_LEVEL level) override;
-  [[nodiscard]] minifi::core::logging::LOG_LEVEL level() const override;
-
- private:
-  MinifiLogger* impl_;
+  void set_max_log_size(int) override {}
+  void log_string(minifi::core::logging::LOG_LEVEL, std::string ) override {}
+  bool should_log(minifi::core::logging::LOG_LEVEL) override { return true; }
+  [[nodiscard]] minifi::core::logging::LOG_LEVEL level() const override { return core::logging::LOG_LEVEL::debug;}
 };
-
-}  // namespace org::apache::nifi::minifi::api::core::logging
+}

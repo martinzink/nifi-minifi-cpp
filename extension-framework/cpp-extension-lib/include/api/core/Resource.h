@@ -49,17 +49,17 @@ void useProcessorClassDescription(Fn&& fn) {
   std::vector<MinifiDynamicPropertyDefinition> dynamic_properties;
   for (auto& prop : Class::DynamicProperties) {
     dynamic_properties.push_back(MinifiDynamicPropertyDefinition {
-      .name = utils::toStringView(prop.name),
-      .value = utils::toStringView(prop.value),
-      .description = utils::toStringView(prop.description),
+      .name = utils::minifiStringView(prop.name),
+      .value = utils::minifiStringView(prop.value),
+      .description = utils::minifiStringView(prop.description),
       .supports_expression_language = prop.supports_expression_language
     });
   }
   std::vector<MinifiRelationshipDefinition> relationships;
   for (auto& rel : Class::Relationships) {
     relationships.push_back(MinifiRelationshipDefinition{
-      .name = utils::toStringView(rel.name),
-      .description = utils::toStringView(rel.description)
+      .name = utils::minifiStringView(rel.name),
+      .description = utils::minifiStringView(rel.description)
     });
   }
   std::vector<std::vector<MinifiStringView>> attribute_relationships_cache;
@@ -67,20 +67,20 @@ void useProcessorClassDescription(Fn&& fn) {
   for (auto& attr : Class::OutputAttributes) {
     std::vector<MinifiStringView> rel_cache;
     for (auto& rel : attr.relationships) {
-      rel_cache.push_back(utils::toStringView(rel.name));
+      rel_cache.push_back(utils::minifiStringView(rel.name));
     }
     output_attributes.push_back(MinifiOutputAttributeDefinition {
-      .name = utils::toStringView(attr.name),
+      .name = utils::minifiStringView(attr.name),
       .relationships_count = gsl::narrow<uint32_t>(attr.relationships.size()),
       .relationships_ptr = rel_cache.data(),
-      .description = utils::toStringView(attr.description)
+      .description = utils::minifiStringView(attr.description)
     });
     attribute_relationships_cache.push_back(std::move(rel_cache));
   }
 
   MinifiProcessorClassDefinition description{
-    .full_name = utils::toStringView(full_name),
-    .description = utils::toStringView(Class::Description),
+    .full_name = utils::minifiStringView(full_name),
+    .description = utils::minifiStringView(Class::Description),
     .class_properties_count = gsl::narrow<uint32_t>(class_properties.size()),
     .class_properties_ptr = class_properties.data(),
     .dynamic_properties_count = gsl::narrow<uint32_t>(dynamic_properties.size()),
@@ -139,7 +139,7 @@ void useProcessorClassDescription(Fn&& fn) {
         std::vector<MinifiStringView> names;
         std::vector<double> values;
         for (auto& [name, val] : metrics) {
-          names.push_back(utils::toStringView(name));
+          names.push_back(utils::minifiStringView(name));
           values.push_back(val);
         }
         return MinifiPublishedMetricsCreate(gsl::narrow<uint32_t>(metrics.size()), names.data(), values.data());
@@ -158,8 +158,8 @@ void useControllerServiceClassDescription(Fn&& fn) {
 
   std::vector<MinifiPropertyDefinition> class_properties = utils::toProperties(Class::Properties, string_vector_cache);
 
-  MinifiControllerServiceClassDefinition description{.full_name = utils::toStringView(full_name),
-      .description = utils::toStringView(Class::Description),
+  MinifiControllerServiceClassDefinition description{.full_name = utils::minifiStringView(full_name),
+      .description = utils::minifiStringView(Class::Description),
       .class_properties_count = gsl::narrow<uint32_t>(class_properties.size()),
       .class_properties_ptr = class_properties.data(),
 

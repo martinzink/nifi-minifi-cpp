@@ -348,7 +348,7 @@ MinifiStatus PublishKafka::onScheduleImpl(api::core::ProcessContext& context) {
   logger_->log_debug("PublishKafka: Max Flow Segment Size [{}]", max_flow_seg_size_);
 
   // Attributes to Send as Headers
-  attributeNameRegex_ = context.getProperty(AttributeNameRegex)
+  attributeNameRegex_ = context.getProperty(AttributeNameRegex, nullptr)
     | utils::transform([](auto pattern_str) { return utils::Regex{std::move(pattern_str)}; })
     | utils::toOptional();
 
@@ -358,7 +358,7 @@ MinifiStatus PublishKafka::onScheduleImpl(api::core::ProcessContext& context) {
   conn_ = std::make_unique<KafkaConnection>(key_);
   configureNewConnection(context);
 
-  if (const auto message_key_field = context.getProperty(MessageKeyField); message_key_field && !message_key_field->empty()) {
+  if (const auto message_key_field = context.getProperty(MessageKeyField, nullptr); message_key_field && !message_key_field->empty()) {
     logger_->log_error("The {} property is set. This property is DEPRECATED and has no effect; please use Kafka Key instead.", MessageKeyField.name);
   }
 
@@ -411,7 +411,7 @@ void PublishKafka::configureNewConnection(api::core::ProcessContext& context) {
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, error_msg);
   }
 
-  if (const auto debug_context = context.getProperty(DebugContexts)) {
+  if (const auto debug_context = context.getProperty(DebugContexts, nullptr)) {
     result = rd_kafka_conf_set(conf.get(), "debug", debug_context->c_str(), err_chars.data(), err_chars.size());
     logger_->log_debug("PublishKafka: debug [{}]", *debug_context);
     if (result != RD_KAFKA_CONF_OK) {
@@ -420,7 +420,7 @@ void PublishKafka::configureNewConnection(api::core::ProcessContext& context) {
     }
   }
 
-  if (const auto max_message_size = context.getProperty(MaxMessageSize); max_message_size && !max_message_size->empty()) {
+  if (const auto max_message_size = context.getProperty(MaxMessageSize, nullptr); max_message_size && !max_message_size->empty()) {
     result = rd_kafka_conf_set(conf.get(), "message.max.bytes", max_message_size->c_str(), err_chars.data(), err_chars.size());
     logger_->log_debug("PublishKafka: message.max.bytes [{}]", *max_message_size);
     if (result != RD_KAFKA_CONF_OK) {
@@ -474,7 +474,7 @@ void PublishKafka::configureNewConnection(api::core::ProcessContext& context) {
     }
   }
 
-  if (const auto compress_codec = context.getProperty(CompressCodec); compress_codec && !compress_codec->empty() && *compress_codec != "none") {
+  if (const auto compress_codec = context.getProperty(CompressCodec, nullptr); compress_codec && !compress_codec->empty() && *compress_codec != "none") {
     result = rd_kafka_conf_set(conf.get(), "compression.codec", compress_codec->c_str(), err_chars.data(), err_chars.size());
     logger_->log_debug("PublishKafka: compression.codec [{}]", *compress_codec);
     if (result != RD_KAFKA_CONF_OK) {
@@ -488,7 +488,7 @@ void PublishKafka::configureNewConnection(api::core::ProcessContext& context) {
   // Add all the dynamic properties as librdkafka configurations
 
   std::optional<std::string> error_during_on_dyn_props = std::nullopt;
-  context.onDynamicProperties([&](const std::string_view prop_key, const std::string_view prop_value) {
+  for (auto [prop_key, prop_value] : context.getDynamicProperties()) {
     if (prop_value.empty()) {
       logger_->log_warn(
           "PublishKafka Dynamic Property '{}' is empty and therefore will not be configured",
@@ -500,7 +500,7 @@ void PublishKafka::configureNewConnection(api::core::ProcessContext& context) {
     if (result != RD_KAFKA_CONF_OK) {
       error_during_on_dyn_props = utils::string::join_pack(PREFIX_ERROR_MSG, err_chars.data());
     }
-  });
+  }
   if (error_during_on_dyn_props) {
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, *error_during_on_dyn_props);
 ; }
@@ -597,10 +597,10 @@ std::optional<api::utils::net::SslData> PublishKafka::getSslData(api::core::Proc
   if (auto result = KafkaProcessorBase::getSslData(context); result) { return result; }
 
   api::utils::net::SslData ssl_data;
-  if (auto security_ca = context.getProperty(SecurityCA)) { ssl_data.ca_loc = *security_ca; }
-  if (auto security_cert = context.getProperty(SecurityCert)) { ssl_data.cert_loc = *security_cert; }
-  if (auto security_private_key = context.getProperty(SecurityPrivateKey)) { ssl_data.key_loc = *security_private_key; }
-  if (auto security_private_key_pass = context.getProperty(SecurityPrivateKeyPassWord)) {
+  if (auto security_ca = context.getProperty(SecurityCA, nullptr)) { ssl_data.ca_loc = *security_ca; }
+  if (auto security_cert = context.getProperty(SecurityCert, nullptr)) { ssl_data.cert_loc = *security_cert; }
+  if (auto security_private_key = context.getProperty(SecurityPrivateKey, nullptr)) { ssl_data.key_loc = *security_private_key; }
+  if (auto security_private_key_pass = context.getProperty(SecurityPrivateKeyPassWord, nullptr)) {
     ssl_data.key_pw = *security_private_key_pass;
   }
   return ssl_data;
