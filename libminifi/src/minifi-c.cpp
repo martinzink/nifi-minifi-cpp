@@ -24,6 +24,7 @@
 #include "core/ProcessorMetrics.h"
 #include "core/extension/ExtensionManager.h"
 #include "minifi-cpp/Exception.h"
+#include "minifi-cpp/controllers/SSLContextServiceInterface.h"
 #include "minifi-cpp/core/Annotation.h"
 #include "minifi-cpp/core/ClassLoader.h"
 #include "minifi-cpp/core/ProcessContext.h"
@@ -35,8 +36,8 @@
 #include "minifi-cpp/core/PropertyValidator.h"
 #include "minifi-cpp/core/logging/Logger.h"
 #include "minifi-cpp/core/state/PublishedMetricProvider.h"
-#include "utils/CProcessor.h"
 #include "utils/CControllerService.h"
+#include "utils/CProcessor.h"
 #include "utils/PropertyErrors.h"
 
 namespace minifi = org::apache::nifi::minifi;
@@ -268,7 +269,7 @@ void useCControllerServiceClassDescription(const MinifiControllerServiceClassDef
   auto name_segments = minifi::utils::string::split(toStringView(class_description.full_name), "::");
   gsl_Assert(!name_segments.empty());
 
-  minifi::ClassDescription description{
+  const minifi::ClassDescription description{
     .type_ = minifi::ResourceType::ControllerService,
     .short_name_ = name_segments.back(),
     .full_name_ = minifi::utils::string::join(".", name_segments),
@@ -616,5 +617,53 @@ void MinifiProcessContextGetDynamicProperties(MinifiProcessContext* context, voi
   }
 }
 
+MinifiStatus MinifiProcessContextGetSslContextService(MinifiProcessContext* process_context, const MinifiStringView controller_service_name,
+    MinifiSslContextService** ssl_context_service_out) {
+  gsl_Assert(process_context != MINIFI_NULL);
+  const auto context = reinterpret_cast<minifi::core::ProcessContext*>(process_context);
+  const auto name_str = std::string{toStringView(controller_service_name)};
+  const auto service_shared_ptr = context->getControllerService(name_str, context->getProcessorInfo().getUUID());
+  if (!service_shared_ptr) { return MINIFI_STATUS_VALIDATION_FAILED; }
+  if (const auto ssl_context_service = dynamic_cast<minifi::controllers::SSLContextServiceInterface*>(service_shared_ptr.get())) {
+    *ssl_context_service_out = reinterpret_cast<MinifiSslContextService*>(ssl_context_service);
+    return MINIFI_STATUS_SUCCESS;
+  }
+  return MINIFI_STATUS_VALIDATION_FAILED;
+}
+
+MinifiStatus MinifiSslContextServiceGetCertificateFile(MinifiSslContextService* ssl_context_service, void(*cb)(void* user_ctx, MinifiStringView certificate_file), void* user_ctx) {
+  gsl_Assert(ssl_context_service != MINIFI_NULL);
+  const auto ssl_context = reinterpret_cast<minifi::controllers::SSLContextServiceInterface*>(ssl_context_service);
+  const auto cert_file = ssl_context->getCertificateFile();
+  cb(user_ctx, minifiStringView(cert_file.string()));
+
+  return MINIFI_STATUS_SUCCESS;
+}
+
+MinifiStatus MinifiSslContextServiceGetPassphrase(MinifiSslContextService* ssl_context_service, void(*cb)(void* user_ctx, MinifiStringView passphrase), void* user_ctx) {
+  gsl_Assert(ssl_context_service != MINIFI_NULL);
+  const auto ssl_context = reinterpret_cast<minifi::controllers::SSLContextServiceInterface*>(ssl_context_service);
+  const auto cert_file = ssl_context->getPassphrase();
+  cb(user_ctx, minifiStringView(cert_file));
+
+  return MINIFI_STATUS_SUCCESS;}
+
+MinifiStatus MinifiSslContextServiceGetPrivateKeyFile(MinifiSslContextService* ssl_context_service, void(*cb)(void* user_ctx, MinifiStringView private_key_file), void* user_ctx) {
+  gsl_Assert(ssl_context_service != MINIFI_NULL);
+  const auto ssl_context = reinterpret_cast<minifi::controllers::SSLContextServiceInterface*>(ssl_context_service);
+  const auto cert_file = ssl_context->getPrivateKeyFile();
+  cb(user_ctx, minifiStringView(cert_file.string()));
+
+  return MINIFI_STATUS_SUCCESS;
+}
+
+MinifiStatus MinifiSslContextServiceGetCACertificate(MinifiSslContextService* ssl_context_service, void(*cb)(void* user_ctx, MinifiStringView ca_certificate), void* user_ctx) {
+  gsl_Assert(ssl_context_service != MINIFI_NULL);
+  const auto ssl_context = reinterpret_cast<minifi::controllers::SSLContextServiceInterface*>(ssl_context_service);
+  const auto cert_file = ssl_context->getCACertificate();
+  cb(user_ctx, minifiStringView(cert_file.string()));
+
+  return MINIFI_STATUS_SUCCESS;
+}
 
 }  // extern "C"

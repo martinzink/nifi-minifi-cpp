@@ -38,12 +38,6 @@ struct std::hash<org::apache::nifi::minifi::kafka::ConsumeKafka::KafkaMessageLoc
 };
 
 namespace org::apache::nifi::minifi::kafka {
-// The upper limit for Max Poll Time is 4 seconds. This is because Watchdog would potentially start
-// reporting issues with the processor health otherwise
-bool consume_kafka::ConsumeKafkaMaxPollTimePropertyValidator::validate(const std::string_view input) const {
-  const auto parsed_time = parsing::parseDurationMinMax<std::chrono::nanoseconds>(input, 0ms, 4s);
-  return parsed_time.has_value();
-}
 
 MinifiStatus ConsumeKafka::onScheduleImpl(api::core::ProcessContext& context) {
   // Required properties
@@ -54,6 +48,9 @@ MinifiStatus ConsumeKafka::onScheduleImpl(api::core::ProcessContext& context) {
   message_header_encoding_ = api::utils::parseEnumProperty<KafkaEncoding>(context, MessageHeaderEncoding);
   duplicate_header_handling_ = api::utils::parseEnumProperty<consume_kafka::MessageHeaderPolicyEnum>(context, DuplicateHeaderHandling);
   max_poll_time_milliseconds_ = api::utils::parseDurationProperty(context, MaxPollTime);
+  if (max_poll_time_milliseconds_ > 4s) {
+    throw Exception(PROCESS_SCHEDULE_EXCEPTION, "MaxPollTime is too large (it should be less than 4s)");
+  }
   max_poll_records_ = gsl::narrow<uint32_t>(api::utils::parseU64Property(context, MaxPollRecords));
 
   // Optional properties

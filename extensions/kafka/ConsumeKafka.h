@@ -37,16 +37,6 @@
 
 namespace org::apache::nifi::minifi::kafka::consume_kafka {
 
-class ConsumeKafkaMaxPollTimePropertyValidator final : public minifi::core::PropertyValidator {
- public:
-  constexpr ~ConsumeKafkaMaxPollTimePropertyValidator() override { }  // NOLINT see comment at grandparent
-
-  [[nodiscard]] bool validate(std::string_view input) const override;
-  [[nodiscard]] std::optional<std::string_view> getEquivalentNifiStandardValidatorName() const override { return std::nullopt; }
-};
-
-inline constexpr ConsumeKafkaMaxPollTimePropertyValidator CONSUME_KAFKA_MAX_POLL_TIME_TYPE{};
-
 enum class CommitPolicyEnum { NoCommit, AutoCommit, CommitAfterBatch, CommitFromIncomingFlowFiles };
 
 enum class OffsetResetPolicyEnum { earliest, latest, none };
@@ -216,7 +206,7 @@ class ConsumeKafka final : public KafkaProcessorBase {
           .withDescription(
               "Specifies the maximum amount of time the consumer can use for polling data from the brokers. "
               "Polling is a blocking operation, so the upper limit of this value is specified in 4 seconds.")
-          .withValidator(consume_kafka::CONSUME_KAFKA_MAX_POLL_TIME_TYPE)
+          .withValidator(core::StandardPropertyValidators::TIME_PERIOD_VALIDATOR)
           .withDefaultValue(DEFAULT_MAX_POLL_TIME)
           .isRequired(true)
           .build();
