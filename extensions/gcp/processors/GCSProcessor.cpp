@@ -43,7 +43,7 @@ MinifiStatus GCSProcessor::onScheduleImpl(api::core::ProcessContext& context) {
     return MINIFI_STATUS_UNKNOWN_ERROR;
   }
 
-  endpoint_url_ = context.getProperty(EndpointOverrideURL) | utils::toOptional();
+  endpoint_url_ = api::utils::parseOptionalProperty(context, EndpointOverrideURL);
   if (endpoint_url_) { logger_->log_debug("Endpoint overwritten: {}", *endpoint_url_); }
   return MINIFI_STATUS_SUCCESS;
 }

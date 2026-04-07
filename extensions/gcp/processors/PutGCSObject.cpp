@@ -108,7 +108,7 @@ MinifiStatus PutGCSObject::onScheduleImpl(api::core::ProcessContext& context) {
     return status;
   }
 
-  if (auto encryption_key = context.getProperty(EncryptionKey)) {
+  if (const auto encryption_key = api::utils::parseOptionalProperty(context, EncryptionKey)) {
     try {
       encryption_key_ = gcs::EncryptionKey::FromBase64Key(*encryption_key);
     } catch (const google::cloud::RuntimeStatusError&) {
