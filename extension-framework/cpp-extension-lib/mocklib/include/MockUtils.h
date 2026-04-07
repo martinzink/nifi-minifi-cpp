@@ -21,13 +21,12 @@
 
 #include "MockLogger.h"
 #include "minifi-cpp/core/ProcessorMetadata.h"
-#include "minifi-cpp/core/logging/Logger.h"
 
 namespace org::apache::nifi::minifi::mock {
 inline core::ProcessorMetadata getMockMetadata() {
   return core::ProcessorMetadata{
   .uuid = utils::Identifier{},
   .name = "Processor",
-  .logger = std::make_shared<mock::MockLogger>()};
+  .logger = std::make_shared<MockLogger>()};
 }
 }

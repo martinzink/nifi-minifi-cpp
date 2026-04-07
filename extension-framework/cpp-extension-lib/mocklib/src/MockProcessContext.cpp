@@ -17,29 +17,23 @@
 
 #include "MockProcessContext.h"
 
-#include "utils/expected.h"
 #include "utils/PropertyErrors.h"
+#include "utils/expected.h"
 
 namespace org::apache::nifi::minifi::mock {
 
 nonstd::expected<std::string, std::error_code> MockProcessContext::getProperty(std::string_view name, const api::core::FlowFile* flow_file) const {
-  if (!properties_.contains(name)) {
-    return nonstd::make_unexpected(make_error_code(core::PropertyErrorCode::PropertyNotSet));
-  }
+  if (!properties_.contains(name)) { return nonstd::make_unexpected(make_error_code(core::PropertyErrorCode::PropertyNotSet)); }
   return properties_.at(std::string(name));
 }
 
 nonstd::expected<std::string, std::error_code> MockProcessContext::getProperty(const minifi::core::PropertyReference& property_reference,
     const api::core::FlowFile* flow_file) const {
   auto property = getProperty(property_reference.name, flow_file);
-  if (property)
-    return property;
-  if (property_reference.default_value) {
-    return std::string{*property_reference.default_value};
-  }
+  if (property) { return property; }
+  if (property_reference.default_value) { return std::string{*property_reference.default_value}; }
   return nonstd::make_unexpected(make_error_code(core::PropertyErrorCode::PropertyNotSet));
 }
-
 
 nonstd::expected<MinifiControllerService*, std::error_code> MockProcessContext::getControllerService(std::string_view controller_service_name,
     std::string_view controller_service_class) const {

@@ -776,4 +776,4 @@ MinifiStatus PublishKafka::onTriggerImpl(api::core::ProcessContext& context, api
   return MINIFI_STATUS_SUCCESS;
 }
 
-}  // namespace org::apache::nifi::minifi::kafka::processors
+}  // namespace org::apache::nifi::minifi::kafka

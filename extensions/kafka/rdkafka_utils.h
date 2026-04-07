@@ -107,7 +107,7 @@ class KafkaOpaque {
   static void logCallback(const rd_kafka_t* rk, int level, const char* /*fac*/, const char* buf);
   static void rebalance_cb(rd_kafka_t* rk, rd_kafka_resp_err_t trigger, rd_kafka_topic_partition_list_t* partitions, void* opaque_ptr);
 
-private:
+ private:
   core::logging::Logger& logger_;
 };
 }  // namespace org::apache::nifi::minifi::kafka

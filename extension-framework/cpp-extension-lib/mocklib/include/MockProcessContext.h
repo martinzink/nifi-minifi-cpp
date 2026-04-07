@@ -16,10 +16,10 @@
  */
 
 #pragma once
-#include "../../include/api/core/ProcessContext.h"
-#include <system_error>
 #include <map>
-#include "utils/expected.h"
+#include <system_error>
+
+#include "api/core/ProcessContext.h"
 
 namespace org::apache::nifi::minifi::mock {
 class MockProcessContext : public api::core::ProcessContext {
@@ -38,7 +38,8 @@ class MockProcessContext : public api::core::ProcessContext {
   std::map<std::string, std::string, std::less<>> properties_;
 
  protected:
-  [[nodiscard]] nonstd::expected<std::string, std::error_code> getProperty(std::string_view name, const api::core::FlowFile* flow_file) const override;
+  [[nodiscard]] nonstd::expected<std::string, std::error_code> getProperty(std::string_view name,
+      const api::core::FlowFile* flow_file) const override;
 };
 
 }  // namespace org::apache::nifi::minifi::mock

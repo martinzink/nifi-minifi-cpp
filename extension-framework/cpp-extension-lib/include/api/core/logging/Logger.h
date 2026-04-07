@@ -26,7 +26,7 @@
 
 namespace org::apache::nifi::minifi::api::core::logging {
 
-class Logger : public minifi::core::logging::Logger { // TODO(mzink) CffiLogger
+class Logger : public minifi::core::logging::Logger {  // TODO(mzink) CffiLogger
  public:
   explicit Logger(MinifiLogger* impl): impl_(impl) {}
 

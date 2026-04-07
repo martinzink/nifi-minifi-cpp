@@ -610,7 +610,8 @@ MinifiStatus MinifiProcessContextGetControllerService(
   return MINIFI_STATUS_VALIDATION_FAILED;
 }
 
-void MinifiProcessContextGetDynamicProperties(MinifiProcessContext* context, void(*cb)(void* user_ctx, MinifiStringView dynamic_property_name, MinifiStringView dynamic_property_value), void* user_ctx) {
+void MinifiProcessContextGetDynamicProperties(MinifiProcessContext* context,
+    void (*cb)(void* user_ctx, MinifiStringView dynamic_property_name, MinifiStringView dynamic_property_value), void* user_ctx) {
   gsl_Assert(context != MINIFI_NULL);
   for (auto& [key, value] : reinterpret_cast<minifi::core::ProcessContext*>(context)->getDynamicProperties()) {
     cb(user_ctx, minifiStringView(key), minifiStringView(value));
@@ -631,7 +632,8 @@ MinifiStatus MinifiProcessContextGetSslContextService(MinifiProcessContext* proc
   return MINIFI_STATUS_VALIDATION_FAILED;
 }
 
-MinifiStatus MinifiSslContextServiceGetCertificateFile(MinifiSslContextService* ssl_context_service, void(*cb)(void* user_ctx, MinifiStringView certificate_file), void* user_ctx) {
+MinifiStatus MinifiSslContextServiceGetCertificateFile(MinifiSslContextService* ssl_context_service,
+    void (*cb)(void* user_ctx, MinifiStringView certificate_file), void* user_ctx) {
   gsl_Assert(ssl_context_service != MINIFI_NULL);
   const auto ssl_context = reinterpret_cast<minifi::controllers::SSLContextServiceInterface*>(ssl_context_service);
   const auto cert_file = ssl_context->getCertificateFile();
@@ -640,15 +642,18 @@ MinifiStatus MinifiSslContextServiceGetCertificateFile(MinifiSslContextService* 
   return MINIFI_STATUS_SUCCESS;
 }
 
-MinifiStatus MinifiSslContextServiceGetPassphrase(MinifiSslContextService* ssl_context_service, void(*cb)(void* user_ctx, MinifiStringView passphrase), void* user_ctx) {
+MinifiStatus MinifiSslContextServiceGetPassphrase(MinifiSslContextService* ssl_context_service,
+    void (*cb)(void* user_ctx, MinifiStringView passphrase), void* user_ctx) {
   gsl_Assert(ssl_context_service != MINIFI_NULL);
   const auto ssl_context = reinterpret_cast<minifi::controllers::SSLContextServiceInterface*>(ssl_context_service);
   const auto cert_file = ssl_context->getPassphrase();
   cb(user_ctx, minifiStringView(cert_file));
 
-  return MINIFI_STATUS_SUCCESS;}
+  return MINIFI_STATUS_SUCCESS;
+}
 
-MinifiStatus MinifiSslContextServiceGetPrivateKeyFile(MinifiSslContextService* ssl_context_service, void(*cb)(void* user_ctx, MinifiStringView private_key_file), void* user_ctx) {
+MinifiStatus MinifiSslContextServiceGetPrivateKeyFile(MinifiSslContextService* ssl_context_service,
+    void (*cb)(void* user_ctx, MinifiStringView private_key_file), void* user_ctx) {
   gsl_Assert(ssl_context_service != MINIFI_NULL);
   const auto ssl_context = reinterpret_cast<minifi::controllers::SSLContextServiceInterface*>(ssl_context_service);
   const auto cert_file = ssl_context->getPrivateKeyFile();
@@ -657,7 +662,8 @@ MinifiStatus MinifiSslContextServiceGetPrivateKeyFile(MinifiSslContextService* s
   return MINIFI_STATUS_SUCCESS;
 }
 
-MinifiStatus MinifiSslContextServiceGetCACertificate(MinifiSslContextService* ssl_context_service, void(*cb)(void* user_ctx, MinifiStringView ca_certificate), void* user_ctx) {
+MinifiStatus MinifiSslContextServiceGetCACertificate(MinifiSslContextService* ssl_context_service,
+    void (*cb)(void* user_ctx, MinifiStringView ca_certificate), void* user_ctx) {
   gsl_Assert(ssl_context_service != MINIFI_NULL);
   const auto ssl_context = reinterpret_cast<minifi::controllers::SSLContextServiceInterface*>(ssl_context_service);
   const auto cert_file = ssl_context->getCACertificate();

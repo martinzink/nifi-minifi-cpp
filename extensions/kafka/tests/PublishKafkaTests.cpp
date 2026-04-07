@@ -15,8 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "MockProcessContext.h"
 #include "MockLogger.h"
+#include "MockProcessContext.h"
 #include "MockUtils.h"
 #include "PublishKafka.h"
 #include "catch2/catch_test_macros.hpp"
@@ -32,7 +32,8 @@ TEST_CASE("Batch Size cannot be larger than Queue Max Message", "[testPublishKaf
   context.properties_.emplace(PublishKafka::QueueBufferMaxMessage.name, "1000");
   context.properties_.emplace(PublishKafka::BatchSize.name, "1500");
 
-  REQUIRE_THROWS_WITH(publish_kafka.onScheduleImpl(context), "Process Schedule Operation: Invalid configuration: Batch Size cannot be larger than Queue Max Message");
+  REQUIRE_THROWS_WITH(publish_kafka.onScheduleImpl(context),
+      "Process Schedule Operation: Invalid configuration: Batch Size cannot be larger than Queue Max Message");
 }
 
-}  // namespace org::apache::nifi::minifi::test
+}  // namespace org::apache::nifi::minifi::kafka::test

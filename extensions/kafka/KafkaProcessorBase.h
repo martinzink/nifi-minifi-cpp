@@ -36,7 +36,7 @@ enum class SASLMechanismOption { GSSAPI, PLAIN };
 }  // namespace kafka
 
 class KafkaProcessorBase : public api::core::ProcessorImpl {
-public:
+ public:
   EXTENSIONAPI static constexpr auto SSLContextService =
       core::PropertyDefinitionBuilder<>::createProperty("SSL Context Service")
           .withDescription("SSL Context Service Name")
@@ -88,7 +88,7 @@ public:
   EXTENSIONAPI static constexpr auto Properties = std::to_array<core::PropertyReference>({SSLContextService,
       SecurityProtocol, KerberosServiceName, KerberosPrincipal, KerberosKeytabPath, SASLMechanism, Username, Password});
 
-  KafkaProcessorBase(core::ProcessorMetadata metadata);
+  explicit KafkaProcessorBase(core::ProcessorMetadata metadata);
 
   KafkaProcessorBase(const KafkaProcessorBase&) = delete;
   KafkaProcessorBase(KafkaProcessorBase&&) = delete;
