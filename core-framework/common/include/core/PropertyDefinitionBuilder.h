@@ -31,7 +31,7 @@ inline constexpr auto TypeNames = std::array<std::string_view, sizeof...(Types)>
 template <size_t N>
 struct StringLiteral {
   char value[N];
-  explicit constexpr StringLiteral(const char (&str)[N]) {
+  constexpr StringLiteral(const char (&str)[N]) {  // NOLINT(runtime/explicit)
     for (size_t i = 0; i < N; ++i) {
       value[i] = str[i];
     }

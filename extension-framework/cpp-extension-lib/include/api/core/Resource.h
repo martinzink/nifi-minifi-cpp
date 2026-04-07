@@ -100,7 +100,7 @@ void useProcessorClassDescription(Fn&& fn) {
           return new Class{minifi::core::ProcessorMetadata{
               .uuid = minifi::utils::Identifier::parse(std::string{metadata.uuid.data, metadata.uuid.length}).value(),
               .name = std::string{metadata.name.data, metadata.name.length},
-              .logger = std::make_shared<logging::Logger>(metadata.logger)}};
+              .logger = std::make_shared<logging::CffiLogger>(metadata.logger)}};
         } catch (...) { return nullptr; }
       },
       .destroy = [] (MINIFI_OWNED void* self) -> void {
@@ -169,7 +169,7 @@ void useControllerServiceClassDescription(Fn&& fn) {
               return new Class{minifi::core::ControllerServiceMetadata{
                   .uuid = minifi::utils::Identifier::parse(std::string{metadata.uuid.data, metadata.uuid.length}).value(),
                   .name = std::string{metadata.name.data, metadata.name.length},
-                  .logger = std::make_shared<logging::Logger>(metadata.logger)}};
+                  .logger = std::make_shared<logging::CffiLogger>(metadata.logger)}};
             } catch (...) { return nullptr; }
           },
           .destroy = [](MINIFI_OWNED void* self) -> void { delete static_cast<Class*>(self); },
