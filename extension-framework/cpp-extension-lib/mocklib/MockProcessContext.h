@@ -20,13 +20,14 @@
 #include <system_error>
 
 #include "api/core/ProcessContext.h"
+#include "utils/PropertyErrors.h"
 
 namespace org::apache::nifi::minifi::mock {
 class MockProcessContext : public api::core::ProcessContext {
  public:
   explicit MockProcessContext() = default;
 
-  [[nodiscard]] nonstd::expected<std::string, std::error_code> getProperty(const minifi::core::PropertyReference& property_reference,
+  [[nodiscard]] inline nonstd::expected<std::string, std::error_code> getProperty(const minifi::core::PropertyReference& property_reference,
       const api::core::FlowFile* flow_file) const override;
   [[nodiscard]] nonstd::expected<MinifiControllerService*, std::error_code> getControllerService(std::string_view controller_service_name,
       std::string_view controller_service_class) const override;
@@ -41,5 +42,36 @@ class MockProcessContext : public api::core::ProcessContext {
   [[nodiscard]] nonstd::expected<std::string, std::error_code> getProperty(std::string_view name,
       const api::core::FlowFile* flow_file) const override;
 };
+
+inline nonstd::expected<std::string, std::error_code> MockProcessContext::getProperty(std::string_view name,
+    const api::core::FlowFile* flow_file) const {
+  if (!properties_.contains(name)) { return nonstd::make_unexpected(make_error_code(core::PropertyErrorCode::PropertyNotSet)); }
+  return properties_.at(std::string(name));
+}
+
+inline nonstd::expected<std::string, std::error_code> MockProcessContext::getProperty(const minifi::core::PropertyReference& property_reference,
+    const api::core::FlowFile* flow_file) const {
+  auto property = getProperty(property_reference.name, flow_file);
+  if (property) { return property; }
+  if (property_reference.default_value) { return std::string{*property_reference.default_value}; }
+  return nonstd::make_unexpected(make_error_code(core::PropertyErrorCode::PropertyNotSet));
+}
+
+inline nonstd::expected<MinifiControllerService*, std::error_code> MockProcessContext::getControllerService(std::string_view,
+    std::string_view) const {
+  return nullptr;
+}
+
+inline std::map<std::string, std::string> MockProcessContext::getDynamicProperties() const {
+  return {};
+}
+
+inline bool MockProcessContext::hasNonEmptyProperty(std::string_view name) const {
+  return properties_.contains(name);
+}
+
+inline nonstd::expected<api::utils::net::SslData, std::error_code> MockProcessContext::getSslData(std::string_view) const {
+  return api::utils::net::SslData{};
+}
 
 }  // namespace org::apache::nifi::minifi::mock

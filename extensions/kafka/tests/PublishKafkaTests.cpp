@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "MockLogger.h"
+#include "../../../extension-framework/cpp-extension-lib/mocklib/MockLogger.h"
 #include "MockProcessContext.h"
 #include "MockUtils.h"
 #include "PublishKafka.h"

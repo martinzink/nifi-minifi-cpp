@@ -19,6 +19,7 @@
 #include <utility>
 #include <optional>
 #include <iostream>
+#include <expected>
 
 #include "nonstd/expected.hpp"
 #include "utils/detail/MonadicOperationWrappers.h"
@@ -239,19 +240,19 @@ auto try_expression(F&& action, Args&&... args) noexcept {
 
 }  // namespace org::apache::nifi::minifi::utils
 
-#if __has_include( <expected> )
+template <typename T, typename E>
+concept HasStdExpected = requires { typename std::expected<T, E>; };
+
 template <typename T, typename E>
 concept ExpectedTypesDoNotConflict =
-    (!std::same_as<nonstd::expected<T, E>, std::expected<T, E>>);
+    (!HasStdExpected<T, E> ||
+     !std::same_as<nonstd::expected<T, E>, std::expected<T, E>>);
 
 // based on fmt::formatter<std::expected<T, E>, Char>
 template <typename T, typename E, typename Char>
 requires ExpectedTypesDoNotConflict<T, E> &&
          (std::is_void_v<T> || fmt::is_formattable<T, Char>::value) &&
          fmt::is_formattable<E, Char>::value
-#else
-template <typename T, typename E, typename Char>
-# endif
 struct fmt::formatter<nonstd::expected<T, E>, Char> {
   constexpr auto parse(auto& ctx) { return ctx.begin(); }
 
