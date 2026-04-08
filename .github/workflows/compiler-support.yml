@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ { id: gcc-12, base_image: gcc:12-bookworm },
+        platform: [ { id: gcc-13, base_image: gcc:13-bookworm },
                     { id: gcc-15, base_image: gcc:15-bookworm } ]
     runs-on: ubuntu-24.04
 
