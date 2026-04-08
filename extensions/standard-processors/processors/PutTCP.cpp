@@ -24,7 +24,6 @@
 #include "core/ProcessSession.h"
 #include "core/Resource.h"
 #include "minifi-cpp/core/logging/Logger.h"
-#include "range/v3/range/conversion.hpp"
 #include "minifi-cpp/utils/gsl.h"
 #include "utils/net/AsioCoro.h"
 #include "utils/net/AsioSocketUtils.h"

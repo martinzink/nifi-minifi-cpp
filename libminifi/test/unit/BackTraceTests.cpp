@@ -19,12 +19,12 @@
 #include <utility>
 #include <future>
 #include <memory>
+#include <ranges>
 #include "unit/TestBase.h"
 #include "unit/Catch.h"
 #include "utils/BackTrace.h"
 #include "utils/Monitors.h"
 #include "utils/ThreadPool.h"
-#include "range/v3/algorithm/any_of.hpp"
 
 using namespace std::literals::chrono_literals;
 
@@ -71,10 +71,10 @@ TEST_CASE("BT2", "[TPT2]") {
     }
 #ifdef HAS_EXECINFO
     auto first_worker_trace = traces.front();
-    CHECK(ranges::any_of(first_worker_trace.getTraces(), [](const std::string& trace_line) { return trace_line.find("run_tasks") != trace_line.npos; }));
+    CHECK(std::ranges::any_of(first_worker_trace.getTraces(), [](const std::string& trace_line) { return trace_line.find("run_tasks") != trace_line.npos; }));
 #ifdef DEBUG
-    CHECK(ranges::any_of(first_worker_trace.getTraces(), [](const std::string& trace_line) { return trace_line.find("outer_function") != trace_line.npos; }));
-    CHECK(ranges::any_of(first_worker_trace.getTraces(), [](const std::string& trace_line) { return trace_line.find("inner_function") != trace_line.npos; }));
+    CHECK(std::ranges::any_of(first_worker_trace.getTraces(), [](const std::string& trace_line) { return trace_line.find("outer_function") != trace_line.npos; }));
+    CHECK(std::ranges::any_of(first_worker_trace.getTraces(), [](const std::string& trace_line) { return trace_line.find("inner_function") != trace_line.npos; }));
 #endif
 #endif
     done_with_checking.test_and_set();

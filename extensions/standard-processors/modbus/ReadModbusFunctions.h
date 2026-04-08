@@ -20,14 +20,14 @@
 
 #include <regex>
 #include <vector>
+#include <algorithm>
+#include <ranges>
 
 #include "minifi-cpp/core/RecordField.h"
 #include "fmt/format.h"
 #include "modbus/ByteConverters.h"
 #include "modbus/Error.h"
-#include "range/v3/algorithm/copy.hpp"
 #include "range/v3/view/chunk.hpp"
-#include "range/v3/view/drop.hpp"
 #include "utils/StringUtils.h"
 #include "utils/expected.h"
 
@@ -106,8 +106,8 @@ class ReadRegisters : public ReadModbusFunction {
   [[nodiscard]] std::array<std::byte, 5> rawPdu() const override {
     std::array<std::byte, 5> result;
     result[0] = getFunctionCode();
-    ranges::copy(toBytes(starting_address_), (result | ranges::views::drop(1) | ranges::views::take(2)).begin());
-    ranges::copy(toBytes(wordCount()), (result | ranges::views::drop(3) | ranges::views::take(2)).begin());
+    std::ranges::copy(toBytes(starting_address_), (result | std::views::drop(1) | std::views::take(2)).begin());
+    std::ranges::copy(toBytes(wordCount()), (result | std::views::drop(3) | std::views::take(2)).begin());
 
     return result;
   }
@@ -128,7 +128,7 @@ class ReadRegisters : public ReadModbusFunction {
     std::vector<T> holding_registers{};
     for (auto&& register_chunk : ranges::views::chunk(*resp_bytes, std::max(sizeof(T), sizeof(uint16_t)))) {
       std::array<std::byte, std::max(sizeof(T), sizeof(uint16_t))> register_value{};
-      ranges::copy(register_chunk, register_value.begin());
+      std::ranges::copy(register_chunk, register_value.begin());
       holding_registers.push_back(fromBytes<T>(std::move(register_value)));
     }
     if (holding_registers.size() == 1) {

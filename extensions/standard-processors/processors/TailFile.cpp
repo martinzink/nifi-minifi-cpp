@@ -27,7 +27,6 @@
 #include <utility>
 #include <vector>
 
-#include "range/v3/action/sort.hpp"
 
 #include "io/CRCStream.h"
 #include "utils/ConfigurationUtils.h"
@@ -559,7 +558,7 @@ std::vector<TailState> TailFile::sortAndSkipMainFilePrefix(const TailState &stat
     return std::tie(left.mtime_, left.tail_state_.file_name_) <
            std::tie(right.mtime_, right.tail_state_.file_name_);
   };
-  matched_files_with_mtime |= ranges::actions::sort(first_by_mtime_then_by_name);
+  std::ranges::sort(matched_files_with_mtime, first_by_mtime_then_by_name);
 
   if (!matched_files_with_mtime.empty() && state.position_ > 0) {
     TailState &first_rotated_file = matched_files_with_mtime[0].tail_state_;
