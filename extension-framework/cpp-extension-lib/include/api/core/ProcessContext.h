@@ -18,9 +18,9 @@
 #pragma once
 
 #include <string>
+#include <expected>
 
 #include "minifi-c.h"
-#include <expected>
 #include "minifi-cpp/core/PropertyDefinition.h"
 #include "api/core/FlowFile.h"
 
