@@ -19,11 +19,11 @@
 #define EXTENSION_LIST "*minifi-system*, *minifi-standard-processors*"  // NOLINT(cppcoreguidelines-macro-usage)
 
 #include <memory>
+#include <ranges>
 
 #include "core/state/nodes/AgentInformation.h"
 #include "core/state/nodes/DeviceInformation.h"
 #include "minifi-cpp/agent/agent_version.h"
-#include "range/v3/algorithm/contains.hpp"
 #include "range/v3/algorithm/find_if.hpp"
 #include "unit/Catch.h"
 #include "unit/TestBase.h"
@@ -220,8 +220,8 @@ std::vector<std::string> listExtensionsInManifest(minifi::state::response::Agent
 TEST_CASE("Compiled but not loaded extensions are not included in the manifest") {
   minifi::state::response::AgentManifest manifest("minifi-system");
   const auto extensions = listExtensionsInManifest(manifest);
-  CHECK(ranges::contains(extensions, "minifi-standard-processors"));
-  CHECK_FALSE(ranges::contains(extensions, "minifi-test-processors"));
+  CHECK(std::ranges::contains(extensions, "minifi-standard-processors"));
+  CHECK_FALSE(std::ranges::contains(extensions, "minifi-test-processors"));
 }
 
 enum ComponentType {

@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 #include <string>
+#include <ranges>
 
 #include "unit/Catch.h"
 #include "processors/ListenTCP.h"
 #include "unit/SingleProcessorTestController.h"
 #include "controllers/SSLContextService.h"
-#include "range/v3/algorithm/contains.hpp"
 #include "catch2/generators/catch_generators.hpp"
 #include "unit/TestUtils.h"
 
@@ -34,7 +34,7 @@ namespace org::apache::nifi::minifi::test {
 void check_for_attributes(core::FlowFile& flow_file, uint16_t port) {
   CHECK(std::to_string(port) == flow_file.getAttribute("tcp.port"));
   const auto local_addresses = {"127.0.0.1", "::ffff:127.0.0.1", "::1"};
-  CHECK(ranges::contains(local_addresses, flow_file.getAttribute("tcp.sender")));
+  CHECK(std::ranges::contains(local_addresses, flow_file.getAttribute("tcp.sender")));
 }
 
 TEST_CASE("ListenTCP test multiple messages", "[ListenTCP][NetworkListenerProcessor]") {

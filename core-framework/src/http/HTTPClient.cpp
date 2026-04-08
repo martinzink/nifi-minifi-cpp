@@ -26,11 +26,11 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <ranges>
+#include <algorithm>
 
 #include "core/Resource.h"
 #include "magic_enum.hpp"
-#include "range/v3/algorithm/all_of.hpp"
-#include "range/v3/action/transform.hpp"
 #include "minifi-cpp/utils/gsl.h"
 #include "utils/HTTPUtils.h"
 #include "minifi-cpp/utils/Literals.h"
@@ -507,7 +507,7 @@ bool HTTPClient::isValidHttpHeaderField(std::string_view field_name) {
 
   // RFC822 3.1.2: The  field-name must be composed of printable ASCII characters
   // (i.e., characters that  have  values  between  33.  and  126., decimal, except colon).
-  return ranges::all_of(field_name, [](char c) { return c >= 33 && c <= 126 && c != ':'; });
+  return std::ranges::all_of(field_name, [](char c) { return c >= 33 && c <= 126 && c != ':'; });
 }
 
 std::string HTTPClient::replaceInvalidCharactersInHttpHeaderFieldName(std::string field_name) {
@@ -517,7 +517,7 @@ std::string HTTPClient::replaceInvalidCharactersInHttpHeaderFieldName(std::strin
 
   // RFC822 3.1.2: The  field-name must be composed of printable ASCII characters
   // (i.e., characters that  have  values  between  33.  and  126., decimal, except colon).
-  ranges::actions::transform(field_name, [](char ch) {  // NOLINT: false positive: Add #include <algorithm> for transform  [build/include_what_you_use] [4]
+  std::ranges::transform(field_name, field_name.begin(), [](char ch) {
     return (ch >= 33 && ch <= 126 && ch != ':') ? ch : '-';
   });
   return field_name;

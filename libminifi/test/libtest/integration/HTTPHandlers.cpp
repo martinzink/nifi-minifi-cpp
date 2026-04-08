@@ -18,6 +18,7 @@
 #include "HTTPHandlers.h"
 
 #include <algorithm>
+#include <ranges>
 
 #include "CivetStream.h"
 #include "io/BufferStream.h"
@@ -25,7 +26,6 @@
 #include "minifi-cpp/agent/agent_docs.h"
 #include "minifi-cpp/agent/agent_version.h"
 #include "minifi-cpp/utils/gsl.h"
-#include "range/v3/algorithm/contains.hpp"
 #include "range/v3/view/filter.hpp"
 #include "range/v3/view/view.hpp"
 #include "rapidjson/error/en.h"
@@ -399,7 +399,7 @@ void HeartbeatHandler::verifyProperties(const rapidjson::Value& operation_node, 
 
       auto allowed_not_sensitive_configuration_properties = minifi::Configuration::CONFIGURATION_PROPERTIES | ranges::views::filter([&](const auto& configuration_property) {
         const auto& configuration_property_name = configuration_property.first;
-        return !ranges::contains(sensitive_props, configuration_property_name) && !ranges::contains(disallowed_properties, configuration_property_name);
+        return !std::ranges::contains(sensitive_props, configuration_property_name) && !std::ranges::contains(disallowed_properties, configuration_property_name);
       });
       for (const auto& [property_name, property_validator] : allowed_not_sensitive_configuration_properties) {
         std::unordered_map<std::string, std::string> config_property;

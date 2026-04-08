@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
+#include <ranges>
+
 #include "utils/TimeUtil.h"
-#include "range/v3/algorithm/contains.hpp"
 #include "fmt/format.h"
 #include "fmt/chrono.h"
 
@@ -94,7 +95,7 @@ std::optional<std::chrono::system_clock::time_point> parseRfc3339(const std::str
   char delimiter_char = 0;
   stream.get(delimiter_char);
 
-  if (stream.fail() || !ranges::contains(accepted_delimiters, delimiter_char))
+  if (stream.fail() || !std::ranges::contains(accepted_delimiters, delimiter_char))
     return std::nullopt;
 
   std::chrono::system_clock::duration time_part;

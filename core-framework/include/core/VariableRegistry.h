@@ -26,7 +26,6 @@
 #include "minifi-cpp/properties/Configure.h"
 #include "utils/OptionalUtils.h"
 #include "utils/StringUtils.h"
-#include "range/v3/algorithm/contains.hpp"
 
 namespace org::apache::nifi::minifi::core {
 
@@ -63,7 +62,7 @@ class VariableRegistryImpl : public virtual VariableRegistry {
         .transform([](std::string&& list) { return utils::string::split(std::move(list), ","); });
 
     auto not_password = [](const std::string& s) { return !s.contains("password"); };
-    auto not_blacklisted = [&black_listed_options](const std::string& s) { return !(black_listed_options && ranges::contains(*black_listed_options, s)); };
+    auto not_blacklisted = [&black_listed_options](const std::string& s) { return !(black_listed_options && std::ranges::contains(*black_listed_options, s)); };
 
     for (const auto& option : options | std::views::filter(not_password) | std::views::filter(not_blacklisted)) {
       if (const auto val = configuration_->get(option)) {

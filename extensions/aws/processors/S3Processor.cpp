@@ -20,11 +20,11 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <ranges>
 
 #include "AWSCredentialsService.h"
 #include "S3Wrapper.h"
 #include "minifi-cpp/core/ProcessContext.h"
-#include "range/v3/algorithm/contains.hpp"
 #include "utils/HTTPUtils.h"
 #include "utils/StringUtils.h"
 #include "utils/ProcessorConfigUtils.h"

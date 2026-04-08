@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 #include <string>
+#include <ranges>
 
 #include "unit/Catch.h"
 #include "processors/ListenUDP.h"
 #include "unit/SingleProcessorTestController.h"
 #include "controllers/SSLContextService.h"
-#include "range/v3/algorithm/contains.hpp"
 #include "unit/TestUtils.h"
 
 using ListenUDP = org::apache::nifi::minifi::processors::ListenUDP;
@@ -32,7 +32,7 @@ namespace org::apache::nifi::minifi::test {
 void check_for_attributes(core::FlowFile& flow_file, uint16_t server_port, uint16_t remote_port) {
   const auto local_addresses = {"127.0.0.1", "::ffff:127.0.0.1", "::1"};
   CHECK(std::to_string(server_port) == flow_file.getAttribute("udp.port"));
-  CHECK(ranges::contains(local_addresses, flow_file.getAttribute("udp.sender")));
+  CHECK(std::ranges::contains(local_addresses, flow_file.getAttribute("udp.sender")));
   CHECK(std::to_string(remote_port) == flow_file.getAttribute("udp.sender.port"));
 }
 

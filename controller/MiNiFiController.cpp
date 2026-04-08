@@ -20,6 +20,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <ranges>
 
 #include "Controller.h"
 #include "Defaults.h"
@@ -32,7 +33,6 @@
 #include "core/ConfigurationFactory.h"
 #include "core/extension/ExtensionManager.h"
 #include "properties/Configure.h"
-#include "range/v3/algorithm/contains.hpp"
 #include "utils/Environment.h"
 
 namespace minifi = org::apache::nifi::minifi;
@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
     .help("Starts provided components");
   argument_parser.add_argument("-l", "--list")
     .action([](const std::string& value) {
-      if (ranges::contains(std::array{"components", "connections"}, value)) {
+      if (std::ranges::contains(std::array{"components", "connections"}, value)) {
         return value;
       }
       throw std::runtime_error("List command only accepts the following parameters: [components, connections]");

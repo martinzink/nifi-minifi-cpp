@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include <string>
+#include <ranges>
 
 #include "unit/Catch.h"
 #include "processors/GetTCP.h"
@@ -23,7 +24,6 @@
 #include "utils/net/AsioCoro.h"
 #include "utils/net/AsioSocketUtils.h"
 #include "controllers/SSLContextService.h"
-#include "range/v3/algorithm/contains.hpp"
 #include "minifi-cpp/utils/gsl.h"
 
 using GetTCP = org::apache::nifi::minifi::processors::GetTCP;
@@ -34,7 +34,7 @@ namespace org::apache::nifi::minifi::test {
 
 void check_for_attributes(core::FlowFile& flow_file, uint16_t port) {
   const auto local_addresses = {"127.0.0.1:" + std::to_string(port), "::ffff:127.0.0.1:" + std::to_string(port), "::1:" + std::to_string(port)};
-  CHECK(ranges::contains(local_addresses, flow_file.getAttribute(GetTCP::SourceEndpoint.name)));
+  CHECK(std::ranges::contains(local_addresses, flow_file.getAttribute(GetTCP::SourceEndpoint.name)));
 }
 
 minifi::utils::net::SslData createSslDataForServer() {
@@ -261,10 +261,10 @@ TEST_CASE("GetTCP test multiple endpoints", "[GetTCP]") {
     success_flow_file_contents.push_back(controller.plan->getContent(flow_file));
   }
 
-  CHECK(ranges::contains(success_flow_file_contents, "abcdefghijklmnopqrstuvwxyz\n"));
-  CHECK(ranges::contains(success_flow_file_contents, "Bye\n"));
-  CHECK(ranges::contains(success_flow_file_contents, "012345678901234567890\n"));
-  CHECK(ranges::contains(success_flow_file_contents, "Auf Wiedersehen\n"));
+  CHECK(std::ranges::contains(success_flow_file_contents, "abcdefghijklmnopqrstuvwxyz\n"));
+  CHECK(std::ranges::contains(success_flow_file_contents, "Bye\n"));
+  CHECK(std::ranges::contains(success_flow_file_contents, "012345678901234567890\n"));
+  CHECK(std::ranges::contains(success_flow_file_contents, "Auf Wiedersehen\n"));
 }
 
 TEST_CASE("GetTCP max queue and max batch size test", "[GetTCP]") {

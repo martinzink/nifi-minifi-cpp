@@ -20,11 +20,11 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <ranges>
 
 #include "minifi-cpp/core/ProcessContext.h"
 #include "core/ProcessSession.h"
 #include "core/Resource.h"
-#include "range/v3/algorithm/all_of.hpp"
 #include "rdkafka_utils.h"
 #include "utils/ProcessorConfigUtils.h"
 #include "utils/StringUtils.h"
@@ -76,10 +76,10 @@ class PublishKafka::Messages {
     if (interrupted_) { oss << "interrupted, "; }
     for (size_t ffi = 0; ffi < flow_files_.size(); ++ffi) {
       const auto& [flow_file_error, messages] = flow_files_[ffi];
-      if (!flow_file_error && ranges::all_of(messages, messageresult_ok)) {
+      if (!flow_file_error && std::ranges::all_of(messages, messageresult_ok)) {
         continue;  // don't log the happy path to reduce log spam
       }
-      if (!flow_file_error && ranges::all_of(messages, messageresult_inflight)) {
+      if (!flow_file_error && std::ranges::all_of(messages, messageresult_inflight)) {
         flow_files_in_flight.push_back(ffi);
         continue;  // don't log fully in-flight flow files here, log them at the end instead
       }
@@ -103,8 +103,8 @@ class PublishKafka::Messages {
     std::unique_lock<std::mutex> lock(mutex_);
     cv_.wait(lock, [this, &lock] {
       if (logger_->should_log(core::logging::LOG_LEVEL::trace)) { logger_->log_trace("{}", logStatus(lock)); }
-      return interrupted_ || ranges::all_of(this->flow_files_, [](const FlowFileResult& flow_file) {
-        return flow_file.flow_file_error || ranges::all_of(flow_file.messages, [](const MessageResult& message) {
+      return interrupted_ || std::ranges::all_of(this->flow_files_, [](const FlowFileResult& flow_file) {
+        return flow_file.flow_file_error || std::ranges::all_of(flow_file.messages, [](const MessageResult& message) {
           return message.status != MessageStatus::InFlight;
         });
       });

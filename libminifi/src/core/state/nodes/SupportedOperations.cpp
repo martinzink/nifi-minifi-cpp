@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
+#include <ranges>
+
 #include "core/state/nodes/SupportedOperations.h"
 #include "core/Resource.h"
-#include "range/v3/algorithm/contains.hpp"
 #include "range/v3/view/filter.hpp"
 #include "range/v3/view/view.hpp"
 #include "utils/Enum.h"
@@ -47,7 +48,7 @@ SupportedOperations::Metadata SupportedOperations::buildUpdatePropertiesMetadata
   auto sensitive_properties = Configuration::getSensitiveProperties(configuration_reader_);
   auto updatable_not_sensitive_configuration_properties = minifi::Configuration::CONFIGURATION_PROPERTIES | ranges::views::filter([&](const auto& configuration_property) {
     const auto& configuration_property_name = configuration_property.first;
-    return !ranges::contains(sensitive_properties, configuration_property_name)
+    return !std::ranges::contains(sensitive_properties, configuration_property_name)
         && (!update_policy_controller_ || update_policy_controller_->canUpdate(std::string(configuration_property_name)));
   });
 

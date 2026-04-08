@@ -18,10 +18,11 @@
 #include <windows.h>
 #include <wincrypt.h>
 
+#include <ranges>
+
 #include "unit/TestUtils.h"
 #include "unit/Catch.h"
 #include "utils/tls/WindowsCertStoreLocation.h"
-#include "range/v3/algorithm/contains.hpp"
 
 namespace utils = org::apache::nifi::minifi::utils;
 
@@ -45,7 +46,7 @@ TEST_CASE("LocalMachine is the default WindowsCertStoreLocation", "[WindowsCertS
 
 TEST_CASE("CurrentUser and LocalMachine are among the allowed values of WindowsCertStoreLocation", "[WindowsCertStoreLocation][LOCATION_NAMES]") {
   const auto& allowed_locations = utils::tls::WindowsCertStoreLocation::LOCATION_NAMES;
-  CHECK(ranges::contains(allowed_locations, "CurrentUser"));
-  CHECK(ranges::contains(allowed_locations, "LocalMachine"));
-  CHECK_FALSE(ranges::contains(allowed_locations, "SomebodyElsesComputer"));
+  CHECK(std::ranges::contains(allowed_locations, "CurrentUser"));
+  CHECK(std::ranges::contains(allowed_locations, "LocalMachine"));
+  CHECK_FALSE(std::ranges::contains(allowed_locations, "SomebodyElsesComputer"));
 }

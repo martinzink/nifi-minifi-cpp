@@ -19,6 +19,7 @@
 
 #include <string>
 #include <memory>
+#include <ranges>
 
 #include "AWSCredentialsService.h"
 #include "minifi-cpp/properties/Properties.h"
@@ -27,7 +28,6 @@
 #include "minifi-cpp/core/ProcessContext.h"
 #include "core/ProcessSession.h"
 #include "core/Resource.h"
-#include "range/v3/algorithm/contains.hpp"
 #include "utils/ProcessorConfigUtils.h"
 
 namespace org::apache::nifi::minifi::aws::processors {
@@ -89,7 +89,7 @@ void PutS3Object::onSchedule(core::ProcessContext& context, core::ProcessSession
   logger_->log_debug("PutS3Object: Multipart Upload Max Age Threshold {}", multipart_upload_max_age_threshold_);
 
   const auto checksum_algorithm_str = parseProperty(context, ChecksumAlgorithm);
-  if (!ranges::contains(CHECKSUM_ALGORITHMS, checksum_algorithm_str)) {
+  if (!std::ranges::contains(CHECKSUM_ALGORITHMS, checksum_algorithm_str)) {
     throw Exception(PROCESS_SCHEDULE_EXCEPTION, "Checksum Algorithm property missing or invalid");
   }
 
@@ -126,7 +126,7 @@ bool PutS3Object::setCannedAcl(
     put_s3_request_params.canned_acl = *canned_acl;
   }
 
-  if (!put_s3_request_params.canned_acl.empty() && !ranges::contains(CANNED_ACLS, put_s3_request_params.canned_acl)) {
+  if (!put_s3_request_params.canned_acl.empty() && !std::ranges::contains(CANNED_ACLS, put_s3_request_params.canned_acl)) {
     logger_->log_error("Canned ACL is invalid!");
     return false;
   }

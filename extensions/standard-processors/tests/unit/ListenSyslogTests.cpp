@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
+#include <ranges>
 
 #include "unit/Catch.h"
 #include "ListenSyslog.h"
 #include "unit/SingleProcessorTestController.h"
 #include "unit/TestUtils.h"
 #include "controllers/SSLContextService.h"
-#include "range/v3/algorithm/contains.hpp"
 
 using ListenSyslog = org::apache::nifi::minifi::processors::ListenSyslog;
 
@@ -201,7 +201,7 @@ constexpr std::string_view invalid_syslog = "not syslog";
 void check_for_only_basic_attributes(core::FlowFile& flow_file, uint16_t port, std::string_view protocol) {
   CHECK(std::to_string(port) == flow_file.getAttribute("syslog.port"));
   CHECK(protocol == flow_file.getAttribute("syslog.protocol"));
-  CHECK(ranges::contains(local_addresses, flow_file.getAttribute("syslog.sender")));
+  CHECK(std::ranges::contains(local_addresses, flow_file.getAttribute("syslog.sender")));
 
   CHECK(std::nullopt == flow_file.getAttribute("syslog.valid"));
   CHECK(std::nullopt == flow_file.getAttribute("syslog.priority"));
@@ -218,7 +218,7 @@ void check_for_only_basic_attributes(core::FlowFile& flow_file, uint16_t port, s
 void check_parsed_attributes(const core::FlowFile& flow_file, const ValidRFC5424Message& original_message, uint16_t port, std::string_view protocol) {
   CHECK(std::to_string(port) == flow_file.getAttribute("syslog.port"));
   CHECK(protocol == flow_file.getAttribute("syslog.protocol"));
-  CHECK(ranges::contains(local_addresses, flow_file.getAttribute("syslog.sender")));
+  CHECK(std::ranges::contains(local_addresses, flow_file.getAttribute("syslog.sender")));
 
   CHECK("true" == flow_file.getAttribute("syslog.valid"));
   CHECK(original_message.priority_ == flow_file.getAttribute("syslog.priority"));
@@ -237,7 +237,7 @@ void check_parsed_attributes(const core::FlowFile& flow_file, const ValidRFC5424
 void check_parsed_attributes(const core::FlowFile& flow_file, const ValidRFC3164Message& original_message, uint16_t port, std::string_view protocol) {
   CHECK(std::to_string(port) == flow_file.getAttribute("syslog.port"));
   CHECK(protocol == flow_file.getAttribute("syslog.protocol"));
-  CHECK(ranges::contains(local_addresses, flow_file.getAttribute("syslog.sender")));
+  CHECK(std::ranges::contains(local_addresses, flow_file.getAttribute("syslog.sender")));
 
   CHECK("true" == flow_file.getAttribute("syslog.valid"));
   CHECK(original_message.priority_ == flow_file.getAttribute("syslog.priority"));

@@ -16,10 +16,11 @@
  */
 #include <algorithm>
 #include <string_view>
+#include <ranges>
+
 #include "unit/Catch.h"
 #include "RollingWindow.h"
 #include "range/v3/view/zip.hpp"
-#include "range/v3/algorithm/contains.hpp"
 
 namespace org::apache::nifi::minifi::test {
 
@@ -58,9 +59,9 @@ TEST_CASE("RollingWindow: fix time window, oldest entries are removed first", "[
     window.removeOlderThan(1);
     const auto entries = window.getEntries();
     REQUIRE(compareEntriesTimestamps(entries, {1, 2, 3, 4}));
-    REQUIRE(ranges::contains(entries, std::string_view{"1"}, &RollingWindow::Entry::value));
-    REQUIRE(ranges::contains(entries, std::string_view{"2bar"}, &RollingWindow::Entry::value));
-    REQUIRE(ranges::contains(entries, std::string_view{"3foo"}, &RollingWindow::Entry::value));
+    REQUIRE(std::ranges::contains(entries, std::string_view{"1"}, &RollingWindow::Entry::value));
+    REQUIRE(std::ranges::contains(entries, std::string_view{"2bar"}, &RollingWindow::Entry::value));
+    REQUIRE(std::ranges::contains(entries, std::string_view{"3foo"}, &RollingWindow::Entry::value));
   }
 
   SECTION("removeOlderThan(2): removes 1") {
