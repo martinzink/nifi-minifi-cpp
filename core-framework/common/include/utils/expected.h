@@ -239,12 +239,15 @@ auto try_expression(F&& action, Args&&... args) noexcept {
 
 }  // namespace org::apache::nifi::minifi::utils
 
-template <typename T, typename E>
-concept HasStdExpected = requires { typename std::expected<T, E>; };
+# if __has_include( <expected> )
+constexpr bool HasStdExpected = true;
+# else
+constexpr bool HasStdExpected = false;
+# endif
 
 template <typename T, typename E>
 concept ExpectedTypesDoNotConflict =
-    (!HasStdExpected<T, E> ||
+    (!HasStdExpected ||
      !std::same_as<nonstd::expected<T, E>, std::expected<T, E>>);
 
 // based on fmt::formatter<std::expected<T, E>, Char>
