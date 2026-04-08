@@ -560,11 +560,10 @@ uint64_t MinifiProcessSessionGetFlowFileSize(MinifiProcessSession* session, Mini
 MinifiStatus MinifiProcessSessionGetFlowFileId(MinifiProcessSession* session, MinifiFlowFile* flowfile, void(*cb)(void* user_ctx, MinifiStringView flow_file_id), void* user_ctx) {
   gsl_Assert(session != MINIFI_NULL);
   gsl_Assert(flowfile != MINIFI_NULL);
-  const auto flow_file_uuid = (*reinterpret_cast<std::shared_ptr<minifi::core::FlowFile>*>(flowfile))->getUUIDStr().view();
-  cb(user_ctx, minifiStringView(flow_file_uuid));
+  const auto uuid_small_str = (*reinterpret_cast<std::shared_ptr<minifi::core::FlowFile>*>(flowfile))->getUUIDStr();
+  cb(user_ctx, minifiStringView(uuid_small_str.view()));
   return MINIFI_STATUS_SUCCESS;
 }
-
 
 MinifiStatus MinifiControllerServiceContextGetProperty(MinifiControllerServiceContext* context, MinifiStringView property_name,
     void (*result_cb)(void* user_ctx, MinifiStringView result), void* user_ctx) {
@@ -582,7 +581,6 @@ MinifiStatus MinifiControllerServiceContextGetProperty(MinifiControllerServiceCo
     default: return MINIFI_STATUS_UNKNOWN_ERROR;
   }
 }
-
 
 MinifiStatus MinifiProcessContextGetControllerService(
     MinifiProcessContext* process_context,
