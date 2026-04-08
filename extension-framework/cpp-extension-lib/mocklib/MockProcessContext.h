@@ -43,8 +43,8 @@ class MockProcessContext : public api::core::ProcessContext {
       const api::core::FlowFile* flow_file) const override;
 };
 
-inline nonstd::expected<std::string, std::error_code> MockProcessContext::getProperty(std::string_view name,
-    const api::core::FlowFile* flow_file) const {
+inline nonstd::expected<std::string, std::error_code> MockProcessContext::getProperty(const std::string_view name,
+    const api::core::FlowFile*) const {
   if (!properties_.contains(name)) { return nonstd::make_unexpected(make_error_code(core::PropertyErrorCode::PropertyNotSet)); }
   return properties_.at(std::string(name));
 }
