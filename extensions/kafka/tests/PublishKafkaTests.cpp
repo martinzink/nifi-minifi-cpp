@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "../../../extension-framework/cpp-extension-lib/mocklib/MockLogger.h"
-#include "MockProcessContext.h"
-#include "MockUtils.h"
+#include "../../../extension-framework/cpp-extension-lib/mocklib/include/MockLogger.h"
+#include "../../../extension-framework/cpp-extension-lib/mocklib/include/MockProcessContext.h"
+#include "../../../extension-framework/cpp-extension-lib/mocklib/include/MockUtils.h"
 #include "PublishKafka.h"
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers.hpp"

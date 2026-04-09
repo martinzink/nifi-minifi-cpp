@@ -17,7 +17,8 @@
 # under the License.
 #
 
-add_library(libmock-minifi INTERFACE)
-target_link_libraries(libmock-minifi INTERFACE minifi-cpp-extension-lib minifi-core-framework-common minifi-c-api)
-target_link_options(libmock-minifi INTERFACE -undefined dynamic_lookup)
-target_include_directories(libmock-minifi INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+file(GLOB SRC_FILES CONFIGURE_DEPENDS "src/*.cpp")
+
+add_library(libmock-minifi STATIC ${SRC_FILES})
+target_link_libraries(libmock-minifi PUBLIC minifi-cpp-extension-lib minifi-core-framework-common minifi-c-api)
+target_include_directories(libmock-minifi PUBLIC include)
