@@ -25,3 +25,11 @@ EXPORTS
   MinifiProcessSessionSetFlowFileAttribute
   MinifiProcessSessionGetFlowFileAttribute
   MinifiProcessSessionGetFlowFileAttributes
+  MinifiProcessSessionGetFlowFileSize
+  MinifiProcessSessionGetFlowFileId
+  MinifiProcessContextGetDynamicProperties
+  MinifiProcessContextGetSslContextService
+  MinifiSslContextServiceGetCertificateFile
+  MinifiSslContextServiceGetPassphrase
+  MinifiSslContextServiceGetPrivateKeyFile
+  MinifiSslContextServiceGetCACertificate
