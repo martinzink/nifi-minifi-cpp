@@ -21,11 +21,7 @@ if (NOT (ENABLE_ALL OR ENABLE_COUCHBASE))
     return()
 endif()
 
-if (WIN32)
-    include(Couchbase_1_0_2)
-else()
-    include(Couchbase)
-endif()
+include(Couchbase)
 
 include(${CMAKE_SOURCE_DIR}/extensions/ExtensionHeader.txt)
 
@@ -34,7 +30,7 @@ file(GLOB SOURCES  "*.cpp" "controllerservices/*.cpp" "processors/*.cpp")
 add_minifi_library(minifi-couchbase SHARED ${SOURCES})
 
 target_include_directories(minifi-couchbase PRIVATE BEFORE "${CMAKE_CURRENT_SOURCE_DIR}" "controllerservices" "processors" ${COUCHBASE_INCLUDE_DIR})
-target_link_libraries(minifi-couchbase ${LIBMINIFI} couchbase_cxx_client_static hdr_histogram_static snappy llhttp::llhttp)
+target_link_libraries(minifi-couchbase ${LIBMINIFI} couchbase_cxx_client::couchbase_cxx_client_static hdr_histogram_static snappy llhttp::llhttp taocpp::json)
 
 register_extension(minifi-couchbase "COUCHBASE EXTENSIONS" COUCHBASE-EXTENSIONS "This enables Couchbase support" "extensions/couchbase/tests")
 
