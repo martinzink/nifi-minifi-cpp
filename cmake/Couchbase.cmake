@@ -30,6 +30,13 @@ set(COUCHBASE_CXX_CLIENT_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 set(COUCHBASE_CXX_CLIENT_POST_LINKED_OPENSSL ON CACHE BOOL "" FORCE)
 set(COUCHBASE_CXX_CLIENT_INSTALL OFF CACHE BOOL "" FORCE)
 
+# Fix for MSVC + ASIO C++20/23 concept evaluation bugs
+if(MSVC)
+    add_compile_definitions(ASIO_DISABLE_CONCEPTS)
+    # Ensure Windows 10 API target so ASIO networking features are fully enabled
+    add_compile_definitions(_WIN32_WINNT=0x0A00)
+endif()
+
 set(PATCH_FILE_1 "${CMAKE_SOURCE_DIR}/thirdparty/couchbase/remove-thirdparty.patch")
 set(PATCH_FILE_2 "${CMAKE_SOURCE_DIR}/thirdparty/couchbase/c++23_fixes.patch")
 set(PATCH_FILE_3 "${CMAKE_SOURCE_DIR}/thirdparty/couchbase/use_fmt_instead_of_spdlog_fmt.patch")
