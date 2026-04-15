@@ -31,6 +31,10 @@ add_minifi_library(minifi-couchbase SHARED ${SOURCES})
 
 target_include_directories(minifi-couchbase PRIVATE BEFORE "${CMAKE_CURRENT_SOURCE_DIR}" "controllerservices" "processors")
 target_include_directories(minifi-couchbase SYSTEM PRIVATE ${COUCHBASE_INCLUDE_DIR})
+# Demote preprocessor warnings so <ciso646> doesn't break the build
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+target_compile_options(minifi-couchbase PRIVATE -Wno-error=cpp)
+endif()
 target_link_libraries(minifi-couchbase ${LIBMINIFI} couchbase_cxx_client::couchbase_cxx_client_static hdr_histogram_static snappy llhttp::llhttp taocpp::json)
 
 register_extension(minifi-couchbase "COUCHBASE EXTENSIONS" COUCHBASE-EXTENSIONS "This enables Couchbase support" "extensions/couchbase/tests")
