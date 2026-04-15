@@ -33,8 +33,6 @@ set(COUCHBASE_CXX_CLIENT_INSTALL OFF CACHE BOOL "" FORCE)
 # Fix for MSVC + ASIO C++20/23 concept evaluation bugs
 if(MSVC)
     add_compile_definitions(ASIO_DISABLE_CONCEPTS)
-    # Ensure Windows 10 API target so ASIO networking features are fully enabled
-    add_compile_definitions(_WIN32_WINNT=0x0A00)
 endif()
 
 set(PATCH_FILE_1 "${CMAKE_SOURCE_DIR}/thirdparty/couchbase/remove-thirdparty.patch")
