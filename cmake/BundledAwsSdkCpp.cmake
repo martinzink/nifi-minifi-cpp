@@ -16,35 +16,41 @@
 # under the License.
 
 function(use_bundled_libaws SOURCE_DIR BINARY_DIR)
-    set(PATCH_FILE1 "${SOURCE_DIR}/thirdparty/aws-sdk-cpp/dll-export-injection.patch")
-    set(PATCH_FILE2 "${SOURCE_DIR}/thirdparty/aws-sdk-cpp/bundle-openssl.patch")
-    set(PATCH_FILE3 "${SOURCE_DIR}/thirdparty/aws-sdk-cpp/fix-finding-s2n.patch")
+    set(DLL_EXPORT_INJECTION_PATCH "${SOURCE_DIR}/thirdparty/aws-sdk-cpp/dll-export-injection.patch")
+    set(FIX_FINDING_S2N_PATCH "${SOURCE_DIR}/thirdparty/aws-sdk-cpp/fix-finding-s2n.patch")
+    set(S2N_OPENSSL_PATCH "${SOURCE_DIR}/thirdparty/aws-sdk-cpp/s2n.patch")
+    set(AWS_C_CAL_OPENSSL_PATCH "${SOURCE_DIR}/thirdparty/aws-sdk-cpp/aws-c-cal.patch")
+
+    # The Bash patch command now applies the diffs, deletes all rogue find modules,
+    # and physically rewrites all find_package calls to include your shims.
     set(AWS_SDK_CPP_PATCH_COMMAND ${Bash_EXECUTABLE} -c "set -x &&\
-            (\"${Patch_EXECUTABLE}\" -p1 -R -s -f --dry-run -i \"${PATCH_FILE1}\" || \"${Patch_EXECUTABLE}\" -p1 -N -i \"${PATCH_FILE1}\") &&\
-            (\"${Patch_EXECUTABLE}\" -p1 -R -s -f --dry-run -i \"${PATCH_FILE2}\" || \"${Patch_EXECUTABLE}\" -p1 -N -i \"${PATCH_FILE2}\") &&\
-            (\"${Patch_EXECUTABLE}\" -p1 -R -s -f --dry-run -i \"${PATCH_FILE3}\" || \"${Patch_EXECUTABLE}\" -p1 -N -i \"${PATCH_FILE3}\") &&\
+            (\"${Patch_EXECUTABLE}\" -p1 -R -s -f --dry-run -i \"${DLL_EXPORT_INJECTION_PATCHDLL_EXPORT_INJECTION_PATCH}\" || \"${Patch_EXECUTABLE}\" -p1 -N -i \"${DLL_EXPORT_INJECTION_PATCH}\") &&\
+            (\"${Patch_EXECUTABLE}\" -p1 -R -s -f --dry-run -i \"${FIX_FINDING_S2N_PATCH}\" || \"${Patch_EXECUTABLE}\" -p1 -N -i \"${FIX_FINDING_S2N_PATCH}\") &&\
+            (\"${Patch_EXECUTABLE}\" -d crt/aws-crt-cpp/crt/s2n -p1 -R -s -f --dry-run -i \"${S2N_OPENSSL_PATCH}\" || \"${Patch_EXECUTABLE}\" -d crt/aws-crt-cpp/crt/s2n/ -p1 -N -i \"${S2N_OPENSSL_PATCH}\") &&\
+            (\"${Patch_EXECUTABLE}\" -d crt/aws-crt-cpp/crt/aws-c-cal -p1 -R -s -f --dry-run -i \"${AWS_C_CAL_OPENSSL_PATCH}\" || \"${Patch_EXECUTABLE}\" -d crt/aws-crt-cpp/crt/aws-c-cal -p1 -N -i \"${AWS_C_CAL_OPENSSL_PATCH}\") &&\
+            find . -type f \\( -iname 'Findcrypto.cmake' -o -iname 'FindOpenSSL.cmake' \\) -delete &&\
     :")
 
     if (WIN32)
         set(LIBDIR "lib")
-    else()
+    else ()
         include(GNUInstallDirs)
         string(REPLACE "/" ";" LIBDIR_LIST ${CMAKE_INSTALL_LIBDIR})
         list(GET LIBDIR_LIST 0 LIBDIR)
-    endif()
+    endif ()
 
     # Define byproducts
     if (WIN32)
         set(SUFFIX "lib")
         set(PREFIX "")
-    else()
+    else ()
         set(SUFFIX "a")
         set(PREFIX "lib")
-    endif()
+    endif ()
 
     if (NOT WIN32 AND NOT APPLE)
         list(APPEND BYPRODUCTS "${LIBDIR}/${PREFIX}s2n.${SUFFIX}")
-    endif()
+    endif ()
     list(APPEND BYPRODUCTS
             "${LIBDIR}/${PREFIX}aws-checksums.${SUFFIX}"
             "${LIBDIR}/${PREFIX}aws-c-event-stream.${SUFFIX}"
@@ -64,29 +70,35 @@ function(use_bundled_libaws SOURCE_DIR BINARY_DIR)
             "${LIBDIR}/${PREFIX}aws-cpp-sdk-kinesis.${SUFFIX}"
     )
 
-    FOREACH(BYPRODUCT ${BYPRODUCTS})
+    FOREACH (BYPRODUCT ${BYPRODUCTS})
         LIST(APPEND AWSSDK_LIBRARIES_LIST "${BINARY_DIR}/thirdparty/libaws-install/${BYPRODUCT}")
-    ENDFOREACH(BYPRODUCT)
+    ENDFOREACH (BYPRODUCT)
+
+    string(REPLACE ";" "%" ESCAPED_CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}")
 
     set(AWS_SDK_CPP_CMAKE_ARGS ${PASSTHROUGH_CMAKE_ARGS}
-            -DCMAKE_PREFIX_PATH=${BINARY_DIR}/thirdparty/libaws-install
-            -DCMAKE_INSTALL_PREFIX=${BINARY_DIR}/thirdparty/libaws-install
+            "-DCMAKE_PREFIX_PATH=${BINARY_DIR}/thirdparty/libaws-install"
+            "-DCMAKE_INSTALL_PREFIX=${BINARY_DIR}/thirdparty/libaws-install"
+            "-DCMAKE_MODULE_PATH=${ESCAPED_CMAKE_MODULE_PATH}"
+            "-DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}"
+            "-DFIND_OPENSSL_PATH=${SOURCE_DIR}/cmake/ssl/FindOpenSSL.cmake"
+            "-DFIND_CRYPTO_PATH=${SOURCE_DIR}/cmake/ssl/FindCrypto.cmake"
+            "-DCURL_ROOT_DIR=${CURL_ROOT_DIR}"
+            -DUSE_OPENSSL=ON
             -DBUILD_ONLY=kinesis%s3%s3-crt
             -DENABLE_TESTING=OFF
             -DBUILD_SHARED_LIBS=OFF
             -DENABLE_UNITY_BUILD=${AWS_ENABLE_UNITY_BUILD}
             -DUSE_CRT_HTTP_CLIENT=ON)
 
-    if(WIN32)
+    if (WIN32)
         list(APPEND AWS_SDK_CPP_CMAKE_ARGS -DFORCE_EXPORT_CORE_API=ON -DFORCE_EXPORT_S3_API=ON -DFORCE_EXPORT_S3_CRT_API=ON -DFORCE_EXPORT_KINESIS_API=ON)
-    endif()
-
-    append_third_party_passthrough_args(AWS_SDK_CPP_CMAKE_ARGS "${AWS_SDK_CPP_CMAKE_ARGS}")
+    endif ()
 
     ExternalProject_Add(
             aws-sdk-cpp-external
             GIT_REPOSITORY "https://github.com/aws/aws-sdk-cpp.git"
-            GIT_TAG "1.11.790"
+            GIT_TAG "1.11.771"
             UPDATE_COMMAND git submodule update --init --recursive
             SOURCE_DIR "${BINARY_DIR}/thirdparty/aws-sdk-cpp-src"
             INSTALL_DIR "${BINARY_DIR}/thirdparty/libaws-install"
@@ -123,7 +135,7 @@ function(use_bundled_libaws SOURCE_DIR BINARY_DIR)
         add_dependencies(AWS::s2n aws-sdk-cpp-external)
         target_include_directories(AWS::s2n INTERFACE ${LIBAWS_INCLUDE_DIR})
         target_link_libraries(AWS::s2n INTERFACE OpenSSL::Crypto)
-    endif()
+    endif ()
 
     add_library(AWS::aws-c-io STATIC IMPORTED)
     set_target_properties(AWS::aws-c-io PROPERTIES IMPORTED_LOCATION "${BINARY_DIR}/thirdparty/libaws-install/${LIBDIR}/${PREFIX}aws-c-io.${SUFFIX}")
@@ -132,7 +144,7 @@ function(use_bundled_libaws SOURCE_DIR BINARY_DIR)
     target_link_libraries(AWS::aws-c-io INTERFACE AWS::aws-c-common)
     if (WIN32)
         target_link_libraries(AWS::aws-c-io INTERFACE ncrypt.lib)
-    endif()
+    endif ()
 
     add_library(AWS::aws-checksums STATIC IMPORTED)
     set_target_properties(AWS::aws-checksums PROPERTIES IMPORTED_LOCATION "${BINARY_DIR}/thirdparty/libaws-install/${LIBDIR}/${PREFIX}aws-checksums.${SUFFIX}")
@@ -197,9 +209,9 @@ function(use_bundled_libaws SOURCE_DIR BINARY_DIR)
         target_link_libraries(AWS::aws-cpp-sdk-core INTERFACE "-framework CoreFoundation -framework Security -framework Network")
     elseif (WIN32)
         target_link_libraries(AWS::aws-cpp-sdk-core INTERFACE userenv.lib ws2_32.lib Wininet.lib bcrypt.lib version.lib Secur32 Crypt32 Shlwapi)
-    else()
+    else ()
         target_link_libraries(AWS::aws-cpp-sdk-core INTERFACE AWS::s2n)
-    endif()
+    endif ()
 
     add_library(AWS::aws-cpp-sdk-s3 STATIC IMPORTED)
     set_target_properties(AWS::aws-cpp-sdk-s3 PROPERTIES IMPORTED_LOCATION "${BINARY_DIR}/thirdparty/libaws-install/${LIBDIR}/${PREFIX}aws-cpp-sdk-s3.${SUFFIX}")

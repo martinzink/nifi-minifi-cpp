@@ -16,32 +16,37 @@
 # under the License.
 
 function(use_bundled_libssh2 SOURCE_DIR BINARY_DIR)
-    message("Using bundled libssh2")
+    message(STATUS "Using bundled libssh2")
 
-    # Define patch step
+    find_package(OpenSSL REQUIRED)
+    find_package(ZLIB REQUIRED)
+
     set(PC "${Patch_EXECUTABLE}" -p1 -i "${SOURCE_DIR}/thirdparty/libssh2/libssh2-CMAKE_MODULE_PATH.patch")
 
-    # Define byproducts
     if (WIN32)
-        set(BYPRODUCT "lib/libssh2.lib")
-    else()
+        set(LIBSSH2_LIBDIR "lib")
+        set(BYPRODUCT "${LIBSSH2_LIBDIR}/libssh2.lib")
+    else ()
         include(GNUInstallDirs)
         string(REPLACE "/" ";" LIBDIR_LIST ${CMAKE_INSTALL_LIBDIR})
-        list(GET LIBDIR_LIST 0 LIBDIR)
-        set(BYPRODUCT "${LIBDIR}/libssh2.a")
-    endif()
+        list(GET LIBDIR_LIST 0 LIBSSH2_LIBDIR)
+        set(BYPRODUCT "${LIBSSH2_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}ssh2${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    endif ()
 
-    # Set build options
+    set(LIBSSH2_INSTALL_DIR "${BINARY_DIR}/thirdparty/libssh2-install")
+
+    string(REPLACE ";" "%" ESCAPED_CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}")
+
     set(LIBSSH2_CMAKE_ARGS ${PASSTHROUGH_CMAKE_ARGS}
-            "-DCMAKE_INSTALL_PREFIX=${BINARY_DIR}/thirdparty/libssh2-install"
+            "-DCMAKE_INSTALL_PREFIX=${LIBSSH2_INSTALL_DIR}"
+            "-DCMAKE_MODULE_PATH=${ESCAPED_CMAKE_MODULE_PATH}"
+            "-DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}"
             -DENABLE_ZLIB_COMPRESSION=ON
             -DCRYPTO_BACKEND=OpenSSL
             -DBUILD_TESTING=OFF
-            -DBUILD_EXAMPLES=OFF)
+            -DBUILD_EXAMPLES=OFF
+    )
 
-    append_third_party_passthrough_args(LIBSSH2_CMAKE_ARGS "${LIBSSH2_CMAKE_ARGS}")
-
-    # Build project
     ExternalProject_Add(
             libssh2-external
             URL "https://github.com/libssh2/libssh2/releases/download/libssh2-1.10.0/libssh2-1.10.0.tar.gz"
@@ -50,30 +55,28 @@ function(use_bundled_libssh2 SOURCE_DIR BINARY_DIR)
             LIST_SEPARATOR % # This is needed for passing semicolon-separated lists
             CMAKE_ARGS ${LIBSSH2_CMAKE_ARGS}
             PATCH_COMMAND ${PC}
-            BUILD_BYPRODUCTS "${BINARY_DIR}/thirdparty/libssh2-install/${BYPRODUCT}"
+            BUILD_BYPRODUCTS "${LIBSSH2_INSTALL_DIR}/${BYPRODUCT}"
             EXCLUDE_FROM_ALL TRUE
             DOWNLOAD_NO_PROGRESS TRUE
             TLS_VERIFY TRUE
     )
 
-    # Set dependencies
     add_dependencies(libssh2-external OpenSSL::Crypto ZLIB::ZLIB)
 
-    # Set variables
-    set(LIBSSH2_FOUND "YES" CACHE STRING "" FORCE)
-    set(LIBSSH2_INCLUDE_DIR "${BINARY_DIR}/thirdparty/libssh2-install/include" CACHE STRING "" FORCE)
-    set(LIBSSH2_LIBRARY "${BINARY_DIR}/thirdparty/libssh2-install/${BYPRODUCT}" CACHE STRING "" FORCE)
+    set(LIBSSH2_INCLUDE_DIR "${LIBSSH2_INSTALL_DIR}/include")
+    set(LIBSSH2_LIBRARY "${LIBSSH2_INSTALL_DIR}/${BYPRODUCT}")
 
-    # Set exported variables for FindPackage.cmake
-    set(PASSTHROUGH_VARIABLES ${PASSTHROUGH_VARIABLES} "-DEXPORTED_LIBSSH2_INCLUDE_DIR=${LIBSSH2_INCLUDE_DIR}" CACHE STRING "" FORCE)
-    set(PASSTHROUGH_VARIABLES ${PASSTHROUGH_VARIABLES} "-DEXPORTED_LIBSSH2_LIBRARY=${LIBSSH2_LIBRARY}" CACHE STRING "" FORCE)
+    set(LIBSSH2_ROOT_DIR "${LIBSSH2_INSTALL_DIR}" CACHE INTERNAL "Strict single source of truth for bundled libssh2")
+    set(LIBSSH2_FOUND "YES" CACHE INTERNAL "")
+    set(LIBSSH2_INCLUDE_DIR "${LIBSSH2_INCLUDE_DIR}" CACHE INTERNAL "")
+    set(LIBSSH2_LIBRARY "${LIBSSH2_LIBRARY}" CACHE INTERNAL "")
 
-    # Create imported targets
-    file(MAKE_DIRECTORY ${LIBSSH2_INCLUDE_DIR})
+    file(MAKE_DIRECTORY "${LIBSSH2_INCLUDE_DIR}")
 
-    add_library(libssh2 STATIC IMPORTED)
+    add_library(libssh2 STATIC IMPORTED GLOBAL)
     set_target_properties(libssh2 PROPERTIES IMPORTED_LOCATION "${LIBSSH2_LIBRARY}")
     add_dependencies(libssh2 libssh2-external)
+
     set_property(TARGET libssh2 APPEND PROPERTY INTERFACE_LINK_LIBRARIES OpenSSL::Crypto ZLIB::ZLIB)
-    set_property(TARGET libssh2 APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${LIBSSH2_INCLUDE_DIR})
+    set_property(TARGET libssh2 APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${LIBSSH2_INCLUDE_DIR}")
 endfunction(use_bundled_libssh2)

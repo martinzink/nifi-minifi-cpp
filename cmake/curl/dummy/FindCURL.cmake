@@ -15,17 +15,34 @@
 # specific language governing permissions and limitations
 # under the License.
 
-if(NOT CURL_FOUND AND EXPORTED_CURL_INCLUDE_DIR AND EXPORTED_CURL_LIBRARY)
-    set(CURL_FOUND "YES" CACHE STRING "" FORCE)
-    set(CURL_INCLUDE_DIR "${EXPORTED_CURL_INCLUDE_DIR}" CACHE STRING "" FORCE)
-    set(CURL_INCLUDE_DIRS "${CURL_INCLUDE_DIR}" CACHE STRING "" FORCE)
-    set(CURL_LIBRARY "${EXPORTED_CURL_LIBRARY}" CACHE STRING "" FORCE)
-    set(CURL_LIBRARIES "${CURL_LIBRARY}" CACHE STRING "" FORCE)
-endif()
+if (TARGET CURL::libcurl)
+    set(CURL_FOUND TRUE)
+    return()
+endif ()
 
-if(NOT TARGET CURL::libcurl)
-    add_library(CURL::libcurl STATIC IMPORTED)
-    set_target_properties(CURL::libcurl PROPERTIES IMPORTED_LOCATION "${CURL_LIBRARIES}")
-    set_property(TARGET CURL::libcurl APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}")
-    target_compile_definitions(CURL::libcurl INTERFACE CURL_STATICLIB)
-endif()
+if (NOT CURL_ROOT_DIR)
+    message(FATAL_ERROR "Strict bundled cURL requires CURL_ROOT_DIR to be passed to this CMake scope!")
+endif ()
+
+find_library(CURL_LIBRARY
+        NAMES curl curl-d libcurl libcurl-d
+        PATHS "${CURL_ROOT_DIR}/lib" "${CURL_ROOT_DIR}/lib64"
+        NO_DEFAULT_PATH # Strictly prevent system fallback
+)
+
+set(CURL_INCLUDE_DIR "${CURL_ROOT_DIR}/include")
+
+if (NOT CURL_LIBRARY OR NOT EXISTS "${CURL_INCLUDE_DIR}")
+    message(FATAL_ERROR "Failed to locate bundled cURL components inside ${CURL_ROOT_DIR}")
+endif ()
+
+set(CURL_FOUND TRUE)
+set(CURL_INCLUDE_DIRS "${CURL_INCLUDE_DIR}")
+set(CURL_LIBRARIES "${CURL_LIBRARY}")
+
+add_library(CURL::libcurl STATIC IMPORTED)
+set_target_properties(CURL::libcurl PROPERTIES
+        IMPORTED_LOCATION "${CURL_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIR}"
+)
+target_compile_definitions(CURL::libcurl INTERFACE CURL_STATICLIB)

@@ -16,32 +16,44 @@
 # under the License.
 
 function(use_bundled_curl SOURCE_DIR BINARY_DIR)
+    # Ensure our global OpenSSL targets are ready before building curl
+    find_package(OpenSSL REQUIRED)
+
     # Define patch step
     set(PATCH_FILE_1 "${SOURCE_DIR}/thirdparty/curl/module-path.patch")
     set(PC ${Bash_EXECUTABLE} -c "set -x && \
             (\"${Patch_EXECUTABLE}\" -p1 -R -s -f --dry-run -i \"${PATCH_FILE_1}\" || \"${Patch_EXECUTABLE}\" -p1 -N -i \"${PATCH_FILE_1}\")")
     # Define byproducts
     string(TOLOWER "${CMAKE_BUILD_TYPE}" build_type)
+    if (build_type MATCHES "relwithdebinfo|release|minsizerel")
+        set(CURL_LIB_NAME "curl")
+    else ()
+        set(CURL_LIB_NAME "curl-d")
+    endif ()
+
     if (WIN32)
-        if (build_type MATCHES relwithdebinfo OR build_type MATCHES release)
-            set(BYPRODUCT "lib/libcurl.lib")
-        else()
-            set(BYPRODUCT "lib/libcurl-d.lib")
-        endif()
-    else()
+        set(CURL_LIBDIR "lib")
+        set(BYPRODUCT "${CURL_LIBDIR}/lib${CURL_LIB_NAME}.lib")
+    else ()
         include(GNUInstallDirs)
         string(REPLACE "/" ";" LIBDIR_LIST ${CMAKE_INSTALL_LIBDIR})
-        list(GET LIBDIR_LIST 0 LIBDIR)
-        if (build_type MATCHES relwithdebinfo OR build_type MATCHES release)
-            set(BYPRODUCT "${LIBDIR}/libcurl.a")
-        else()
-            set(BYPRODUCT "${LIBDIR}/libcurl-d.a")
-        endif()
-    endif()
+        list(GET LIBDIR_LIST 0 CURL_LIBDIR)
+        set(BYPRODUCT "${CURL_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${CURL_LIB_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    endif ()
+
+    set(CURL_INSTALL_DIR "${BINARY_DIR}/thirdparty/curl-install")
 
     # Set build options
     set(CURL_CMAKE_ARGS ${PASSTHROUGH_CMAKE_ARGS}
-            "-DCMAKE_INSTALL_PREFIX=${BINARY_DIR}/thirdparty/curl-install"
+            "-DCMAKE_INSTALL_PREFIX=${CURL_INSTALL_DIR}"
+
+            # --- THE BUNDLED OPENSSL HANDOFF ---
+            # Give cURL access to our strict FindOpenSSL.cmake
+            "-DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}"
+            # Tell our FindOpenSSL.cmake exactly where to look
+            "-DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}"
+            # -----------------------------------
+
             -DBUILD_CURL_EXE=OFF
             -DBUILD_TESTING=OFF
             -DBUILD_SHARED_LIBS=OFF
@@ -54,7 +66,7 @@ function(use_bundled_curl SOURCE_DIR BINARY_DIR)
             -DUSE_NGHTTP2=OFF
             -DCURL_ZSTD=OFF
             -DCURL_BROTLI=OFF
-            )
+    )
 
     append_third_party_passthrough_args(CURL_CMAKE_ARGS "${CURL_CMAKE_ARGS}")
 
@@ -67,7 +79,7 @@ function(use_bundled_curl SOURCE_DIR BINARY_DIR)
             LIST_SEPARATOR % # This is needed for passing semicolon-separated lists
             CMAKE_ARGS ${CURL_CMAKE_ARGS}
             PATCH_COMMAND ${PC}
-            BUILD_BYPRODUCTS "${BINARY_DIR}/thirdparty/curl-install/${BYPRODUCT}"
+            BUILD_BYPRODUCTS "${CURL_INSTALL_DIR}/${BYPRODUCT}"
             EXCLUDE_FROM_ALL TRUE
             DOWNLOAD_NO_PROGRESS TRUE
             TLS_VERIFY TRUE
@@ -76,31 +88,33 @@ function(use_bundled_curl SOURCE_DIR BINARY_DIR)
     # Set dependencies
     add_dependencies(curl-external ZLIB::ZLIB OpenSSL::SSL OpenSSL::Crypto)
 
-    # Set variables
-    set(CURL_FOUND "YES" CACHE STRING "" FORCE)
-    set(CURL_INCLUDE_DIR "${BINARY_DIR}/thirdparty/curl-install/include" CACHE STRING "" FORCE)
-    set(CURL_INCLUDE_DIRS "${CURL_INCLUDE_DIR}" CACHE STRING "" FORCE)
-    set(CURL_LIBRARY "${BINARY_DIR}/thirdparty/curl-install/${BYPRODUCT}" CACHE STRING "" FORCE)
-    set(CURL_LIBRARIES "${CURL_LIBRARY}" CACHE STRING "" FORCE)
+    # Reconstruct Paths
+    set(CURL_INCLUDE_DIR "${CURL_INSTALL_DIR}/include")
+    set(CURL_LIBRARY "${CURL_INSTALL_DIR}/${BYPRODUCT}")
 
-    # Set exported variables for FindPackage.cmake
-    set(PASSTHROUGH_VARIABLES ${PASSTHROUGH_VARIABLES} "-DEXPORTED_CURL_INCLUDE_DIR=${CURL_INCLUDE_DIR}" CACHE STRING "" FORCE)
-    set(PASSTHROUGH_VARIABLES ${PASSTHROUGH_VARIABLES} "-DEXPORTED_CURL_LIBRARY=${CURL_LIBRARY}" CACHE STRING "" FORCE)
+    # Export Variables to Parent Scope
+    set(CURL_FOUND "YES" PARENT_SCOPE)
+    set(CURL_INCLUDE_DIR "${CURL_INCLUDE_DIR}" PARENT_SCOPE)
+    set(CURL_INCLUDE_DIRS "${CURL_INCLUDE_DIR}" PARENT_SCOPE)
+    set(CURL_LIBRARY "${CURL_LIBRARY}" PARENT_SCOPE)
+    set(CURL_LIBRARIES "${CURL_LIBRARY}" PARENT_SCOPE)
 
-    # Create imported targets
-    file(MAKE_DIRECTORY ${CURL_INCLUDE_DIRS})
+    # Create imported target (made GLOBAL so other directories can see it)
+    file(MAKE_DIRECTORY "${CURL_INCLUDE_DIR}")
 
-    add_library(CURL::libcurl STATIC IMPORTED)
+    add_library(CURL::libcurl STATIC IMPORTED GLOBAL)
     set_target_properties(CURL::libcurl PROPERTIES IMPORTED_LOCATION "${CURL_LIBRARY}")
     add_dependencies(CURL::libcurl curl-external)
-    target_include_directories(CURL::libcurl INTERFACE ${CURL_INCLUDE_DIRS})
+
+    target_include_directories(CURL::libcurl INTERFACE "${CURL_INCLUDE_DIR}")
     target_link_libraries(CURL::libcurl INTERFACE ZLIB::ZLIB Threads::Threads OpenSSL::SSL OpenSSL::Crypto)
     target_compile_definitions(CURL::libcurl INTERFACE CURL_STATICLIB)
+
     if (APPLE)
-        target_link_libraries(CURL::libcurl INTERFACE "-framework CoreFoundation")
-        target_link_libraries(CURL::libcurl INTERFACE "-framework SystemConfiguration")
-        target_link_libraries(CURL::libcurl INTERFACE "-framework CoreServices")
+        # Consolidated framework linking
+        target_link_libraries(CURL::libcurl INTERFACE "-framework CoreFoundation -framework SystemConfiguration -framework CoreServices")
     elseif (WIN32)
         target_link_libraries(CURL::libcurl INTERFACE Iphlpapi.lib)
-    endif()
-endfunction(use_bundled_curl SOURCE_DIR BINARY_DIR)
+    endif ()
+
+endfunction(use_bundled_curl)

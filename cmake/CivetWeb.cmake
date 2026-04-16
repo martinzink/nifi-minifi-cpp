@@ -19,6 +19,7 @@ if(TARGET civetweb::civetweb-cpp)
 endif()
 
 include(FetchContent)
+find_package(OpenSSL REQUIRED)
 
 set(CIVETWEB_ENABLE_SSL_DYNAMIC_LOADING "OFF" CACHE STRING "" FORCE)
 set(CIVETWEB_BUILD_TESTING "OFF" CACHE STRING "" FORCE)
@@ -40,8 +41,8 @@ FetchContent_Declare(civetweb
 
 FetchContent_MakeAvailable(civetweb)
 
-add_dependencies(civetweb-c-library OpenSSL::Crypto OpenSSL::SSL)
-add_dependencies(civetweb-cpp OpenSSL::Crypto OpenSSL::SSL)
+target_link_libraries(civetweb-c-library PUBLIC OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(civetweb-cpp PUBLIC OpenSSL::SSL OpenSSL::Crypto)
 
 target_compile_definitions(civetweb-c-library PRIVATE SOCKET_TIMEOUT_QUANTUM=200)
 
