@@ -86,7 +86,7 @@ function(use_bundled_libaws SOURCE_DIR BINARY_DIR)
     ExternalProject_Add(
             aws-sdk-cpp-external
             GIT_REPOSITORY "https://github.com/aws/aws-sdk-cpp.git"
-            GIT_TAG "1.11.771"
+            GIT_TAG "1.11.790"
             UPDATE_COMMAND git submodule update --init --recursive
             SOURCE_DIR "${BINARY_DIR}/thirdparty/aws-sdk-cpp-src"
             INSTALL_DIR "${BINARY_DIR}/thirdparty/libaws-install"
