@@ -44,6 +44,10 @@ extern "C" {
 /// To allow the proper usage of SSLContextServices set the MinifiPropertyDefinition::type to MINIFI_SSL_CONTEXT_SERVICE_PROPERTY_TYPE
 #define MINIFI_SSL_CONTEXT_SERVICE_PROPERTY_TYPE "org.apache.nifi.minifi.controllers.SSLContextServiceInterface"
 
+/// To allow the proper usage of ProxyConfigurationServices set the MinifiPropertyDefinition::type to MINIFI_PROXY_CONFIGURATION_SERVICE_PROPERTY_TYPE
+#define MINIFI_PROXY_CONFIGURATION_SERVICE_PROPERTY_TYPE "org.apache.nifi.minifi.controllers.ProxyConfigurationServiceInterface"
+
+
 enum : uint32_t {
   MINIFI_API_VERSION = 2
 };
@@ -283,6 +287,23 @@ struct MinifiSslData {
 
 MinifiStatus MinifiProcessContextGetSslData(MinifiProcessContext* process_context, MinifiStringView controller_service_name,
     void (*cb)(void* user_ctx, const MinifiSslData* ssl_data), void* user_ctx);
+
+typedef enum MinifiProxyType : uint8_t {
+  DIRECT,
+  HTTP
+} MinifiProxyType;
+
+struct MinifiProxyData {
+  uint8_t version;
+  MinifiStringView hostname;
+  uint16_t port;
+  MinifiStringView* username;
+  MinifiStringView* password;
+  MinifiProxyType proxy_type;
+};
+
+MinifiStatus MinifiProcessContextGetProxyData(MinifiProcessContext* process_context, MinifiStringView controller_service_name,
+  void (*cb)(void* user_ctx, const MinifiProxyData* proxy_data), void* user_ctx);
 
 #ifdef __cplusplus
 }  // extern "C"
