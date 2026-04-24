@@ -15,12 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-if (TARGET OpenSSL::Crypto AND TARGET OpenSSL::SSL)
-    set(OPENSSL_FOUND TRUE)
-    set(OpenSSL_FOUND TRUE)
-    return()
-endif ()
-
 
 if (NOT OPENSSL_ROOT_DIR)
     message(FATAL_ERROR "Strict bundled OpenSSL requires OPENSSL_ROOT_DIR to be passed to this CMake scope!")
@@ -48,6 +42,12 @@ set(OPENSSL_LIBRARIES ${OPENSSL_SSL_LIBRARY} ${OPENSSL_CRYPTO_LIBRARY} CACHE STR
 
 set(OPENSSL_FOUND TRUE CACHE STRING "" FORCE)
 set(OpenSSL_FOUND TRUE CACHE STRING "" FORCE)
+
+if (TARGET OpenSSL::Crypto AND TARGET OpenSSL::SSL)
+    set(OPENSSL_FOUND TRUE)
+    set(OpenSSL_FOUND TRUE)
+    return()
+endif ()
 
 # 3. Create the imported targets for the ExternalProject
 add_library(OpenSSL::Crypto UNKNOWN IMPORTED)
