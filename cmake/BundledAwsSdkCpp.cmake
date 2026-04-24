@@ -28,7 +28,6 @@ function(use_bundled_libaws SOURCE_DIR BINARY_DIR)
             (\"${Patch_EXECUTABLE}\" -p1 -R -s -f --dry-run -i \"${FIX_FINDING_S2N_PATCH}\" || \"${Patch_EXECUTABLE}\" -p1 -N -i \"${FIX_FINDING_S2N_PATCH}\") &&\
             (\"${Patch_EXECUTABLE}\" -d crt/aws-crt-cpp/crt/s2n -p1 -R -s -f --dry-run -i \"${S2N_OPENSSL_PATCH}\" || \"${Patch_EXECUTABLE}\" -d crt/aws-crt-cpp/crt/s2n/ -p1 -N -i \"${S2N_OPENSSL_PATCH}\") &&\
             (\"${Patch_EXECUTABLE}\" -d crt/aws-crt-cpp/crt/aws-c-cal -p1 -R -s -f --dry-run -i \"${AWS_C_CAL_OPENSSL_PATCH}\" || \"${Patch_EXECUTABLE}\" -d crt/aws-crt-cpp/crt/aws-c-cal -p1 -N -i \"${AWS_C_CAL_OPENSSL_PATCH}\") &&\
-            find . -type f \\( -iname 'Findcrypto.cmake' -o -iname 'FindOpenSSL.cmake' \\) -delete &&\
     :")
 
     if (WIN32)
