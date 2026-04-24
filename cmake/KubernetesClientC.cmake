@@ -32,9 +32,8 @@ set(LWS_WITHOUT_TEST_SERVER_EXTPOLL ON                CACHE BOOL "" FORCE)
 set(LWS_WITHOUT_TEST_PING ON                          CACHE BOOL "" FORCE)
 set(LWS_WITHOUT_TEST_CLIENT ON                        CACHE BOOL "" FORCE)
 set(LWS_WITH_SHARED OFF                               CACHE BOOL "" FORCE)
-
-set(LWS_OPENSSL_LIBRARIES "OpenSSL::SSL;OpenSSL::Crypto" CACHE STRING "" FORCE)
-
+set(LWS_OPENSSL_INCLUDE_DIRS "${OPENSSL_INCLUDE_DIR}" CACHE STRING "" FORCE)
+set(LWS_OPENSSL_LIBRARIES "${OPENSSL_LIBRARIES}"      CACHE STRING "" FORCE)
 set(CMAKE_C_FLAGS "-fpic"                             CACHE STRING "" FORCE)
 set(DISABLE_WERROR ON                                 CACHE STRING "" FORCE)
 
