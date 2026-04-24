@@ -42,7 +42,7 @@ FetchContent_Declare(civetweb
 FetchContent_MakeAvailable(civetweb)
 
 target_link_libraries(civetweb-c-library OpenSSL::SSL OpenSSL::Crypto)
-target_link_libraries(civetweb-cpp OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(civetweb-cpp PUBLIC OpenSSL::SSL OpenSSL::Crypto)
 
 target_compile_definitions(civetweb-c-library PRIVATE SOCKET_TIMEOUT_QUANTUM=200)
 
