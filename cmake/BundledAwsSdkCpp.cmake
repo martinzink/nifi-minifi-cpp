@@ -84,6 +84,8 @@ function(use_bundled_libaws SOURCE_DIR BINARY_DIR)
             "-DFIND_OPENSSL_PATH=${SOURCE_DIR}/cmake/ssl/FindOpenSSL.cmake"
             "-DFIND_CRYPTO_PATH=${SOURCE_DIR}/cmake/ssl/FindCrypto.cmake"
             "-DCURL_ROOT_DIR=${CURL_ROOT_DIR}"
+            "-DZLIB_INCLUDE_DIR=${ZLIB_INCLUDE_DIRS}"
+            "-DZLIB_LIBRARY=${ZLIB_LIBRARIES}"
             -DUSE_OPENSSL=ON
             -DBUILD_ONLY=kinesis%s3%s3-crt
             -DENABLE_TESTING=OFF
