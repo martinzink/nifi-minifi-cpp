@@ -48,6 +48,7 @@ function(use_bundled_curl SOURCE_DIR BINARY_DIR)
     set(USE_NGHTTP2 OFF CACHE BOOL "" FORCE)
     set(CURL_ZSTD OFF CACHE BOOL "" FORCE)
     set(CURL_BROTLI OFF CACHE BOOL "" FORCE)
+    set(CURL_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
 
     FetchContent_MakeAvailable(curl)
 

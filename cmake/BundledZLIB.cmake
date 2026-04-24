@@ -16,50 +16,31 @@
 # under the License.
 
 function(use_bundled_zlib SOURCE_DIR BINARY_DIR)
-    message("Using bundled zlib")
+    message(STATUS "Using bundled zlib via FetchContent")
 
-    # Define byproducts
-    if (WIN32)
-        string(TOLOWER "${CMAKE_BUILD_TYPE}" build_type)
-        if (build_type MATCHES relwithdebinfo OR build_type MATCHES release)
-            set(BYPRODUCT "lib/zlibstatic.lib")
-        else()
-            set(BYPRODUCT "lib/zlibstaticd.lib")
-        endif()
-    else()
-        set(BYPRODUCT "lib/libz.a")
-    endif()
+    include(FetchContent)
 
-    # Set build options
-    set(ZLIB_CMAKE_ARGS ${PASSTHROUGH_CMAKE_ARGS}
-            "-DCMAKE_INSTALL_PREFIX=${BINARY_DIR}/thirdparty/zlib-install"
-            )
+    set(ZLIB_BUILD_TESTING OFF)
+    set(ZLIB_BUILD_SHARED OFF)
+    set(ZLIB_BUILD_STATIC ON)
+    set(ZLIB_INSTALL OFF)
 
-    # Build project
-    ExternalProject_Add(
-        zlib-external
-        URL "https://github.com/madler/zlib/archive/refs/tags/v1.3.1.tar.gz"
-        URL_HASH "SHA256=17e88863f3600672ab49182f217281b6fc4d3c762bde361935e436a95214d05c"
-        SOURCE_DIR "${BINARY_DIR}/thirdparty/zlib-src"
-        CMAKE_ARGS ${ZLIB_CMAKE_ARGS}
-        BUILD_BYPRODUCTS "${BINARY_DIR}/thirdparty/zlib-install/${BYPRODUCT}"
-        EXCLUDE_FROM_ALL TRUE
+    FetchContent_Declare(
+            ZLIB
+            URL "https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz"
+            URL_HASH "SHA256=bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16"
+            SYSTEM
+            OVERRIDE_FIND_PACKAGE
     )
 
-    # Set variables
-    set(ZLIB_FOUND "YES" CACHE STRING "" FORCE)
-    set(ZLIB_INCLUDE_DIRS "${BINARY_DIR}/thirdparty/zlib-install/include" CACHE STRING "" FORCE)
-    set(ZLIB_LIBRARIES "${BINARY_DIR}/thirdparty/zlib-install/${BYPRODUCT}" CACHE STRING "" FORCE)
+    set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
 
-    # Set exported variables for FindPackage.cmake
-    set(PASSTHROUGH_VARIABLES ${PASSTHROUGH_VARIABLES} "-DEXPORTED_ZLIB_INCLUDE_DIRS=${ZLIB_INCLUDE_DIRS}" CACHE STRING "" FORCE)
-    set(PASSTHROUGH_VARIABLES ${PASSTHROUGH_VARIABLES} "-DEXPORTED_ZLIB_LIBRARIES=${ZLIB_LIBRARIES}" CACHE STRING "" FORCE)
+    FetchContent_MakeAvailable(ZLIB)
 
-    # Create imported targets
-    file(MAKE_DIRECTORY ${ZLIB_INCLUDE_DIRS})
+    add_library(ZLIB::ZLIB ALIAS zlibstatic)
 
-    add_library(ZLIB::ZLIB STATIC IMPORTED)
-    set_target_properties(ZLIB::ZLIB PROPERTIES IMPORTED_LOCATION "${ZLIB_LIBRARIES}")
-    add_dependencies(ZLIB::ZLIB zlib-external)
-    set_property(TARGET ZLIB::ZLIB APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${ZLIB_INCLUDE_DIRS})
+    # --- EXPORT LEGACY VARIABLES ---
+    set(ZLIB_FOUND "YES" CACHE INTERNAL "Short-circuits FindZLIB.cmake")
+    set(ZLIB_INCLUDE_DIRS "${zlib_SOURCE_DIR};${zlib_BINARY_DIR}" CACHE INTERNAL "")
+    set(ZLIB_LIBRARIES ZLIB::ZLIB CACHE INTERNAL "")
 endfunction(use_bundled_zlib)
