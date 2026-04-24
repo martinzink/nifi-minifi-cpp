@@ -16,67 +16,31 @@
 # under the License.
 
 function(use_bundled_libssh2 SOURCE_DIR BINARY_DIR)
-    message(STATUS "Using bundled libssh2")
+    message(STATUS "Using bundled libssh2 via FetchContent")
 
     find_package(OpenSSL REQUIRED)
     find_package(ZLIB REQUIRED)
 
+    include(FetchContent)
+
     set(PC "${Patch_EXECUTABLE}" -p1 -i "${SOURCE_DIR}/thirdparty/libssh2/libssh2-CMAKE_MODULE_PATH.patch")
 
-    if (WIN32)
-        set(LIBSSH2_LIBDIR "lib")
-        set(BYPRODUCT "${LIBSSH2_LIBDIR}/libssh2.lib")
-    else ()
-        include(GNUInstallDirs)
-        string(REPLACE "/" ";" LIBDIR_LIST ${CMAKE_INSTALL_LIBDIR})
-        list(GET LIBDIR_LIST 0 LIBSSH2_LIBDIR)
-        set(BYPRODUCT "${LIBSSH2_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}ssh2${CMAKE_STATIC_LIBRARY_SUFFIX}")
-    endif ()
-
-    set(LIBSSH2_INSTALL_DIR "${BINARY_DIR}/thirdparty/libssh2-install")
-
-    string(REPLACE ";" "%" ESCAPED_CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}")
-
-    set(LIBSSH2_CMAKE_ARGS ${PASSTHROUGH_CMAKE_ARGS}
-            "-DCMAKE_INSTALL_PREFIX=${LIBSSH2_INSTALL_DIR}"
-            "-DCMAKE_MODULE_PATH=${ESCAPED_CMAKE_MODULE_PATH}"
-            "-DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}"
-            -DENABLE_ZLIB_COMPRESSION=ON
-            -DCRYPTO_BACKEND=OpenSSL
-            -DBUILD_TESTING=OFF
-            -DBUILD_EXAMPLES=OFF
-    )
-
-    ExternalProject_Add(
-            libssh2-external
+    FetchContent_Declare(
+            libssh2
             URL "https://github.com/libssh2/libssh2/releases/download/libssh2-1.10.0/libssh2-1.10.0.tar.gz"
             URL_HASH "SHA256=2d64e90f3ded394b91d3a2e774ca203a4179f69aebee03003e5a6fa621e41d51"
-            SOURCE_DIR "${BINARY_DIR}/thirdparty/libssh2-src"
-            LIST_SEPARATOR % # This is needed for passing semicolon-separated lists
-            CMAKE_ARGS ${LIBSSH2_CMAKE_ARGS}
             PATCH_COMMAND ${PC}
-            BUILD_BYPRODUCTS "${LIBSSH2_INSTALL_DIR}/${BYPRODUCT}"
-            EXCLUDE_FROM_ALL TRUE
-            DOWNLOAD_NO_PROGRESS TRUE
-            TLS_VERIFY TRUE
+            SYSTEM
+            OVERRIDE_FIND_PACKAGE
     )
 
-    add_dependencies(libssh2-external OpenSSL::Crypto ZLIB::ZLIB)
+    set(ENABLE_ZLIB_COMPRESSION ON CACHE BOOL "" FORCE)
+    set(CRYPTO_BACKEND "OpenSSL" CACHE STRING "" FORCE)
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
-    set(LIBSSH2_INCLUDE_DIR "${LIBSSH2_INSTALL_DIR}/include")
-    set(LIBSSH2_LIBRARY "${LIBSSH2_INSTALL_DIR}/${BYPRODUCT}")
+    FetchContent_MakeAvailable(libssh2)
 
-    set(LIBSSH2_ROOT_DIR "${LIBSSH2_INSTALL_DIR}" CACHE INTERNAL "Strict single source of truth for bundled libssh2")
-    set(LIBSSH2_FOUND "YES" CACHE INTERNAL "")
-    set(LIBSSH2_INCLUDE_DIR "${LIBSSH2_INCLUDE_DIR}" CACHE INTERNAL "")
-    set(LIBSSH2_LIBRARY "${LIBSSH2_LIBRARY}" CACHE INTERNAL "")
-
-    file(MAKE_DIRECTORY "${LIBSSH2_INCLUDE_DIR}")
-
-    add_library(libssh2 STATIC IMPORTED GLOBAL)
-    set_target_properties(libssh2 PROPERTIES IMPORTED_LOCATION "${LIBSSH2_LIBRARY}")
-    add_dependencies(libssh2 libssh2-external)
-
-    set_property(TARGET libssh2 APPEND PROPERTY INTERFACE_LINK_LIBRARIES OpenSSL::Crypto ZLIB::ZLIB)
-    set_property(TARGET libssh2 APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${LIBSSH2_INCLUDE_DIR}")
+    target_link_libraries(libssh2 PUBLIC OpenSSL::Crypto OpenSSL::SSL ZLIB::ZLIB)
 endfunction(use_bundled_libssh2)
