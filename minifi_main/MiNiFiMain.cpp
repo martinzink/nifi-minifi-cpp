@@ -162,6 +162,23 @@ void overridePropertiesFromCommandLine(const argparse::ArgumentParser& parser, c
   return 0;
 }
 
+[[nodiscard]] std::optional<int /* exit code */> dumpManifestIfRequested(const argparse::ArgumentParser& parser) {
+  if (!parser.is_used("--manifest")) {
+    return std::nullopt;
+  }
+  const auto manifest_params = parser.get<std::vector<std::string>>("--manifest");
+  if (utils::file::create_dir(manifest_params[0]) != 0) {
+    std::cerr << "Working directory doesn't exist and cannot be created: " << manifest_params[0] << std::endl;
+    return 1;
+  }
+
+  std::cout << "Dumping manifest to " << manifest_params[0] << std::endl;
+  minifi::docs::AgentDocs docsCreator;
+
+  docsCreator.generateManifest(manifest_params[0]);
+  return 0;
+}
+
 [[nodiscard]] std::optional<int /* exit code */> writeSchemaIfRequested(const argparse::ArgumentParser& parser, const std::shared_ptr<minifi::Configure>& configure) {
   if (!parser.is_used("--schema")) {
     return std::nullopt;
@@ -195,6 +212,10 @@ int main(int argc, char **argv) {
     .nargs(1)
     .metavar("DIRECTORY")
     .help("Generate documentation in the specified directory");
+  argument_parser.add_argument("-m", "--manifest")
+    .append()
+    .metavar("DIRECTORY")
+    .help("Generate manifest in the specified directory");
   argument_parser.add_argument("-s", "--schema")
     .metavar("PATH")
     .default_value("-")
@@ -337,6 +358,7 @@ int main(int argc, char **argv) {
 
     if (const auto maybe_exit_code = dumpDocsIfRequested(argument_parser, configure)) { return *maybe_exit_code; }
     if (const auto maybe_exit_code = writeSchemaIfRequested(argument_parser, configure)) { return *maybe_exit_code; }
+    if (const auto maybe_exit_code = dumpManifestIfRequested(argument_parser)) { return *maybe_exit_code; }
 
     std::chrono::milliseconds stop_wait_time = configure->get(minifi::Configure::nifi_graceful_shutdown_seconds)
         | utils::andThen(utils::timeutils::StringToDuration<std::chrono::milliseconds>)

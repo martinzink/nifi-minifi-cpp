@@ -23,17 +23,17 @@
 #include <utility>
 #include <vector>
 
-#include "range/v3/algorithm/lexicographical_compare.hpp"
-#include "range/v3/range/conversion.hpp"
-#include "range/v3/view/transform.hpp"
-#include "range/v3/view/join.hpp"
-
+#include "TableFormatter.h"
 #include "agent/agent_docs.h"
 #include "agent/agent_version.h"
 #include "core/Core.h"
-#include "minifi-cpp/core/PropertyValidator.h"
 #include "core/Relationship.h"
-#include "TableFormatter.h"
+#include "core/state/nodes/AgentInformation.h"
+#include "minifi-cpp/core/PropertyValidator.h"
+#include "range/v3/algorithm/lexicographical_compare.hpp"
+#include "range/v3/range/conversion.hpp"
+#include "range/v3/view/join.hpp"
+#include "range/v3/view/transform.hpp"
 #include "utils/StringUtils.h"
 
 namespace {
@@ -230,5 +230,21 @@ void AgentDocs::generate(const std::filesystem::path& docs_dir) {
     writeProperties(parameter_providers_md, documentation);
   }
 }
+
+void AgentDocs::generateManifest(const std::filesystem::path& dir) {
+  auto extensions = minifi::AgentBuild::getExtensions();
+  std::ranges::sort(extensions);
+  for (const auto &extension_name : extensions) {
+    state::response::ComponentManifest manifest(extension_name);
+    auto serialized = manifest.serialize();
+    std::ofstream comp(dir / extension_name);
+    for (const auto& ser : serialized) {
+      comp << ser.to_pretty_string();
+      comp << std::endl;
+    }
+  }
+}
+
+
 
 }  // namespace org::apache::nifi::minifi::docs
