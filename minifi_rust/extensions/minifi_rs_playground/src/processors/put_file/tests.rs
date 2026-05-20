@@ -67,6 +67,40 @@ fn put_file_without_create_dirs() {
     assert!(!expected_path.exists());
 }
 
+#[test]
+fn directory_is_full_counts_only_files() {
+    let mut context = MockProcessContext::new();
+    let temp_dir = tempfile::tempdir().expect("temp dir is required for testing PutFile");
+
+    context.properties.insert(
+        "Directory".to_string(),
+        temp_dir.path().to_str().unwrap().to_string(),
+    );
+    context
+        .properties
+        .insert("Maximum File Count".to_string(), "2".to_string());
+
+    let put_file = PutFileRs::schedule(&context, &MockLogger::new()).expect("Should succeed");
+
+    let destination = temp_dir.path().join("test.txt");
+
+    // No files yet → not full
+    assert!(!put_file.directory_is_full(&destination));
+
+    // Create a subdirectory; it must not be counted as a file
+    std::fs::create_dir(temp_dir.path().join("subdir")).unwrap();
+    assert!(!put_file.directory_is_full(&destination));
+
+    // Add two files → full
+    std::fs::write(temp_dir.path().join("a.txt"), b"a").unwrap();
+    std::fs::write(temp_dir.path().join("b.txt"), b"b").unwrap();
+    assert!(put_file.directory_is_full(&destination));
+
+    // Remove one file → not full again
+    std::fs::remove_file(temp_dir.path().join("a.txt")).unwrap();
+    assert!(!put_file.directory_is_full(&destination));
+}
+
 #[cfg(unix)]
 #[test]
 fn put_file_test_permissions() {

@@ -73,7 +73,13 @@ impl PutFileRs {
         if let Some(max_file_count) = self.maximum_file_count
             && let Some(parent) = p0.parent()
         {
-            parent.exists() && WalkDir::new(parent).into_iter().count() >= max_file_count as usize
+            parent.exists()
+                && WalkDir::new(parent)
+                    .into_iter()
+                    .filter_map(Result::ok)
+                    .filter(|e| e.file_type().is_file())
+                    .count()
+                    >= max_file_count as usize
         } else {
             false
         }
