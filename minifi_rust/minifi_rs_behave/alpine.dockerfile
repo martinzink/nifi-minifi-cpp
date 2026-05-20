@@ -1,4 +1,4 @@
-FROM rust:alpine AS chef
+FROM rust:alpine3.22 AS chef
 # Install build dependencies required for compiling C code & extensions on Alpine
 RUN apk add --no-cache musl-dev gcc g++ clang-dev lld pkgconfig curl tar
 RUN cargo install cargo-chef

@@ -55,4 +55,6 @@ pub trait ProcessSession {
     ) -> Result<(), MinifiError>
     where
         F: FnMut(&[u8]) -> Result<(), MinifiError>;
+
+    fn get_flow_file_id(&self, flow_file: &Self::FlowFile) -> Result<String, MinifiError>;
 }

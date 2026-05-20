@@ -87,9 +87,10 @@ impl ProcessSession for MockProcessSession {
             &mut dyn crate::api::process_session::OutputStream,
         ) -> Result<(R, IoState), MinifiError>,
     {
-        let mut borrowed_content = flow_file.content.borrow_mut();
-        let mut flow_file_content = std::io::Cursor::new(&mut *borrowed_content);
-        let (r, _state) = callback(&mut flow_file_content)?;
+        let mut new_content: Vec<u8> = Vec::new();
+        let mut cursor = std::io::Cursor::new(&mut new_content);
+        let (r, _state) = callback(&mut cursor)?;
+        *flow_file.content.borrow_mut() = new_content;
         Ok(r)
     }
 
@@ -118,6 +119,10 @@ impl ProcessSession for MockProcessSession {
         }
         Ok(())
     }
+
+    fn get_flow_file_id(&self, flow_file: &Self::FlowFile) -> Result<String, MinifiError> {
+        Ok(flow_file.id.clone())
+    }
 }
 
 impl MockProcessSession {
@@ -136,6 +141,7 @@ impl MockProcessSession {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::api::process_session::IoState;
 
     #[test]
     fn test_read_in_batches() {
@@ -154,5 +160,22 @@ mod tests {
 
         assert_eq!(vec.len(), 13);
         assert_eq!(vec, b"Hello, World!");
+    }
+
+    #[test]
+    fn test_write_stream_replaces_content() {
+        let session = MockProcessSession::new();
+        let flow_file = MockFlowFile::new();
+        // Pre-populate the flow file with longer content
+        *flow_file.content.borrow_mut() = b"Hello, World!".to_vec();
+
+        let res: Result<(), MinifiError> = session.write_stream(&flow_file, |stream| {
+            stream.write_all(b"Hi")?;
+            Ok(((), IoState::Ok))
+        });
+
+        assert!(res.is_ok());
+        // Old trailing bytes must not survive
+        assert_eq!(*flow_file.content.borrow(), b"Hi");
     }
 }

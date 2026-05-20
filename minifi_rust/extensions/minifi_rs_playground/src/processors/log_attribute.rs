@@ -20,7 +20,7 @@ pub(crate) struct LogAttributeRs {
 }
 
 impl LogAttributeRs {
-    fn generate_log_message<PS>(&self, session: &mut PS, flow_file: &mut PS::FlowFile) -> String
+    fn generate_log_message<PS>(&self, session: &mut PS, flow_file: &PS::FlowFile) -> String
     where
         PS: ProcessSession,
     {

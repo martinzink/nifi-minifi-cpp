@@ -57,7 +57,7 @@ where
             scheduled_impl.trigger(context, session, &self.logger)
         } else {
             Err(MinifiError::trigger_err(
-                "The processor hasnt been scheduled yet",
+                "The processor hasn't been scheduled yet",
             ))
         }
     }

@@ -73,7 +73,13 @@ impl PutFileRs {
         if let Some(max_file_count) = self.maximum_file_count
             && let Some(parent) = p0.parent()
         {
-            parent.exists() && WalkDir::new(parent).into_iter().count() >= max_file_count as usize
+            parent.exists()
+                && WalkDir::new(parent)
+                    .into_iter()
+                    .filter_map(Result::ok)
+                    .filter(|e| e.file_type().is_file())
+                    .count()
+                    >= max_file_count as usize
         } else {
             false
         }
@@ -119,14 +125,13 @@ impl PutFileRs {
             }
         }
         let mut file = std::fs::File::create(destination)?;
+        std::io::copy(input_stream, &mut file)?;
         match self.unix_permissions.set_file_permissions(destination) {
             Ok(_) => {}
             Err(err) => {
                 warn!(logger, "Failed to set file permissions due to {:?}", err);
             }
         }
-
-        std::io::copy(input_stream, &mut file)?;
         Ok(())
     }
 

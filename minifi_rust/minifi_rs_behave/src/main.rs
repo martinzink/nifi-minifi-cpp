@@ -108,6 +108,7 @@ impl BehaveRunner {
         cmd.arg("--show-progress-bar");
         cmd.arg("--parallel-processes");
         cmd.arg("2");
+        #[cfg(unix)]
         cmd.env("TMPDIR", "/tmp");
 
         cmd.current_dir(root)

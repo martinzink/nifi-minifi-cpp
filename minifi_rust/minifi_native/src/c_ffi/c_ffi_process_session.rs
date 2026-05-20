@@ -9,8 +9,8 @@ use minifi_native_sys::{
     MinifiIoStatus_MINIFI_IO_CANCEL, MinifiIoStatus_MINIFI_IO_ERROR, MinifiOutputStream,
     MinifiOutputStreamWrite, MinifiProcessSession, MinifiProcessSessionCreate,
     MinifiProcessSessionGet, MinifiProcessSessionGetFlowFileAttribute,
-    MinifiProcessSessionGetFlowFileAttributes, MinifiProcessSessionRead,
-    MinifiProcessSessionRemove, MinifiProcessSessionSetFlowFileAttribute,
+    MinifiProcessSessionGetFlowFileAttributes, MinifiProcessSessionGetFlowFileId,
+    MinifiProcessSessionRead, MinifiProcessSessionRemove, MinifiProcessSessionSetFlowFileAttribute,
     MinifiProcessSessionTransfer, MinifiProcessSessionWrite, MinifiStatus_MINIFI_STATUS_SUCCESS,
     MinifiStringView,
 };
@@ -221,7 +221,7 @@ impl<'a> ProcessSession for CffiProcessSession<'a> {
         }
 
         let mut on_attr_helper = OnAttrHelper {
-            result: false,
+            result: true,
             process_attr,
         };
 
@@ -261,7 +261,7 @@ impl<'a> ProcessSession for CffiProcessSession<'a> {
                 output_stream: *mut MinifiOutputStream,
             ) -> i64 {
                 unsafe {
-                    let result_target = &mut *(user_ctx as *mut Option<&str>);
+                    let result_target = &mut *(user_ctx as *mut Option<&[u8]>);
                     if result_target.is_none() {
                         return MinifiIoStatus_MINIFI_IO_ERROR;
                     }
@@ -536,5 +536,28 @@ impl<'a> ProcessSession for CffiProcessSession<'a> {
                 ))),
             }
         }
+    }
+
+    fn get_flow_file_id(&self, flow_file: &Self::FlowFile) -> Result<String, MinifiError> {
+        let mut attr_value: Option<String> = None;
+        unsafe {
+            unsafe extern "C" fn cb(
+                rs_flow_file_id: *mut c_void,
+                minifi_flow_file_id: MinifiStringView,
+            ) {
+                unsafe {
+                    let result_target = &mut *(rs_flow_file_id as *mut Option<String>);
+                    *result_target = minifi_flow_file_id.as_string().ok()
+                }
+            }
+
+            MinifiProcessSessionGetFlowFileId(
+                self.ptr,
+                flow_file.get_ptr(),
+                Some(cb),
+                &mut attr_value as *mut _ as *mut c_void,
+            );
+        }
+        attr_value.ok_or(MinifiError::UnknownError)
     }
 }

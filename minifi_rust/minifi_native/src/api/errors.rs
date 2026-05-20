@@ -73,6 +73,7 @@ impl From<NulError> for MinifiError {
 
 impl MinifiError {
     pub(crate) fn to_status(&self) -> MinifiStatus {
+        // TODO expand this
         minifi_native_sys::MinifiStatus_MINIFI_STATUS_UNKNOWN_ERROR
     }
 
