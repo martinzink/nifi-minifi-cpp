@@ -139,7 +139,7 @@ impl GetFileRs {
         fn is_hidden(path: PathBuf) -> bool {
             path.file_name()
                 .and_then(|f| f.to_str())
-                .map_or(false, |f| f.starts_with('.'))
+                .is_some_and(|f| f.starts_with('.'))
         }
 
         if self.ignore_hidden_files && is_hidden(dir_entry.path().to_path_buf()) {
@@ -264,10 +264,8 @@ impl Trigger for GetFileRs {
                 logger,
                 "Listing is {} before polling directory", is_dir_empty_before_poll
             );
-            if is_dir_empty_before_poll {
-                if self.should_poll() {
-                    self.perform_listing();
-                }
+            if is_dir_empty_before_poll && self.should_poll() {
+                self.perform_listing();
             }
         }
         {
