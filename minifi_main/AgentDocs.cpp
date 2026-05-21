@@ -340,6 +340,9 @@ void AgentDocs::generate(const std::filesystem::path& docs_dir) {
 }
 
 void AgentDocs::generateManifest() {
+  for (auto& [bundle, class_descriptions] : minifi::ClassDescriptionRegistry::getMutableClassDescriptions()) {
+    sortComponents(class_descriptions);
+  }
   state::response::AgentManifest manifest("exported-manifest");
   auto serialized = manifest.serialize();
   for (const auto& ser : serialized) {
