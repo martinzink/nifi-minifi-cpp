@@ -340,18 +340,10 @@ void AgentDocs::generate(const std::filesystem::path& docs_dir) {
 }
 
 void AgentDocs::generateManifest() {
-  auto all_components = Components{};
-  for (const auto& components : minifi::ClassDescriptionRegistry::getClassDescriptions() | std::views::values) {
-    std::ranges::copy(components.processors, std::back_inserter(all_components.processors));
-    std::ranges::copy(components.controller_services, std::back_inserter(all_components.controller_services));
-    std::ranges::copy(components.parameter_providers, std::back_inserter(all_components.parameter_providers));
-    std::ranges::copy(components.other_components, std::back_inserter(all_components.other_components));
-  }
-
-  sortComponents(all_components);
-  auto serialized = minifi::state::response::serializeComponentManifest(all_components);
+  state::response::AgentManifest manifest("exported-manifest");
+  auto serialized = manifest.serialize();
   for (const auto& ser : serialized) {
-    std::cout << ser.to_pretty_string() << std::endl;
+    std::cout << ser.to_pretty_string() << "\n";
   }}
 
 }  // namespace org::apache::nifi::minifi::docs
