@@ -114,14 +114,14 @@ jobs:
       matrix:
         arch: [x86_64, aarch64]
         platform: [
-          { name: "Rocky Linux 9 modular", id: "rocky9", build_cmd: "make rocky9_from_rocky_package && docker tag apacheminificpp:rocky9_from_rocky_package apacheminificpp:behave" },
-          { name: "Rocky Linux 10 modular", id: "rocky10", build_cmd: "make rocky10_from_rocky_package && docker tag apacheminificpp:rocky10_from_rocky_package apacheminificpp:behave" },
-          { name: "Rocky Linux 9 from RPM modular", id: "rocky9-rpm", build_cmd: "make rocky9_from_rpm_package && docker tag apacheminificpp:rocky9_from_rocky_package apacheminificpp:behave" },
-          { name: "Rocky Linux 10 from RPM modular", id: "rocky10-rpm", build_cmd: "make rocky10_from_rpm_package && docker tag apacheminificpp:rocky10_from_rpm_package apacheminificpp:behave" },
-          { name: "Ubuntu 22.04 modular", id: "ubuntu_jammy", build_cmd: "make jammy_from_rocky_package && docker tag apacheminificpp:jammy_from_rocky_package apacheminificpp:behave" },
-          { name: "Ubuntu 24.04 modular", id: "ubuntu_noble", build_cmd: "make noble_from_rocky_package && docker tag apacheminificpp:noble_from_rocky_package apacheminificpp:behave" },
-          { name: "Debian 12 modular", id: "debian_bookworm", build_cmd: "make bookworm_from_rocky_package && docker tag apacheminificpp:bookworm_from_rocky_package apacheminificpp:behave" },
-          { name: "Debian 13 modular", id: "debian_trixie", build_cmd: "make trixie_from_rocky_package && docker tag apacheminificpp:trixie_from_rocky_package apacheminificpp:behave" },
+          { name: "Rocky Linux 9 modular", id: "rocky9", build_cmd: "make rocky9_from_rocky_package && docker tag apacheminificpp:rocky9-1.0.0 apacheminificpp:behave" },
+          { name: "Rocky Linux 10 modular", id: "rocky10", build_cmd: "make rocky10_from_rocky_package && docker tag apacheminificpp:rocky10-1.0.0 apacheminificpp:behave" },
+          { name: "Rocky Linux 9 from RPM modular", id: "rocky9-rpm", build_cmd: "make rocky9_from_rpm_package && docker tag apacheminificpp:rocky9-rpm-1.0.0 apacheminificpp:behave" },
+          { name: "Rocky Linux 10 from RPM modular", id: "rocky10-rpm", build_cmd: "make rocky10_from_rpm_package && docker tag apacheminificpp:rocky10-rpm-1.0.0 apacheminificpp:behave" },
+          { name: "Ubuntu 22.04 modular", id: "ubuntu_jammy", build_cmd: "make jammy_from_rocky_package && docker tag apacheminificpp:jammy-1.0.0 apacheminificpp:behave" },
+          { name: "Ubuntu 24.04 modular", id: "ubuntu_noble", build_cmd: "make noble_from_rocky_package && docker tag apacheminificpp:noble-1.0.0 apacheminificpp:behave" },
+          { name: "Debian 12 modular", id: "debian_bookworm", build_cmd: "make bookworm_from_rocky_package && docker tag apacheminificpp:bookworm-1.0.0 apacheminificpp:behave" },
+          { name: "Debian 13 modular", id: "debian_trixie", build_cmd: "make trixie_from_rocky_package && docker tag apacheminificpp:trixie_1.0.0 apacheminificpp:behave" },
         ]
     permissions:
       contents: read
@@ -147,6 +147,10 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y python3-virtualenv
+
+      - run: |
+          cd build && cmake ${DOCKER_CMAKE_FLAGS} ..
+          ${{ matrix.platform.build_cmd }}
 
       - id: test
         name: Docker Verify
