@@ -121,7 +121,7 @@ jobs:
           { name: "Ubuntu 22.04 modular", id: "ubuntu_jammy", build_cmd: "make jammy_from_rocky_package && docker tag apacheminificpp:jammy-1.0.0 apacheminificpp:behave" },
           { name: "Ubuntu 24.04 modular", id: "ubuntu_noble", build_cmd: "make noble_from_rocky_package && docker tag apacheminificpp:noble-1.0.0 apacheminificpp:behave" },
           { name: "Debian 12 modular", id: "debian_bookworm", build_cmd: "make bookworm_from_rocky_package && docker tag apacheminificpp:bookworm-1.0.0 apacheminificpp:behave" },
-          { name: "Debian 13 modular", id: "debian_trixie", build_cmd: "make trixie_from_rocky_package && docker tag apacheminificpp:trixie_1.0.0 apacheminificpp:behave" },
+          { name: "Debian 13 modular", id: "debian_trixie", build_cmd: "make trixie_from_rocky_package && docker tag apacheminificpp:trixie-1.0.0 apacheminificpp:behave" },
         ]
     permissions:
       contents: read

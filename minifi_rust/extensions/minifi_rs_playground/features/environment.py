@@ -1,4 +1,5 @@
 import os
+import docker
 from typing import List
 
 from minifi_behave.containers.docker_image_builder import DockerImageBuilder
@@ -10,6 +11,7 @@ from minifi_behave.core.minifi_test_context import MinifiTestContext
 def add_extension_to_minifi_container(
     extension_name: str, possible_paths: List[str], context: MinifiTestContext
 ):
+    base_img = get_minifi_container_image()
     new_container_name = f"apacheminificpp:{extension_name}"
     is_windows = os.name == "nt"
     if is_windows:
@@ -17,6 +19,9 @@ def add_extension_to_minifi_container(
         container_extension_dir = (
             "C:/Program Files/ApacheNiFiMiNiFi/nifi-minifi-cpp/extensions"
         )
+    elif 'MINIFI_INSTALLATION_TYPE=FHS' in str(docker.from_env().images.get(base_img).history()):
+        lib_filename = f"lib{extension_name}.so"
+        container_extension_dir = "/usr/lib64/nifi-minifi-cpp/extensions/"
     else:
         lib_filename = f"lib{extension_name}.so"
         container_extension_dir = "/opt/minifi/minifi-current/extensions/"
@@ -33,8 +38,6 @@ def add_extension_to_minifi_container(
 
     with open(host_path, "rb") as f:
         lib_content = f.read()
-
-    base_img = get_minifi_container_image()
 
     if is_windows:
         dockerfile = f"""
