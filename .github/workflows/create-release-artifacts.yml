@@ -51,7 +51,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: minifi_rust_extensions
+          name: minifi_rust_extensions_${{ matrix.platform.arch }}
           path: minifi_rust/target/release/*.so
   windows_VS2022:
     name: "Windows Server 2025 x86_64"

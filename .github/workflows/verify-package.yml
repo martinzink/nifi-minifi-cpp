@@ -143,10 +143,12 @@ jobs:
           path: build
           github-token: ${{ github.token }}
 
-      - id: install_deps
-        run: |
-          sudo apt update
-          sudo apt install -y python3-virtualenv
+      - uses: actions/download-artifact@v8
+        with:
+          run-id: ${{ inputs.artifacts_workflow_id || github.event.workflow_run.id }}
+          name: minifi_rust_extensions_${{ matrix.arch }}
+          path: minifi_rust/target/release/
+          github-token: ${{ github.token }}
 
       - run: |
           cd build && cmake ${DOCKER_CMAKE_FLAGS} ..
@@ -155,7 +157,7 @@ jobs:
       - id: test
         name: Docker Verify
         working-directory: ./minifi_rust
-        run: cargo behave-debian
+        run: cargo behave
 
       - name: Test Reporter
         if: always()
