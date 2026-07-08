@@ -16,10 +16,10 @@ COPY --from=planner /app/recipe.json recipe.json
 COPY target/.docker_sd[k] /app/target/.docker_sdk/
 COPY target/.docker_sdk.zi[p] /app/target/
 
-RUN cargo chef cook --release --recipe-path recipe.json
+RUN cargo chef cook --release --all-features --recipe-path recipe.json
 COPY . .
-RUN cargo build --release
+RUN cargo build --release --all-features
 
 # Export Stage
 FROM scratch AS bin-export
-COPY --from=builder /app/target/release/libminifi_rs_playground.so /
+COPY --from=builder /app/target/release/libminifi_*.so /

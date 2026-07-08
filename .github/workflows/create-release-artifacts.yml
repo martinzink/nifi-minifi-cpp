@@ -81,7 +81,7 @@ jobs:
         shell: powershell
       - name: Copy conan compatibility.py
         shell: powershell
-        if: always() && ${{ inputs.enable_conan }}
+        if: always() && inputs.enable_conan
         run: |
           $compatDir = Join-Path $env:USERPROFILE ".conan2\extensions\plugins\compatibility"
           New-Item -ItemType Directory -Force -Path $compatDir | Out-Null
@@ -93,7 +93,7 @@ jobs:
         shell: cmd
         working-directory: bootstrap
       - name: Upload conan packages
-        if: always() && ${{ inputs.enable_conan }}
+        if: always() && inputs.enable_conan
         working-directory: bootstrap
         run: |
           venv\Scripts\activate && conan remote login nifi-conan && conan upload "*" -r nifi-conan --confirm
