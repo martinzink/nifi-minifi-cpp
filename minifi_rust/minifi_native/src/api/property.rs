@@ -63,6 +63,25 @@ macro_rules! property_definitions {
     };
 }
 
+#[macro_export]
+macro_rules! concat_properties {
+    ($($slice:expr),* $(,)?) => {
+        {
+            let len = 0 $( + $slice.len() )*;
+
+            let mut out = [minifi_native::PropertyDefinition::EMPTY; len]; // Or your default constructor
+            let mut idx = 0;
+            $(
+                for prop in $slice {
+                    out[idx] = *prop;
+                    idx += 1;
+                }
+            )*
+            out
+        }
+    };
+}
+
 pub struct Property<P: ?Sized + PropertySchema> {
     pub(crate) name: &'static str,
     pub(crate) description: &'static str,
