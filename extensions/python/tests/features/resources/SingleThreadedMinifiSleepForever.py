@@ -24,6 +24,6 @@ def onInitialize(processor):
 
 
 def onTrigger(context, session):
-    log.info("Sleeping forever")
+    log.info("Sleeping forever")  # noqa: F821
     while True:
         time.sleep(1)

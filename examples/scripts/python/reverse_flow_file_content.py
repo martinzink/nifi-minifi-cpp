@@ -42,4 +42,4 @@ def onTrigger(context, session):
         session.read(flow_file, read_callback)
         session.write(flow_file, WriteReverseStringCallback(read_callback.content))
         flow_file.addAttribute("python_timestamp", str(int(time.time())))
-        session.transfer(flow_file, REL_SUCCESS)
+        session.transfer(flow_file, REL_SUCCESS)  # noqa: F821

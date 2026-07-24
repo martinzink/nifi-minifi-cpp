@@ -27,7 +27,7 @@ def describe(processor):
 
 def onTrigger(context, session):
     flow_file = session.get()
-    log.info(foo.foo() + bar.bar())
+    log.info(foo.foo() + bar.bar())  # noqa: F821
 
     if flow_file is not None:
-        session.transfer(flow_file, REL_SUCCESS)
+        session.transfer(flow_file, REL_SUCCESS)  # noqa: F821

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -47,4 +46,4 @@ def onTrigger(context, session):
         flow_file.addAttribute("positive", str(vs["pos"]))
         flow_file.addAttribute("negative", str(vs["neg"]))
         flow_file.addAttribute("neutral", str(vs["neu"]))
-        session.transfer(flow_file, REL_SUCCESS)
+        session.transfer(flow_file, REL_SUCCESS)  # noqa: F821

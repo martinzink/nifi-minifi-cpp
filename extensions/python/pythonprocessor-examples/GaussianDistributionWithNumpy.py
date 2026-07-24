@@ -41,4 +41,4 @@ def onTrigger(context, session):
     sigma = 0.1
     s = np.random.normal(mu, sigma, 1)
     session.write(flow_file, WriteCallback(str(s[0])))
-    session.transfer(flow_file, REL_SUCCESS)
+    session.transfer(flow_file, REL_SUCCESS)  # noqa: F821

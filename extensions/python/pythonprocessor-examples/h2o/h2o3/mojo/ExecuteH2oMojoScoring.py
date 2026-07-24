@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -161,7 +160,6 @@ class ContentWrite:
 
 def onTrigger(context, session):
     """onTrigger is executed and passed processor context and session"""
-    global mojo_model
     flow_file = session.get()
     if flow_file is not None:
         # read test data of flow file content into read_cb.content
@@ -199,7 +197,7 @@ def onTrigger(context, session):
         for i in range(len(pred_header)):
             ff_attr_name = pred_header[i] + "_pred_0"
             flow_file.addAttribute(ff_attr_name, str(preds_pd_df.at[0, pred_header[i]]))
-            log.info(
+            log.info(  # noqa: F821
                 f"getAttribute({ff_attr_name}): {flow_file.getAttribute(ff_attr_name)}"
             )
-        session.transfer(flow_file, REL_SUCCESS)
+        session.transfer(flow_file, REL_SUCCESS)  # noqa: F821

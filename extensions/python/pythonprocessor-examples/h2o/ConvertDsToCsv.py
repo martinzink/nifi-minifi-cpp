@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -88,4 +87,4 @@ def onTrigger(context, session):
         # write csv str to flow file
         write_cb = ContentWrite(csv_data)
         session.write(flow_file, write_cb)
-        session.transfer(flow_file, REL_SUCCESS)
+        session.transfer(flow_file, REL_SUCCESS)  # noqa: F821

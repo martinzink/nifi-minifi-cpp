@@ -23,6 +23,6 @@ def onTrigger(context, session):
 
     if flow_file is not None:
         if random() > 0.5:
-            session.transfer(flow_file, REL_SUCCESS)
+            session.transfer(flow_file, REL_SUCCESS)  # noqa: F821
         else:
-            session.transfer(flow_file, REL_FAILURE)
+            session.transfer(flow_file, REL_FAILURE)  # noqa: F821

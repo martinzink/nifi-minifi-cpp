@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -49,4 +48,4 @@ def onTrigger(context, session):
         read_callback = ReadCallback()
         session.read(flow_file, read_callback)
         session.write(flow_file, WriteToJsonCallback(read_callback.content))
-        session.transfer(flow_file, REL_SUCCESS)
+        session.transfer(flow_file, REL_SUCCESS)  # noqa: F821

@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-global i
 i = 0
 
 
@@ -39,4 +38,4 @@ def onTrigger(context, session):
     i = i + 1
     flow_file = session.create()
     session.write(flow_file, WriteCallback(str(i)))
-    session.transfer(flow_file, REL_SUCCESS)
+    session.transfer(flow_file, REL_SUCCESS)  # noqa: F821
