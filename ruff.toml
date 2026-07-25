@@ -1,0 +1,3 @@
+[lint]
+# BLE001 (blind-except) is intentional at framework boundaries
+ignore = ["BLE001"]
