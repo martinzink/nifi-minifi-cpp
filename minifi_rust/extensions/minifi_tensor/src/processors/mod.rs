@@ -16,6 +16,7 @@
 // under the License.
 
 pub(crate) mod classify_output;
+pub(crate) mod detect_object;
 pub(crate) mod draw_bounding_box;
 pub(crate) mod filter_bounding_boxes;
 pub(crate) mod image_to_tensor;

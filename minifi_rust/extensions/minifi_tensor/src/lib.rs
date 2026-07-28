@@ -16,6 +16,7 @@
 // under the License.
 
 use crate::processors::classify_output::ClassifyOutput;
+use crate::processors::detect_object::DetectObject;
 use crate::processors::draw_bounding_box::DrawBoundingBox;
 use crate::processors::filter_bounding_boxes::FilterBoundingBoxes;
 use crate::processors::image_to_tensor::ImageToTensor;
@@ -34,6 +35,7 @@ minifi_native::declare_minifi_extension!(
         (FlowFileTransformProcessorType, MultiThreaded, FilterBoundingBoxes),
         (FlowFileTransformProcessorType, MultiThreaded, ClassifyOutput),
         (FlowFileTransformProcessorType, MultiThreaded, DrawBoundingBox),
+        (FlowFileTransformProcessorType, MultiThreaded, DetectObject),
     ],
     controllers: [
         TractModelService
