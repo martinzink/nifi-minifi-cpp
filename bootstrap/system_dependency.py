@@ -34,6 +34,8 @@ def _create_system_dependencies(minifi_options: MinifiOptions) -> Dict[str, Set[
         system_dependencies['python'] = {'python'}
     if platform.system() == "Windows":
         system_dependencies['wixtoolset'] = {'wixtoolset'}
+    if minifi_options.is_enabled("MINIFI_RUST"):
+        system_dependencies['rust'] = {'rust'}
     return system_dependencies
 
 
