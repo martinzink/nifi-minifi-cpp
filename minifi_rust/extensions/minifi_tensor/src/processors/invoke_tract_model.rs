@@ -15,16 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-use crate::processors::invoke_tract_model::processor_definition::{
-    FAILURE, SUCCESS, TRACT_MODEL_SERVICE,
-};
-use crate::services::tract_model_service::TractModelService;
+pub(crate) use crate::processors::invoke_tract_model::processor_definition::TRACT_MODEL_SERVICE;
 use minifi_native::error;
 use minifi_native::macros::ComponentIdentifier;
 use minifi_native::{
     FlowFileTransform, GetAttribute, GetControllerService, GetId, GetProperty, InputStream, Logger,
     MinifiError, Schedule, TransformedFlowFile, debug, unwrap_or_route,
 };
+use processor_definition::{FAILURE, SUCCESS};
 use std::collections::HashMap;
 use std::error::Error;
 use tract::__ndarray_interop::TensorInterface;
@@ -125,11 +123,7 @@ impl FlowFileTransform for InvokeTractModel {
         input_stream: &'a mut dyn InputStream,
         logger: &LoggerImpl,
     ) -> Result<TransformedFlowFile<'a>, MinifiError> {
-        let controller_service = context
-            .get_controller_service::<TractModelService>(&TRACT_MODEL_SERVICE)?
-            .ok_or(MinifiError::missing_required_property(
-                "A valid usable controller service is required",
-            ))?;
+        let controller_service = context.get_controller_service(&TRACT_MODEL_SERVICE)?;
 
         let input_tensor: Tensor = unwrap_or_route!(
             Self::get_input_tensor(context, input_stream),

@@ -27,6 +27,7 @@ use minifi_native::{
 };
 use serde::Serialize;
 use std::collections::HashMap;
+use std::path::Path;
 use strum_macros::{Display, EnumString, IntoStaticStr, VariantNames};
 
 mod processor_definition;
@@ -87,9 +88,9 @@ fn apply_activation(scores: &[f32], activation: ScoreActivation) -> Vec<f32> {
 /// Load a newline-separated labels file at schedule time. Trailing whitespace
 /// is stripped; blank lines are preserved as empty strings so line-number ↔
 /// class-id alignment stays exact.
-fn load_labels(path: &str) -> Result<Vec<String>, MinifiError> {
+fn load_labels(path: &Path) -> Result<Vec<String>, MinifiError> {
     let content = std::fs::read_to_string(path).map_err(|e| {
-        MinifiError::trigger_err(format!("Failed to read labels file '{}': {}", path, e))
+        MinifiError::trigger_err(format!("Failed to read labels file '{:?}': {}", path, e))
     })?;
     Ok(content
         .lines()
@@ -136,20 +137,20 @@ impl Schedule for ClassifyOutput {
     where
         Self: Sized,
     {
-        let top_k = context.get_req_property::<usize>(&TOP_K)?;
+        let top_k = context.get_property(&TOP_K)?;
         if top_k == 0 {
             return Err(MinifiError::trigger_err("Top K must be >= 1"));
         }
-        let score_output_index = context.get_req_property::<usize>(&SCORE_OUTPUT_INDEX)?;
-        let score_activation = context.get_req_property::<ScoreActivation>(&SCORE_ACTIVATION)?;
-        let confidence_threshold = context.get_req_property::<f32>(&CONFIDENCE_THRESHOLD)?;
+        let score_output_index = context.get_property(&SCORE_OUTPUT_INDEX)?;
+        let score_activation = context.get_property(&SCORE_ACTIVATION)?;
+        let confidence_threshold = context.get_property(&CONFIDENCE_THRESHOLD)?;
         // Labels file is optional — load and cache when configured; empty vec
         // means "emit class_id only".
-        let labels = match context.get_property::<String>(&LABELS_FILE_PATH)? {
-            Some(path) if !path.is_empty() => load_labels(&path)?,
+        let labels = match context.get_property(&LABELS_FILE_PATH)? {
+            Some(path) => load_labels(&path)?,
             _ => Vec::new(),
         };
-        let label_index_offset = context.get_req_property::<usize>(&LABEL_INDEX_OFFSET)?;
+        let label_index_offset = context.get_property(&LABEL_INDEX_OFFSET)?;
 
         Ok(Self {
             top_k,

@@ -29,6 +29,7 @@ mod services;
 mod utils;
 
 minifi_native::declare_minifi_extension!(
+    group_name: "org.apache.nifi.minifi.rust",
     processors: [
         (FlowFileTransformProcessorType, MultiThreaded, ImageToTensor),
         (FlowFileTransformProcessorType, MultiThreaded, InvokeTractModel),

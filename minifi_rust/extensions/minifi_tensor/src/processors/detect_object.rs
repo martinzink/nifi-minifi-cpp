@@ -29,17 +29,8 @@
 
 mod processor_definition;
 
-use crate::processors::detect_object::processor_definition::{
-    BACKGROUND_CLASS_INDEX, BOX_FORMAT, BOX_OUTPUT_INDEX, COLOR_FORMAT, CONFIDENCE_THRESHOLD,
-    FAILURE, IOU_THRESHOLD, LETTERBOX_PAD_VALUE, MEAN, OUTPUT_ATTRIBUTE_NAME, PIXEL_DIVISOR,
-    RESIZE_FILTER, RESIZE_MODE, SCORE_ACTIVATION, SCORE_OUTPUT_INDEX, STD_DEV, SUCCESS,
-    TARGET_HEIGHT, TARGET_WIDTH, TENSOR_SHAPE_FORMAT, TRACT_MODEL_SERVICE,
-};
-use crate::processors::filter_bounding_boxes::{BoxFormat, ScoreActivation};
-use crate::processors::image_to_tensor::{
-    ColorFormat, ResizeFilter, ResizeMode, TensorShapeFormat,
-};
-use crate::services::tract_model_service::TractModelService;
+use crate::processors::filter_bounding_boxes::{BoxFormat, ScoreActivation, CONFIDENCE_THRESHOLD, IOU_THRESHOLD, SCORE_OUTPUT_INDEX, SCORE_ACTIVATION, BOX_FORMAT, BOX_OUTPUT_INDEX, BACKGROUND_CLASS_INDEX, OUTPUT_ATTRIBUTE_NAME};
+use crate::processors::image_to_tensor::{ColorFormat, ResizeFilter, ResizeMode, TensorShapeFormat, TARGET_WIDTH, TARGET_HEIGHT, RESIZE_FILTER, RESIZE_MODE, COLOR_FORMAT, TENSOR_SHAPE_FORMAT, MEAN, STD_DEV, PIXEL_DIVISOR, LETTERBOX_PAD_VALUE};
 use crate::utils::bounding_box::BoundingBox;
 use minifi_native::error;
 use minifi_native::macros::ComponentIdentifier;
@@ -50,6 +41,9 @@ use minifi_native::{
 use std::collections::HashMap;
 use tract::__ndarray_interop::TensorInterface;
 use tract::Tensor;
+use crate::processors::detect_object::processor_definition::{FAILURE, SUCCESS};
+use crate::processors::invoke_tract_model::TRACT_MODEL_SERVICE;
+
 tract::impl_ndarray_interop!();
 
 // ---------------------------------------------------------------------------
@@ -224,41 +218,34 @@ impl Schedule for DetectObject {
     where
         Self: Sized,
     {
-        let target_width = context.get_req_property::<u32>(&TARGET_WIDTH)?;
-        let target_height = context.get_req_property::<u32>(&TARGET_HEIGHT)?;
-        let resize_filter = context.get_req_property::<ResizeFilter>(&RESIZE_FILTER)?;
-        let resize_mode = context.get_req_property::<ResizeMode>(&RESIZE_MODE)?;
-        let color_format = context.get_req_property::<ColorFormat>(&COLOR_FORMAT)?;
+        let target_width = context.get_property(&TARGET_WIDTH)?;
+        let target_height = context.get_property(&TARGET_HEIGHT)?;
+        let resize_filter = context.get_property(&RESIZE_FILTER)?;
+        let resize_mode = context.get_property(&RESIZE_MODE)?;
+        let color_format = context.get_property(&COLOR_FORMAT)?;
         let tensor_shape_format =
-            context.get_req_property::<TensorShapeFormat>(&TENSOR_SHAPE_FORMAT)?;
-        let mean_str = context.get_req_property::<String>(&MEAN)?;
-        let mean = parse_per_channel_f32(&mean_str).map_err(MinifiError::trigger_err)?;
-        let std_dev_str = context.get_req_property::<String>(&STD_DEV)?;
-        let std_dev = parse_per_channel_f32(&std_dev_str).map_err(MinifiError::trigger_err)?;
+            context.get_property(&TENSOR_SHAPE_FORMAT)?;
+        let mean = context.get_property(&MEAN)?;
+        let std_dev = context.get_property(&STD_DEV)?;
         if std_dev.contains(&0.0) {
             return Err(MinifiError::trigger_err(
                 "Standard Deviation components must be non-zero",
             ));
         }
-        let pixel_divisor = context.get_req_property::<f32>(&PIXEL_DIVISOR)?;
+        let pixel_divisor = context.get_property(&PIXEL_DIVISOR)?;
         if pixel_divisor == 0.0 {
             return Err(MinifiError::trigger_err("Pixel divisor must be non-zero"));
         }
-        let letterbox_pad_value = context.get_req_property::<f32>(&LETTERBOX_PAD_VALUE)?;
+        let letterbox_pad_value = context.get_property(&LETTERBOX_PAD_VALUE)?;
 
-        let confidence_threshold = context.get_req_property::<f32>(&CONFIDENCE_THRESHOLD)?;
-        let iou_threshold = context.get_req_property::<f32>(&IOU_THRESHOLD)?;
-        let score_output_index = context.get_req_property::<usize>(&SCORE_OUTPUT_INDEX)?;
-        let box_output_index = context.get_req_property::<usize>(&BOX_OUTPUT_INDEX)?;
-        let box_format = context.get_req_property::<BoxFormat>(&BOX_FORMAT)?;
-        let score_activation = context.get_req_property::<ScoreActivation>(&SCORE_ACTIVATION)?;
+        let confidence_threshold = context.get_property(&CONFIDENCE_THRESHOLD)?;
+        let iou_threshold = context.get_property(&IOU_THRESHOLD)?;
+        let score_output_index = context.get_property(&SCORE_OUTPUT_INDEX)?;
+        let box_output_index = context.get_property(&BOX_OUTPUT_INDEX)?;
+        let box_format = context.get_property(&BOX_FORMAT)?;
+        let score_activation = context.get_property(&SCORE_ACTIVATION)?;
         // `-1` (or any negative) turns off background suppression.
-        let background_raw = context.get_req_property::<i64>(&BACKGROUND_CLASS_INDEX)?;
-        let background_class_index = if background_raw < 0 {
-            None
-        } else {
-            Some(background_raw as usize)
-        };
+        let background_class_index = context.get_property(&BACKGROUND_CLASS_INDEX)?;
 
         Ok(Self {
             target_width,
@@ -439,10 +426,7 @@ impl FlowFileTransform for DetectObject {
         // The controller service is resolved before we consume the input so a
         // misconfiguration surfaces as an error rather than a decode failure.
         let controller_service = context
-            .get_controller_service::<TractModelService>(&TRACT_MODEL_SERVICE)?
-            .ok_or(MinifiError::missing_required_property(
-                "A valid usable controller service is required",
-            ))?;
+            .get_controller_service(&TRACT_MODEL_SERVICE)?;
 
         // Read the original image bytes; content is left unchanged downstream.
         let mut raw_bytes = Vec::new();
@@ -566,14 +550,19 @@ impl FlowFileTransform for DetectObject {
             logger,
             "serialize json"
         );
-        let output_attr = context.get_req_property::<String>(&OUTPUT_ATTRIBUTE_NAME)?;
 
         let mut attributes = HashMap::new();
         attributes.insert("object.count".to_string(), filtered_boxes.len().to_string());
-        attributes.insert(output_attr, boxes_json);
 
-        // Content unchanged: `None` preserves the original image bytes.
-        Ok(TransformedFlowFile::new(&SUCCESS, None, attributes))
+        match context.get_property(&OUTPUT_ATTRIBUTE_NAME)? {
+            None => {
+                Ok(TransformedFlowFile::new(&SUCCESS, Some(boxes_json.as_bytes().to_owned()), attributes))
+            }
+            Some(output_attr) => {
+                attributes.insert(output_attr, boxes_json);
+                Ok(TransformedFlowFile::new(&SUCCESS, None, attributes))
+            }
+        }
     }
 }
 

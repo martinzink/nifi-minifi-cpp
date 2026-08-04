@@ -16,23 +16,12 @@
 // under the License.
 
 use crate::services::tract_model_service::TractModelService;
-use minifi_native::PropertyConstraints::AllowedType;
-use minifi_native::{
-    ComponentIdentifier, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property,
-    Relationship,
-};
+use minifi_native::{property_definitions, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property, PropertyDefinition, Relationship};
 
-pub(crate) const TRACT_MODEL_SERVICE: Property = Property {
-    name: "Tract model service",
-    description: "Reference to a TractModelService controller service. The referenced service \
+pub(crate) const TRACT_MODEL_SERVICE: Property<TractModelService> = Property::new("Tract model service",
+    "Reference to a TractModelService controller service. The referenced service \
                   owns the compiled model (ONNX or NNEF) that will be evaluated for each \
-                  incoming flow file.",
-    is_required: true,
-    is_sensitive: false,
-    supports_expr_lang: false,
-    default_value: None,
-    constraints: AllowedType(TractModelService::CLASS_NAME),
-};
+                  incoming flow file.");
 
 pub(super) const SUCCESS: Relationship = Relationship {
     name: "success",
@@ -90,5 +79,5 @@ impl ProcessorDefinition for super::InvokeTractModel {
         OUTPUT_DTYPE_ATTR,
     ];
     const RELATIONSHIPS: &'static [Relationship] = &[SUCCESS, FAILURE];
-    const PROPERTIES: &'static [Property] = &[TRACT_MODEL_SERVICE];
+    const PROPERTIES: &'static [PropertyDefinition] = property_definitions![TRACT_MODEL_SERVICE];
 }

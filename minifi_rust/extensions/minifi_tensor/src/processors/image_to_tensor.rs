@@ -14,17 +14,20 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-pub(super) mod processor_definition;
+pub(crate) mod processor_definition;
 
-use crate::processors::image_to_tensor::processor_definition::{
-    COLOR_FORMAT, FAILURE, IMAGE_ORIGINAL_HEIGHT_ATTR, IMAGE_ORIGINAL_WIDTH_ATTR,
-    LETTERBOX_PAD_VALUE, MEAN, PIXEL_DIVISOR, RESIZE_FILTER, RESIZE_MODE, STD_DEV, SUCCESS,
-    TARGET_HEIGHT, TARGET_WIDTH, TENSOR_DTYPE_ATTR, TENSOR_SHAPE_ATTR, TENSOR_SHAPE_FORMAT,
+pub(crate) use crate::processors::image_to_tensor::processor_definition::{
+    COLOR_FORMAT, LETTERBOX_PAD_VALUE, MEAN, PIXEL_DIVISOR, RESIZE_FILTER, RESIZE_MODE, STD_DEV,
+    TARGET_HEIGHT, TARGET_WIDTH, TENSOR_SHAPE_FORMAT,
 };
 use minifi_native::macros::{ComponentIdentifier, PropertyType};
 use minifi_native::{
     FlowFileTransform, GetAttribute, GetControllerService, GetId, GetProperty, InputStream, Logger,
     MinifiError, Schedule, TransformedFlowFile, error, unwrap_or_route,
+};
+use processor_definition::{
+    FAILURE, IMAGE_ORIGINAL_HEIGHT_ATTR, IMAGE_ORIGINAL_WIDTH_ATTR, SUCCESS, TENSOR_DTYPE_ATTR,
+    TENSOR_SHAPE_ATTR,
 };
 use std::collections::HashMap;
 use strum_macros::{Display, EnumString, IntoStaticStr, VariantNames};
@@ -103,22 +106,6 @@ pub(crate) enum ResizeMode {
     Letterbox,
 }
 
-/// Parses a scalar or comma-separated triple into a per-channel Vec.
-/// Returns Err if the string is neither a single float nor exactly three floats,
-/// or if any component fails to parse.
-fn parse_per_channel_f32(input: &str) -> Result<Vec<f32>, String> {
-    let parts: Vec<&str> = input.split(',').map(|s| s.trim()).collect();
-    match parts.len() {
-        1 | 3 => parts
-            .iter()
-            .map(|p| {
-                p.parse::<f32>()
-                    .map_err(|e| format!("invalid float '{}': {}", p, e))
-            })
-            .collect(),
-        n => Err(format!("expected 1 or 3 comma-separated values, got {}", n)),
-    }
-}
 
 /// Returns `values[c]` when the vector has `channels` entries (per-channel),
 /// or `values[0]` when it has a single entry (broadcast).
@@ -152,27 +139,24 @@ impl Schedule for ImageToTensor {
     where
         Self: Sized,
     {
-        let target_width: u32 = context.get_req_property::<u32>(&TARGET_WIDTH)?;
-        let target_height: u32 = context.get_req_property::<u32>(&TARGET_HEIGHT)?;
-        let resize_filter = context.get_req_property::<ResizeFilter>(&RESIZE_FILTER)?;
-        let resize_mode = context.get_req_property::<ResizeMode>(&RESIZE_MODE)?;
-        let color_format = context.get_req_property::<ColorFormat>(&COLOR_FORMAT)?;
-        let tensor_shape_format =
-            context.get_req_property::<TensorShapeFormat>(&TENSOR_SHAPE_FORMAT)?;
-        let mean_str = context.get_req_property::<String>(&MEAN)?;
-        let mean = parse_per_channel_f32(&mean_str).map_err(MinifiError::trigger_err)?;
-        let std_dev_str = context.get_req_property::<String>(&STD_DEV)?;
-        let std_dev = parse_per_channel_f32(&std_dev_str).map_err(MinifiError::trigger_err)?;
+        let target_width = context.get_property(&TARGET_WIDTH)?;
+        let target_height = context.get_property(&TARGET_HEIGHT)?;
+        let resize_filter = context.get_property(&RESIZE_FILTER)?;
+        let resize_mode = context.get_property(&RESIZE_MODE)?;
+        let color_format = context.get_property(&COLOR_FORMAT)?;
+        let tensor_shape_format = context.get_property(&TENSOR_SHAPE_FORMAT)?;
+        let mean = context.get_property(&MEAN)?;
+        let std_dev = context.get_property(&STD_DEV)?;
         if std_dev.contains(&0.0) {
             return Err(MinifiError::trigger_err(
                 "Standard Deviation components must be non-zero",
             ));
         }
-        let pixel_divisor = context.get_req_property::<f32>(&PIXEL_DIVISOR)?;
+        let pixel_divisor = context.get_property(&PIXEL_DIVISOR)?;
         if pixel_divisor == 0.0 {
             return Err(MinifiError::trigger_err("Pixel divisor must be non-zero"));
         }
-        let letterbox_pad_value = context.get_req_property::<f32>(&LETTERBOX_PAD_VALUE)?;
+        let letterbox_pad_value = context.get_property(&LETTERBOX_PAD_VALUE)?;
 
         Ok(Self {
             target_width,
@@ -620,16 +604,5 @@ mod tests {
             payload[0],
             expected_r
         );
-    }
-
-    #[test]
-    fn test_parse_per_channel_f32_accepts_scalar_and_triple() {
-        assert_eq!(parse_per_channel_f32("0.5").unwrap(), vec![0.5]);
-        assert_eq!(
-            parse_per_channel_f32("0.485, 0.456, 0.406").unwrap(),
-            vec![0.485, 0.456, 0.406]
-        );
-        assert!(parse_per_channel_f32("1, 2").is_err());
-        assert!(parse_per_channel_f32("1, 2, three").is_err());
     }
 }

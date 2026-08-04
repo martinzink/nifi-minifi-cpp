@@ -15,10 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-use crate::processors::filter_bounding_boxes::processor_definition::{
-    BACKGROUND_CLASS_INDEX, BOX_FORMAT, BOX_OUTPUT_INDEX, CONFIDENCE_THRESHOLD, FAILURE,
-    IOU_THRESHOLD, OUTPUT_ATTRIBUTE_NAME, SCORE_ACTIVATION, SCORE_OUTPUT_INDEX, SUCCESS,
+pub(crate) use crate::processors::filter_bounding_boxes::processor_definition::{
+    BACKGROUND_CLASS_INDEX, BOX_FORMAT, BOX_OUTPUT_INDEX, CONFIDENCE_THRESHOLD,
+    IOU_THRESHOLD, OUTPUT_ATTRIBUTE_NAME, SCORE_ACTIVATION, SCORE_OUTPUT_INDEX,
 };
+use processor_definition::{FAILURE, SUCCESS};
 use crate::utils::bounding_box::BoundingBox;
 use minifi_native::error;
 use minifi_native::macros::{ComponentIdentifier, PropertyType};
@@ -177,20 +178,15 @@ impl Schedule for FilterBoundingBoxes {
         context: &Ctx,
         _logger: &L,
     ) -> Result<Self, MinifiError> {
-        let confidence_threshold = context.get_req_property::<f32>(&CONFIDENCE_THRESHOLD)?;
-        let iou_threshold = context.get_req_property::<f32>(&IOU_THRESHOLD)?;
-        let score_output_index = context.get_req_property::<usize>(&SCORE_OUTPUT_INDEX)?;
-        let box_output_index = context.get_req_property::<usize>(&BOX_OUTPUT_INDEX)?;
-        let box_format = context.get_req_property::<BoxFormat>(&BOX_FORMAT)?;
-        let score_activation = context.get_req_property::<ScoreActivation>(&SCORE_ACTIVATION)?;
+        let confidence_threshold = context.get_property(&CONFIDENCE_THRESHOLD)?;
+        let iou_threshold = context.get_property(&IOU_THRESHOLD)?;
+        let score_output_index = context.get_property(&SCORE_OUTPUT_INDEX)?;
+        let box_output_index = context.get_property(&BOX_OUTPUT_INDEX)?;
+        let box_format = context.get_property(&BOX_FORMAT)?;
+        let score_activation = context.get_property(&SCORE_ACTIVATION)?;
         // `-1` (or any negative) turns off background suppression. `>=0`
         // selects the class id treated as "no object".
-        let background_raw = context.get_req_property::<i64>(&BACKGROUND_CLASS_INDEX)?;
-        let background_class_index = if background_raw < 0 {
-            None
-        } else {
-            Some(background_raw as usize)
-        };
+        let background_class_index = context.get_property(&BACKGROUND_CLASS_INDEX)?;
 
         Ok(Self {
             confidence_threshold,
@@ -387,7 +383,7 @@ impl FlowFileTransform for FilterBoundingBoxes {
         attributes.insert("object.count".to_string(), filtered_boxes.len().to_string());
         attributes.insert("mime.type".to_string(), "application/json".to_string());
 
-        match context.get_property::<String>(&OUTPUT_ATTRIBUTE_NAME)? {
+        match context.get_property(&OUTPUT_ATTRIBUTE_NAME)? {
             None => Ok(TransformedFlowFile::new(
                 &SUCCESS,
                 Some(json_output),

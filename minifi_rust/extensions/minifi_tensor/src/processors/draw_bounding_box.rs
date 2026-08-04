@@ -1,12 +1,11 @@
-use crate::utils::bounding_box::BoundingBoxes;
+use crate::utils::bounding_box::{BoundingBox, BoundingBoxes};
 use image::{ImageFormat, Rgb, load_from_memory};
-use minifi_native::PropertyConstraints::NoConstraints;
-use minifi_native::error;
+use minifi_native::{error, PropertySchema, PropertyDefinition, property_definitions};
 use minifi_native::macros::ComponentIdentifier;
 use minifi_native::{
     FlowFileTransform, GetAttribute, GetControllerService, GetId, GetProperty, InputStream, Logger,
     MinifiError, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property,
-    PropertyConstraints, PropertyType, Relationship, Schedule, StandardPropertyValidator,
+    PropertyConstraints, PropertyType, Relationship, Schedule,
     TransformedFlowFile, unwrap_or_route,
 };
 use std::collections::HashMap;
@@ -22,35 +21,12 @@ pub(crate) const FAILURE: Relationship = Relationship {
     description: "Invalid FlowFiles are routed here",
 };
 
-pub(crate) const BOUNDING_BOXES: Property = Property {
-    name: "Bounding boxes",
-    description: "TODO(mzink)",
-    is_required: true,
-    is_sensitive: false,
-    supports_expr_lang: true,
-    default_value: Some("${enrichment.value}"),
-    constraints: NoConstraints,
-};
+pub(crate) const BOUNDING_BOXES: Property<BoundingBoxes> = Property::new("Bounding boxes", "TODO(mzink)").with_default("${enrichment.value}");
 
-const LINE_THICKNESS: Property = Property {
-    name: "Line tickness",
-    description: "TODO(mzink)",
-    is_required: true,
-    is_sensitive: false,
-    supports_expr_lang: true,
-    default_value: Some("5"),
-    constraints: PropertyConstraints::Validator(StandardPropertyValidator::U64Validator),
-};
+const LINE_THICKNESS: Property<u32> = Property::new("Line tickness", "TODO(mzink)").with_default("5");
 
-const LINE_COLOR: Property = Property {
-    name: "Line color",
-    description: "TODO(mzink)",
-    is_required: true,
-    is_sensitive: false,
-    supports_expr_lang: true,
-    default_value: Some("[0, 255, 0]"),
-    constraints: NoConstraints,
-};
+const LINE_COLOR: Property<LineColor> = Property::new("Line color", "TODO(mzink)")
+    .with_default("[0, 255, 0]");
 
 #[derive(Debug, ComponentIdentifier)]
 pub(crate) struct DrawBoundingBox {}
@@ -68,6 +44,12 @@ impl Schedule for DrawBoundingBox {
 }
 
 struct LineColor {}
+
+impl PropertySchema for LineColor {
+    const CONSTRAINT: Option<PropertyConstraints> = None;
+    const IS_REQUIRED: bool = false;
+}
+
 impl PropertyType for LineColor {
     type Output = Rgb<u8>;
 
@@ -103,20 +85,10 @@ impl FlowFileTransform for DrawBoundingBox {
         input_stream: &'a mut dyn InputStream,
         logger: &LoggerImpl,
     ) -> Result<TransformedFlowFile<'a>, MinifiError> {
-        let line_thickness = unwrap_or_route!(
-            context.get_req_property::<u32>(&LINE_THICKNESS),
-            &FAILURE,
-            logger,
-            "getting LINE_THICKNESS"
-        );
-        let line_color = unwrap_or_route!(
-            context.get_req_property::<LineColor>(&LINE_COLOR),
-            &FAILURE,
-            logger,
-            "getting LINE_COLOR"
-        );
-        let boxes = unwrap_or_route!(
-            context.get_req_property::<BoundingBoxes>(&BOUNDING_BOXES),
+        let line_thickness = context.get_property(&LINE_THICKNESS)?;
+        let line_color = context.get_property(&LINE_COLOR)?;
+        let boxes: Vec<BoundingBox> = unwrap_or_route!(
+            context.get_property(&BOUNDING_BOXES),
             &FAILURE,
             logger,
             "bounding boxes"
@@ -157,19 +129,19 @@ impl ProcessorDefinition for DrawBoundingBox {
     const SUPPORTS_DYNAMIC_RELATIONSHIPS: bool = false;
     const OUTPUT_ATTRIBUTES: &'static [OutputAttribute] = &[];
     const RELATIONSHIPS: &'static [Relationship] = &[SUCCESS, FAILURE];
-    const PROPERTIES: &'static [Property] = &[BOUNDING_BOXES, LINE_COLOR, LINE_THICKNESS];
+    const PROPERTIES: &'static [PropertyDefinition] = property_definitions![BOUNDING_BOXES, LINE_COLOR, LINE_THICKNESS];
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::processors::draw_bounding_box::{LINE_COLOR, LINE_THICKNESS, LineColor};
+    use crate::processors::draw_bounding_box::{LINE_COLOR, LINE_THICKNESS};
     use minifi_native::{GetProperty, MockControllerServiceContext};
 
     #[test]
     fn test_parsing_colors() {
         let mock_context = MockControllerServiceContext::default();
         let default_color = mock_context
-            .get_req_property::<LineColor>(&LINE_COLOR)
+            .get_property(&LINE_COLOR)
             .expect("we should parse this");
         let green = image::Rgb([0, 255, 0]);
         assert_eq!(default_color, green);
@@ -179,7 +151,7 @@ mod tests {
     fn test_parsing_line_thickness() {
         let mock_context = MockControllerServiceContext::default();
         let default_thickness = mock_context
-            .get_req_property::<u32>(&LINE_THICKNESS)
+            .get_property(&LINE_THICKNESS)
             .expect("we should parse this");
         assert_eq!(default_thickness, 5);
     }

@@ -1,5 +1,5 @@
 use image::{Rgb, RgbImage};
-use minifi_native::{MinifiError, PropertyType};
+use minifi_native::{MinifiError, PropertyConstraints, PropertySchema, PropertyType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -108,6 +108,12 @@ impl BoundingBox {
 }
 
 pub(crate) struct BoundingBoxes {}
+
+impl PropertySchema for BoundingBoxes {
+    const CONSTRAINT: Option<PropertyConstraints> = None;
+    const IS_REQUIRED: bool = false;
+}
+
 impl PropertyType for BoundingBoxes {
     type Output = Vec<BoundingBox>;
 

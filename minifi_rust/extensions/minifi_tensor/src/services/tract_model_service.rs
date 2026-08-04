@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+use std::path::Path;
 use crate::services::tract_model_service::service_definition::{MODEL_FILE_PATH, MODEL_FORMAT};
 use minifi_native::macros::{ComponentIdentifier, PropertyType};
 use minifi_native::{EnableControllerService, GetProperty, Logger, MinifiError, debug, info};
@@ -41,24 +42,23 @@ enum ResolvedFormat {
 }
 
 impl ModelFormat {
-    fn resolve(self, path: &str) -> Result<ResolvedFormat, MinifiError> {
+    fn resolve(self, path: &Path) -> Result<ResolvedFormat, MinifiError> {
         match self {
             ModelFormat::Onnx => Ok(ResolvedFormat::Onnx),
             ModelFormat::Nnef => Ok(ResolvedFormat::Nnef),
             ModelFormat::Auto => {
-                let lower = path.to_ascii_lowercase();
-                if lower.ends_with(".onnx") {
+                if path.ends_with(".onnx") {
                     Ok(ResolvedFormat::Onnx)
-                } else if lower.ends_with(".nnef")
-                    || lower.ends_with(".nnef.tgz")
-                    || lower.ends_with(".nnef.tar")
-                    || lower.ends_with(".nnef.tar.gz")
-                    || std::path::Path::new(path).is_dir()
+                } else if path.ends_with(".nnef")
+                    || path.ends_with(".nnef.tgz")
+                    || path.ends_with(".nnef.tar")
+                    || path.ends_with(".nnef.tar.gz")
+                    || path.is_dir()
                 {
                     Ok(ResolvedFormat::Nnef)
                 } else {
                     Err(MinifiError::controller_service_err(format!(
-                        "Could not auto-detect model format from '{}'. Set 'Model format' to \
+                        "Could not auto-detect model format from '{:?}'. Set 'Model format' to \
                          'Onnx' or 'Nnef' explicitly.",
                         path
                     )))
@@ -78,13 +78,13 @@ impl EnableControllerService for TractModelService {
     where
         Self: Sized,
     {
-        let model_path = context.get_req_property::<String>(&MODEL_FILE_PATH)?;
-        let format = context.get_req_property::<ModelFormat>(&MODEL_FORMAT)?;
+        let model_path = context.get_property(&MODEL_FILE_PATH)?;
+        let format = context.get_property(&MODEL_FORMAT)?;
         let resolved = format.resolve(&model_path)?;
 
         info!(
             logger,
-            "Loading Tract model ({:?}) from: {}", resolved, model_path
+            "Loading Tract model ({:?}) from: {:?}", resolved, model_path
         );
 
         let model = match resolved {
@@ -153,16 +153,18 @@ impl TractModelService {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+    use std::str::FromStr;
     use super::*;
 
     #[test]
     fn test_resolve_explicit_formats_bypass_detection() {
         assert_eq!(
-            ModelFormat::Onnx.resolve("/tmp/no-extension").unwrap(),
+            ModelFormat::Onnx.resolve(&PathBuf::from_str("/tmp/no-extension").unwrap()).unwrap(),
             ResolvedFormat::Onnx
         );
         assert_eq!(
-            ModelFormat::Nnef.resolve("/tmp/no-extension").unwrap(),
+            ModelFormat::Nnef.resolve(&PathBuf::from_str("/tmp/no-extension").unwrap()).unwrap(),
             ResolvedFormat::Nnef
         );
     }
@@ -170,11 +172,11 @@ mod tests {
     #[test]
     fn test_resolve_auto_by_onnx_extension() {
         assert_eq!(
-            ModelFormat::Auto.resolve("/models/face.onnx").unwrap(),
+            ModelFormat::Auto.resolve(&PathBuf::from_str("/models/face.onnx").unwrap()).unwrap(),
             ResolvedFormat::Onnx
         );
         assert_eq!(
-            ModelFormat::Auto.resolve("/MODELS/FACE.ONNX").unwrap(),
+            ModelFormat::Auto.resolve(&PathBuf::from_str("/MODELS/FACE.ONNX").unwrap()).unwrap(),
             ResolvedFormat::Onnx
         );
     }
@@ -183,18 +185,17 @@ mod tests {
     fn test_resolve_auto_by_nnef_extension() {
         assert_eq!(
             ModelFormat::Auto
-                .resolve("/models/mobilenet.nnef.tgz")
-                .unwrap(),
+                .resolve(&PathBuf::from_str("/models/mobilenet.nnef.tgz").unwrap()).unwrap(),
             ResolvedFormat::Nnef
         );
         assert_eq!(
-            ModelFormat::Auto.resolve("/models/mobilenet.nnef").unwrap(),
+            ModelFormat::Auto.resolve(&PathBuf::from_str("/models/mobilenet.nnef").unwrap()).unwrap(),
             ResolvedFormat::Nnef
         );
     }
 
     #[test]
     fn test_resolve_auto_errors_on_unknown() {
-        assert!(ModelFormat::Auto.resolve("/tmp/no-hint").is_err());
+        assert!(ModelFormat::Auto.resolve(&PathBuf::from_str("/tmp/no-hint").unwrap()).is_err());
     }
 }

@@ -16,91 +16,66 @@
 // under the License.
 
 use crate::processors::classify_output::{ClassifyOutput, ScoreActivation};
-use minifi_native::PropertyConstraints::{AllowedValues, NoConstraints, Validator};
-use minifi_native::StandardPropertyValidator::U64Validator;
 use minifi_native::{
-    OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property, Relationship,
+    OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property, PropertyDefinition,
+    Relationship, property_definitions,
 };
-use strum::VariantNames;
+use std::path::PathBuf;
 
-pub(crate) const TOP_K: Property = Property {
-    name: "Top K",
-    description: "Number of highest-scoring classes to include in the output JSON, in descending \
+pub(crate) const TOP_K: Property<usize> = Property::new(
+    "Top K",
+    "Number of highest-scoring classes to include in the output JSON, in descending \
                   order of confidence. Values above the total class count are clamped. Set to 1 \
                   for pure top-1 classification.",
-    is_required: true,
-    is_sensitive: false,
-    supports_expr_lang: false,
-    default_value: Some("5"),
-    constraints: Validator(U64Validator),
-};
+)
+.with_default("5");
 
-pub(crate) const SCORE_OUTPUT_INDEX: Property = Property {
-    name: "Score output index",
-    description: "Zero-based index of the model output tensor that holds classification scores. \
+pub(crate) const SCORE_OUTPUT_INDEX: Property<usize> = Property::new(
+    "Score output index",
+    "Zero-based index of the model output tensor that holds classification scores. \
                   The processor slices the concatenated payload from InvokeTractModel according \
                   to the 'tract.output.N.bytes' attributes. Almost always 0 for single-head \
                   classifiers.",
-    is_required: true,
-    is_sensitive: false,
-    supports_expr_lang: false,
-    default_value: Some("0"),
-    constraints: Validator(U64Validator),
-};
+)
+.with_default("0");
 
-pub(crate) const SCORE_ACTIVATION: Property = Property {
-    name: "Score activation",
-    description: "Activation applied to the raw score vector before ranking. \
+pub(crate) const SCORE_ACTIVATION: Property<ScoreActivation> = Property::new(
+    "Score activation",
+    "Activation applied to the raw score vector before ranking. \
                   Softmax = mutually-exclusive classes (ImageNet-trained ResNet/MobileNet/\
                   EfficientNet raw logits). \
                   Sigmoid = independent classes (multi-label classifiers). \
                   None = the model already emits probabilities/scores; rank the raw values.",
-    is_required: true,
-    is_sensitive: false,
-    supports_expr_lang: false,
-    default_value: Some(ScoreActivation::Softmax.into_str()),
-    constraints: AllowedValues(ScoreActivation::VARIANTS),
-};
+)
+.with_default(ScoreActivation::Softmax.into_str());
 
-pub(crate) const CONFIDENCE_THRESHOLD: Property = Property {
-    name: "Confidence Threshold",
-    description: "Minimum confidence a class must reach to be included in the output JSON. \
+pub(crate) const CONFIDENCE_THRESHOLD: Property<f32> = Property::new(
+    "Confidence Threshold",
+    "Minimum confidence a class must reach to be included in the output JSON. \
                   Applied AFTER activation, so the units match the chosen activation \
                   (0.0..=1.0 for Softmax/Sigmoid, model-native for None). Set to 0.0 to always \
                   emit exactly Top K predictions.",
-    is_required: true,
-    is_sensitive: false,
-    supports_expr_lang: true,
-    default_value: Some("0.0"),
-    constraints: NoConstraints,
-};
+)
+.with_default("0.0")
+.supports_expression_language();
 
-pub(crate) const LABELS_FILE_PATH: Property = Property {
-    name: "Labels file path",
-    description: "Optional path to a newline-separated labels file (line N = name of class N). \
+pub(crate) const LABELS_FILE_PATH: Property<Option<PathBuf>> = Property::new(
+    "Labels file path",
+    "Optional path to a newline-separated labels file (line N = name of class N). \
                   Loaded once at service enable time. When set, each prediction in the output \
                   JSON gains a 'class_name' field and the 'class.top1.name' flow file attribute \
                   is populated. Leave empty to emit numeric class IDs only.",
-    is_required: false,
-    is_sensitive: false,
-    supports_expr_lang: false,
-    default_value: None,
-    constraints: NoConstraints,
-};
+);
 
-pub(crate) const LABEL_INDEX_OFFSET: Property = Property {
-    name: "Label index offset",
-    description: "Offset added to the model's class ID when looking up a name in the labels file. \
+pub(crate) const LABEL_INDEX_OFFSET: Property<usize> = Property::new(
+    "Label index offset",
+    "Offset added to the model's class ID when looking up a name in the labels file. \
                   Defaults to 0 (labels file line N = class N). Set to 1 for label files that \
                   start with a dummy/background entry — e.g. the ONNX MobileNetV2 model emits \
                   1000 class scores while 'imagenet_slim_labels.txt' has 1001 lines (line 0 = \
                   'dummy'), so class ID 653 maps to line 654 = 'military uniform'.",
-    is_required: true,
-    is_sensitive: false,
-    supports_expr_lang: false,
-    default_value: Some("0"),
-    constraints: Validator(U64Validator),
-};
+)
+.with_default("0");
 
 pub(super) const SUCCESS: Relationship = Relationship {
     name: "success",
@@ -168,7 +143,7 @@ impl ProcessorDefinition for ClassifyOutput {
         CLASS_TOP1_NAME_ATTR,
     ];
     const RELATIONSHIPS: &'static [Relationship] = &[SUCCESS, FAILURE];
-    const PROPERTIES: &'static [Property] = &[
+    const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
         TOP_K,
         SCORE_OUTPUT_INDEX,
         SCORE_ACTIVATION,

@@ -16,3 +16,4 @@
 // under the License.
 
 pub(crate) mod bounding_box;
+pub(crate) mod per_channel_f32;
