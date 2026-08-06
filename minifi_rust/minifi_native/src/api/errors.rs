@@ -48,6 +48,8 @@ pub enum MinifiError {
     Parse(ParseError),
     MissingFlowFileError,
     IoError(std::io::Error),
+
+    Custom(Box<dyn Error + Send + Sync + 'static>),
 }
 
 impl From<std::io::Error> for MinifiError {
@@ -151,6 +153,13 @@ impl MinifiError {
     pub fn parse_err() -> Self {
         MinifiError::Parse(ParseError::Other)
     }
+
+    pub fn custom<E>(err: E) -> Self
+    where
+        E: Into<Box<dyn Error + Send + Sync + 'static>>,
+    {
+        MinifiError::Custom(err.into())
+    }
 }
 
 impl fmt::Display for MinifiError {
@@ -177,6 +186,7 @@ impl fmt::Display for MinifiError {
                 }
                 _ => write!(f, "{} (Unknown Status Code: {})", context, code),
             },
+            MinifiError::Custom(err) => write!(f, "Custom error: {}", err),
             _ => write!(f, "{:?}", self),
         }
     }

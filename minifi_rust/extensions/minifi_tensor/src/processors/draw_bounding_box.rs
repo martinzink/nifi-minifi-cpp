@@ -102,7 +102,7 @@ impl FlowFileTransform for DrawBoundingBox {
         let mut img = unwrap_or_route!(
             load_from_memory(&image_bytes)
                 .map(|dyn_img| dyn_img.to_rgb8())
-                .map_err(|_e| MinifiError::UnknownError),
+                .map_err(MinifiError::custom),
             &FAILURE,
             logger,
             "loading_img_from_memory"
@@ -114,7 +114,7 @@ impl FlowFileTransform for DrawBoundingBox {
 
         let mut output_bytes = Vec::new();
         img.write_to(&mut Cursor::new(&mut output_bytes), ImageFormat::Png)
-            .map_err(|_e| MinifiError::UnknownError)?;
+            .map_err(MinifiError::custom)?;
 
         Ok(TransformedFlowFile::new(
             &SUCCESS,

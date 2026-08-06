@@ -17,23 +17,22 @@
 
 mod processor_definition;
 
-use processor_definition::{
-    BACKGROUND_CLASS_INDEX, BOX_FORMAT, BOX_OUTPUT_INDEX, CONFIDENCE_THRESHOLD, IOU_THRESHOLD,
-    OUTPUT_ATTRIBUTE_NAME, SCORE_ACTIVATION, SCORE_OUTPUT_INDEX,
-};
 use crate::utils::bounding_box::BoundingBox;
+use crate::utils::dimensions::Dimensions;
+use crate::utils::tensor_helpers::TensorFlowFile;
 use minifi_native::error;
 use minifi_native::macros::{ComponentIdentifier, PropertyType};
 use minifi_native::{
     debug, unwrap_or_route, FlowFileTransform, GetAttribute, GetId, GetProperty, InputStream,
     Logger, MinifiError, Schedule, TransformedFlowFile,
 };
+use processor_definition::{
+    BACKGROUND_CLASS_INDEX, BOX_FORMAT, BOX_OUTPUT_INDEX, CONFIDENCE_THRESHOLD, IOU_THRESHOLD,
+    OUTPUT_ATTRIBUTE_NAME, SCORE_ACTIVATION, SCORE_OUTPUT_INDEX,
+};
 use processor_definition::{FAILURE, SUCCESS};
 use std::collections::HashMap;
 use strum_macros::{Display, EnumString, IntoStaticStr, VariantNames};
-use tract::__ndarray_interop::TensorInterface;
-use tract::Tensor;
-use crate::utils::dimensions::Dimensions;
 
 /// Wire format the model uses to encode a single box's four floats.
 #[derive(
@@ -205,52 +204,7 @@ impl Schedule for FilterBoundingBoxes {
     }
 }
 
-fn bytes_to_f32s(bytes: &[u8]) -> Vec<f32> {
-    bytes
-        .chunks_exact(4)
-        .map(|c| f32::from_le_bytes(c.try_into().unwrap()))
-        .collect()
-}
-
 impl FilterBoundingBoxes {
-    /// Read the byte length of tract output `i` from the attributes.
-    fn read_output_bytes<Ctx: GetAttribute>(context: &Ctx, i: usize) -> Result<usize, MinifiError> {
-        let attr_name = format!("tract.output.{}.bytes", i);
-        let raw = context
-            .get_attribute(&attr_name)?
-            .ok_or_else(|| MinifiError::trigger_err(format!("Missing {} attribute", attr_name)))?;
-        raw.parse::<usize>()
-            .map_err(|e| MinifiError::trigger_err(format!("Invalid {}: {}", attr_name, e)))
-    }
-
-    /// Slice `raw` sequentially per model output index. Given the concatenated
-    /// payload emitted by InvokeTractModel, extract the bytes for output
-    /// `target_index` using the per-output byte-length attributes 0..=max_idx.
-    fn slice_output<'a, Ctx: GetAttribute>(
-        context: &Ctx,
-        raw: &'a [u8],
-        target_index: usize,
-    ) -> Result<&'a [u8], MinifiError> {
-        let mut cursor = 0usize;
-        // Walk from output 0 to target_index, advancing `cursor` past each
-        // preceding tensor's bytes.
-        for i in 0..=target_index {
-            let len = Self::read_output_bytes(context, i)?;
-            if i == target_index {
-                let end = cursor + len;
-                if end > raw.len() {
-                    return Err(MinifiError::trigger_err(format!(
-                        "Payload smaller than declared output {} slice",
-                        target_index
-                    )));
-                }
-                return Ok(&raw[cursor..end]);
-            }
-            cursor += len;
-        }
-        unreachable!()
-    }
-
     fn get_original_dimensions<Context: GetAttribute>(
         context: &Context,
     ) -> Result<Dimensions, MinifiError> {
@@ -267,6 +221,14 @@ impl FilterBoundingBoxes {
             height: orig_h,
         })
     }
+    
+    pub(crate) fn score_output_index(&self) -> usize {
+        self.score_output_index
+    }
+
+    pub(crate) fn box_output_index(&self) -> usize {
+        self.box_output_index
+    }
 
     fn get_target_dimensions<Context: GetAttribute>(
         context: &Context,
@@ -279,28 +241,6 @@ impl FilterBoundingBoxes {
             width: target_w,
             height: target_h,
         })
-    }
-    
-    fn get_floats(tensors: &[Tensor], index: usize) -> Result<Vec<f32>, MinifiError> {
-        let tensor = tensors.get(index).ok_or_else(|| {
-            MinifiError::trigger_err(format!(
-                "Model produced {} output tensor(s); output index {} is out of range",
-                tensors.len(),
-                index
-            ))
-        })?;
-        let (_datum_type, _shape, raw_bytes) = tensor
-            .as_bytes()
-            .map_err(|e| MinifiError::trigger_err(format!("Failed to read tensor bytes: {}", e)))?;
-        Ok(bytes_to_f32s(raw_bytes))
-    }
-    
-    pub(crate) fn get_score_floats(&self, tensors: &[Tensor]) -> Result<Vec<f32>, MinifiError> {
-        Self::get_floats(tensors, self.score_output_index)
-    }
-
-    pub(crate) fn get_box_floats(&self, tensors: &[Tensor]) -> Result<Vec<f32>, MinifiError> {
-        Self::get_floats(tensors, self.box_output_index)
     }
 
     pub(crate) fn filter<'a, Context: GetProperty, LoggerImpl: Logger>(
@@ -360,10 +300,14 @@ impl FilterBoundingBoxes {
                 let (raw_x_min, raw_y_min, raw_x_max, raw_y_max) =
                     decode_box(&box_floats, i * 4, self.box_format);
 
-                let true_x_min = (((raw_x_min * target_dim.width) - pad_x) / scale) / orig_dim.width;
-                let true_y_min = (((raw_y_min * target_dim.height) - pad_y) / scale) / orig_dim.height;
-                let true_x_max = (((raw_x_max * target_dim.width) - pad_x) / scale) / orig_dim.width;
-                let true_y_max = (((raw_y_max * target_dim.height) - pad_y) / scale) / orig_dim.height;
+                let true_x_min =
+                    (((raw_x_min * target_dim.width) - pad_x) / scale) / orig_dim.width;
+                let true_y_min =
+                    (((raw_y_min * target_dim.height) - pad_y) / scale) / orig_dim.height;
+                let true_x_max =
+                    (((raw_x_max * target_dim.width) - pad_x) / scale) / orig_dim.width;
+                let true_y_max =
+                    (((raw_y_max * target_dim.height) - pad_y) / scale) / orig_dim.height;
 
                 valid_boxes.push(BoundingBox {
                     class_id: scored.class_id,
@@ -423,26 +367,24 @@ impl FlowFileTransform for FilterBoundingBoxes {
         let orig_dim = unwrap_or_route!(Self::get_original_dimensions(context), &FAILURE, logger);
         let target_dim = unwrap_or_route!(Self::get_target_dimensions(context), &FAILURE, logger);
 
-        let score_bytes = unwrap_or_route!(
-            Self::slice_output(context, &flow_file_contents, self.score_output_index),
-            &FAILURE,
-            logger,
-            "slice score output"
+        let tff = TensorFlowFile::new(&flow_file_contents);
+        let score_floats = unwrap_or_route!(
+            tff.get_f32_slice(context, self.score_output_index),
+            &FAILURE
         );
-        let box_bytes = unwrap_or_route!(
-            Self::slice_output(context, &flow_file_contents, self.box_output_index),
-            &FAILURE,
-            logger,
-            "slice box output"
-        );
+        let box_floats =
+            unwrap_or_route!(tff.get_f32_slice(context, self.box_output_index), &FAILURE);
 
-        let score_floats = bytes_to_f32s(score_bytes);
-        let box_floats = bytes_to_f32s(box_bytes);
-        
-        self.filter(context, logger, &score_floats, &box_floats, orig_dim, target_dim)
+        self.filter(
+            context,
+            logger,
+            &score_floats,
+            &box_floats,
+            orig_dim,
+            target_dim,
+        )
     }
 }
-
 
 #[cfg(test)]
 mod tests {

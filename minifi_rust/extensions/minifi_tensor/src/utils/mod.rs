@@ -18,3 +18,4 @@
 pub(crate) mod bounding_box;
 pub(crate) mod per_channel_f32;
 pub(crate) mod dimensions;
+pub(crate) mod tensor_helpers;

@@ -34,6 +34,7 @@ use crate::processors::filter_bounding_boxes::FilterBoundingBoxes;
 use crate::processors::image_to_tensor::ImageToTensor;
 use crate::processors::invoke_tract_model::TRACT_MODEL_SERVICE;
 use crate::utils::dimensions::Dimensions;
+use crate::utils::tensor_helpers::tensor_as_f32;
 use minifi_native::error;
 use minifi_native::macros::ComponentIdentifier;
 use minifi_native::{
@@ -103,10 +104,8 @@ impl FlowFileTransform for DetectObject {
             "run tract inference"
         );
 
-        let score_floats = self
-            .filter_bounding_boxes
-            .get_score_floats(&output_tensors)?;
-        let box_floats = self.filter_bounding_boxes.get_box_floats(&output_tensors)?;
+        let score_floats = tensor_as_f32(&output_tensors, self.filter_bounding_boxes.score_output_index())?;
+        let box_floats = tensor_as_f32(&output_tensors, self.filter_bounding_boxes.box_output_index())?;
 
         let orig_dim = Dimensions {
             width: img.width() as f32,
@@ -128,9 +127,9 @@ impl FlowFileTransform for DetectObject {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::processors::image_to_tensor::{PIXEL_DIVISOR, TARGET_HEIGHT, TARGET_WIDTH};
     use minifi_native::{MockLogger, MockProcessContext};
     use std::io::Cursor;
-    use crate::processors::image_to_tensor::{PIXEL_DIVISOR, TARGET_HEIGHT, TARGET_WIDTH};
 
     #[test]
     fn test_missing_controller_service_errors() {
