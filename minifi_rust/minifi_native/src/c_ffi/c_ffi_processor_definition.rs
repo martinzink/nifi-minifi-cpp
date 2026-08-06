@@ -30,8 +30,44 @@ use crate::{
     ComponentIdentifier, LogLevel, MultiThreaded, OutputAttribute, Processor, ProcessorDefinition,
     PropertyDefinition, Schedule, SingleThreaded,
 };
-use crate::{OnTriggerResult, Relationship};
+use crate::{OnTriggerResult, ProcessError, Relationship};
 use minifi_native_sys::*;
+
+/// Maps a trigger's `Result<OnTriggerResult, ProcessError>` to a C status code.
+///
+/// * `Ok(Ok)`      -> SUCCESS
+/// * `Ok(Yield)`   -> PROCESSOR_YIELD
+/// * `Fatal(e)`    -> `e.to_status()` (non-zero => the agent rolls back the session)
+/// * `Route(r)`    -> a route-on-error that escaped to the top level. This only
+///   happens for complex/source processors with no implicit current flow file
+///   to route, so we cannot honour it here and fail the trigger conservatively.
+fn process_error_to_status<P: RawProcessor>(
+    processor: &P,
+    result: Result<OnTriggerResult, ProcessError>,
+) -> minifi_status {
+    match result {
+        Ok(OnTriggerResult::Ok) => minifi_status_MINIFI_STATUS_SUCCESS,
+        Ok(OnTriggerResult::Yield) => minifi_status_MINIFI_STATUS_PROCESSOR_YIELD,
+        Err(ProcessError::Fatal(err)) => {
+            processor.log(
+                LogLevel::Error,
+                format_args!("Error during trigger {}", err),
+            );
+            err.to_status()
+        }
+        Err(ProcessError::Route(route)) => {
+            processor.log(
+                LogLevel::Warn,
+                format_args!(
+                    "Cannot route to '{}' at the top level (no current flow file); \
+                     failing the trigger: {}",
+                    route.relationship, route.source
+                ),
+            );
+            minifi_status_MINIFI_STATUS_UNKNOWN_ERROR
+        }
+    }
+}
 
 pub trait DispatchOnTrigger<M: ThreadingModel> {
     /// # Safety
@@ -57,17 +93,7 @@ where
             let processor = &*(processor_ptr as *const T);
             let mut context = CffiProcessContext::new(context_ptr);
             let mut session = CffiProcessSession::new(session_ptr);
-            match processor.trigger(&mut context, &mut session) {
-                Ok(OnTriggerResult::Ok) => minifi_status_MINIFI_STATUS_SUCCESS,
-                Ok(OnTriggerResult::Yield) => minifi_status_MINIFI_STATUS_PROCESSOR_YIELD,
-                Err(minifi_error) => {
-                    processor.log(
-                        LogLevel::Error,
-                        format_args!("Error during trigger {}", minifi_error),
-                    );
-                    minifi_error.to_status()
-                }
-            }
+            process_error_to_status(processor, processor.trigger(&mut context, &mut session))
         }
     }
 }
@@ -85,17 +111,8 @@ where
             let processor = &mut *(processor_ptr as *mut T);
             let mut context = CffiProcessContext::new(context_ptr);
             let mut session = CffiProcessSession::new(session_ptr);
-            match processor.trigger(&mut context, &mut session) {
-                Ok(OnTriggerResult::Ok) => minifi_status_MINIFI_STATUS_SUCCESS,
-                Ok(OnTriggerResult::Yield) => minifi_status_MINIFI_STATUS_PROCESSOR_YIELD,
-                Err(minifi_error) => {
-                    processor.log(
-                        LogLevel::Error,
-                        format_args!("Error during trigger {}", minifi_error),
-                    );
-                    minifi_error.to_status()
-                }
-            }
+            let result = processor.trigger(&mut context, &mut session);
+            process_error_to_status(&*processor, result)
         }
     }
 }

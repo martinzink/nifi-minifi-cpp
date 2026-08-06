@@ -30,7 +30,7 @@ impl ProcessorDefinition for GenerateFlowFileRs {
     const OUTPUT_ATTRIBUTES: &'static [OutputAttribute] = &[];
     const RELATIONSHIPS: &'static [Relationship] = &[relationships::SUCCESS];
     fn properties() -> &'static [PropertyDefinition] {
-        const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
+        const PROPERTIES: &[PropertyDefinition] = property_definitions![
             FILE_SIZE,
             BATCH_SIZE,
             DATA_FORMAT,

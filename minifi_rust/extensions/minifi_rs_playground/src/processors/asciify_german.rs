@@ -20,8 +20,8 @@
 use crate::processors::asciify_german::relationships::FAILURE;
 use minifi_native::macros::ComponentIdentifier;
 use minifi_native::{
-    FlowFileStreamTransform, GetProperty, InputStream, Logger, MinifiError, OutputStream, Schedule,
-    TransformStreamResult,
+    FlowFileStreamTransform, GetProperty, InputStream, Logger, MinifiError, OutputStream,
+    ProcessError, Schedule, TransformStreamResult,
 };
 use std::collections::HashMap;
 
@@ -46,7 +46,7 @@ impl FlowFileStreamTransform for AsciifyGerman {
         input_stream: &mut dyn InputStream,
         output_stream: &mut dyn OutputStream,
         _logger: &LoggerImpl,
-    ) -> Result<TransformStreamResult, MinifiError> {
+    ) -> Result<TransformStreamResult, ProcessError> {
         let mut byte = [0u8; 1];
 
         while input_stream.read(&mut byte)? > 0 {

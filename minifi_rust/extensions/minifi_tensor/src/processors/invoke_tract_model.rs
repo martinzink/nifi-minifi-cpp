@@ -16,13 +16,12 @@
 // under the License.
 
 pub(crate) use crate::processors::invoke_tract_model::processor_definition::TRACT_MODEL_SERVICE;
-use minifi_native::error;
 use minifi_native::macros::ComponentIdentifier;
 use minifi_native::{
     FlowFileTransform, GetAttribute, GetControllerService, GetId, GetProperty, InputStream, Logger,
-    MinifiError, Schedule, TransformedFlowFile, debug, unwrap_or_route,
+    MinifiError, ProcessError, RouteErrorExt, Schedule, TransformedFlowFile, debug,
 };
-use processor_definition::{FAILURE, SUCCESS};
+use processor_definition::SUCCESS;
 use std::collections::HashMap;
 use std::error::Error;
 use tract::__ndarray_interop::TensorInterface;
@@ -122,22 +121,15 @@ impl FlowFileTransform for InvokeTractModel {
         context: &Context,
         input_stream: &'a mut dyn InputStream,
         logger: &LoggerImpl,
-    ) -> Result<TransformedFlowFile<'a>, MinifiError> {
+    ) -> Result<TransformedFlowFile<'a>, ProcessError> {
         let controller_service = context.get_controller_service(&TRACT_MODEL_SERVICE)?;
 
-        let input_tensor: Tensor = unwrap_or_route!(
-            Self::get_input_tensor(context, input_stream),
-            &FAILURE,
-            logger,
-            "build input tensor"
-        );
+        let input_tensor: Tensor = Self::get_input_tensor(context, input_stream)
+            .map_err(|e| MinifiError::trigger_err(e.to_string()))
+            .err_to_failure()?;
 
-        let output_tensors = unwrap_or_route!(
-            controller_service.run_inference(vec![input_tensor]),
-            &FAILURE,
-            logger,
-            "run tract inference"
-        );
+        let output_tensors =
+            controller_service.run_inference(vec![input_tensor]).err_to_failure()?;
         let mut output_bytes = Vec::new();
         let mut attributes = HashMap::new();
         attributes.insert(

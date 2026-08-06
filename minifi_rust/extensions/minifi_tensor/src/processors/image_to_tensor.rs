@@ -23,10 +23,10 @@ pub(crate) use crate::processors::image_to_tensor::processor_definition::{
 use minifi_native::macros::{ComponentIdentifier, PropertyType};
 use minifi_native::{
     FlowFileTransform, GetAttribute, GetControllerService, GetId, GetProperty, InputStream, Logger,
-    MinifiError, Schedule, TransformedFlowFile, error, unwrap_or_route,
+    MinifiError, ProcessError, RouteErrorExt, Schedule, TransformedFlowFile,
 };
 use processor_definition::{
-    FAILURE, IMAGE_ORIGINAL_HEIGHT_ATTR, IMAGE_ORIGINAL_WIDTH_ATTR, SUCCESS, TENSOR_DTYPE_ATTR,
+    IMAGE_ORIGINAL_HEIGHT_ATTR, IMAGE_ORIGINAL_WIDTH_ATTR, SUCCESS, TENSOR_DTYPE_ATTR,
     TENSOR_SHAPE_ATTR,
 };
 use std::collections::HashMap;
@@ -334,16 +334,11 @@ impl FlowFileTransform for ImageToTensor {
         _context: &Context,
         input_stream: &'a mut dyn InputStream,
         logger: &LoggerImpl,
-    ) -> Result<TransformedFlowFile<'a>, MinifiError> {
+    ) -> Result<TransformedFlowFile<'a>, ProcessError> {
         let mut raw_bytes = Vec::new();
         input_stream.read_to_end(&mut raw_bytes)?;
 
-        let img = unwrap_or_route!(
-            image::load_from_memory(&raw_bytes),
-            &FAILURE,
-            logger,
-            "decode image"
-        );
+        let img = image::load_from_memory(&raw_bytes).err_to_failure()?;
 
         let tensor_bytes = self.tensor_bytes(&img);
         let shape_str = self.get_shape()
@@ -375,7 +370,7 @@ impl FlowFileTransform for ImageToTensor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::{FAILURE, SUCCESS};
+    use super::processor_definition::{FAILURE, SUCCESS};
     use image::{ImageFormat, RgbImage};
     use minifi_native::{MockLogger, MockProcessContext};
     use std::io::Cursor;
@@ -501,11 +496,16 @@ mod tests {
         let invalid_bytes = vec![0x00, 0x01, 0x02, 0x03, 0x04];
         let mut input_stream = Cursor::new(invalid_bytes);
 
-        let result = processor
+        let err = processor
             .transform(&context, &mut input_stream, &MockLogger::new())
-            .expect("Transform should not panic/error, but gracefully route to FAILURE");
+            .expect_err("Invalid image should route to FAILURE via a Route error");
 
-        assert_eq!(result.target_relationship(), FAILURE.name);
+        match err {
+            minifi_native::ProcessError::Route(route) => {
+                assert_eq!(route.relationship.as_ref(), FAILURE.name)
+            }
+            other => panic!("expected route to failure, got {other:?}"),
+        }
     }
 
     #[test]

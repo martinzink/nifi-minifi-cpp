@@ -20,17 +20,16 @@ mod processor_definition;
 use crate::utils::bounding_box::BoundingBox;
 use crate::utils::dimensions::Dimensions;
 use crate::utils::tensor_helpers::TensorFlowFile;
-use minifi_native::error;
 use minifi_native::macros::{ComponentIdentifier, PropertyType};
 use minifi_native::{
-    debug, unwrap_or_route, FlowFileTransform, GetAttribute, GetId, GetProperty, InputStream,
-    Logger, MinifiError, Schedule, TransformedFlowFile,
+    debug, FlowFileTransform, GetAttribute, GetId, GetProperty, InputStream, Logger, MinifiError,
+    ProcessError, RouteErrorExt, Schedule, TransformedFlowFile,
 };
 use processor_definition::{
     BACKGROUND_CLASS_INDEX, BOX_FORMAT, BOX_OUTPUT_INDEX, CONFIDENCE_THRESHOLD, IOU_THRESHOLD,
     OUTPUT_ATTRIBUTE_NAME, SCORE_ACTIVATION, SCORE_OUTPUT_INDEX,
 };
-use processor_definition::{FAILURE, SUCCESS};
+use processor_definition::SUCCESS;
 use std::collections::HashMap;
 use strum_macros::{Display, EnumString, IntoStaticStr, VariantNames};
 
@@ -251,7 +250,7 @@ impl FilterBoundingBoxes {
         box_floats: &[f32],
         orig_dim: Dimensions,
         target_dim: Dimensions,
-    ) -> Result<TransformedFlowFile<'a>, MinifiError> {
+    ) -> Result<TransformedFlowFile<'a>, ProcessError> {
         let scale = (target_dim.width / orig_dim.width).min(target_dim.height / orig_dim.height);
         let pad_x = (target_dim.width - (orig_dim.width * scale)) / 2.0;
         let pad_y = (target_dim.height - (orig_dim.height * scale)) / 2.0;
@@ -259,7 +258,8 @@ impl FilterBoundingBoxes {
         if box_floats.len() % 4 != 0 {
             return Err(MinifiError::trigger_err(
                 "Box tensor byte length is not a multiple of 16 (4 f32 per box)",
-            ));
+            )
+            .into());
         }
         let num_boxes = box_floats.len() / 4;
         if num_boxes == 0 {
@@ -278,7 +278,8 @@ impl FilterBoundingBoxes {
                 "Scores length ({}) not divisible by number of boxes ({})",
                 score_floats.len(),
                 num_boxes
-            )));
+            ))
+            .into());
         }
         let num_classes = score_floats.len() / num_boxes;
 
@@ -330,12 +331,7 @@ impl FilterBoundingBoxes {
         let filtered_boxes =
             BoundingBox::apply_non_maximum_suppression(valid_boxes, self.iou_threshold);
 
-        let json_output = unwrap_or_route!(
-            serde_json::to_vec(&filtered_boxes),
-            &FAILURE,
-            logger,
-            "serialize json"
-        );
+        let json_output = serde_json::to_vec(&filtered_boxes).err_to_failure()?;
 
         let mut attributes = HashMap::new();
         attributes.insert("object.count".to_string(), filtered_boxes.len().to_string());
@@ -361,19 +357,19 @@ impl FlowFileTransform for FilterBoundingBoxes {
         context: &Context,
         input_stream: &'a mut dyn InputStream,
         logger: &LoggerImpl,
-    ) -> Result<TransformedFlowFile<'a>, MinifiError> {
+    ) -> Result<TransformedFlowFile<'a>, ProcessError> {
         let mut flow_file_contents = Vec::new();
         input_stream.read_to_end(&mut flow_file_contents)?;
-        let orig_dim = unwrap_or_route!(Self::get_original_dimensions(context), &FAILURE, logger);
-        let target_dim = unwrap_or_route!(Self::get_target_dimensions(context), &FAILURE, logger);
+        let orig_dim = Self::get_original_dimensions(context).err_to_failure()?;
+        let target_dim = Self::get_target_dimensions(context).err_to_failure()?;
 
         let tff = TensorFlowFile::new(&flow_file_contents);
-        let score_floats = unwrap_or_route!(
-            tff.get_f32_slice(context, self.score_output_index),
-            &FAILURE
-        );
-        let box_floats =
-            unwrap_or_route!(tff.get_f32_slice(context, self.box_output_index), &FAILURE);
+        let score_floats = tff
+            .get_f32_slice(context, self.score_output_index)
+            .err_to_failure()?;
+        let box_floats = tff
+            .get_f32_slice(context, self.box_output_index)
+            .err_to_failure()?;
 
         self.filter(
             context,

@@ -16,14 +16,13 @@
 // under the License.
 
 use crate::processors::classify_output::processor_definition::{
-    CONFIDENCE_THRESHOLD, FAILURE, LABEL_INDEX_OFFSET, LABELS_FILE_PATH, SCORE_ACTIVATION,
+    CONFIDENCE_THRESHOLD, LABEL_INDEX_OFFSET, LABELS_FILE_PATH, SCORE_ACTIVATION,
     SCORE_OUTPUT_INDEX, SUCCESS, TOP_K,
 };
-use minifi_native::error;
 use minifi_native::macros::{ComponentIdentifier, PropertyType};
 use minifi_native::{
     FlowFileTransform, GetAttribute, GetId, GetProperty, InputStream, Logger, MinifiError,
-    Schedule, TransformedFlowFile, debug, unwrap_or_route,
+    ProcessError, RouteErrorExt, Schedule, TransformedFlowFile, debug,
 };
 use serde::Serialize;
 use std::collections::HashMap;
@@ -220,27 +219,19 @@ impl FlowFileTransform for ClassifyOutput {
         context: &Context,
         input_stream: &'a mut dyn InputStream,
         logger: &LoggerImpl,
-    ) -> Result<TransformedFlowFile<'a>, MinifiError> {
+    ) -> Result<TransformedFlowFile<'a>, ProcessError> {
         let mut raw_bytes = Vec::new();
         input_stream.read_to_end(&mut raw_bytes)?;
 
-        let score_bytes = unwrap_or_route!(
-            Self::slice_output(context, &raw_bytes, self.score_output_index),
-            &FAILURE,
-            logger,
-            "slice score output"
-        );
-        let raw_scores = unwrap_or_route!(
-            Self::bytes_to_f32s(score_bytes),
-            &FAILURE,
-            logger,
-            "parse score bytes"
-        );
+        let score_bytes =
+            Self::slice_output(context, &raw_bytes, self.score_output_index).err_to_failure()?;
+        let raw_scores = Self::bytes_to_f32s(score_bytes).err_to_failure()?;
 
         if raw_scores.is_empty() {
             return Err(MinifiError::trigger_err(
                 "Score tensor is empty; nothing to classify",
-            ));
+            )
+            .into());
         }
 
         // Most classifiers produce a shape like [1, num_classes] — one batch,
@@ -271,12 +262,7 @@ impl FlowFileTransform for ClassifyOutput {
             self.confidence_threshold
         );
 
-        let json_output = unwrap_or_route!(
-            serde_json::to_vec(&predictions),
-            &FAILURE,
-            logger,
-            "serialize predictions"
-        );
+        let json_output = serde_json::to_vec(&predictions).err_to_failure()?;
 
         let mut attributes = HashMap::new();
         attributes.insert("mime.type".to_string(), "application/json".to_string());
@@ -305,6 +291,7 @@ impl FlowFileTransform for ClassifyOutput {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::processors::classify_output::processor_definition::FAILURE;
     use minifi_native::{MockLogger, MockProcessContext};
     use std::io::Cursor;
 
@@ -469,10 +456,15 @@ mod tests {
         let processor = make_processor(1, ScoreActivation::Softmax);
         let context = MockProcessContext::new(); // no tract.output.0.bytes
         let mut stream = Cursor::new(vec![0u8; 4]);
-        let result = processor
+        let err = processor
             .transform(&context, &mut stream, &MockLogger::new())
-            .expect("routes to failure, does not error");
-        assert_eq!(result.target_relationship(), FAILURE.name);
+            .expect_err("missing attribute should route to failure via a Route error");
+        match err {
+            minifi_native::ProcessError::Route(route) => {
+                assert_eq!(route.relationship.as_ref(), FAILURE.name)
+            }
+            other => panic!("expected route to failure, got {other:?}"),
+        }
     }
 
     #[test]

@@ -29,17 +29,15 @@
 
 mod processor_definition;
 
-use crate::processors::detect_object::processor_definition::FAILURE;
 use crate::processors::filter_bounding_boxes::FilterBoundingBoxes;
 use crate::processors::image_to_tensor::ImageToTensor;
 use crate::processors::invoke_tract_model::TRACT_MODEL_SERVICE;
 use crate::utils::dimensions::Dimensions;
 use crate::utils::tensor_helpers::tensor_as_f32;
-use minifi_native::error;
 use minifi_native::macros::ComponentIdentifier;
 use minifi_native::{
-    unwrap_or_route, FlowFileTransform, GetAttribute, GetControllerService, GetId, GetProperty, InputStream,
-    Logger, MinifiError, Schedule, TransformedFlowFile,
+    FlowFileTransform, GetAttribute, GetControllerService, GetId, GetProperty, InputStream, Logger,
+    MinifiError, ProcessError, RouteErrorExt, Schedule, TransformedFlowFile,
 };
 use tract::Tensor;
 
@@ -79,24 +77,17 @@ impl FlowFileTransform for DetectObject {
         context: &Context,
         input_stream: &'a mut dyn InputStream,
         logger: &LoggerImpl,
-    ) -> Result<TransformedFlowFile<'a>, MinifiError> {
+    ) -> Result<TransformedFlowFile<'a>, ProcessError> {
         let tract_model_service = context.get_controller_service(&TRACT_MODEL_SERVICE)?;
 
         let mut raw_bytes = Vec::new();
         input_stream.read_to_end(&mut raw_bytes)?;
 
-        let img = image::load_from_memory(&raw_bytes).map_err(MinifiError::route(&FAILURE))?;
-        let input_tensor: Tensor = self
-            .image_to_tensor
-            .get_tensor(&img)
-            .map_err(MinifiError::route(&FAILURE))?;
+        let img = image::load_from_memory(&raw_bytes).err_to_failure()?;
+        let input_tensor: Tensor = self.image_to_tensor.get_tensor(&img).err_to_failure()?;
 
-        let output_tensors = unwrap_or_route!(
-            tract_model_service.run_inference(vec![input_tensor]),
-            &FAILURE,
-            logger,
-            "run tract inference"
-        );
+        let output_tensors =
+            tract_model_service.run_inference(vec![input_tensor]).err_to_failure()?;
 
         let score_floats = tensor_as_f32(
             &output_tensors,

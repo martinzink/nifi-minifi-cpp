@@ -20,13 +20,14 @@ use crate::api::processor_wrappers::utils::context_session_flowfile_bundle::Cont
 use crate::api::raw_processor::{MultiThreadedTrigger, SingleThreadedTrigger};
 use crate::{
     GetAttribute, GetControllerService, GetProperty, InputStream, LogLevel, Logger, MinifiError,
-    MultiThreaded, OnTriggerResult, OutputStream, ProcessContext, ProcessSession, Processor,
-    Relationship, Schedule, SingleThreaded,
+    MultiThreaded, OnTriggerResult, OutputStream, ProcessContext, ProcessError, ProcessSession,
+    Processor, Relationship, Schedule, SingleThreaded,
 };
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 pub struct TransformStreamResult {
-    target_relationship_name: &'static str,
+    target_relationship_name: Cow<'static, str>,
     attributes_to_add: HashMap<String, String>,
     write_status: IoState,
 }
@@ -37,22 +38,28 @@ impl TransformStreamResult {
         attributes_to_add: HashMap<String, String>,
     ) -> Self {
         Self {
-            target_relationship_name: target_relationship.name,
+            target_relationship_name: Cow::Borrowed(target_relationship.name),
             attributes_to_add,
             write_status: IoState::Ok,
         }
     }
 
     pub fn route_without_changes(target_relationship: &Relationship) -> Self {
+        Self::route_without_changes_by_name(Cow::Borrowed(target_relationship.name))
+    }
+
+    /// Routes to a relationship identified by name, cancelling the write.
+    /// Used when routing on error via [`crate::RouteErrorExt`].
+    pub fn route_without_changes_by_name(relationship: Cow<'static, str>) -> Self {
         Self {
-            target_relationship_name: target_relationship.name,
+            target_relationship_name: relationship,
             attributes_to_add: HashMap::new(),
             write_status: IoState::Cancel,
         }
     }
 
-    pub fn target_relationship_name(&self) -> &'static str {
-        self.target_relationship_name
+    pub fn target_relationship_name(&self) -> &str {
+        &self.target_relationship_name
     }
 
     pub fn get_attribute(&self, name: &str) -> Option<String> {
@@ -71,7 +78,7 @@ pub trait FlowFileStreamTransform {
         input_stream: &mut dyn InputStream,
         output_stream: &mut dyn OutputStream,
         logger: &LoggerImpl,
-    ) -> Result<TransformStreamResult, MinifiError>;
+    ) -> Result<TransformStreamResult, ProcessError>;
 }
 
 pub trait MutFlowFileStreamTransform {
@@ -81,7 +88,7 @@ pub trait MutFlowFileStreamTransform {
         input_stream: &mut dyn InputStream,
         output_stream: &mut dyn OutputStream,
         logger: &LoggerImpl,
-    ) -> Result<TransformStreamResult, MinifiError>;
+    ) -> Result<TransformStreamResult, ProcessError>;
 }
 
 pub struct FlowFileStreamTransformProcessorType {}
@@ -91,7 +98,7 @@ fn handle_stream_transform<PC, PS, L, F>(
     session: &mut PS,
     logger: &L,
     mut transform_fn: F,
-) -> Result<OnTriggerResult, MinifiError>
+) -> Result<OnTriggerResult, ProcessError>
 where
     PC: ProcessContext,
     PS: ProcessSession<FlowFile = PC::FlowFile>,
@@ -100,7 +107,7 @@ where
         &ContextSessionFlowFileBundle<PC, PS>,
         &mut dyn InputStream,
         &mut dyn OutputStream,
-    ) -> Result<TransformStreamResult, MinifiError>,
+    ) -> Result<TransformStreamResult, ProcessError>,
 {
     if let Some(mut flow_file) = session.get() {
         let simple_context = ContextSessionFlowFileBundle::new(context, session, Some(&flow_file));
@@ -108,11 +115,16 @@ where
         let (relationship, attrs) = session.read_stream(&flow_file, |input_stream| {
             session.write_stream(&flow_file, |output_stream| {
                 let transformed = match transform_fn(&simple_context, input_stream, output_stream) {
-                    Ok(t) => { t }
-                    Err(MinifiError::RouteTo((rel, _err))) => {
-                        TransformStreamResult::route_without_changes(rel)
+                    Ok(t) => t,
+                    Err(ProcessError::Route(route)) => {
+                        route.log(logger);
+                        TransformStreamResult::route_without_changes_by_name(route.relationship)
                     }
-                    Err(e) => { return Err(e); }
+                    // A real error: propagate so the trigger fails and the
+                    // agent rolls back the session.
+                    Err(ProcessError::Fatal(e)) => {
+                        return Err(e);
+                    }
                 };
 
                 Ok((
@@ -129,7 +141,7 @@ where
             session.set_attribute(&mut flow_file, &k, &v)?;
         }
 
-        session.transfer(flow_file, relationship)?;
+        session.transfer(flow_file, relationship.as_ref())?;
 
         Ok(OnTriggerResult::Ok)
     } else {
@@ -148,7 +160,7 @@ where
         &self,
         context: &mut PC,
         session: &mut PS,
-    ) -> Result<OnTriggerResult, MinifiError>
+    ) -> Result<OnTriggerResult, ProcessError>
     where
         PC: ProcessContext,
         PS: ProcessSession<FlowFile = PC::FlowFile>,
@@ -158,9 +170,7 @@ where
                 scheduled_impl.transform(ctx, input, output, &self.logger)
             })
         } else {
-            Err(MinifiError::trigger_err(
-                "The processor hasn't been scheduled yet",
-            ))
+            Err(MinifiError::trigger_err("The processor hasn't been scheduled yet").into())
         }
     }
 }
@@ -175,7 +185,7 @@ where
         &mut self,
         context: &mut PC,
         session: &mut PS,
-    ) -> Result<OnTriggerResult, MinifiError>
+    ) -> Result<OnTriggerResult, ProcessError>
     where
         PC: ProcessContext,
         PS: ProcessSession<FlowFile = PC::FlowFile>,
@@ -185,9 +195,7 @@ where
                 scheduled_impl.transform(ctx, input, output, &self.logger)
             })
         } else {
-            Err(MinifiError::trigger_err(
-                "The processor hasn't been scheduled yet",
-            ))
+            Err(MinifiError::trigger_err("The processor hasn't been scheduled yet").into())
         }
     }
 }

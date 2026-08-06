@@ -18,7 +18,7 @@
 use super::*;
 use crate::processors::kamikaze_processor::properties::{SCHEDULE_BEHAVIOUR, TRIGGER_BEHAVIOUR};
 use minifi_native::MinifiError::{ScheduleError, TriggerError};
-use minifi_native::{MockLogger, MockProcessContext, MockProcessSession};
+use minifi_native::{MockLogger, MockProcessContext, MockProcessSession, ProcessError};
 use std::panic::AssertUnwindSafe;
 
 #[test]
@@ -78,7 +78,7 @@ fn on_trigger_err() {
     let mut session = MockProcessSession::new();
     assert!(matches!(
         processor.trigger(&mut context, &mut session, &MockLogger::new()),
-        Err(TriggerError(_))
+        Err(ProcessError::Fatal(TriggerError(_)))
     ));
 }
 

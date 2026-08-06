@@ -1,11 +1,11 @@
 use crate::utils::bounding_box::{BoundingBox, BoundingBoxes};
 use image::{load_from_memory, ImageFormat, Rgb};
 use minifi_native::macros::ComponentIdentifier;
-use minifi_native::{error, property_definitions, PropertyDefinition, PropertySchema};
+use minifi_native::{property_definitions, PropertyDefinition, PropertySchema};
 use minifi_native::{
-    unwrap_or_route, FlowFileTransform, GetAttribute, GetControllerService, GetId, GetProperty, InputStream,
-    Logger, MinifiError, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement,
-    Property, PropertyConstraints, PropertyType, Relationship, Schedule,
+    FlowFileTransform, GetAttribute, GetControllerService, GetId, GetProperty, InputStream, Logger,
+    MinifiError, OutputAttribute, ProcessError, ProcessorDefinition, ProcessorInputRequirement,
+    Property, PropertyConstraints, PropertyType, Relationship, RouteErrorExt, Schedule,
     TransformedFlowFile,
 };
 use std::collections::HashMap;
@@ -86,27 +86,17 @@ impl FlowFileTransform for DrawBoundingBox {
         context: &Context,
         input_stream: &'a mut dyn InputStream,
         logger: &LoggerImpl,
-    ) -> Result<TransformedFlowFile<'a>, MinifiError> {
+    ) -> Result<TransformedFlowFile<'a>, ProcessError> {
         let line_thickness = context.get_property(&LINE_THICKNESS)?;
         let line_color = context.get_property(&LINE_COLOR)?;
-        let boxes: Vec<BoundingBox> = unwrap_or_route!(
-            context.get_property(&BOUNDING_BOXES),
-            &FAILURE,
-            logger,
-            "bounding boxes"
-        );
+        let boxes: Vec<BoundingBox> = context.get_property(&BOUNDING_BOXES).err_to_failure()?;
 
         let mut image_bytes = Vec::new();
         input_stream.read_to_end(&mut image_bytes)?;
 
-        let mut img = unwrap_or_route!(
-            load_from_memory(&image_bytes)
-                .map(|dyn_img| dyn_img.to_rgb8())
-                .map_err(MinifiError::custom),
-            &FAILURE,
-            logger,
-            "loading_img_from_memory"
-        );
+        let mut img = load_from_memory(&image_bytes)
+            .map(|dyn_img| dyn_img.to_rgb8())
+            .err_to_failure()?;
 
         boxes
             .iter()
@@ -114,7 +104,7 @@ impl FlowFileTransform for DrawBoundingBox {
 
         let mut output_bytes = Vec::new();
         img.write_to(&mut Cursor::new(&mut output_bytes), ImageFormat::Png)
-            .map_err(MinifiError::custom)?;
+            .err_to_failure()?;
 
         Ok(TransformedFlowFile::new(
             &SUCCESS,

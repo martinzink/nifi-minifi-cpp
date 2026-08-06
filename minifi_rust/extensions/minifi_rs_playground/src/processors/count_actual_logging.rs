@@ -20,7 +20,7 @@
 use minifi_native::macros::ComponentIdentifier;
 use minifi_native::{
     debug, info, trace, GetProperty, Logger, MinifiError, MutTrigger,
-    OnTriggerResult, OutputAttribute, ProcessContext, ProcessSession,
+    OnTriggerResult, OutputAttribute, ProcessContext, ProcessError, ProcessSession,
     ProcessorDefinition, ProcessorInputRequirement, PropertyDefinition, Relationship, Schedule,
 };
 
@@ -51,7 +51,7 @@ impl MutTrigger for CountActualLogging {
         _context: &mut PC,
         _session: &mut PS,
         logger: &L,
-    ) -> Result<OnTriggerResult, MinifiError>
+    ) -> Result<OnTriggerResult, ProcessError>
     where
         PC: ProcessContext,
         PS: ProcessSession<FlowFile = PC::FlowFile>,
