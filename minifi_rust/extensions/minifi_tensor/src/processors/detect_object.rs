@@ -85,18 +85,12 @@ impl FlowFileTransform for DetectObject {
         let mut raw_bytes = Vec::new();
         input_stream.read_to_end(&mut raw_bytes)?;
 
-        let img = unwrap_or_route!(
-            image::load_from_memory(&raw_bytes),
-            &FAILURE,
-            logger,
-            "decode image"
-        );
-        let input_tensor: Tensor = unwrap_or_route!(
-            self.image_to_tensor.get_tensor(&img),
-            &FAILURE,
-            logger,
-            "build input tensor"
-        );
+        let img = image::load_from_memory(&raw_bytes).map_err(MinifiError::route(&FAILURE))?;
+        let input_tensor: Tensor = self
+            .image_to_tensor
+            .get_tensor(&img)
+            .map_err(MinifiError::route(&FAILURE))?;
+
         let output_tensors = unwrap_or_route!(
             tract_model_service.run_inference(vec![input_tensor]),
             &FAILURE,
@@ -104,8 +98,14 @@ impl FlowFileTransform for DetectObject {
             "run tract inference"
         );
 
-        let score_floats = tensor_as_f32(&output_tensors, self.filter_bounding_boxes.score_output_index())?;
-        let box_floats = tensor_as_f32(&output_tensors, self.filter_bounding_boxes.box_output_index())?;
+        let score_floats = tensor_as_f32(
+            &output_tensors,
+            self.filter_bounding_boxes.score_output_index(),
+        )?;
+        let box_floats = tensor_as_f32(
+            &output_tensors,
+            self.filter_bounding_boxes.box_output_index(),
+        )?;
 
         let orig_dim = Dimensions {
             width: img.width() as f32,
@@ -137,8 +137,8 @@ mod tests {
         context.properties.insert(TARGET_HEIGHT.name(), "100");
         context.properties.insert(TARGET_WIDTH.name(), "100");
         context.properties.insert(PIXEL_DIVISOR.name(), "1.0");
-        let processor = DetectObject::schedule(&context, &MockLogger::new())
-            .expect("Expected to schedule");
+        let processor =
+            DetectObject::schedule(&context, &MockLogger::new()).expect("Expected to schedule");
         let mut input_stream = Cursor::new(vec![]);
 
         let result = processor.transform(&context, &mut input_stream, &MockLogger::new());

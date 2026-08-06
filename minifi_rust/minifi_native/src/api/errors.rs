@@ -22,6 +22,7 @@ use std::ffi::NulError;
 use std::fmt;
 use std::num::{NonZeroU32, ParseFloatError, ParseIntError};
 use std::str::ParseBoolError;
+use minifi_native::{LogLevel, Relationship};
 
 #[derive(Debug, Clone)]
 pub enum ParseError {
@@ -34,6 +35,18 @@ pub enum ParseError {
     Float(ParseFloatError),
     Other,
 }
+
+pub trait RouteErrorExt<T> {
+    fn route_err(self, rel: &'static Relationship, level: LogLevel) -> Result<T, MinifiError>;
+
+    /// Helper: Routes to FAILURE and logs as ERROR
+    fn route_to_failure(self) -> Result<T, MinifiError>;
+
+    /// Helper: Routes to FAILURE but logs as a WARNING
+    fn route_to_fail_warn(self) -> Result<T, MinifiError>;
+}
+
+
 
 #[derive(Debug)]
 pub enum MinifiError {
@@ -49,6 +62,7 @@ pub enum MinifiError {
     MissingFlowFileError,
     IoError(std::io::Error),
 
+    RouteTo((&'static Relationship, Box<dyn Error + Send + Sync + 'static>)),
     Custom(Box<dyn Error + Send + Sync + 'static>),
 }
 
@@ -159,6 +173,13 @@ impl MinifiError {
         E: Into<Box<dyn Error + Send + Sync + 'static>>,
     {
         MinifiError::Custom(err.into())
+    }
+
+    pub fn route<E>(rel: &'static Relationship) -> impl FnOnce(E) -> Self
+    where
+        E: Into<Box<dyn std::error::Error + Send + Sync + 'static>>,
+    {
+        move |e| MinifiError::RouteTo((rel, e.into()))
     }
 }
 

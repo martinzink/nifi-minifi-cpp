@@ -129,7 +129,17 @@ where
         let simple_context = ContextSessionFlowFileBundle::new(context, session, Some(&flow_file));
 
         let (attrs_to_add, relationship) = session.read_stream(&flow_file, |input_stream| {
-            let transformed = transform_fn(&simple_context, input_stream)?;
+            let transformed = match transform_fn(&simple_context, input_stream) {
+                Ok(transform_success) => {
+                    transform_success
+                }
+                Err(MinifiError::RouteTo((target,_err) )) => {
+                    TransformedFlowFile::route_without_changes(target)
+                }
+                Err(e) => {
+                    return Err(e);
+                }
+            };
 
             info!(logger, "{:?}", transformed);
             match transformed.new_content {

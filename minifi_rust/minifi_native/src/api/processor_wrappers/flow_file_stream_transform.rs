@@ -107,7 +107,13 @@ where
 
         let (relationship, attrs) = session.read_stream(&flow_file, |input_stream| {
             session.write_stream(&flow_file, |output_stream| {
-                let transformed = transform_fn(&simple_context, input_stream, output_stream)?;
+                let transformed = match transform_fn(&simple_context, input_stream, output_stream) {
+                    Ok(t) => { t }
+                    Err(MinifiError::RouteTo((rel, _err))) => {
+                        TransformStreamResult::route_without_changes(rel)
+                    }
+                    Err(e) => { return Err(e); }
+                };
 
                 Ok((
                     (
