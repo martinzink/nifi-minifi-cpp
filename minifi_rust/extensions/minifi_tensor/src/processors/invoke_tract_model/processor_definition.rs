@@ -17,8 +17,8 @@
 
 use crate::services::tract_model_service::TractModelService;
 use minifi_native::{
-    property_definitions, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property,
-    PropertyDefinition, Relationship,
+    OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property, PropertyDefinition,
+    Relationship, property_definitions,
 };
 
 pub(crate) const TRACT_MODEL_SERVICE: Property<TractModelService> = Property::new(
@@ -85,8 +85,7 @@ impl ProcessorDefinition for super::InvokeTractModel {
     ];
     const RELATIONSHIPS: &'static [Relationship] = &[SUCCESS, FAILURE];
     fn properties() -> &'static [PropertyDefinition] {
-        const PROPERTIES: &'static [PropertyDefinition] =
-            property_definitions![TRACT_MODEL_SERVICE];
+        const PROPERTIES: &[PropertyDefinition] = property_definitions![TRACT_MODEL_SERVICE];
 
         PROPERTIES
     }

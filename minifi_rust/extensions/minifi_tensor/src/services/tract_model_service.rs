@@ -15,10 +15,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
-use std::path::Path;
 use crate::services::tract_model_service::service_definition::{MODEL_FILE_PATH, MODEL_FORMAT};
 use minifi_native::macros::{ComponentIdentifier, PropertyType};
 use minifi_native::{EnableControllerService, GetProperty, Logger, MinifiError, debug, info};
+use std::path::Path;
 use strum_macros::{Display, EnumString, IntoStaticStr, VariantNames};
 use tract::prelude::*;
 
@@ -154,18 +154,22 @@ impl TractModelService {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use std::path::PathBuf;
     use std::str::FromStr;
-    use super::*;
 
     #[test]
     fn test_resolve_explicit_formats_bypass_detection() {
         assert_eq!(
-            ModelFormat::Onnx.resolve(&PathBuf::from_str("/tmp/no-extension").unwrap()).unwrap(),
+            ModelFormat::Onnx
+                .resolve(&PathBuf::from_str("/tmp/no-extension").unwrap())
+                .unwrap(),
             ResolvedFormat::Onnx
         );
         assert_eq!(
-            ModelFormat::Nnef.resolve(&PathBuf::from_str("/tmp/no-extension").unwrap()).unwrap(),
+            ModelFormat::Nnef
+                .resolve(&PathBuf::from_str("/tmp/no-extension").unwrap())
+                .unwrap(),
             ResolvedFormat::Nnef
         );
     }
@@ -173,11 +177,15 @@ mod tests {
     #[test]
     fn test_resolve_auto_by_onnx_extension() {
         assert_eq!(
-            ModelFormat::Auto.resolve(&PathBuf::from_str("/models/face.onnx").unwrap()).unwrap(),
+            ModelFormat::Auto
+                .resolve(&PathBuf::from_str("/models/face.onnx").unwrap())
+                .unwrap(),
             ResolvedFormat::Onnx
         );
         assert_eq!(
-            ModelFormat::Auto.resolve(&PathBuf::from_str("/MODELS/FACE.ONNX").unwrap()).unwrap(),
+            ModelFormat::Auto
+                .resolve(&PathBuf::from_str("/MODELS/FACE.ONNX").unwrap())
+                .unwrap(),
             ResolvedFormat::Onnx
         );
     }
@@ -186,17 +194,24 @@ mod tests {
     fn test_resolve_auto_by_nnef_extension() {
         assert_eq!(
             ModelFormat::Auto
-                .resolve(&PathBuf::from_str("/models/mobilenet.nnef.tgz").unwrap()).unwrap(),
+                .resolve(&PathBuf::from_str("/models/mobilenet.nnef.tgz").unwrap())
+                .unwrap(),
             ResolvedFormat::Nnef
         );
         assert_eq!(
-            ModelFormat::Auto.resolve(&PathBuf::from_str("/models/mobilenet.nnef").unwrap()).unwrap(),
+            ModelFormat::Auto
+                .resolve(&PathBuf::from_str("/models/mobilenet.nnef").unwrap())
+                .unwrap(),
             ResolvedFormat::Nnef
         );
     }
 
     #[test]
     fn test_resolve_auto_errors_on_unknown() {
-        assert!(ModelFormat::Auto.resolve(&PathBuf::from_str("/tmp/no-hint").unwrap()).is_err());
+        assert!(
+            ModelFormat::Auto
+                .resolve(&PathBuf::from_str("/tmp/no-hint").unwrap())
+                .is_err()
+        );
     }
 }

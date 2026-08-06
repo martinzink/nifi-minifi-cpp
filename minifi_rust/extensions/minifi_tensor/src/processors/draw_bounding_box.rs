@@ -1,13 +1,13 @@
 use crate::utils::bounding_box::{BoundingBox, BoundingBoxes};
-use image::{load_from_memory, ImageFormat, Rgb};
+use image::{ImageFormat, Rgb, load_from_memory};
 use minifi_native::macros::ComponentIdentifier;
-use minifi_native::{property_definitions, PropertyDefinition, PropertySchema};
 use minifi_native::{
     FlowFileTransform, GetAttribute, GetControllerService, GetId, GetProperty, InputStream, Logger,
     MinifiError, OutputAttribute, ProcessError, ProcessorDefinition, ProcessorInputRequirement,
     Property, PropertyConstraints, PropertyType, Relationship, RouteErrorExt, Schedule,
     TransformedFlowFile,
 };
+use minifi_native::{PropertyDefinition, PropertySchema, property_definitions};
 use std::collections::HashMap;
 use std::io::Cursor;
 
@@ -85,18 +85,20 @@ impl FlowFileTransform for DrawBoundingBox {
         &self,
         context: &Context,
         input_stream: &'a mut dyn InputStream,
-        logger: &LoggerImpl,
+        _logger: &LoggerImpl,
     ) -> Result<TransformedFlowFile<'a>, ProcessError> {
         let line_thickness = context.get_property(&LINE_THICKNESS)?;
         let line_color = context.get_property(&LINE_COLOR)?;
-        let boxes: Vec<BoundingBox> = context.get_property(&BOUNDING_BOXES).err_to_failure()?;
+        let boxes: Vec<BoundingBox> = context
+            .get_property(&BOUNDING_BOXES)
+            .route_err_to_failure()?;
 
         let mut image_bytes = Vec::new();
         input_stream.read_to_end(&mut image_bytes)?;
 
         let mut img = load_from_memory(&image_bytes)
             .map(|dyn_img| dyn_img.to_rgb8())
-            .err_to_failure()?;
+            .route_err_to_failure()?;
 
         boxes
             .iter()
@@ -104,7 +106,7 @@ impl FlowFileTransform for DrawBoundingBox {
 
         let mut output_bytes = Vec::new();
         img.write_to(&mut Cursor::new(&mut output_bytes), ImageFormat::Png)
-            .err_to_failure()?;
+            .route_err_to_failure()?;
 
         Ok(TransformedFlowFile::new(
             &SUCCESS,
@@ -122,7 +124,7 @@ impl ProcessorDefinition for DrawBoundingBox {
     const OUTPUT_ATTRIBUTES: &'static [OutputAttribute] = &[];
     const RELATIONSHIPS: &'static [Relationship] = &[SUCCESS, FAILURE];
     fn properties() -> &'static [PropertyDefinition] {
-        const PROPERTIES: &'static [PropertyDefinition] =
+        const PROPERTIES: &[PropertyDefinition] =
             property_definitions![BOUNDING_BOXES, LINE_COLOR, LINE_THICKNESS];
 
         PROPERTIES

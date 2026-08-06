@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+use minifi_native::{LogLevel, Relationship};
 use minifi_native_sys::minifi_status;
 use std::borrow::Cow;
 use std::error::Error;
@@ -22,7 +23,6 @@ use std::ffi::NulError;
 use std::fmt;
 use std::num::{NonZeroU32, ParseFloatError, ParseIntError};
 use std::str::ParseBoolError;
-use minifi_native::{LogLevel, Relationship};
 
 #[derive(Debug, Clone)]
 pub enum ParseError {
@@ -41,7 +41,7 @@ pub enum ParseError {
 /// outcome from the agent's point of view — it does NOT roll back the session.
 ///
 /// The relationship is held by name (`Cow<'static, str>`) so that ergonomic
-/// helpers like [`RouteErrorExt::err_to_failure`] can route to the literal
+/// helpers like [`RouteErrorExt::route_err_to_failure`] can route to the literal
 /// `"failure"` without needing the processor's own `Relationship` constant.
 #[derive(Debug)]
 pub struct RouteError {
@@ -51,8 +51,6 @@ pub struct RouteError {
 }
 
 impl RouteError {
-    /// Logs the wrapped `source` at the configured level. Called by the
-    /// processor wrappers at the interception site, where a logger is available.
     pub(crate) fn log<L: crate::Logger>(&self, logger: &L) {
         logger.log(
             self.log_level,
@@ -101,9 +99,6 @@ impl From<MinifiError> for ProcessError {
     }
 }
 
-/// Mirror `MinifiError`'s `From` impls so that `?` on a raw error inside a
-/// trigger (which returns `ProcessError`) still works, treating it as fatal.
-/// Use [`RouteErrorExt`] instead when the error should route the flow file.
 macro_rules! process_error_from_fatal {
     ($($t:ty),* $(,)?) => {
         $(
@@ -139,14 +134,7 @@ impl fmt::Display for ProcessError {
 
 impl Error for ProcessError {}
 
-/// Extension trait turning any `Result<T, E>` into a `Result<T, ProcessError>`
-/// that routes the current flow file on error instead of rolling back.
-///
-/// ```ignore
-/// let img = image::load_from_memory(&raw_bytes).route_to_failure()?;
-/// ```
 pub trait RouteErrorExt<T> {
-    /// Route to `rel` (by name), logging the error at `level`.
     fn route_err(self, rel: &Relationship, level: LogLevel) -> Result<T, ProcessError>;
 
     /// Route to an arbitrary relationship name, logging the error at `level`.
@@ -156,11 +144,8 @@ pub trait RouteErrorExt<T> {
         level: LogLevel,
     ) -> Result<T, ProcessError>;
 
-    /// Helper: Routes to `"failure"` and logs as ERROR
-    fn err_to_failure(self) -> Result<T, ProcessError>;
-
-    /// Helper: Routes to `"failure"` but logs as a WARNING
-    fn route_to_fail_warn(self) -> Result<T, ProcessError>;
+    /// Helper: Routes to `"failure"` and logs as WARN
+    fn route_err_to_failure(self) -> Result<T, ProcessError>;
 }
 
 impl<T, E> RouteErrorExt<T> for Result<T, E>
@@ -185,11 +170,7 @@ where
         })
     }
 
-    fn err_to_failure(self) -> Result<T, ProcessError> {
-        self.route_to("failure", LogLevel::Error)
-    }
-
-    fn route_to_fail_warn(self) -> Result<T, ProcessError> {
+    fn route_err_to_failure(self) -> Result<T, ProcessError> {
         self.route_to("failure", LogLevel::Warn)
     }
 }
@@ -319,7 +300,6 @@ impl MinifiError {
     {
         MinifiError::Custom(err.into())
     }
-
 }
 
 impl fmt::Display for MinifiError {
@@ -363,25 +343,13 @@ mod tests {
     }
 
     #[test]
-    fn route_to_failure_produces_route_error_at_error_level() {
+    fn route_err_to_failure_uses_warn() {
         let res: Result<(), std::io::Error> = Err(io_err());
-        match res.err_to_failure() {
-            Err(ProcessError::Route(route)) => {
-                assert_eq!(route.relationship.as_ref(), "failure");
-                assert_eq!(route.log_level, LogLevel::Error);
-                assert_eq!(route.source.to_string(), "boom");
-            }
-            other => panic!("expected a route error, got {other:?}"),
-        }
-    }
-
-    #[test]
-    fn route_to_fail_warn_uses_warn_level() {
-        let res: Result<(), std::io::Error> = Err(io_err());
-        match res.route_to_fail_warn() {
+        match res.route_err_to_failure() {
             Err(ProcessError::Route(route)) => {
                 assert_eq!(route.relationship.as_ref(), "failure");
                 assert_eq!(route.log_level, LogLevel::Warn);
+                assert_eq!(route.source.to_string(), "boom");
             }
             other => panic!("expected a route error, got {other:?}"),
         }
@@ -406,13 +374,16 @@ mod tests {
     #[test]
     fn ok_values_pass_through_unchanged() {
         let res: Result<u8, std::io::Error> = Ok(5);
-        assert_eq!(res.err_to_failure().unwrap(), 5);
+        assert_eq!(res.route_err_to_failure().unwrap(), 5);
     }
 
     #[test]
     fn minifi_error_converts_to_fatal_via_from() {
         let pe: ProcessError = MinifiError::trigger_err("nope").into();
-        assert!(matches!(pe, ProcessError::Fatal(MinifiError::TriggerError(_))));
+        assert!(matches!(
+            pe,
+            ProcessError::Fatal(MinifiError::TriggerError(_))
+        ));
     }
 
     #[test]

@@ -16,10 +16,10 @@
 // under the License.
 
 use crate::processors::log_attribute::properties::*;
-use crate::processors::log_attribute::{relationships, LogAttributeRs};
+use crate::processors::log_attribute::{LogAttributeRs, relationships};
 use minifi_native::{
-    property_definitions, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement,
-    PropertyDefinition, Relationship,
+    OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, PropertyDefinition,
+    Relationship, property_definitions,
 };
 
 impl ProcessorDefinition for LogAttributeRs {
@@ -31,7 +31,7 @@ impl ProcessorDefinition for LogAttributeRs {
     const OUTPUT_ATTRIBUTES: &'static [OutputAttribute] = &[];
     const RELATIONSHIPS: &'static [Relationship] = &[relationships::SUCCESS];
     fn properties() -> &'static [PropertyDefinition] {
-        const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
+        const PROPERTIES: &[PropertyDefinition] = property_definitions![
             LOG_LEVEL,
             ATTRIBUTES_TO_LOG,
             ATTRIBUTES_TO_IGNORE,
@@ -40,6 +40,6 @@ impl ProcessorDefinition for LogAttributeRs {
             FLOW_FILES_TO_LOG,
             HEX_ENCODE_PAYLOAD,
         ];
-        &PROPERTIES
+        PROPERTIES
     }
 }

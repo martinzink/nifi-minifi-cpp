@@ -82,7 +82,7 @@ impl ProcessorDefinition for ZooProcessorRs {
     const OUTPUT_ATTRIBUTES: &'static [OutputAttribute] = &[];
     const RELATIONSHIPS: &'static [Relationship] = &[];
     fn properties() -> &'static [PropertyDefinition] {
-        const PROPERTIES: &'static [PropertyDefinition] =
+        const PROPERTIES: &[PropertyDefinition] =
             property_definitions![CAN_FLY_SERVICE, NUMBER_OF_LEGS];
 
         PROPERTIES

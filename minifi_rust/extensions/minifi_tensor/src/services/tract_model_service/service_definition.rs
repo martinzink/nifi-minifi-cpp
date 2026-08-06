@@ -16,7 +16,10 @@
 // under the License.
 
 use crate::services::tract_model_service::ModelFormat;
-use minifi_native::{property_definitions, ControllerServiceDefinition, Property, PropertyDefinition, ProvidedInterface};
+use minifi_native::{
+    ControllerServiceDefinition, Property, PropertyDefinition, ProvidedInterface,
+    property_definitions,
+};
 use std::path::PathBuf;
 
 pub(crate) const MODEL_FILE_PATH: Property<PathBuf> = Property::new(
@@ -41,6 +44,7 @@ impl ControllerServiceDefinition for super::TractModelService {
     const DESCRIPTION: &'static str = "Provides a shared, CPU-optimized neural network for inference. Supports ONNX (`.onnx`) \
          and NNEF (directory or tarball) models; the format can be auto-detected from the file \
          extension or set explicitly.";
-    const PROPERTIES: &'static [PropertyDefinition] = property_definitions![MODEL_FILE_PATH, MODEL_FORMAT];
+    const PROPERTIES: &'static [PropertyDefinition] =
+        property_definitions![MODEL_FILE_PATH, MODEL_FORMAT];
     const PROVIDED_APIS: &'static [ProvidedInterface<Self>] = &[];
 }

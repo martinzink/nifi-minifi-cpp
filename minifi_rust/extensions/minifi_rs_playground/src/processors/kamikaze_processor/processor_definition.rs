@@ -17,8 +17,8 @@
 
 use super::*;
 use minifi_native::{
-    property_definitions, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement,
-    PropertyDefinition, Relationship,
+    OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, PropertyDefinition,
+    Relationship, property_definitions,
 };
 
 impl ProcessorDefinition for KamikazeProcessorRs {
@@ -29,10 +29,10 @@ impl ProcessorDefinition for KamikazeProcessorRs {
     const OUTPUT_ATTRIBUTES: &'static [OutputAttribute] = &[];
     const RELATIONSHIPS: &'static [Relationship] = &[relationships::SUCCESS];
     fn properties() -> &'static [PropertyDefinition] {
-        const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
+        const PROPERTIES: &[PropertyDefinition] = property_definitions![
             properties::SCHEDULE_BEHAVIOUR,
             properties::TRIGGER_BEHAVIOUR
         ];
-        &PROPERTIES
+        PROPERTIES
     }
 }

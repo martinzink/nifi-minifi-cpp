@@ -17,8 +17,11 @@
 
 use crate::processors::detect_object::DetectObject;
 use crate::processors::{filter_bounding_boxes, image_to_tensor};
-use minifi_native::{OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property, PropertyDefinition, Relationship};
 use crate::services::tract_model_service::TractModelService;
+use minifi_native::{
+    OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property, PropertyDefinition,
+    Relationship,
+};
 
 pub(crate) const TRACT_MODEL_SERVICE: Property<TractModelService> = Property::new(
     "Tract model service",

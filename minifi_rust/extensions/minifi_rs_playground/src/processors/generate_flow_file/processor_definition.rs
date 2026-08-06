@@ -16,10 +16,10 @@
 // under the License.
 
 use super::properties::*;
-use super::{relationships, GenerateFlowFileRs};
+use super::{GenerateFlowFileRs, relationships};
 use minifi_native::{
-    property_definitions, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement,
-    PropertyDefinition, Relationship,
+    OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, PropertyDefinition,
+    Relationship, property_definitions,
 };
 
 impl ProcessorDefinition for GenerateFlowFileRs {
@@ -37,6 +37,6 @@ impl ProcessorDefinition for GenerateFlowFileRs {
             UNIQUE_FLOW_FILES,
             CUSTOM_TEXT
         ];
-        &PROPERTIES
+        PROPERTIES
     }
 }

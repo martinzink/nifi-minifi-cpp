@@ -20,6 +20,8 @@ pub(crate) use crate::processors::image_to_tensor::processor_definition::{
     COLOR_FORMAT, LETTERBOX_PAD_VALUE, MEAN, PIXEL_DIVISOR, RESIZE_FILTER, RESIZE_MODE, STD_DEV,
     TARGET_HEIGHT, TARGET_WIDTH, TENSOR_SHAPE_FORMAT,
 };
+use crate::utils::dimensions::Dimensions;
+use crate::utils::per_channel_f32::PerChannelF32;
 use minifi_native::macros::{ComponentIdentifier, PropertyType};
 use minifi_native::{
     FlowFileTransform, GetAttribute, GetControllerService, GetId, GetProperty, InputStream, Logger,
@@ -32,11 +34,8 @@ use processor_definition::{
 use std::collections::HashMap;
 use strum_macros::{Display, EnumString, IntoStaticStr, VariantNames};
 use tract::Tensor;
-use crate::utils::dimensions::Dimensions;
-use crate::utils::per_channel_f32::PerChannelF32;
 
 tract::impl_ndarray_interop!();
-
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Display, EnumString, VariantNames, IntoStaticStr, PropertyType,
@@ -170,25 +169,30 @@ impl Schedule for ImageToTensor {
 
 struct MaskedRgbImage {
     img: image::RgbImage,
-    mask: Vec<bool>
+    mask: Vec<bool>,
 }
 
 impl ImageToTensor {
     fn stretch_resize(&self, img: &image::DynamicImage) -> MaskedRgbImage {
         let resized = img
-            .resize_exact(self.target_width, self.target_height, self.resize_filter.into())
+            .resize_exact(
+                self.target_width,
+                self.target_height,
+                self.resize_filter.into(),
+            )
             .to_rgb8();
         let mask = vec![true; (self.target_width * self.target_height) as usize];
-        MaskedRgbImage{img:resized, mask}
+        MaskedRgbImage { img: resized, mask }
     }
 
     fn letterbox_resize(&self, img: &image::DynamicImage) -> MaskedRgbImage {
         let (src_w, src_h) = (img.width() as f32, img.height() as f32);
-        let scale =
-            (self.target_width as f32 / src_w).min(self.target_height as f32 / src_h);
+        let scale = (self.target_width as f32 / src_w).min(self.target_height as f32 / src_h);
         let new_w = (src_w * scale).round().max(1.0) as u32;
         let new_h = (src_h * scale).round().max(1.0) as u32;
-        let scaled = img.resize_exact(new_w, new_h, self.resize_filter.into()).to_rgb8();
+        let scaled = img
+            .resize_exact(new_w, new_h, self.resize_filter.into())
+            .to_rgb8();
 
         let pad_x = (self.target_width - new_w) / 2;
         let pad_y = (self.target_height - new_h) / 2;
@@ -207,17 +211,13 @@ impl ImageToTensor {
                 mask[(y * self.target_width + x) as usize] = true;
             }
         }
-        MaskedRgbImage{img:canvas, mask}
+        MaskedRgbImage { img: canvas, mask }
     }
 
     fn resize_rgb(&self, img: &image::DynamicImage) -> MaskedRgbImage {
         match self.resize_mode {
-            ResizeMode::Stretch => {
-                self.stretch_resize(img)
-            }
-            ResizeMode::Letterbox => {
-                self.letterbox_resize(img)
-            }
+            ResizeMode::Stretch => self.stretch_resize(img),
+            ResizeMode::Letterbox => self.letterbox_resize(img),
         }
     }
 
@@ -229,7 +229,7 @@ impl ImageToTensor {
         let total_pixels = (self.target_width * self.target_height) as usize;
         let mut tensor_bytes = Vec::with_capacity(total_pixels * num_channels * 4);
 
-        let masked_img = self.resize_rgb(&img);
+        let masked_img = self.resize_rgb(img);
 
         if self.color_format == ColorFormat::Grayscale {
             let mean = self.mean.per_channel(0);
@@ -293,7 +293,12 @@ impl ImageToTensor {
         };
         match (self.color_format, self.tensor_shape_format) {
             (ColorFormat::Grayscale, _) => {
-                vec![1, 1, self.target_height as usize, self.target_width as usize]
+                vec![
+                    1,
+                    1,
+                    self.target_height as usize,
+                    self.target_width as usize,
+                ]
             }
             (_, TensorShapeFormat::Chw) => vec![
                 1,
@@ -310,7 +315,10 @@ impl ImageToTensor {
         }
     }
     pub fn get_target_dim(&self) -> Dimensions {
-        Dimensions{width: self.target_width as f32, height: self.target_height as f32}
+        Dimensions {
+            width: self.target_width as f32,
+            height: self.target_height as f32,
+        }
     }
 
     pub fn get_tensor(&self, img: &image::DynamicImage) -> Result<Tensor, MinifiError> {
@@ -318,9 +326,11 @@ impl ImageToTensor {
         let shape = self.get_shape();
         ndarray::Array::from_shape_vec(shape, data)
             .map_err(|e| MinifiError::trigger_err(format!("Failed to create array: {}", e)))
-            .and_then(|array| array.tract().map_err(|e| MinifiError::trigger_err(
-                format!("Failed to build tensor: {}", e)
-            )))
+            .and_then(|array| {
+                array
+                    .tract()
+                    .map_err(|e| MinifiError::trigger_err(format!("Failed to build tensor: {}", e)))
+            })
     }
 }
 
@@ -333,15 +343,16 @@ impl FlowFileTransform for ImageToTensor {
         &self,
         _context: &Context,
         input_stream: &'a mut dyn InputStream,
-        logger: &LoggerImpl,
+        _logger: &LoggerImpl,
     ) -> Result<TransformedFlowFile<'a>, ProcessError> {
         let mut raw_bytes = Vec::new();
         input_stream.read_to_end(&mut raw_bytes)?;
 
-        let img = image::load_from_memory(&raw_bytes).err_to_failure()?;
+        let img = image::load_from_memory(&raw_bytes).route_err_to_failure()?;
 
         let tensor_bytes = self.tensor_bytes(&img);
-        let shape_str = self.get_shape()
+        let shape_str = self
+            .get_shape()
             .iter()
             .map(|n| n.to_string())
             .collect::<Vec<String>>()
@@ -369,8 +380,8 @@ impl FlowFileTransform for ImageToTensor {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::processor_definition::{FAILURE, SUCCESS};
+    use super::*;
     use image::{ImageFormat, RgbImage};
     use minifi_native::{MockLogger, MockProcessContext};
     use std::io::Cursor;

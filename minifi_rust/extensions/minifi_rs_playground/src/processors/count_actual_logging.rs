@@ -19,9 +19,9 @@
 
 use minifi_native::macros::ComponentIdentifier;
 use minifi_native::{
-    debug, info, trace, GetProperty, Logger, MinifiError, MutTrigger,
-    OnTriggerResult, OutputAttribute, ProcessContext, ProcessError, ProcessSession,
-    ProcessorDefinition, ProcessorInputRequirement, PropertyDefinition, Relationship, Schedule,
+    GetProperty, Logger, MinifiError, MutTrigger, OnTriggerResult, OutputAttribute, ProcessContext,
+    ProcessError, ProcessSession, ProcessorDefinition, ProcessorInputRequirement,
+    PropertyDefinition, Relationship, Schedule, debug, info, trace,
 };
 
 #[derive(Debug, ComponentIdentifier)]

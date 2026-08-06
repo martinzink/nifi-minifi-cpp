@@ -1,9 +1,9 @@
+use minifi_native::{GetAttribute, MinifiError};
 use tract::__ndarray_interop::TensorInterface;
 use tract::Tensor;
-use minifi_native::{GetAttribute, MinifiError};
 
 pub(crate) struct TensorFlowFile<'a> {
-    raw: &'a[u8]
+    raw: &'a [u8],
 }
 
 fn bytes_to_f32s(bytes: &[u8]) -> Vec<f32> {
@@ -14,10 +14,14 @@ fn bytes_to_f32s(bytes: &[u8]) -> Vec<f32> {
 }
 
 impl<'a> TensorFlowFile<'a> {
-    pub(crate) fn new(raw: &'a[u8]) -> Self {
-        Self{raw}
+    pub(crate) fn new(raw: &'a [u8]) -> Self {
+        Self { raw }
     }
-    pub(crate) fn get_f32_slice<Ctx: GetAttribute>(&self, context: &Ctx, target_index: usize) -> Result<Vec<f32>, MinifiError> {
+    pub(crate) fn get_f32_slice<Ctx: GetAttribute>(
+        &self,
+        context: &Ctx,
+        target_index: usize,
+    ) -> Result<Vec<f32>, MinifiError> {
         let slice = self.get_slice(context, target_index)?;
         Ok(bytes_to_f32s(slice))
     }
@@ -56,9 +60,9 @@ impl<'a> TensorFlowFile<'a> {
 }
 
 pub(crate) fn tensor_as_f32(tensors: &[Tensor], index: usize) -> Result<Vec<f32>, MinifiError> {
-    let tensor = tensors.get(index).ok_or(MinifiError::trigger_err("Invalid shape of tensor"))?;
-    let (_datum_type, _shape, raw_bytes) = tensor
-        .as_bytes()
-        .map_err(MinifiError::custom)?;
+    let tensor = tensors
+        .get(index)
+        .ok_or(MinifiError::trigger_err("Invalid shape of tensor"))?;
+    let (_datum_type, _shape, raw_bytes) = tensor.as_bytes().map_err(MinifiError::custom)?;
     Ok(bytes_to_f32s(raw_bytes))
 }

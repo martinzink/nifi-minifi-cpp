@@ -20,8 +20,8 @@ use crate::processors::image_to_tensor::{
 };
 use crate::utils::per_channel_f32::PerChannelF32;
 use minifi_native::{
-    property_definitions, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property,
-    PropertyDefinition, Relationship,
+    OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property, PropertyDefinition,
+    Relationship, property_definitions,
 };
 
 pub(crate) const TARGET_WIDTH: Property<u32> = Property::new(
@@ -102,7 +102,8 @@ pub(crate) const PIXEL_DIVISOR: Property<f32> = Property::new(
                   [0.0, 1.0] first so ImageNet-style mean/std values like '0.485, 0.456, 0.406' / \
                   '0.229, 0.224, 0.225' can be used directly, matching the PyTorch / torchvision / \
                   ONNX MobileNet convention. Must be non-zero.",
-);
+)
+.with_default("1.0");
 
 pub(super) const SUCCESS: Relationship = Relationship {
     name: "success",
@@ -152,7 +153,7 @@ impl ProcessorDefinition for ImageToTensor {
     const OUTPUT_ATTRIBUTES: &'static [OutputAttribute] = &[TENSOR_SHAPE_ATTR, TENSOR_DTYPE_ATTR];
     const RELATIONSHIPS: &'static [Relationship] = &[SUCCESS, FAILURE];
     fn properties() -> &'static [PropertyDefinition] {
-        const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
+        const PROPERTIES: &[PropertyDefinition] = property_definitions![
             TARGET_WIDTH,
             TARGET_HEIGHT,
             RESIZE_FILTER,

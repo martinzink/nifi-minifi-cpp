@@ -174,7 +174,7 @@ impl FlowFileTransform for PutFileRs {
     ) -> Result<TransformedFlowFile<'a>, ProcessError> {
         trace!(logger, "on_trigger: {:?}", self);
 
-        let destination_path = Self::get_destination_path(context).err_to_failure()?;
+        let destination_path = Self::get_destination_path(context).route_err_to_failure()?;
 
         if self.directory_is_full(&destination_path) {
             warn!(logger, "Directory is full");

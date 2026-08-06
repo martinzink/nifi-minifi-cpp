@@ -69,4 +69,5 @@ impl ProcessorDefinition for DuplicateStreamText {
     const RELATIONSHIPS: &'static [Relationship] = &[SUCCESS];
     fn properties() -> &'static [PropertyDefinition] {
         &[]
-    }}
+    }
+}

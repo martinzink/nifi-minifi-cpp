@@ -223,15 +223,14 @@ impl FlowFileTransform for ClassifyOutput {
         let mut raw_bytes = Vec::new();
         input_stream.read_to_end(&mut raw_bytes)?;
 
-        let score_bytes =
-            Self::slice_output(context, &raw_bytes, self.score_output_index).err_to_failure()?;
-        let raw_scores = Self::bytes_to_f32s(score_bytes).err_to_failure()?;
+        let score_bytes = Self::slice_output(context, &raw_bytes, self.score_output_index)
+            .route_err_to_failure()?;
+        let raw_scores = Self::bytes_to_f32s(score_bytes).route_err_to_failure()?;
 
         if raw_scores.is_empty() {
-            return Err(MinifiError::trigger_err(
-                "Score tensor is empty; nothing to classify",
-            )
-            .into());
+            return Err(
+                MinifiError::trigger_err("Score tensor is empty; nothing to classify").into(),
+            );
         }
 
         // Most classifiers produce a shape like [1, num_classes] — one batch,
@@ -262,7 +261,7 @@ impl FlowFileTransform for ClassifyOutput {
             self.confidence_threshold
         );
 
-        let json_output = serde_json::to_vec(&predictions).err_to_failure()?;
+        let json_output = serde_json::to_vec(&predictions).route_err_to_failure()?;
 
         let mut attributes = HashMap::new();
         attributes.insert("mime.type".to_string(), "application/json".to_string());

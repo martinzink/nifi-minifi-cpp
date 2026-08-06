@@ -19,7 +19,8 @@ use crate::api::processor_wrappers::utils::flow_file_content::Content;
 use crate::api::raw_processor::{MultiThreadedTrigger, SingleThreadedTrigger};
 use crate::{
     GetControllerService, GetProperty, Logger, MinifiError, MultiThreaded, OnTriggerResult,
-    ProcessContext, ProcessError, ProcessSession, Processor, Relationship, Schedule, SingleThreaded,
+    ProcessContext, ProcessError, ProcessSession, Processor, Relationship, Schedule,
+    SingleThreaded,
 };
 use std::borrow::Cow;
 use std::collections::HashMap;

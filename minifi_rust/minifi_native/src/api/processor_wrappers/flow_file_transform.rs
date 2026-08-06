@@ -256,9 +256,11 @@ mod tests {
             _input_stream: &'a mut dyn InputStream,
             _logger: &LoggerImpl,
         ) -> Result<TransformedFlowFile<'a>, ProcessError> {
-            let bad: Result<TransformedFlowFile<'a>, std::io::Error> =
-                Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "bad data"));
-            bad.err_to_failure()
+            let bad: Result<TransformedFlowFile<'a>, std::io::Error> = Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "bad data",
+            ));
+            bad.route_err_to_failure()
         }
     }
 

@@ -69,7 +69,9 @@ impl InvokeTractModel {
         Ok(f32_data)
     }
 
-    fn get_shape_from_attribute<Context: GetAttribute>(context: &Context) -> Result<Vec<usize>, Box<dyn Error>> {
+    fn get_shape_from_attribute<Context: GetAttribute>(
+        context: &Context,
+    ) -> Result<Vec<usize>, Box<dyn Error>> {
         let shape_str = context
             .get_attribute("tensor.shape")
             .and_then(|opt| opt.ok_or(MinifiError::trigger_err("Missing tensor.shape")))?;
@@ -126,10 +128,11 @@ impl FlowFileTransform for InvokeTractModel {
 
         let input_tensor: Tensor = Self::get_input_tensor(context, input_stream)
             .map_err(|e| MinifiError::trigger_err(e.to_string()))
-            .err_to_failure()?;
+            .route_err_to_failure()?;
 
-        let output_tensors =
-            controller_service.run_inference(vec![input_tensor]).err_to_failure()?;
+        let output_tensors = controller_service
+            .run_inference(vec![input_tensor])
+            .route_err_to_failure()?;
         let mut output_bytes = Vec::new();
         let mut attributes = HashMap::new();
         attributes.insert(
@@ -196,7 +199,8 @@ mod tests {
             .attributes
             .insert("tensor.shape".to_string(), "1, 3, 224, 224".to_string());
 
-        let shape = InvokeTractModel::get_shape_from_attribute(&context).expect("Should parse valid shape");
+        let shape =
+            InvokeTractModel::get_shape_from_attribute(&context).expect("Should parse valid shape");
         assert_eq!(shape, vec![1, 3, 224, 224]);
     }
 

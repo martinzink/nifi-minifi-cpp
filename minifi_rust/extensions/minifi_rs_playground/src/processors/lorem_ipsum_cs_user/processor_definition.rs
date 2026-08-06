@@ -15,12 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-use super::properties::*;
 use super::LoremIpsumCSUser;
+use super::properties::*;
 use crate::processors::lorem_ipsum_cs_user::relationships::SUCCESS;
 use minifi_native::{
-    property_definitions, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement,
-    PropertyDefinition, Relationship,
+    OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, PropertyDefinition,
+    Relationship, property_definitions,
 };
 
 impl ProcessorDefinition for LoremIpsumCSUser {
@@ -32,8 +32,8 @@ impl ProcessorDefinition for LoremIpsumCSUser {
     const OUTPUT_ATTRIBUTES: &'static [OutputAttribute] = &[];
     const RELATIONSHIPS: &'static [Relationship] = &[SUCCESS];
     fn properties() -> &'static [PropertyDefinition] {
-        const PROPERTIES: &'static [PropertyDefinition] =
+        const PROPERTIES: &[PropertyDefinition] =
             property_definitions![CONTROLLER_SERVICE, DUMMY_CONTROLLER_SERVICE, WRITE_METHOD];
-        &PROPERTIES
+        PROPERTIES
     }
 }

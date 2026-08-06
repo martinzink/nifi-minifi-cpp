@@ -15,18 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-//! `DetectObject` collapses the ImageToTensor -> InvokeTractModel ->
-//! FilterBoundingBoxes chain into a single processor. It decodes the image,
-//! builds the input tensor, runs one inference through a `TractModelService`,
-//! and post-processes the outputs into bounding boxes. The flow file content is
-//! left unchanged (the original image); the boxes are written as a JSON array
-//! to a configurable output attribute for a downstream `DrawBoundingBox`.
-//!
-//! This processor is intentionally self-contained: it reuses the shared enums,
-//! the `BoundingBox` struct + NMS, and the controller service's `run_inference`,
-//! but re-implements the resize/normalize and box-scoring helpers inline rather
-//! than depending on the private internals of the individual processors.
-
 mod processor_definition;
 
 use crate::processors::filter_bounding_boxes::FilterBoundingBoxes;
@@ -42,10 +30,6 @@ use minifi_native::{
 use tract::Tensor;
 
 tract::impl_ndarray_interop!();
-
-// ---------------------------------------------------------------------------
-// Box post-processing helpers (mirrors FilterBoundingBoxes)
-// ---------------------------------------------------------------------------
 
 #[derive(ComponentIdentifier)]
 pub(crate) struct DetectObject {
@@ -83,20 +67,27 @@ impl FlowFileTransform for DetectObject {
         let mut raw_bytes = Vec::new();
         input_stream.read_to_end(&mut raw_bytes)?;
 
-        let img = image::load_from_memory(&raw_bytes).err_to_failure()?;
-        let input_tensor: Tensor = self.image_to_tensor.get_tensor(&img).err_to_failure()?;
+        let img = image::load_from_memory(&raw_bytes).route_err_to_failure()?;
+        let input_tensor: Tensor = self
+            .image_to_tensor
+            .get_tensor(&img)
+            .route_err_to_failure()?;
 
-        let output_tensors =
-            tract_model_service.run_inference(vec![input_tensor]).err_to_failure()?;
+        let output_tensors = tract_model_service
+            .run_inference(vec![input_tensor])
+            .route_err_to_failure()?;
 
         let score_floats = tensor_as_f32(
             &output_tensors,
             self.filter_bounding_boxes.score_output_index(),
-        )?;
+        )
+        .route_err_to_failure()?;
+
         let box_floats = tensor_as_f32(
             &output_tensors,
             self.filter_bounding_boxes.box_output_index(),
-        )?;
+        )
+        .route_err_to_failure()?;
 
         let orig_dim = Dimensions {
             width: img.width() as f32,

@@ -22,14 +22,14 @@ use crate::utils::dimensions::Dimensions;
 use crate::utils::tensor_helpers::TensorFlowFile;
 use minifi_native::macros::{ComponentIdentifier, PropertyType};
 use minifi_native::{
-    debug, FlowFileTransform, GetAttribute, GetId, GetProperty, InputStream, Logger, MinifiError,
-    ProcessError, RouteErrorExt, Schedule, TransformedFlowFile,
+    FlowFileTransform, GetAttribute, GetId, GetProperty, InputStream, Logger, MinifiError,
+    ProcessError, RouteErrorExt, Schedule, TransformedFlowFile, debug,
 };
+use processor_definition::SUCCESS;
 use processor_definition::{
     BACKGROUND_CLASS_INDEX, BOX_FORMAT, BOX_OUTPUT_INDEX, CONFIDENCE_THRESHOLD, IOU_THRESHOLD,
     OUTPUT_ATTRIBUTE_NAME, SCORE_ACTIVATION, SCORE_OUTPUT_INDEX,
 };
-use processor_definition::SUCCESS;
 use std::collections::HashMap;
 use strum_macros::{Display, EnumString, IntoStaticStr, VariantNames};
 
@@ -220,7 +220,7 @@ impl FilterBoundingBoxes {
             height: orig_h,
         })
     }
-    
+
     pub(crate) fn score_output_index(&self) -> usize {
         self.score_output_index
     }
@@ -255,7 +255,7 @@ impl FilterBoundingBoxes {
         let pad_x = (target_dim.width - (orig_dim.width * scale)) / 2.0;
         let pad_y = (target_dim.height - (orig_dim.height * scale)) / 2.0;
 
-        if box_floats.len() % 4 != 0 {
+        if !box_floats.len().is_multiple_of(4) {
             return Err(MinifiError::trigger_err(
                 "Box tensor byte length is not a multiple of 16 (4 f32 per box)",
             )
@@ -273,7 +273,7 @@ impl FilterBoundingBoxes {
                 attributes,
             ));
         }
-        if score_floats.len() % num_boxes != 0 {
+        if !score_floats.len().is_multiple_of(num_boxes) {
             return Err(MinifiError::trigger_err(format!(
                 "Scores length ({}) not divisible by number of boxes ({})",
                 score_floats.len(),
@@ -299,7 +299,7 @@ impl FilterBoundingBoxes {
             let scored = score_box(logits, self.score_activation, self.background_class_index);
             if scored.confidence >= self.confidence_threshold {
                 let (raw_x_min, raw_y_min, raw_x_max, raw_y_max) =
-                    decode_box(&box_floats, i * 4, self.box_format);
+                    decode_box(box_floats, i * 4, self.box_format);
 
                 let true_x_min =
                     (((raw_x_min * target_dim.width) - pad_x) / scale) / orig_dim.width;
@@ -331,7 +331,7 @@ impl FilterBoundingBoxes {
         let filtered_boxes =
             BoundingBox::apply_non_maximum_suppression(valid_boxes, self.iou_threshold);
 
-        let json_output = serde_json::to_vec(&filtered_boxes).err_to_failure()?;
+        let json_output = serde_json::to_vec(&filtered_boxes).route_err_to_failure()?;
 
         let mut attributes = HashMap::new();
         attributes.insert("object.count".to_string(), filtered_boxes.len().to_string());
@@ -360,16 +360,16 @@ impl FlowFileTransform for FilterBoundingBoxes {
     ) -> Result<TransformedFlowFile<'a>, ProcessError> {
         let mut flow_file_contents = Vec::new();
         input_stream.read_to_end(&mut flow_file_contents)?;
-        let orig_dim = Self::get_original_dimensions(context).err_to_failure()?;
-        let target_dim = Self::get_target_dimensions(context).err_to_failure()?;
+        let orig_dim = Self::get_original_dimensions(context).route_err_to_failure()?;
+        let target_dim = Self::get_target_dimensions(context).route_err_to_failure()?;
 
         let tff = TensorFlowFile::new(&flow_file_contents);
         let score_floats = tff
             .get_f32_slice(context, self.score_output_index)
-            .err_to_failure()?;
+            .route_err_to_failure()?;
         let box_floats = tff
             .get_f32_slice(context, self.box_output_index)
-            .err_to_failure()?;
+            .route_err_to_failure()?;
 
         self.filter(
             context,

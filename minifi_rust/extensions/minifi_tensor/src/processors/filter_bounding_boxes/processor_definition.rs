@@ -17,8 +17,8 @@
 
 use crate::processors::filter_bounding_boxes::{BoxFormat, FilterBoundingBoxes, ScoreActivation};
 use minifi_native::{
-    property_definitions, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property,
-    PropertyDefinition, Relationship,
+    OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property, PropertyDefinition,
+    Relationship, property_definitions,
 };
 
 pub(crate) const CONFIDENCE_THRESHOLD: Property<f32> = Property::new(
@@ -126,7 +126,7 @@ impl ProcessorDefinition for FilterBoundingBoxes {
     const RELATIONSHIPS: &'static [Relationship] = &[SUCCESS, FAILURE];
 
     fn properties() -> &'static [PropertyDefinition] {
-        const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
+        const PROPERTIES: &[PropertyDefinition] = property_definitions![
             CONFIDENCE_THRESHOLD,
             IOU_THRESHOLD,
             SCORE_OUTPUT_INDEX,

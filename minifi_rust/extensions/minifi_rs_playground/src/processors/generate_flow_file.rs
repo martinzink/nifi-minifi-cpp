@@ -19,8 +19,8 @@
 
 use minifi_native::macros::{ComponentIdentifier, PropertyType};
 use minifi_native::{
-    GetProperty, Logger, MinifiError, OnTriggerResult, ProcessContext, ProcessError, ProcessSession,
-    Schedule, Trigger,
+    GetProperty, Logger, MinifiError, OnTriggerResult, ProcessContext, ProcessError,
+    ProcessSession, Schedule, Trigger,
 };
 use rand::RngExt;
 use rand::distr::Alphanumeric;
