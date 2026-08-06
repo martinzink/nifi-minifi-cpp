@@ -25,7 +25,7 @@ use std::marker::PhantomData;
 use std::str::FromStr;
 use std::time::Duration;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum StandardPropertyValidator {
     NonBlankValidator,
     TimePeriodValidator,
@@ -36,13 +36,14 @@ pub enum StandardPropertyValidator {
     PortValidator,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum PropertyConstraints {
     Validator(StandardPropertyValidator),
     AllowedValues(&'static [&'static str]),
     ControllerService(&'static str),
 }
 
+#[derive(Clone)]
 pub struct PropertyDefinition {
     pub name: &'static str,
     pub description: &'static str,

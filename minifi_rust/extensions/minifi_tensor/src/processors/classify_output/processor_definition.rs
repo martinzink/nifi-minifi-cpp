@@ -17,8 +17,8 @@
 
 use crate::processors::classify_output::{ClassifyOutput, ScoreActivation};
 use minifi_native::{
-    OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property, PropertyDefinition,
-    Relationship, property_definitions,
+    property_definitions, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property,
+    PropertyDefinition, Relationship,
 };
 use std::path::PathBuf;
 
@@ -143,12 +143,17 @@ impl ProcessorDefinition for ClassifyOutput {
         CLASS_TOP1_NAME_ATTR,
     ];
     const RELATIONSHIPS: &'static [Relationship] = &[SUCCESS, FAILURE];
-    const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
-        TOP_K,
-        SCORE_OUTPUT_INDEX,
-        SCORE_ACTIVATION,
-        CONFIDENCE_THRESHOLD,
-        LABELS_FILE_PATH,
-        LABEL_INDEX_OFFSET,
-    ];
+
+    fn properties() -> &'static [PropertyDefinition] {
+        const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
+            TOP_K,
+            SCORE_OUTPUT_INDEX,
+            SCORE_ACTIVATION,
+            CONFIDENCE_THRESHOLD,
+            LABELS_FILE_PATH,
+            LABEL_INDEX_OFFSET,
+        ];
+
+        PROPERTIES
+    }
 }

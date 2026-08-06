@@ -47,12 +47,13 @@ impl ModelFormat {
             ModelFormat::Onnx => Ok(ResolvedFormat::Onnx),
             ModelFormat::Nnef => Ok(ResolvedFormat::Nnef),
             ModelFormat::Auto => {
-                if path.ends_with(".onnx") {
+                let path_str = path.to_string_lossy().to_ascii_lowercase();
+                if path_str.ends_with(".onnx") {
                     Ok(ResolvedFormat::Onnx)
-                } else if path.ends_with(".nnef")
-                    || path.ends_with(".nnef.tgz")
-                    || path.ends_with(".nnef.tar")
-                    || path.ends_with(".nnef.tar.gz")
+                } else if path_str.ends_with(".nnef")
+                    || path_str.ends_with(".nnef.tgz")
+                    || path_str.ends_with(".nnef.tar")
+                    || path_str.ends_with(".nnef.tar.gz")
                     || path.is_dir()
                 {
                     Ok(ResolvedFormat::Nnef)
@@ -88,7 +89,7 @@ impl EnableControllerService for TractModelService {
         );
 
         let model = match resolved {
-            ResolvedFormat::Onnx => tract::onnx()
+            ResolvedFormat::Onnx => onnx()
                 .map_err(|e| {
                     MinifiError::controller_service_err(format!(
                         "Failed to init ONNX parser: {}",
@@ -106,7 +107,7 @@ impl EnableControllerService for TractModelService {
                         e
                     ))
                 })?,
-            ResolvedFormat::Nnef => tract::nnef()
+            ResolvedFormat::Nnef => nnef()
                 .map_err(|e| {
                     MinifiError::controller_service_err(format!(
                         "Failed to init NNEF parser: {}",
@@ -124,7 +125,7 @@ impl EnableControllerService for TractModelService {
             "Optimizing and compiling the model for the host CPU..."
         );
 
-        let runtime = tract::runtime_for_name("default").map_err(|e| {
+        let runtime = runtime_for_name("default").map_err(|e| {
             MinifiError::controller_service_err(format!("Failed to init Tract runtime: {}", e))
         })?;
 

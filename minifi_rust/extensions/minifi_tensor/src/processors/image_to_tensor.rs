@@ -31,6 +31,12 @@ use processor_definition::{
 };
 use std::collections::HashMap;
 use strum_macros::{Display, EnumString, IntoStaticStr, VariantNames};
+use tract::Tensor;
+use crate::utils::dimensions::Dimensions;
+use crate::utils::per_channel_f32::PerChannelF32;
+
+tract::impl_ndarray_interop!();
+
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Display, EnumString, VariantNames, IntoStaticStr, PropertyType,
@@ -106,17 +112,6 @@ pub(crate) enum ResizeMode {
     Letterbox,
 }
 
-
-/// Returns `values[c]` when the vector has `channels` entries (per-channel),
-/// or `values[0]` when it has a single entry (broadcast).
-fn per_channel(values: &[f32], c: usize) -> f32 {
-    if values.len() == 1 {
-        values[0]
-    } else {
-        values[c]
-    }
-}
-
 #[derive(ComponentIdentifier)]
 pub(crate) struct ImageToTensor {
     target_width: u32,
@@ -125,8 +120,8 @@ pub(crate) struct ImageToTensor {
     resize_mode: ResizeMode,
     color_format: ColorFormat,
     tensor_shape_format: TensorShapeFormat,
-    mean: Vec<f32>,
-    std_dev: Vec<f32>,
+    mean: PerChannelF32,
+    std_dev: PerChannelF32,
     pixel_divisor: f32,
     letterbox_pad_value: f32,
 }
@@ -147,7 +142,7 @@ impl Schedule for ImageToTensor {
         let tensor_shape_format = context.get_property(&TENSOR_SHAPE_FORMAT)?;
         let mean = context.get_property(&MEAN)?;
         let std_dev = context.get_property(&STD_DEV)?;
-        if std_dev.contains(&0.0) {
+        if std_dev.contains_zero() {
             return Err(MinifiError::trigger_err(
                 "Standard Deviation components must be non-zero",
             ));
@@ -173,56 +168,159 @@ impl Schedule for ImageToTensor {
     }
 }
 
+struct MaskedRgbImage {
+    img: image::RgbImage,
+    mask: Vec<bool>
+}
+
 impl ImageToTensor {
-    /// Resize `img` into a (target_width, target_height) RGB image according to
-    /// the configured resize mode. For `Letterbox`, the returned image already
-    /// has the padding baked in as pixel color (0..255); the normalized pad
-    /// value is applied separately during tensor writing.
-    ///
-    /// Returns the resized RGB image plus a mask of "valid" pixels
-    /// (`true` = came from the source, `false` = padding). The caller uses the
-    /// mask to substitute `letterbox_pad_value` into normalized output.
-    fn resize_rgb(&self, img: &image::DynamicImage) -> (image::RgbImage, Vec<bool>) {
-        let filter: image::imageops::FilterType = self.resize_filter.into();
-        match self.resize_mode {
-            ResizeMode::Stretch => {
-                let resized = img
-                    .resize_exact(self.target_width, self.target_height, filter)
-                    .to_rgb8();
-                // no padding so every pixel is part of the source
-                let mask = vec![true; (self.target_width * self.target_height) as usize];
-                (resized, mask)
-            }
-            ResizeMode::Letterbox => {
-                let (src_w, src_h) = (img.width() as f32, img.height() as f32);
-                let scale =
-                    (self.target_width as f32 / src_w).min(self.target_height as f32 / src_h);
-                let new_w = (src_w * scale).round().max(1.0) as u32;
-                let new_h = (src_h * scale).round().max(1.0) as u32;
-                let scaled = img.resize_exact(new_w, new_h, filter).to_rgb8();
+    fn stretch_resize(&self, img: &image::DynamicImage) -> MaskedRgbImage {
+        let resized = img
+            .resize_exact(self.target_width, self.target_height, self.resize_filter.into())
+            .to_rgb8();
+        let mask = vec![true; (self.target_width * self.target_height) as usize];
+        MaskedRgbImage{img:resized, mask}
+    }
 
-                let pad_x = (self.target_width - new_w) / 2;
-                let pad_y = (self.target_height - new_h) / 2;
+    fn letterbox_resize(&self, img: &image::DynamicImage) -> MaskedRgbImage {
+        let (src_w, src_h) = (img.width() as f32, img.height() as f32);
+        let scale =
+            (self.target_width as f32 / src_w).min(self.target_height as f32 / src_h);
+        let new_w = (src_w * scale).round().max(1.0) as u32;
+        let new_h = (src_h * scale).round().max(1.0) as u32;
+        let scaled = img.resize_exact(new_w, new_h, self.resize_filter.into()).to_rgb8();
 
-                // Canvas with target dimensions
-                let mut canvas = image::RgbImage::from_pixel(
-                    self.target_width,
-                    self.target_height,
-                    image::Rgb([0, 0, 0]),
-                );
-                // Overlay the image padded
-                image::imageops::overlay(&mut canvas, &scaled, pad_x as i64, pad_y as i64);
+        let pad_x = (self.target_width - new_w) / 2;
+        let pad_y = (self.target_height - new_h) / 2;
 
-                // Mask to track which pixel is part of source and which is padding
-                let mut mask = vec![false; (self.target_width * self.target_height) as usize];
-                for y in pad_y..(new_h + pad_y) {
-                    for x in pad_x..(new_w + pad_x) {
-                        mask[(y * self.target_width + x) as usize] = true;
-                    }
-                }
-                (canvas, mask)
+        let mut canvas = image::RgbImage::from_pixel(
+            self.target_width,
+            self.target_height,
+            image::Rgb([0, 0, 0]),
+        );
+        image::imageops::overlay(&mut canvas, &scaled, pad_x as i64, pad_y as i64);
+
+        // Mask to track which pixel is part of source and which is padding
+        let mut mask = vec![false; (self.target_width * self.target_height) as usize];
+        for y in pad_y..(new_h + pad_y) {
+            for x in pad_x..(new_w + pad_x) {
+                mask[(y * self.target_width + x) as usize] = true;
             }
         }
+        MaskedRgbImage{img:canvas, mask}
+    }
+
+    fn resize_rgb(&self, img: &image::DynamicImage) -> MaskedRgbImage {
+        match self.resize_mode {
+            ResizeMode::Stretch => {
+                self.stretch_resize(img)
+            }
+            ResizeMode::Letterbox => {
+                self.letterbox_resize(img)
+            }
+        }
+    }
+
+    pub fn tensor_bytes(&self, img: &image::DynamicImage) -> Vec<u8> {
+        let num_channels: usize = match self.color_format {
+            ColorFormat::Grayscale => 1,
+            _ => 3,
+        };
+        let total_pixels = (self.target_width * self.target_height) as usize;
+        let mut tensor_bytes = Vec::with_capacity(total_pixels * num_channels * 4);
+
+        let masked_img = self.resize_rgb(&img);
+
+        if self.color_format == ColorFormat::Grayscale {
+            let mean = self.mean.per_channel(0);
+            let std_dev = self.std_dev.per_channel(0);
+            for (idx, pixel) in masked_img.img.pixels().enumerate() {
+                let val = if masked_img.mask[idx] {
+                    // Rec. 601 luma coefficients — matches image::to_luma8().
+                    let luma =
+                        0.299 * pixel[0] as f32 + 0.587 * pixel[1] as f32 + 0.114 * pixel[2] as f32;
+                    (luma / self.pixel_divisor - mean) / std_dev
+                } else {
+                    self.letterbox_pad_value
+                };
+                tensor_bytes.extend_from_slice(&val.to_le_bytes());
+            }
+        } else {
+            let channel_order: [usize; 3] = match self.color_format {
+                ColorFormat::Rgb => [0, 1, 2],
+                ColorFormat::Bgr => [2, 1, 0],
+                _ => unreachable!(),
+            };
+
+            let normalized = |px_idx: usize, out_c: usize, src_c: usize| -> f32 {
+                if !masked_img.mask[px_idx] {
+                    return self.letterbox_pad_value;
+                }
+                let raw = masked_img.img.get_pixel(
+                    (px_idx as u32) % self.target_width,
+                    (px_idx as u32) / self.target_width,
+                )[src_c] as f32;
+                (raw / self.pixel_divisor - self.mean.per_channel(out_c))
+                    / self.std_dev.per_channel(out_c)
+            };
+
+            match self.tensor_shape_format {
+                TensorShapeFormat::Chw => {
+                    for (out_c, &src_c) in channel_order.iter().enumerate() {
+                        for px_idx in 0..total_pixels {
+                            let v = normalized(px_idx, out_c, src_c);
+                            tensor_bytes.extend_from_slice(&v.to_le_bytes());
+                        }
+                    }
+                }
+                TensorShapeFormat::Hwc => {
+                    for px_idx in 0..total_pixels {
+                        for (out_c, &src_c) in channel_order.iter().enumerate() {
+                            let v = normalized(px_idx, out_c, src_c);
+                            tensor_bytes.extend_from_slice(&v.to_le_bytes());
+                        }
+                    }
+                }
+            }
+        }
+
+        tensor_bytes
+    }
+    pub fn get_shape(&self) -> Vec<usize> {
+        let num_channels: usize = match self.color_format {
+            ColorFormat::Grayscale => 1,
+            _ => 3,
+        };
+        match (self.color_format, self.tensor_shape_format) {
+            (ColorFormat::Grayscale, _) => {
+                vec![1, 1, self.target_height as usize, self.target_width as usize]
+            }
+            (_, TensorShapeFormat::Chw) => vec![
+                1,
+                num_channels,
+                self.target_height as usize,
+                self.target_width as usize,
+            ],
+            (_, TensorShapeFormat::Hwc) => vec![
+                1,
+                self.target_height as usize,
+                self.target_width as usize,
+                num_channels,
+            ],
+        }
+    }
+    pub fn get_target_dim(&self) -> Dimensions {
+        Dimensions{width: self.target_width as f32, height: self.target_height as f32}
+    }
+
+    pub fn get_tensor(&self, img: &image::DynamicImage) -> Result<Tensor, MinifiError> {
+        let data = self.tensor_bytes(img);
+        let shape = self.get_shape();
+        ndarray::Array::from_shape_vec(shape, data)
+            .map_err(|e| MinifiError::trigger_err(format!("Failed to create array: {}", e)))
+            .and_then(|array| array.tract().map_err(|e| MinifiError::trigger_err(
+                format!("Failed to build tensor: {}", e)
+            )))
     }
 }
 
@@ -247,86 +345,12 @@ impl FlowFileTransform for ImageToTensor {
             "decode image"
         );
 
-        let num_channels: usize = match self.color_format {
-            ColorFormat::Grayscale => 1,
-            _ => 3,
-        };
-
-        let total_pixels = (self.target_width * self.target_height) as usize;
-        let mut tensor_bytes = Vec::with_capacity(total_pixels * num_channels * 4);
-
-        if self.color_format == ColorFormat::Grayscale {
-            let (rgb_img, mask) = self.resize_rgb(&img);
-            let mean = self.mean[0];
-            let std_dev = self.std_dev[0];
-            for (idx, pixel) in rgb_img.pixels().enumerate() {
-                let val = if mask[idx] {
-                    // Rec. 601 luma coefficients — matches image::to_luma8().
-                    let luma =
-                        0.299 * pixel[0] as f32 + 0.587 * pixel[1] as f32 + 0.114 * pixel[2] as f32;
-                    (luma / self.pixel_divisor - mean) / std_dev
-                } else {
-                    self.letterbox_pad_value
-                };
-                tensor_bytes.extend_from_slice(&val.to_le_bytes());
-            }
-        } else {
-            let (rgb_img, mask) = self.resize_rgb(&img);
-            let channel_order: [usize; 3] = match self.color_format {
-                ColorFormat::Rgb => [0, 1, 2],
-                ColorFormat::Bgr => [2, 1, 0],
-                _ => unreachable!(),
-            };
-
-            let normalized = |px_idx: usize, out_c: usize, src_c: usize| -> f32 {
-                if !mask[px_idx] {
-                    return self.letterbox_pad_value;
-                }
-                let raw = rgb_img.get_pixel(
-                    (px_idx as u32) % self.target_width,
-                    (px_idx as u32) / self.target_width,
-                )[src_c] as f32;
-                (raw / self.pixel_divisor - per_channel(&self.mean, out_c))
-                    / per_channel(&self.std_dev, out_c)
-            };
-
-            match self.tensor_shape_format {
-                TensorShapeFormat::Chw => {
-                    for (out_c, &src_c) in channel_order.iter().enumerate() {
-                        for px_idx in 0..total_pixels {
-                            let v = normalized(px_idx, out_c, src_c);
-                            tensor_bytes.extend_from_slice(&v.to_le_bytes());
-                        }
-                    }
-                }
-                TensorShapeFormat::Hwc => {
-                    for px_idx in 0..total_pixels {
-                        for (out_c, &src_c) in channel_order.iter().enumerate() {
-                            let v = normalized(px_idx, out_c, src_c);
-                            tensor_bytes.extend_from_slice(&v.to_le_bytes());
-                        }
-                    }
-                }
-            }
-        }
-
-        let shape_str = match (self.color_format, self.tensor_shape_format) {
-            (ColorFormat::Grayscale, _) => {
-                format!("1,1,{},{}", self.target_height, self.target_width)
-            }
-            (_, TensorShapeFormat::Chw) => {
-                format!(
-                    "1,{},{},{}",
-                    num_channels, self.target_height, self.target_width
-                )
-            }
-            (_, TensorShapeFormat::Hwc) => {
-                format!(
-                    "1,{},{},{}",
-                    self.target_height, self.target_width, num_channels
-                )
-            }
-        };
+        let tensor_bytes = self.tensor_bytes(&img);
+        let shape_str = self.get_shape()
+            .iter()
+            .map(|n| n.to_string())
+            .collect::<Vec<String>>()
+            .join(",");
 
         let mut attributes = HashMap::new();
         attributes.insert(TENSOR_SHAPE_ATTR.name.to_owned(), shape_str);
@@ -377,8 +401,8 @@ mod tests {
             resize_mode: ResizeMode::Stretch,
             color_format: ColorFormat::Rgb,
             tensor_shape_format: TensorShapeFormat::Chw,
-            mean: vec![0.0],
-            std_dev: vec![255.0],
+            mean: PerChannelF32::SingleChannel(0.0),
+            std_dev: PerChannelF32::SingleChannel(255.0),
             pixel_divisor: 1.0,
             letterbox_pad_value: 0.0,
         }
@@ -506,8 +530,8 @@ mod tests {
         // Use per-channel mean/std where R uses (mean=0, std=255) → 1.0,
         // G uses (mean=255, std=255) → 0.0, B uses (mean=0, std=127.5) → 2.0.
         let processor = ImageToTensor {
-            mean: vec![0.0, 255.0, 0.0],
-            std_dev: vec![255.0, 255.0, 127.5],
+            mean: PerChannelF32::TriChannel([0.0, 255.0, 0.0]),
+            std_dev: PerChannelF32::TriChannel([255.0, 255.0, 127.5]),
             ..default_processor()
         };
         let context = MockProcessContext::new();
@@ -585,8 +609,8 @@ mod tests {
         //   (raw / 255.0 - mean_[0,1]) / std_[0,1]
         // A pure-white pixel R channel should become (1.0 - 0.485) / 0.229 ≈ 2.2489.
         let processor = ImageToTensor {
-            mean: vec![0.485, 0.456, 0.406],
-            std_dev: vec![0.229, 0.224, 0.225],
+            mean: PerChannelF32::TriChannel([0.485, 0.456, 0.406]),
+            std_dev: PerChannelF32::TriChannel([0.229, 0.224, 0.225]),
             pixel_divisor: 255.0,
             ..default_processor()
         };

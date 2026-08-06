@@ -1,12 +1,12 @@
 use crate::utils::bounding_box::{BoundingBox, BoundingBoxes};
-use image::{ImageFormat, Rgb, load_from_memory};
-use minifi_native::{error, PropertySchema, PropertyDefinition, property_definitions};
+use image::{load_from_memory, ImageFormat, Rgb};
 use minifi_native::macros::ComponentIdentifier;
+use minifi_native::{error, property_definitions, PropertyDefinition, PropertySchema};
 use minifi_native::{
-    FlowFileTransform, GetAttribute, GetControllerService, GetId, GetProperty, InputStream, Logger,
-    MinifiError, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property,
-    PropertyConstraints, PropertyType, Relationship, Schedule,
-    TransformedFlowFile, unwrap_or_route,
+    unwrap_or_route, FlowFileTransform, GetAttribute, GetControllerService, GetId, GetProperty, InputStream,
+    Logger, MinifiError, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement,
+    Property, PropertyConstraints, PropertyType, Relationship, Schedule,
+    TransformedFlowFile,
 };
 use std::collections::HashMap;
 use std::io::Cursor;
@@ -21,12 +21,14 @@ pub(crate) const FAILURE: Relationship = Relationship {
     description: "Invalid FlowFiles are routed here",
 };
 
-pub(crate) const BOUNDING_BOXES: Property<BoundingBoxes> = Property::new("Bounding boxes", "TODO(mzink)").with_default("${enrichment.value}");
+pub(crate) const BOUNDING_BOXES: Property<BoundingBoxes> =
+    Property::new("Bounding boxes", "TODO(mzink)").with_default("${enrichment.value}");
 
-const LINE_THICKNESS: Property<u32> = Property::new("Line tickness", "TODO(mzink)").with_default("5");
+const LINE_THICKNESS: Property<u32> =
+    Property::new("Line tickness", "TODO(mzink)").with_default("5");
 
-const LINE_COLOR: Property<LineColor> = Property::new("Line color", "TODO(mzink)")
-    .with_default("[0, 255, 0]");
+const LINE_COLOR: Property<LineColor> =
+    Property::new("Line color", "TODO(mzink)").with_default("[0, 255, 0]");
 
 #[derive(Debug, ComponentIdentifier)]
 pub(crate) struct DrawBoundingBox {}
@@ -129,7 +131,12 @@ impl ProcessorDefinition for DrawBoundingBox {
     const SUPPORTS_DYNAMIC_RELATIONSHIPS: bool = false;
     const OUTPUT_ATTRIBUTES: &'static [OutputAttribute] = &[];
     const RELATIONSHIPS: &'static [Relationship] = &[SUCCESS, FAILURE];
-    const PROPERTIES: &'static [PropertyDefinition] = property_definitions![BOUNDING_BOXES, LINE_COLOR, LINE_THICKNESS];
+    fn properties() -> &'static [PropertyDefinition] {
+        const PROPERTIES: &'static [PropertyDefinition] =
+            property_definitions![BOUNDING_BOXES, LINE_COLOR, LINE_THICKNESS];
+
+        PROPERTIES
+    }
 }
 
 #[cfg(test)]

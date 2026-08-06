@@ -284,7 +284,7 @@ where
             Implementation::SUPPORTS_DYNAMIC_RELATIONSHIPS,
             Implementation::OUTPUT_ATTRIBUTES,
             Implementation::RELATIONSHIPS,
-            Implementation::PROPERTIES,
+            Implementation::properties(),
         ))
     }
 }

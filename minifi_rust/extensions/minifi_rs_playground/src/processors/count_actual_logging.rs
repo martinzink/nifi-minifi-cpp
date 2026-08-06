@@ -19,9 +19,9 @@
 
 use minifi_native::macros::ComponentIdentifier;
 use minifi_native::{
-    GetProperty, Logger, MinifiError, MutTrigger, OnTriggerResult, OutputAttribute, ProcessContext,
-    ProcessSession, ProcessorDefinition, ProcessorInputRequirement, PropertyDefinition,
-    Relationship, Schedule, debug, info, trace,
+    debug, info, trace, GetProperty, Logger, MinifiError, MutTrigger,
+    OnTriggerResult, OutputAttribute, ProcessContext, ProcessSession,
+    ProcessorDefinition, ProcessorInputRequirement, PropertyDefinition, Relationship, Schedule,
 };
 
 #[derive(Debug, ComponentIdentifier)]
@@ -72,5 +72,8 @@ impl ProcessorDefinition for CountActualLogging {
     const SUPPORTS_DYNAMIC_RELATIONSHIPS: bool = false;
     const OUTPUT_ATTRIBUTES: &'static [OutputAttribute] = &[];
     const RELATIONSHIPS: &'static [Relationship] = &[];
-    const PROPERTIES: &'static [PropertyDefinition] = &[];
+
+    fn properties() -> &'static [PropertyDefinition] {
+        &[]
+    }
 }

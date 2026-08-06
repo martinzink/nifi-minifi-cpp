@@ -70,7 +70,7 @@ impl InvokeTractModel {
         Ok(f32_data)
     }
 
-    fn get_shape<Context: GetAttribute>(context: &Context) -> Result<Vec<usize>, Box<dyn Error>> {
+    fn get_shape_from_attribute<Context: GetAttribute>(context: &Context) -> Result<Vec<usize>, Box<dyn Error>> {
         let shape_str = context
             .get_attribute("tensor.shape")
             .and_then(|opt| opt.ok_or(MinifiError::trigger_err("Missing tensor.shape")))?;
@@ -102,7 +102,7 @@ impl InvokeTractModel {
         input_stream: &mut dyn InputStream,
     ) -> Result<Tensor, Box<dyn Error>> {
         Self::check_input_dtype(context)?;
-        let shape = Self::get_shape(context)?;
+        let shape = Self::get_shape_from_attribute(context)?;
         let f32_data = Self::get_payload_as_f32_array(input_stream)?;
 
         let array = ndarray::Array::from_shape_vec(shape, f32_data)
@@ -204,14 +204,14 @@ mod tests {
             .attributes
             .insert("tensor.shape".to_string(), "1, 3, 224, 224".to_string());
 
-        let shape = InvokeTractModel::get_shape(&context).expect("Should parse valid shape");
+        let shape = InvokeTractModel::get_shape_from_attribute(&context).expect("Should parse valid shape");
         assert_eq!(shape, vec![1, 3, 224, 224]);
     }
 
     #[test]
     fn test_get_shape_missing_attribute_fails() {
         let context = MockProcessContext::new(); // Empty attributes
-        let result = InvokeTractModel::get_shape(&context);
+        let result = InvokeTractModel::get_shape_from_attribute(&context);
         assert!(result.is_err(), "Should fail when tensor.shape is missing");
     }
 
@@ -222,7 +222,7 @@ mod tests {
             .attributes
             .insert("tensor.shape".to_string(), "1, apple, 224".to_string());
 
-        let result = InvokeTractModel::get_shape(&context);
+        let result = InvokeTractModel::get_shape_from_attribute(&context);
         assert!(
             result.is_err(),
             "Should fail when shape contains non-integers"

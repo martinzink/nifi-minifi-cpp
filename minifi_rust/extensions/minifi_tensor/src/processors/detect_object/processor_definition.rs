@@ -16,11 +16,16 @@
 // under the License.
 
 use crate::processors::detect_object::DetectObject;
-use crate::processors::{filter_bounding_boxes, image_to_tensor, invoke_tract_model};
-use minifi_native::{
-    OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, PropertyDefinition,
-    Relationship, property_definitions,
-};
+use crate::processors::{filter_bounding_boxes, image_to_tensor};
+use minifi_native::{OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property, PropertyDefinition, Relationship};
+use crate::services::tract_model_service::TractModelService;
+
+pub(crate) const TRACT_MODEL_SERVICE: Property<TractModelService> = Property::new(
+    "Tract model service",
+    "Reference to a TractModelService controller service. The referenced service \
+                  owns the compiled model (ONNX or NNEF) that will be evaluated for each \
+                  incoming flow file.",
+);
 
 pub(super) const SUCCESS: Relationship = Relationship {
     name: "success",
@@ -65,25 +70,19 @@ impl ProcessorDefinition for DetectObject {
     const OUTPUT_ATTRIBUTES: &'static [OutputAttribute] =
         &[OBJECT_COUNT_ATTR, DETECTED_OBJECTS_ATTR];
     const RELATIONSHIPS: &'static [Relationship] = &[SUCCESS, FAILURE];
-    const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
-        image_to_tensor::TARGET_WIDTH,
-        image_to_tensor::TARGET_HEIGHT,
-        image_to_tensor::RESIZE_FILTER,
-        image_to_tensor::RESIZE_MODE,
-        image_to_tensor::LETTERBOX_PAD_VALUE,
-        image_to_tensor::COLOR_FORMAT,
-        image_to_tensor::TENSOR_SHAPE_FORMAT,
-        image_to_tensor::MEAN,
-        image_to_tensor::STD_DEV,
-        image_to_tensor::PIXEL_DIVISOR,
-        invoke_tract_model::TRACT_MODEL_SERVICE,
-        filter_bounding_boxes::CONFIDENCE_THRESHOLD,
-        filter_bounding_boxes::IOU_THRESHOLD,
-        filter_bounding_boxes::SCORE_OUTPUT_INDEX,
-        filter_bounding_boxes::BOX_OUTPUT_INDEX,
-        filter_bounding_boxes::BOX_FORMAT,
-        filter_bounding_boxes::SCORE_ACTIVATION,
-        filter_bounding_boxes::BACKGROUND_CLASS_INDEX,
-        filter_bounding_boxes::OUTPUT_ATTRIBUTE_NAME,
-    ];
+
+    fn properties() -> &'static [PropertyDefinition] {
+        use std::sync::LazyLock;
+        static COMBINED_PROPERTIES: LazyLock<Vec<PropertyDefinition>> = LazyLock::new(|| {
+            let mut props = Vec::new();
+
+            props.extend_from_slice(image_to_tensor::ImageToTensor::properties());
+            props.push(TRACT_MODEL_SERVICE.definition());
+            props.extend_from_slice(filter_bounding_boxes::FilterBoundingBoxes::properties());
+
+            props
+        });
+
+        &COMBINED_PROPERTIES
+    }
 }

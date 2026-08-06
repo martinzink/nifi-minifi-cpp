@@ -16,40 +16,75 @@
 // under the License.
 
 use crate::processors::filter_bounding_boxes::{BoxFormat, FilterBoundingBoxes, ScoreActivation};
-use minifi_native::{property_definitions, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property, PropertyDefinition, Relationship};
+use minifi_native::{
+    property_definitions, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property,
+    PropertyDefinition, Relationship,
+};
 
-pub(crate) const CONFIDENCE_THRESHOLD: Property<f32> = Property::new("Confidence Threshold", "Minimum per-box class probability (0.0 to 1.0) required to keep a bounding box \
+pub(crate) const CONFIDENCE_THRESHOLD: Property<f32> = Property::new(
+    "Confidence Threshold",
+    "Minimum per-box class probability (0.0 to 1.0) required to keep a bounding box \
                   after applying the chosen 'Score activation'. Boxes below the threshold are \
-                  discarded before NMS.").with_default("0.7").supports_expression_language();
+                  discarded before NMS.",
+)
+.with_default("0.7")
+.supports_expression_language();
 
-pub(crate) const IOU_THRESHOLD: Property<f32> = Property::new("IoU Threshold", "Intersection-over-union cutoff used during non-maximum suppression. Boxes of \
+pub(crate) const IOU_THRESHOLD: Property<f32> = Property::new(
+    "IoU Threshold",
+    "Intersection-over-union cutoff used during non-maximum suppression. Boxes of \
                   the same class whose IoU with a higher-confidence peer exceeds this value are \
                   suppressed. Typical values: 0.45 (SSD/YOLO default), 0.5, 0.3 for stricter \
-                  deduplication.").with_default("0.45");
+                  deduplication.",
+)
+.with_default("0.45");
 
-pub(crate) const SCORE_OUTPUT_INDEX: Property<usize> = Property::new("Score output index", "Zero-based index of the model output tensor that holds classification scores. \
+pub(crate) const SCORE_OUTPUT_INDEX: Property<usize> = Property::new(
+    "Score output index",
+    "Zero-based index of the model output tensor that holds classification scores. \
                   The processor slices the concatenated payload from InvokeTractModel according \
-                  to the 'tract.output.N.bytes' attributes.").with_default("0");
+                  to the 'tract.output.N.bytes' attributes.",
+)
+.with_default("0");
 
-pub(crate) const BOX_OUTPUT_INDEX: Property<usize> = Property::new("Box output index", "Zero-based index of the model output tensor that holds box coordinates. Must \
-                  differ from 'Score output index'.").with_default("1");
+pub(crate) const BOX_OUTPUT_INDEX: Property<usize> = Property::new(
+    "Box output index",
+    "Zero-based index of the model output tensor that holds box coordinates. Must \
+                  differ from 'Score output index'.",
+)
+.with_default("1");
 
-pub(crate) const BOX_FORMAT: Property<BoxFormat> = Property::new("Box format", "Layout of the four floats per box in the box output tensor. Xyxy = \
+pub(crate) const BOX_FORMAT: Property<BoxFormat> = Property::new(
+    "Box format",
+    "Layout of the four floats per box in the box output tensor. Xyxy = \
                   [x_min, y_min, x_max, y_max] (SSD, MobileNet-SSD, most PyTorch exports). \
                   Yxyx = [y_min, x_min, y_max, x_max] (TensorFlow Object Detection API). \
-                  Cxcywh = [cx, cy, w, h] (YOLOv3/5/8 raw output).").with_default(BoxFormat::Xyxy.into_str());
+                  Cxcywh = [cx, cy, w, h] (YOLOv3/5/8 raw output).",
+)
+.with_default(BoxFormat::Xyxy.into_str());
 
-pub(crate) const SCORE_ACTIVATION: Property<ScoreActivation> = Property::new("Score activation", "Activation applied to raw per-class scores before selecting the winning class. \
+pub(crate) const SCORE_ACTIVATION: Property<ScoreActivation> = Property::new(
+    "Score activation",
+    "Activation applied to raw per-class scores before selecting the winning class. \
                   Softmax = mutually-exclusive classes (SSD/MobileNet-SSD raw logits). \
                   Sigmoid = independent classes (YOLOv5/v8 style). \
                   None = the model already emits probabilities/scores; use raw argmax with the \
-                  raw score as confidence.").with_default(ScoreActivation::Softmax.into_str());
+                  raw score as confidence.",
+)
+.with_default(ScoreActivation::Softmax.into_str());
 
-pub(crate) const BACKGROUND_CLASS_INDEX: Property<Option<usize>> = Property::new("Background class index", "Index of the 'background / no-object' class in the score vector. Boxes whose \
+pub(crate) const BACKGROUND_CLASS_INDEX: Property<Option<usize>> = Property::new(
+    "Background class index",
+    "Index of the 'background / no-object' class in the score vector. Boxes whose \
                   winning class equals this index are dropped. Only honoured when the score \
-                  tensor has more than one class per box.");
+                  tensor has more than one class per box.",
+);
 
-pub(crate) const OUTPUT_ATTRIBUTE_NAME: Property<Option<String>> = Property::new("Output attribute name", "Specify the attribute to use as output, if not provided, the content is overridden instead.").supports_expression_language();
+pub(crate) const OUTPUT_ATTRIBUTE_NAME: Property<Option<String>> = Property::new(
+    "Output attribute name",
+    "Specify the attribute to use as output, if not provided, the content is overridden instead.",
+)
+.supports_expression_language();
 
 pub const SUCCESS: Relationship = Relationship {
     name: "success",
@@ -89,14 +124,19 @@ impl ProcessorDefinition for FilterBoundingBoxes {
     const SUPPORTS_DYNAMIC_RELATIONSHIPS: bool = false;
     const OUTPUT_ATTRIBUTES: &'static [OutputAttribute] = &[OBJECT_COUNT_ATTR, MIME_TYPE_ATTR];
     const RELATIONSHIPS: &'static [Relationship] = &[SUCCESS, FAILURE];
-    const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
-        CONFIDENCE_THRESHOLD,
-        IOU_THRESHOLD,
-        SCORE_OUTPUT_INDEX,
-        BOX_OUTPUT_INDEX,
-        BOX_FORMAT,
-        SCORE_ACTIVATION,
-        BACKGROUND_CLASS_INDEX,
-        OUTPUT_ATTRIBUTE_NAME,
-    ];
+
+    fn properties() -> &'static [PropertyDefinition] {
+        const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
+            CONFIDENCE_THRESHOLD,
+            IOU_THRESHOLD,
+            SCORE_OUTPUT_INDEX,
+            BOX_OUTPUT_INDEX,
+            BOX_FORMAT,
+            SCORE_ACTIVATION,
+            BACKGROUND_CLASS_INDEX,
+            OUTPUT_ATTRIBUTE_NAME,
+        ];
+
+        PROPERTIES
+    }
 }

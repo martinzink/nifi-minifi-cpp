@@ -19,10 +19,10 @@ use crate::processors::get_file::output_attributes::{
     ABSOLUTE_PATH_OUTPUT_ATTRIBUTE, FILENAME_OUTPUT_ATTRIBUTE,
 };
 use crate::processors::get_file::properties::*;
-use crate::processors::get_file::{GetFileRs, relationships};
+use crate::processors::get_file::{relationships, GetFileRs};
 use minifi_native::{
-    OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, PropertyDefinition,
-    Relationship, property_definitions,
+    property_definitions, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement,
+    PropertyDefinition, Relationship,
 };
 
 impl ProcessorDefinition for GetFileRs {
@@ -33,16 +33,19 @@ impl ProcessorDefinition for GetFileRs {
     const OUTPUT_ATTRIBUTES: &'static [OutputAttribute] =
         &[ABSOLUTE_PATH_OUTPUT_ATTRIBUTE, FILENAME_OUTPUT_ATTRIBUTE];
     const RELATIONSHIPS: &'static [Relationship] = &[relationships::SUCCESS];
-    const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
-        DIRECTORY,
-        POLLING_INTERVAL,
-        RECURSE,
-        KEEP_SOURCE_FILE,
-        MIN_AGE,
-        MAX_AGE,
-        MIN_SIZE,
-        MAX_SIZE,
-        IGNORE_HIDDEN_FILES,
-        BATCH_SIZE,
-    ];
+    fn properties() -> &'static [PropertyDefinition] {
+        const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
+            DIRECTORY,
+            POLLING_INTERVAL,
+            RECURSE,
+            KEEP_SOURCE_FILE,
+            MIN_AGE,
+            MAX_AGE,
+            MIN_SIZE,
+            MAX_SIZE,
+            IGNORE_HIDDEN_FILES,
+            BATCH_SIZE,
+        ];
+        &PROPERTIES
+    }
 }

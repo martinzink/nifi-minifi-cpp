@@ -20,8 +20,8 @@ use crate::processors::image_to_tensor::{
 };
 use crate::utils::per_channel_f32::PerChannelF32;
 use minifi_native::{
-    OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property, PropertyDefinition,
-    Relationship, property_definitions,
+    property_definitions, OutputAttribute, ProcessorDefinition, ProcessorInputRequirement, Property,
+    PropertyDefinition, Relationship,
 };
 
 pub(crate) const TARGET_WIDTH: Property<u32> = Property::new(
@@ -151,16 +151,20 @@ impl ProcessorDefinition for ImageToTensor {
     const SUPPORTS_DYNAMIC_RELATIONSHIPS: bool = false;
     const OUTPUT_ATTRIBUTES: &'static [OutputAttribute] = &[TENSOR_SHAPE_ATTR, TENSOR_DTYPE_ATTR];
     const RELATIONSHIPS: &'static [Relationship] = &[SUCCESS, FAILURE];
-    const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
-        TARGET_WIDTH,
-        TARGET_HEIGHT,
-        RESIZE_FILTER,
-        RESIZE_MODE,
-        LETTERBOX_PAD_VALUE,
-        COLOR_FORMAT,
-        TENSOR_SHAPE_FORMAT,
-        MEAN,
-        STD_DEV,
-        PIXEL_DIVISOR,
-    ];
+    fn properties() -> &'static [PropertyDefinition] {
+        const PROPERTIES: &'static [PropertyDefinition] = property_definitions![
+            TARGET_WIDTH,
+            TARGET_HEIGHT,
+            RESIZE_FILTER,
+            RESIZE_MODE,
+            LETTERBOX_PAD_VALUE,
+            COLOR_FORMAT,
+            TENSOR_SHAPE_FORMAT,
+            MEAN,
+            STD_DEV,
+            PIXEL_DIVISOR,
+        ];
+
+        PROPERTIES
+    }
 }
