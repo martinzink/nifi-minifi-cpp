@@ -232,10 +232,14 @@ impl FilterBoundingBoxes {
     fn get_target_dimensions<Context: GetAttribute>(
         context: &Context,
     ) -> Result<Dimensions, MinifiError> {
-        let shape_attr = context.get_required_attribute("tensor.shape")?;
-        let shape_parts: Vec<&str> = shape_attr.split(',').collect();
-        let target_h: f32 = shape_parts[2].parse()?;
-        let target_w: f32 = shape_parts[3].parse()?;
+        let target_w = context
+            .get_required_attribute("image.target.width")?
+            .parse::<f32>()?;
+
+        let target_h = context
+            .get_required_attribute("image.target.height")?
+            .parse::<f32>()?;
+
         Ok(Dimensions {
             width: target_w,
             height: target_h,

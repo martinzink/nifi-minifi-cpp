@@ -84,7 +84,7 @@ pub(crate) fn deserialize_tensors<Context: GetAttribute>(
     let number_of_tensors = parse_tensors_len(context)?;
 
     let mut cursor = 0usize;
-    for i in 0..=number_of_tensors {
+    for i in 0..number_of_tensors {
         let tensor_len = parse_tensor_len(context, i)?;
         let tensor_shape = parse_tensor_shape(context, i)?;
         let tensor_dtype = parse_tensor_dtype(context, i)?;

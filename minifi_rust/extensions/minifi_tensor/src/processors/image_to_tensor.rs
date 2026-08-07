@@ -20,6 +20,9 @@ pub(crate) use crate::processors::image_to_tensor::processor_definition::{
     COLOR_FORMAT, LETTERBOX_PAD_VALUE, MEAN, PIXEL_DIVISOR, RESIZE_FILTER, RESIZE_MODE, STD_DEV,
     TARGET_HEIGHT, TARGET_WIDTH, TENSOR_SHAPE_FORMAT,
 };
+use crate::processors::image_to_tensor::processor_definition::{
+    IMAGE_TARGET_HEIGHT_ATTR, IMAGE_TARGET_WIDTH_ATTR, TENSORS_LEN_ATTR,
+};
 use crate::utils::dimensions::Dimensions;
 use crate::utils::per_channel_f32::PerChannelF32;
 use minifi_native::macros::{ComponentIdentifier, PropertyType};
@@ -34,7 +37,6 @@ use processor_definition::{
 use std::collections::HashMap;
 use strum_macros::{Display, EnumString, IntoStaticStr, VariantNames};
 use tract::Tensor;
-use crate::processors::image_to_tensor::processor_definition::TENSORS_LEN_ATTR;
 
 tract::impl_ndarray_interop!();
 
@@ -323,9 +325,12 @@ impl ImageToTensor {
     }
 
     pub fn get_tensor(&self, img: &image::DynamicImage) -> Result<Tensor, MinifiError> {
-        let data = self.tensor_bytes(img);
+        let f32_data : Vec<f32> = self.tensor_bytes(img)
+            .chunks_exact(4)
+            .map(|c| f32::from_le_bytes(c.try_into().unwrap()))
+            .collect();
         let shape = self.get_shape();
-        ndarray::Array::from_shape_vec(shape, data)
+        ndarray::Array::from_shape_vec(shape, f32_data)
             .map_err(|e| MinifiError::trigger_err(format!("Failed to create array: {}", e)))
             .and_then(|array| {
                 array
@@ -370,6 +375,14 @@ impl FlowFileTransform for ImageToTensor {
         attributes.insert(
             IMAGE_ORIGINAL_WIDTH_ATTR.name.to_owned(),
             img.width().to_string(),
+        );
+        attributes.insert(
+            IMAGE_TARGET_HEIGHT_ATTR.name.to_owned(),
+            self.target_height.to_string(),
+        );
+        attributes.insert(
+            IMAGE_TARGET_WIDTH_ATTR.name.to_owned(),
+            self.target_width.to_string(),
         );
 
         Ok(TransformedFlowFile::new(

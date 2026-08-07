@@ -131,7 +131,7 @@ pub(super) const TENSOR_SHAPE_ATTR: OutputAttribute = OutputAttribute {
 pub(super) const TENSOR_DTYPE_ATTR: OutputAttribute = OutputAttribute {
     name: "tensor.0.dtype",
     relationships: &["success"],
-    description: "Element type of the values in the output tensor. Currently always 'f32'.",
+    description: "Element type of the values in the output tensor. Currently always 'F32'.",
 };
 
 pub(super) const IMAGE_ORIGINAL_HEIGHT_ATTR: OutputAttribute = OutputAttribute {
@@ -144,6 +144,18 @@ pub(super) const IMAGE_ORIGINAL_WIDTH_ATTR: OutputAttribute = OutputAttribute {
     name: "image.original.width",
     relationships: &["success"],
     description: "The width of the original image before the resizing.",
+};
+
+pub(super) const IMAGE_TARGET_HEIGHT_ATTR: OutputAttribute = OutputAttribute {
+    name: "image.target.height",
+    relationships: &["success"],
+    description: "The height of the image after the resizing.",
+};
+
+pub(super) const IMAGE_TARGET_WIDTH_ATTR: OutputAttribute = OutputAttribute {
+    name: "image.target.width",
+    relationships: &["success"],
+    description: "The width of the image after the resizing.",
 };
 
 impl ProcessorDefinition for ImageToTensor {

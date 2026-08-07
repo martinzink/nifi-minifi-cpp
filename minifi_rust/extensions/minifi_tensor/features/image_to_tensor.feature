@@ -37,8 +37,8 @@ Feature: ImageToTensor preprocesses image bytes into normalised tensors
 
     When the MiNiFi instance starts up
 
-    Then the Minifi logs contain the following message: "key:tensor.shape value:1,3,224,224" in less than 30 seconds
-    And the Minifi logs contain the following message: "key:tensor.dtype value:f32" in less than 1 seconds
+    Then the Minifi logs contain the following message: "key:tensor.0.shape value:1,3,224,224" in less than 30 seconds
+    And the Minifi logs contain the following message: "key:tensor.0.dtype value:f32" in less than 1 seconds
     And the Minifi logs do not contain errors
 
   Scenario: HWC layout is reflected in the tensor.shape attribute
@@ -60,7 +60,7 @@ Feature: ImageToTensor preprocesses image bytes into normalised tensors
 
     When the MiNiFi instance starts up
 
-    Then the Minifi logs contain the following message: "key:tensor.shape value:1,300,300,3" in less than 30 seconds
+    Then the Minifi logs contain the following message: "key:tensor.0.shape value:1,300,300,3" in less than 30 seconds
     And the Minifi logs do not contain errors
 
   Scenario: Letterbox mode still produces the target dimensions
@@ -84,7 +84,7 @@ Feature: ImageToTensor preprocesses image bytes into normalised tensors
 
     When the MiNiFi instance starts up
 
-    Then the Minifi logs contain the following message: "key:tensor.shape value:1,3,240,320" in less than 30 seconds
+    Then the Minifi logs contain the following message: "key:tensor.0.shape value:1,3,240,320" in less than 30 seconds
     And the Minifi logs do not contain errors
 
   Scenario: Invalid image bytes route to failure without crashing MiNiFi

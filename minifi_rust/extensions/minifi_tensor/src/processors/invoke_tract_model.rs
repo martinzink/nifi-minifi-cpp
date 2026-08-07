@@ -73,8 +73,8 @@ impl InvokeTractModel {
         context: &Context,
     ) -> Result<Vec<usize>, Box<dyn Error>> {
         let shape_str = context
-            .get_attribute("tensor.shape")
-            .and_then(|opt| opt.ok_or(MinifiError::trigger_err("Missing tensor.shape")))?;
+            .get_attribute("tensor.0.shape")
+            .and_then(|opt| opt.ok_or(MinifiError::trigger_err("Missing tensor.0.shape")))?;
         shape_str
             .split(',')
             .map(|s| s.trim().parse::<usize>())
@@ -87,11 +87,11 @@ impl InvokeTractModel {
     /// f32 for backwards compatibility with older flows). An unsupported value
     /// yields Err — the caller routes to `failure`.
     fn check_input_dtype<Context: GetAttribute>(context: &Context) -> Result<(), Box<dyn Error>> {
-        let dtype = context.get_attribute("tensor.dtype")?;
+        let dtype = context.get_attribute("tensor.0.dtype")?;
         match dtype.as_deref() {
             None | Some(SUPPORTED_INPUT_DTYPE) => Ok(()),
             Some(other) => Err(MinifiError::trigger_err(format!(
-                "Unsupported tensor.dtype '{}' (only '{}' is supported)",
+                "Unsupported tensor.0.dtype '{}' (only '{}' is supported)",
                 other, SUPPORTED_INPUT_DTYPE
             ))
             .into()),
@@ -155,11 +155,10 @@ impl FlowFileTransform for InvokeTractModel {
                 format!("tensor.{}.bytes", i),
                 raw_tensor_bytes.len().to_string(),
             );
-            // Debug-formatted DatumType renders as "F32", "I64", etc. — a
-            // stable enough identifier for downstream string matching.
+
             attributes.insert(
                 format!("tensor.{}.dtype", i),
-                format!("{:?}", datum_type).to_lowercase(),
+                format!("{:?}", datum_type),
             );
 
             debug!(
@@ -192,7 +191,7 @@ mod tests {
         // Insert a valid shape with spaces
         context
             .attributes
-            .insert("tensor.shape".to_string(), "1, 3, 224, 224".to_string());
+            .insert("tensor.0.shape".to_string(), "1, 3, 224, 224".to_string());
 
         let shape =
             InvokeTractModel::get_shape_from_attribute(&context).expect("Should parse valid shape");
@@ -211,7 +210,7 @@ mod tests {
         let mut context = MockProcessContext::new();
         context
             .attributes
-            .insert("tensor.shape".to_string(), "1, apple, 224".to_string());
+            .insert("tensor.0.shape".to_string(), "1, apple, 224".to_string());
 
         let result = InvokeTractModel::get_shape_from_attribute(&context);
         assert!(
@@ -251,7 +250,7 @@ mod tests {
         assert!(InvokeTractModel::check_input_dtype(&context).is_ok());
         context
             .attributes
-            .insert("tensor.dtype".to_string(), "f32".to_string());
+            .insert("tensor.0.dtype".to_string(), "f32".to_string());
         assert!(InvokeTractModel::check_input_dtype(&context).is_ok());
     }
 
@@ -260,7 +259,7 @@ mod tests {
         let mut context = MockProcessContext::new();
         context
             .attributes
-            .insert("tensor.dtype".to_string(), "u8".to_string());
+            .insert("tensor.0.dtype".to_string(), "u8".to_string());
         assert!(InvokeTractModel::check_input_dtype(&context).is_err());
     }
 

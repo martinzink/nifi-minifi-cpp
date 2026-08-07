@@ -68,6 +68,10 @@ impl FlowFileTransform for DetectObject {
         input_stream.read_to_end(&mut raw_bytes)?;
 
         let img = image::load_from_memory(&raw_bytes).route_err_to_failure()?;
+        let orig_dim = Dimensions {
+            width: img.width() as f32,
+            height: img.height() as f32,
+        };
         let input_tensor: Tensor = self
             .image_to_tensor
             .get_tensor(&img)
@@ -89,10 +93,6 @@ impl FlowFileTransform for DetectObject {
         )
         .route_err_to_failure()?;
 
-        let orig_dim = Dimensions {
-            width: img.width() as f32,
-            height: img.height() as f32,
-        };
         let target_dim = self.image_to_tensor.get_target_dim();
 
         self.filter_bounding_boxes.filter(
