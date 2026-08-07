@@ -34,6 +34,7 @@ use processor_definition::{
 use std::collections::HashMap;
 use strum_macros::{Display, EnumString, IntoStaticStr, VariantNames};
 use tract::Tensor;
+use crate::processors::image_to_tensor::processor_definition::TENSORS_LEN_ATTR;
 
 tract::impl_ndarray_interop!();
 
@@ -359,8 +360,9 @@ impl FlowFileTransform for ImageToTensor {
             .join(",");
 
         let mut attributes = HashMap::new();
+        attributes.insert(TENSORS_LEN_ATTR.name.to_owned(), "1".into());
         attributes.insert(TENSOR_SHAPE_ATTR.name.to_owned(), shape_str);
-        attributes.insert(TENSOR_DTYPE_ATTR.name.to_owned(), "f32".to_string());
+        attributes.insert(TENSOR_DTYPE_ATTR.name.to_owned(), "f32".into());
         attributes.insert(
             IMAGE_ORIGINAL_HEIGHT_ATTR.name.to_owned(),
             img.height().to_string(),
@@ -438,14 +440,14 @@ mod tests {
         assert_eq!(
             result
                 .attributes_to_add()
-                .get("tensor.shape")
+                .get("tensor.0.shape")
                 .expect("Missing shape attribute"),
             "1,3,2,2"
         );
         assert_eq!(
             result
                 .attributes_to_add()
-                .get("tensor.dtype")
+                .get("tensor.0.dtype")
                 .expect("Missing dtype attribute"),
             "f32"
         );
@@ -480,7 +482,7 @@ mod tests {
         assert_eq!(
             result
                 .attributes_to_add()
-                .get("tensor.shape")
+                .get("tensor.0.shape")
                 .expect("Missing shape attribute"),
             "1,1,2,2"
         );
@@ -512,7 +514,7 @@ mod tests {
             .expect_err("Invalid image should route to FAILURE via a Route error");
 
         match err {
-            minifi_native::ProcessError::Route(route) => {
+            ProcessError::Route(route) => {
                 assert_eq!(route.relationship.as_ref(), FAILURE.name)
             }
             other => panic!("expected route to failure, got {other:?}"),
@@ -531,7 +533,7 @@ mod tests {
             .transform(&context, &mut input_stream, &MockLogger::new())
             .unwrap();
         assert_eq!(
-            result.attributes_to_add().get("tensor.shape").unwrap(),
+            result.attributes_to_add().get("tensor.0.shape").unwrap(),
             "1,2,2,3"
         );
     }

@@ -135,10 +135,7 @@ impl FlowFileTransform for InvokeTractModel {
             .route_err_to_failure()?;
         let mut output_bytes = Vec::new();
         let mut attributes = HashMap::new();
-        attributes.insert(
-            "tract.output.count".to_string(),
-            output_tensors.len().to_string(),
-        );
+        attributes.insert("tensors.len".to_string(), output_tensors.len().to_string());
 
         for (i, tensor) in output_tensors.iter().enumerate() {
             let (datum_type, out_shape, raw_tensor_bytes) = tensor.as_bytes().map_err(|e| {
@@ -153,15 +150,15 @@ impl FlowFileTransform for InvokeTractModel {
                 .collect::<Vec<_>>()
                 .join(",");
 
-            attributes.insert(format!("tract.output.{}.shape", i), out_shape_str);
+            attributes.insert(format!("tensor.{}.shape", i), out_shape_str);
             attributes.insert(
-                format!("tract.output.{}.bytes", i),
+                format!("tensor.{}.bytes", i),
                 raw_tensor_bytes.len().to_string(),
             );
             // Debug-formatted DatumType renders as "F32", "I64", etc. — a
             // stable enough identifier for downstream string matching.
             attributes.insert(
-                format!("tract.output.{}.dtype", i),
+                format!("tensor.{}.dtype", i),
                 format!("{:?}", datum_type).to_lowercase(),
             );
 
@@ -169,9 +166,7 @@ impl FlowFileTransform for InvokeTractModel {
                 logger,
                 "Output {} - Shape: [{}], Dtype: {:?}, Bytes: {}",
                 i,
-                attributes
-                    .get(&format!("tract.output.{}.shape", i))
-                    .unwrap(),
+                attributes.get(&format!("tensor.{}.shape", i)).unwrap(),
                 datum_type,
                 raw_tensor_bytes.len()
             );

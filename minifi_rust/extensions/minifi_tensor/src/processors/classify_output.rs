@@ -172,7 +172,7 @@ impl ClassifyOutput {
     ) -> Result<&'a [u8], MinifiError> {
         let mut cursor = 0usize;
         for i in 0..=target_index {
-            let attr_name = format!("tract.output.{}.bytes", i);
+            let attr_name = format!("tensor.{}.bytes", i);
             let raw_attr = context.get_attribute(&attr_name)?.ok_or_else(|| {
                 MinifiError::trigger_err(format!("Missing {} attribute", attr_name))
             })?;
@@ -237,7 +237,7 @@ impl FlowFileTransform for ClassifyOutput {
         // one vector. We treat the whole flattened tensor as a single score
         // vector; if the model produced [batch, num_classes] with batch > 1
         // the ranking would still be over the full flat array, but there is
-        // no way to disambiguate here without also reading tract.output.i.shape.
+        // no way to disambiguate here without also reading tensor.i.shape.
         // ImageToTensor always produces batch=1 today so this is fine in
         // practice; we document the assumption in the processor description.
         let probabilities = apply_activation(&raw_scores, self.score_activation);
@@ -337,10 +337,8 @@ mod tests {
 
     fn context_with_scores(scores: &[f32]) -> MockProcessContext {
         let mut ctx = MockProcessContext::new();
-        ctx.attributes.insert(
-            "tract.output.0.bytes".to_string(),
-            (scores.len() * 4).to_string(),
-        );
+        ctx.attributes
+            .insert("tensor.0.bytes".to_string(), (scores.len() * 4).to_string());
         ctx
     }
 
@@ -453,7 +451,7 @@ mod tests {
     #[test]
     fn test_transform_missing_bytes_attribute_routes_to_failure() {
         let processor = make_processor(1, ScoreActivation::Softmax);
-        let context = MockProcessContext::new(); // no tract.output.0.bytes
+        let context = MockProcessContext::new(); // no tensor.0.bytes
         let mut stream = Cursor::new(vec![0u8; 4]);
         let err = processor
             .transform(&context, &mut stream, &MockLogger::new())

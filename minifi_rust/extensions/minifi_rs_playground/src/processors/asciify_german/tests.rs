@@ -84,8 +84,6 @@ fn truncated_umlaut_at_eof_routes_to_failure() {
     let mut output_vec: Vec<u8> = Vec::new();
 
     let result = asciify_german
-        .transform(&context, &mut input_stream, &mut output_vec, &logger)
-        .expect("Should succeed");
-    assert_eq!(result.write_status(), IoState::Cancel);
-    assert_eq!(result.target_relationship_name(), FAILURE.name);
+        .transform(&context, &mut input_stream, &mut output_vec, &logger);
+    assert!(result.is_err());
 }

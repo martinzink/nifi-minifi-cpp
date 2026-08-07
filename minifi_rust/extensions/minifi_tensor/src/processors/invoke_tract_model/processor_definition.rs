@@ -41,27 +41,27 @@ pub(super) const FAILURE: Relationship = Relationship {
 };
 
 const OUTPUT_COUNT_ATTR: OutputAttribute = OutputAttribute {
-    name: "tract.output.count",
+    name: "tensors.len",
     relationships: &["success"],
     description: "Number of output tensors produced by the model. Downstream processors can loop \
                   from 0 up to this count when reading per-output attributes.",
 };
 
 const OUTPUT_SHAPE_ATTR: OutputAttribute = OutputAttribute {
-    name: "tract.output.{i}.shape",
+    name: "tensor.{i}.shape",
     relationships: &["success"],
     description: "Comma-separated dimensions of output tensor at index i.",
 };
 
 const OUTPUT_BYTES_ATTR: OutputAttribute = OutputAttribute {
-    name: "tract.output.{i}.bytes",
+    name: "tensor.{i}.bytes",
     relationships: &["success"],
     description: "Byte length of output tensor at index i within the concatenated payload. \
                   Consumers slice the payload sequentially using these lengths.",
 };
 
 const OUTPUT_DTYPE_ATTR: OutputAttribute = OutputAttribute {
-    name: "tract.output.{i}.dtype",
+    name: "tensor.{i}.dtype",
     relationships: &["success"],
     description: "Element type of output tensor at index i (e.g. 'f32', 'i64'), lowercased.",
 };

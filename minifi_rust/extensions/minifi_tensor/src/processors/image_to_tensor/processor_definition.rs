@@ -115,15 +115,21 @@ pub(super) const FAILURE: Relationship = Relationship {
     description: "The input flow file could not be decoded as an image.",
 };
 
+pub(super) const TENSORS_LEN_ATTR: OutputAttribute = OutputAttribute {
+    name: "tensors.len",
+    relationships: &["success"],
+    description: "Number of tensors in the output FlowFile. Currently always '1'",
+};
+
 pub(super) const TENSOR_SHAPE_ATTR: OutputAttribute = OutputAttribute {
-    name: "tensor.shape",
+    name: "tensor.0.shape",
     relationships: &["success"],
     description: "Comma-separated dimensions of the output tensor in the chosen layout, always \
                   including a leading batch dimension of 1 (e.g. '1,3,224,224' for RGB CHW).",
 };
 
 pub(super) const TENSOR_DTYPE_ATTR: OutputAttribute = OutputAttribute {
-    name: "tensor.dtype",
+    name: "tensor.0.dtype",
     relationships: &["success"],
     description: "Element type of the values in the output tensor. Currently always 'f32'.",
 };

@@ -19,7 +19,7 @@ mod processor_definition;
 
 use crate::utils::bounding_box::BoundingBox;
 use crate::utils::dimensions::Dimensions;
-use crate::utils::tensor_helpers::TensorFlowFile;
+use crate::utils::tensor_helpers::{deserialize_tensors, tensor_as_f32};
 use minifi_native::macros::{ComponentIdentifier, PropertyType};
 use minifi_native::{
     FlowFileTransform, GetAttribute, GetId, GetProperty, InputStream, Logger, MinifiError,
@@ -358,24 +358,18 @@ impl FlowFileTransform for FilterBoundingBoxes {
         input_stream: &'a mut dyn InputStream,
         logger: &LoggerImpl,
     ) -> Result<TransformedFlowFile<'a>, ProcessError> {
-        let mut flow_file_contents = Vec::new();
-        input_stream.read_to_end(&mut flow_file_contents)?;
         let orig_dim = Self::get_original_dimensions(context).route_err_to_failure()?;
         let target_dim = Self::get_target_dimensions(context).route_err_to_failure()?;
 
-        let tff = TensorFlowFile::new(&flow_file_contents);
-        let score_floats = tff
-            .get_f32_slice(context, self.score_output_index)
-            .route_err_to_failure()?;
-        let box_floats = tff
-            .get_f32_slice(context, self.box_output_index)
-            .route_err_to_failure()?;
+        let tensors = deserialize_tensors(context, input_stream).route_err_to_failure()?;
+        let score_f32s = tensor_as_f32(&tensors, self.score_output_index).route_err_to_failure()?;
+        let box_f32s = tensor_as_f32(&tensors, self.box_output_index).route_err_to_failure()?;
 
         self.filter(
             context,
             logger,
-            &score_floats,
-            &box_floats,
+            &score_f32s,
+            &box_f32s,
             orig_dim,
             target_dim,
         )

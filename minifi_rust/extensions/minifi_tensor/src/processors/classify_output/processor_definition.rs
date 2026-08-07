@@ -34,7 +34,7 @@ pub(crate) const SCORE_OUTPUT_INDEX: Property<usize> = Property::new(
     "Score output index",
     "Zero-based index of the model output tensor that holds classification scores. \
                   The processor slices the concatenated payload from InvokeTractModel according \
-                  to the 'tract.output.N.bytes' attributes. Almost always 0 for single-head \
+                  to the 'tensor.N.bytes' attributes. Almost always 0 for single-head \
                   classifiers.",
 )
 .with_default("0");
