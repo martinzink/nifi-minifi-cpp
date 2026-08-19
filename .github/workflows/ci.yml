@@ -21,6 +21,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 240
     env:
+      MINIFI_SDK_PATH: "../"
       MACOS_MINIFI_OPTIONS: >-
         -DCMAKE_BUILD_TYPE=Release
         -DCI_BUILD=ON
@@ -132,6 +133,7 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 300
     env:
+      MINIFI_SDK_PATH: "../"
       WINDOWS_MINIFI_OPTIONS: >-
         -DCMAKE_BUILD_TYPE=Release
         -DBUILD_ROCKSDB=ON
@@ -251,6 +253,7 @@ jobs:
     runs-on: ubuntu-22.04-arm
     timeout-minutes: 240
     env:
+      MINIFI_SDK_PATH: "../"
       UBUNTU_CLANG_MINIFI_OPTIONS: >-
         -DCMAKE_BUILD_TYPE=RelWithDebInfo
         -DCI_BUILD=OFF
@@ -585,6 +588,8 @@ jobs:
     needs: docker_build
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      MINIFI_SDK_PATH: "../"
     steps:
       - id: checkout
         uses: actions/checkout@v6

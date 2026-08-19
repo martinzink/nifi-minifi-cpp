@@ -16,4 +16,4 @@ behave-alpine = ["run", "--release", "--bin", "minifi_rs_behave", "--", "--alpin
 behave-debian = ["run", "--release", "--bin", "minifi_rs_behave", "--", "--debian"]
 
 [env]
-MINIFI_SDK_PATH="../"
+MINIFI_SDK_PATH="https://github.com/apache/nifi-minifi-cpp/releases/download/rel%2Fminifi-cpp-1.0.0/nifi-minifi-cpp-1.0.0-native-sdk.zip"

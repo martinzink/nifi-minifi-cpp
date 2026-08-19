@@ -142,7 +142,7 @@ impl Sdk {
     }
 
     fn download_file(url: &str, dest: &Path) {
-        println!("cargo:warning=Downloading SDK from {}...", url);
+        println!("cargo:warning=Downloading SDK from {} ...", url);
         let status = Command::new("curl")
             .args(["-fSL", "-o", dest.to_str().unwrap(), url])
             .status()
@@ -151,17 +151,16 @@ impl Sdk {
     }
 
     fn extract_zip(archive: &Path, dest_dir: &Path) {
-        println!("cargo:warning=Extracting SDK archive...");
+        println!("cargo:warning=Extracting SDK archive {:?} to {:?}...", archive, dest_dir);
         std::fs::create_dir_all(dest_dir).unwrap();
-        let status = Command::new("tar")
+        let status = Command::new("unzip")
             .args([
-                "-xf",
                 archive.to_str().unwrap(),
-                "-C",
+                "-d",
                 dest_dir.to_str().unwrap(),
             ])
             .status()
-            .expect("Failed to execute tar to extract SDK zip");
+            .expect("Failed to execute unzip to extract SDK zip");
         assert!(status.success(), "Failed to extract SDK zip file");
     }
 }
