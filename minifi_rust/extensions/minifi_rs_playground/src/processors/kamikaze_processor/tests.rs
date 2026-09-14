@@ -77,7 +77,7 @@ fn on_trigger_err() {
     let mut session = MockProcessSession::new();
     assert!(matches!(
         processor.trigger(&mut context, &mut session, &MockLogger::new()),
-        Err(ProcessError::Fatal(MinifiError::CustomError(_)))
+        Err(ProcessError::Rollback(MinifiError::CustomError(_)))
     ));
 }
 

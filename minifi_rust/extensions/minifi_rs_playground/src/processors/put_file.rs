@@ -22,7 +22,7 @@ use crate::processors::put_file::unix_permissions::PutFileUnixPermissions;
 use minifi_native::macros::{ComponentIdentifier, PropertyType};
 use minifi_native::{
     FlowFileTransform, GetAttribute, GetControllerService, GetId, GetProperty, InputStream, Logger,
-    MinifiError, ProcessError, RouteErrorExt, Schedule, TransformedFlowFile, trace, warn,
+    MinifiError, ProcessError, ProcessErrorExt, Schedule, TransformedFlowFile, trace, warn,
 };
 use std::path::{Path, PathBuf};
 use strum_macros::{Display, EnumString, IntoStaticStr, VariantNames};

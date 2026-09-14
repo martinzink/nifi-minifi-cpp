@@ -23,8 +23,8 @@ use crate::api::property::{GetControllerService, GetProperty};
 use crate::api::raw_processor::{MultiThreadedTrigger, SingleThreadedTrigger};
 use crate::{
     GetAttribute, LogLevel, Logger, MinifiError, MultiThreaded, OnTriggerResult, ProcessContext,
-    ProcessError, ProcessSession, Relationship, Schedule, SingleThreaded, impl_with_attributes,
-    info,
+    ProcessError, ProcessErrorExt, ProcessSession, Relationship, Schedule, SingleThreaded,
+    impl_with_attributes, info,
 };
 
 use minifi_native::InputStream;
@@ -154,7 +154,7 @@ where
                     route.log(logger);
                     TransformedFlowFile::route_without_changes_by_name(route.relationship)
                 }
-                Err(ProcessError::Fatal(e)) => {
+                Err(ProcessError::Rollback(e)) => {
                     return Err(e);
                 }
             };
@@ -174,13 +174,18 @@ where
                 transformed.attributes_to_add,
                 transformed.target_relationship_name,
             ))
-        })?;
+        })
+        .rollback_err()?;
 
         for (k, v) in attrs_to_add {
-            session.set_attribute(&mut flow_file, &k, &v)?;
+            session
+                .set_attribute(&mut flow_file, &k, &v)
+                .rollback_err()?;
         }
 
-        session.transfer(flow_file, relationship.as_ref())?;
+        session
+            .transfer(flow_file, relationship.as_ref())
+            .rollback_err()?;
         Ok(OnTriggerResult::Ok)
     } else {
         logger.log(LogLevel::Trace, format_args!("No flowfile to transform"));
@@ -208,7 +213,7 @@ where
                 scheduled_impl.transform(ctx, input, &self.logger)
             })
         } else {
-            Err(MinifiError::UnscheduledProcessor.into())
+            Err(ProcessError::Rollback(MinifiError::UnscheduledProcessor))
         }
     }
 }
@@ -233,7 +238,7 @@ where
                 scheduled_impl.transform(ctx, input, &self.logger)
             })
         } else {
-            Err(MinifiError::UnscheduledProcessor.into())
+            Err(ProcessError::Rollback(MinifiError::UnscheduledProcessor))
         }
     }
 }
@@ -245,7 +250,7 @@ mod tests {
     use crate::api::raw_processor::MultiThreadedTrigger;
     use crate::{
         GetControllerService, GetId, MockFlowFile, MockLogger, MockProcessContext,
-        MockProcessSession, ProcessError, RouteErrorExt,
+        MockProcessSession, ProcessError, ProcessErrorExt,
     };
 
     struct RouteToFailure;
@@ -273,13 +278,13 @@ mod tests {
         }
     }
 
-    struct FatalTransform;
-    impl Schedule for FatalTransform {
+    struct RollbackTransform;
+    impl Schedule for RollbackTransform {
         fn schedule<Ctx: GetProperty, L: Logger>(_c: &Ctx, _l: &L) -> Result<Self, MinifiError> {
-            Ok(FatalTransform)
+            Ok(RollbackTransform)
         }
     }
-    impl FlowFileTransform for FatalTransform {
+    impl FlowFileTransform for RollbackTransform {
         fn transform<
             'a,
             Context: GetProperty + GetControllerService + GetAttribute + GetId,
@@ -290,7 +295,7 @@ mod tests {
             _input_stream: &'a mut dyn InputStream,
             _logger: &LoggerImpl,
         ) -> Result<TransformedFlowFile<'a>, ProcessError> {
-            Err(ProcessError::Fatal(MinifiError::custom("real error")))
+            Err(ProcessError::Rollback(MinifiError::custom("real error")))
         }
     }
 
@@ -327,14 +332,14 @@ mod tests {
     }
 
     #[test]
-    fn fatal_error_propagates_and_transfers_nothing() {
+    fn rollback_error_propagates_and_transfers_nothing() {
         let mut processor: Processor<
-            FatalTransform,
+            RollbackTransform,
             FlowFileTransformProcessorType,
             MultiThreaded,
             MockLogger,
         > = Processor::new(MockLogger::new());
-        processor.scheduled_impl = Some(FatalTransform);
+        processor.scheduled_impl = Some(RollbackTransform);
 
         let mut context = MockProcessContext::new();
         let mut session = seeded_session();
@@ -343,7 +348,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(ProcessError::Fatal(MinifiError::CustomError(_)))
+            Err(ProcessError::Rollback(MinifiError::CustomError(_)))
         ));
         assert_eq!(session.num_of_transferred_flow_files(), 0);
     }

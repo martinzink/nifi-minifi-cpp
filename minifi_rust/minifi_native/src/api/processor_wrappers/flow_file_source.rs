@@ -20,8 +20,8 @@ use crate::api::raw_processor::{MultiThreadedTrigger, SingleThreadedTrigger};
 use crate::{FlowFileAttribute, impl_with_attributes};
 use crate::{
     GetControllerService, GetProperty, Logger, MinifiError, MultiThreaded, OnTriggerResult,
-    ProcessContext, ProcessError, ProcessSession, Processor, Relationship, Schedule,
-    SingleThreaded,
+    ProcessContext, ProcessError, ProcessErrorExt, ProcessSession, Processor, Relationship,
+    Schedule, SingleThreaded,
 };
 
 pub struct GeneratedFlowFile<'a> {
@@ -75,16 +75,20 @@ where
     }
 
     for new_flow_file_data in generated_flow_files {
-        let mut ff = session.create()?;
+        let mut ff = session.create().rollback_err()?;
         match new_flow_file_data.new_content {
             None => {}
-            Some(Content::Buffer(buffer)) => session.write(&ff, &buffer)?,
-            Some(Content::Stream(stream)) => session.write_from_stream(&ff, stream)?,
+            Some(Content::Buffer(buffer)) => session.write(&ff, &buffer).rollback_err()?,
+            Some(Content::Stream(stream)) => {
+                session.write_from_stream(&ff, stream).rollback_err()?
+            }
         }
         for (k, v) in &new_flow_file_data.attributes_to_add {
-            session.set_attribute(&mut ff, k, v)?;
+            session.set_attribute(&mut ff, k, v).rollback_err()?;
         }
-        session.transfer(ff, new_flow_file_data.target_relationship_name.as_ref())?;
+        session
+            .transfer(ff, new_flow_file_data.target_relationship_name.as_ref())
+            .rollback_err()?;
     }
     Ok(OnTriggerResult::Ok)
 }
@@ -110,7 +114,7 @@ where
             let files = scheduled_impl.generate(context, &self.logger)?;
             handle_generated_flow_files::<PC, PS>(session, files)
         } else {
-            Err(MinifiError::UnscheduledProcessor.into())
+            Err(ProcessError::Rollback(MinifiError::UnscheduledProcessor))
         }
     }
 }
@@ -134,7 +138,7 @@ where
             let files = scheduled_impl.generate(context, &self.logger)?;
             handle_generated_flow_files::<PC, PS>(session, files)
         } else {
-            Err(MinifiError::UnscheduledProcessor.into())
+            Err(ProcessError::Rollback(MinifiError::UnscheduledProcessor))
         }
     }
 }

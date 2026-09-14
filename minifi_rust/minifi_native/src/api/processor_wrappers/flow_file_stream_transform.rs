@@ -21,8 +21,8 @@ use crate::api::raw_processor::{MultiThreadedTrigger, SingleThreadedTrigger};
 use crate::{FlowFileAttribute, impl_with_attributes};
 use crate::{
     GetAttribute, GetControllerService, GetProperty, InputStream, LogLevel, Logger, MinifiError,
-    MultiThreaded, OnTriggerResult, OutputStream, ProcessContext, ProcessError, ProcessSession,
-    Processor, Relationship, Schedule, SingleThreaded,
+    MultiThreaded, OnTriggerResult, OutputStream, ProcessContext, ProcessError, ProcessErrorExt,
+    ProcessSession, Processor, Relationship, Schedule, SingleThreaded,
 };
 
 #[derive(Debug)]
@@ -120,7 +120,7 @@ where
                         route.log(logger);
                         TransformStreamResult::route_without_changes_by_name(route.relationship)
                     }
-                    Err(ProcessError::Fatal(e)) => {
+                    Err(ProcessError::Rollback(e)) => {
                         return Err(e);
                     }
                 };
@@ -133,13 +133,18 @@ where
                     transformed.write_status,
                 ))
             })
-        })?;
+        })
+        .rollback_err()?;
 
         for (k, v) in attrs {
-            session.set_attribute(&mut flow_file, &k, &v)?;
+            session
+                .set_attribute(&mut flow_file, &k, &v)
+                .rollback_err()?;
         }
 
-        session.transfer(flow_file, relationship.as_ref())?;
+        session
+            .transfer(flow_file, relationship.as_ref())
+            .rollback_err()?;
 
         Ok(OnTriggerResult::Ok)
     } else {
@@ -168,7 +173,7 @@ where
                 scheduled_impl.transform(ctx, input, output, &self.logger)
             })
         } else {
-            Err(MinifiError::UnscheduledProcessor.into())
+            Err(ProcessError::Rollback(MinifiError::UnscheduledProcessor))
         }
     }
 }
@@ -193,7 +198,7 @@ where
                 scheduled_impl.transform(ctx, input, output, &self.logger)
             })
         } else {
-            Err(MinifiError::UnscheduledProcessor.into())
+            Err(ProcessError::Rollback(MinifiError::UnscheduledProcessor))
         }
     }
 }

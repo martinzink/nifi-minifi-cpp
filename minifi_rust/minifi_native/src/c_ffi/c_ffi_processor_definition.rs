@@ -40,7 +40,7 @@ fn process_error_to_status<P: RawProcessor>(
     match result {
         Ok(OnTriggerResult::Ok) => minifi_status_MINIFI_STATUS_SUCCESS,
         Ok(OnTriggerResult::Yield) => minifi_status_MINIFI_STATUS_PROCESSOR_YIELD,
-        Err(ProcessError::Fatal(err)) => {
+        Err(ProcessError::Rollback(err)) => {
             processor.log(
                 LogLevel::Error,
                 format_args!("Error during trigger {}", err),

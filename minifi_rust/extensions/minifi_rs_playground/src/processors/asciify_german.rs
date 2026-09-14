@@ -21,7 +21,7 @@ use crate::processors::asciify_german::relationships::FAILURE;
 use minifi_native::macros::ComponentIdentifier;
 use minifi_native::{
     FlowFileStreamTransform, GetProperty, InputStream, Logger, MinifiError, OutputStream,
-    ProcessError, RouteErrorExt, Schedule, TransformStreamResult,
+    ProcessError, ProcessErrorExt, Schedule, TransformStreamResult,
 };
 
 mod relationships;

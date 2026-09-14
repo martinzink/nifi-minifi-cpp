@@ -58,7 +58,7 @@ impl Error for RouteError {}
 #[derive(Debug)]
 pub enum ProcessError {
     Route(RouteError),
-    Fatal(MinifiError),
+    Rollback(MinifiError),
 }
 
 impl From<RouteError> for ProcessError {
@@ -69,23 +69,31 @@ impl From<RouteError> for ProcessError {
 
 impl From<MinifiError> for ProcessError {
     fn from(err: MinifiError) -> Self {
-        ProcessError::Fatal(err)
+        ProcessError::Route(RouteError {
+            relationship: "failure",
+            source: Box::new(err),
+            log_level: LogLevel::Warn,
+        })
     }
 }
 
-macro_rules! process_error_from_fatal {
+macro_rules! process_error_route_to_failure {
     ($($t:ty),* $(,)?) => {
         $(
             impl From<$t> for ProcessError {
                 fn from(err: $t) -> Self {
-                    ProcessError::Fatal(MinifiError::from(err))
+                    ProcessError::Route(RouteError {
+                        relationship: "failure",
+                        source: Box::new(err),
+                        log_level: LogLevel::Warn,
+                    })
                 }
             }
         )*
     };
 }
 
-process_error_from_fatal!(
+process_error_route_to_failure!(
     std::io::Error,
     strum::ParseError,
     ParseBoolError,
@@ -101,22 +109,24 @@ impl fmt::Display for ProcessError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ProcessError::Route(err) => write!(f, "{}", err),
-            ProcessError::Fatal(err) => write!(f, "{}", err),
+            ProcessError::Rollback(err) => write!(f, "{}", err),
         }
     }
 }
 
 impl Error for ProcessError {}
 
-pub trait RouteErrorExt<T> {
+pub trait ProcessErrorExt<T> {
     fn route_err(self, rel: &Relationship, level: LogLevel) -> Result<T, ProcessError>;
 
     fn route_to(self, relationship: &'static str, level: LogLevel) -> Result<T, ProcessError>;
 
     fn route_err_to_failure(self) -> Result<T, ProcessError>;
+
+    fn rollback_err(self) -> Result<T, ProcessError>;
 }
 
-impl<T, E> RouteErrorExt<T> for Result<T, E>
+impl<T, E> ProcessErrorExt<T> for Result<T, E>
 where
     E: Into<Box<dyn Error + Send + Sync + 'static>>,
 {
@@ -136,6 +146,18 @@ where
 
     fn route_err_to_failure(self) -> Result<T, ProcessError> {
         self.route_to("failure", LogLevel::Warn)
+    }
+
+    fn rollback_err(self) -> Result<T, ProcessError> {
+        self.map_err(|e| {
+            let boxed: Box<dyn Error + Send + Sync + 'static> = e.into();
+            match boxed.downcast::<MinifiError>() {
+                // The source is already a MinifiError: keep its variant (and its
+                // `to_status()` mapping) instead of re-boxing it into `Other`.
+                Ok(minifi_error) => ProcessError::Rollback(*minifi_error),
+                Err(other) => ProcessError::Rollback(MinifiError::Other(other)),
+            }
+        })
     }
 }
 
@@ -304,23 +326,48 @@ mod tests {
     }
 
     #[test]
-    fn minifi_error_converts_to_fatal_via_from() {
+    fn minifi_error_converts_to_route_to_failure_via_from() {
         let pe: ProcessError = MinifiError::custom("nope").into();
-        assert!(matches!(
-            pe,
-            ProcessError::Fatal(MinifiError::CustomError(_))
-        ));
+        match pe {
+            ProcessError::Route(route) => {
+                assert_eq!(route.relationship, "failure");
+                assert_eq!(route.log_level, LogLevel::Warn);
+            }
+            other => panic!("expected a route error, got {other:?}"),
+        }
     }
 
     #[test]
-    fn raw_error_question_mark_becomes_fatal() {
+    fn raw_error_question_mark_routes_to_failure() {
         fn inner() -> Result<(), ProcessError> {
             Err(io_err())?;
             Ok(())
         }
+        match inner() {
+            Err(ProcessError::Route(route)) => {
+                assert_eq!(route.relationship, "failure");
+                assert_eq!(route.log_level, LogLevel::Warn);
+                assert_eq!(route.source.to_string(), "boom");
+            }
+            other => panic!("expected a route error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn rollback_err_wraps_foreign_error_as_other() {
+        let res: Result<(), std::io::Error> = Err(io_err());
         assert!(matches!(
-            inner(),
-            Err(ProcessError::Fatal(MinifiError::IoError(_)))
+            res.rollback_err(),
+            Err(ProcessError::Rollback(MinifiError::Other(_)))
+        ));
+    }
+
+    #[test]
+    fn rollback_err_preserves_minifi_error_variant() {
+        let res: Result<(), MinifiError> = Err(MinifiError::validation("bad"));
+        assert!(matches!(
+            res.rollback_err(),
+            Err(ProcessError::Rollback(MinifiError::ValidationError(_)))
         ));
     }
 }

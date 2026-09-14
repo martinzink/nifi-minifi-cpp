@@ -88,9 +88,9 @@ impl Trigger for KamikazeProcessorRs {
         L: Logger,
     {
         match self.trigger_behaviour {
-            KamikazeBehaviour::ReturnErr => {
-                Err(MinifiError::custom("it was designed to fail in trigger").into())
-            }
+            KamikazeBehaviour::ReturnErr => Err(ProcessError::Rollback(MinifiError::custom(
+                "it was designed to fail in trigger",
+            ))),
             KamikazeBehaviour::ReturnOk => Ok(OnTriggerResult::Ok),
             KamikazeBehaviour::Panic => {
                 panic!("KamikazeProcessor::trigger panic")
