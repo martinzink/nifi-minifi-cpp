@@ -40,6 +40,11 @@ class StateManager {
   virtual bool get(State& kvs) = 0;
   virtual std::optional<State> get() = 0;
 
+  /// The state as this session will see it once it commits: the pending change if one is in flight, else what is
+  /// stored. Unlike get(), does not refuse a read with a change pending, so a caller that re-derives its state every
+  /// trigger can use it; get() would report that as "no state" and the caller would reset itself.
+  virtual std::optional<State> getEffectiveState() = 0;
+
   virtual bool clear() = 0;
   virtual bool persist() = 0;
 

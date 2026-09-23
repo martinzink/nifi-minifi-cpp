@@ -17,14 +17,14 @@
 
 // Test processor to test lazy logging
 
-use minifi_native::macros::ComponentIdentifier;
+use minifi_native::macros::{ComponentIdentifier, StateSchema};
 use minifi_native::{
     GetProperty, Logger, MinifiError, MutTrigger, OnTriggerResult, OutputAttribute, ProcessContext,
     ProcessSession, ProcessorDefinition, ProcessorInputRequirement, PropertyDefinition,
     Relationship, Schedule, debug, info, trace,
 };
 
-#[derive(Debug, ComponentIdentifier)]
+#[derive(Debug, ComponentIdentifier, StateSchema)]
 pub(crate) struct CountActualLogging {
     log_count: usize,
 }

@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-use minifi_native::macros::ComponentIdentifier;
+use minifi_native::macros::{ComponentIdentifier, StateSchema};
 use minifi_native::{
     GetAttribute, GetControllerService, GetProperty, InputStream, Logger, MinifiError,
     MutFlowFileStreamTransform, OutputAttribute, OutputStream, ProcessorDefinition,
@@ -23,7 +23,7 @@ use minifi_native::{
     TransformStreamResult,
 };
 
-#[derive(Debug, ComponentIdentifier)]
+#[derive(Debug, ComponentIdentifier, StateSchema)]
 pub(crate) struct DuplicateStreamText {}
 
 pub(crate) const SUCCESS: Relationship = Relationship {

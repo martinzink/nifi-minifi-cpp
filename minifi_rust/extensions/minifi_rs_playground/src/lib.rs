@@ -28,6 +28,7 @@ use crate::processors::duplicate_text::DuplicateStreamText;
 use crate::processors::generate_flow_file::GenerateFlowFileRs;
 use crate::processors::get_file::GetFileRs;
 use crate::processors::kamikaze_processor::KamikazeProcessorRs;
+use crate::processors::list_file::ListFileRs;
 use crate::processors::log_attribute::LogAttributeRs;
 use crate::processors::lorem_ipsum_cs_user::LoremIpsumCSUser;
 use crate::processors::put_file::PutFileRs;
@@ -47,6 +48,7 @@ minifi_native::declare_minifi_extension!(
         (ComplexProcessorType, MultiThreaded, KamikazeProcessorRs),
         (ComplexProcessorType, SingleThreaded, CountActualLogging),
         (FlowFileSourceProcessorType, MultiThreaded, LoremIpsumCSUser),
+        (FlowFileSourceProcessorType, SingleThreaded, ListFileRs),
         (FlowFileTransformProcessorType, MultiThreaded, PutFileRs),
         (FlowFileStreamTransformProcessorType, MultiThreaded, AsciifyGerman),
         (FlowFileStreamTransformProcessorType, SingleThreaded, DuplicateStreamText),
