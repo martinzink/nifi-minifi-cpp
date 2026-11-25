@@ -93,15 +93,15 @@ void useProcessorClassDefinition(Fn&& fn) {
       .destroy = [] (MINIFI_OWNED void* self) -> void {
         delete static_cast<Class*>(self);
       },
-      .trigger = [] (void* self, minifi_process_context* context, minifi_process_session* session) -> minifi_status {
-        CffiTriggerContext context_wrapper(context, session);
+      .trigger = [] (void* self, minifi_trigger_context* context) -> minifi_status {
+        CffiTriggerContext context_wrapper(context);
         try {
           return static_cast<Class*>(self)->onTrigger(context_wrapper);
         } catch (...) {
           return MINIFI_STATUS_UNKNOWN_ERROR;
         }
       },
-      .schedule = [] (void* self, minifi_process_context* context) -> minifi_status {
+      .schedule = [] (void* self, minifi_schedule_context* context) -> minifi_status {
         CffiScheduleContext context_wrapper(context);
         try {
           return static_cast<Class*>(self)->onSchedule(context_wrapper);

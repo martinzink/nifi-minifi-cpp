@@ -19,54 +19,11 @@ minifi_status minifi_register_controller_service(minifi_extension*, const minifi
   throw std::runtime_error("Not implemented");
 }
 
-minifi_status minifi_process_context_get_property(minifi_process_context*, minifi_string_view, minifi_flow_file*,
-    void (*)(void* user_ctx, minifi_string_view property_value), void*) {
-  throw std::runtime_error("Not implemented");
-}
-
-minifi_status minifi_process_context_get_controller_service_from_property(minifi_process_context*, minifi_string_view, minifi_string_view,
-    minifi_controller_service**) {
-  throw std::runtime_error("Not implemented");
-}
-
-void minifi_process_context_get_dynamic_properties(minifi_process_context*, minifi_flow_file*,
-    void (*)(void* user_ctx, minifi_string_view dynamic_property_name, minifi_string_view dynamic_property_value), void*) {
-  throw std::runtime_error("Not implemented");
-}
-
 void minifi_logger_log_string(minifi_logger*, minifi_log_level, minifi_string_view) {
   throw std::runtime_error("Not implemented");
 }
 
 bool minifi_logger_should_log(minifi_logger*, minifi_log_level) {
-  throw std::runtime_error("Not implemented");
-}
-
-MINIFI_OWNED minifi_flow_file* minifi_process_session_get(minifi_process_session*) {
-  throw std::runtime_error("Not implemented");
-}
-
-MINIFI_OWNED minifi_flow_file* minifi_process_session_create(minifi_process_session*, minifi_flow_file*) {
-  throw std::runtime_error("Not implemented");
-}
-
-minifi_status minifi_process_session_penalize(minifi_process_session*, minifi_flow_file*) {
-  throw std::runtime_error("Not implemented");
-}
-
-minifi_status minifi_process_session_transfer(minifi_process_session*, MINIFI_OWNED minifi_flow_file*, minifi_string_view) {
-  throw std::runtime_error("Not implemented");
-}
-
-minifi_status minifi_process_session_remove(minifi_process_session*, MINIFI_OWNED minifi_flow_file*) {
-  throw std::runtime_error("Not implemented");
-}
-
-minifi_status minifi_process_session_read(minifi_process_session*, minifi_flow_file*, int64_t (*)(void* user_ctx, minifi_input_stream*), void*) {
-  throw std::runtime_error("Not implemented");
-}
-
-minifi_status minifi_process_session_write(minifi_process_session*, minifi_flow_file*, int64_t (*)(void* user_ctx, minifi_output_stream*), void*) {
   throw std::runtime_error("Not implemented");
 }
 
@@ -86,50 +43,113 @@ int64_t minifi_output_stream_write(minifi_output_stream*, const char*, size_t) {
   throw std::runtime_error("Not implemented");
 }
 
-minifi_status minifi_process_session_set_flow_file_attribute(minifi_process_session*, minifi_flow_file*, minifi_string_view,
-    const minifi_string_view*) {
-  throw std::runtime_error("Not implemented");
-}
-
-bool minifi_process_session_get_flow_file_attribute(minifi_process_session*, minifi_flow_file*, minifi_string_view,
-    void (*)(void* user_ctx, minifi_string_view attribute_value), void*) {
-  throw std::runtime_error("Not implemented");
-}
-
-void minifi_process_session_get_flow_file_attributes(minifi_process_session*, minifi_flow_file*,
-    void (*)(void* user_ctx, minifi_string_view attribute_name, minifi_string_view attribute_value), void*) {
-  throw std::runtime_error("Not implemented");
-}
-
-uint64_t minifi_process_session_get_flow_file_size(minifi_process_session*, minifi_flow_file*) {
-  throw std::runtime_error("Not implemented");
-}
-
-minifi_status minifi_process_session_get_flow_file_id(minifi_process_session*, minifi_flow_file*,
-    void (*)(void* user_ctx, minifi_string_view flow_file_id), void*) {
-  throw std::runtime_error("Not implemented");
-}
-
 enum minifi_status minifi_controller_service_context_get_property(struct minifi_controller_service_context*, minifi_string_view,
     void (*)(void* user_ctx, minifi_string_view property_value), void*) {
   throw std::runtime_error("Not implemented");
 }
 
-enum minifi_status minifi_process_context_get_ssl_data_from_property(struct minifi_process_context*, struct minifi_string_view,
-    void (*)(void*, const struct minifi_ssl_data*), void*) {
+enum minifi_status minifi_schedule_context_set_trigger_when_empty(struct minifi_schedule_context*, bool) {
   throw std::runtime_error("Not implemented");
 }
 
-enum minifi_status minifi_process_context_get_proxy_data_from_property(struct minifi_process_context*, struct minifi_string_view,
-    void (*)(void*, const struct minifi_proxy_data*), void*) {
+enum minifi_status minifi_schedule_context_get_property(struct minifi_schedule_context*, struct minifi_string_view,
+    void (*)(void* user_ctx, struct minifi_string_view property_value), void*) {
   throw std::runtime_error("Not implemented");
 }
 
-minifi_status minifi_process_context_set_trigger_when_empty(minifi_process_context*, bool) {
+void minifi_schedule_context_get_dynamic_properties(struct minifi_schedule_context*,
+    void (*)(void* user_ctx, struct minifi_string_view dynamic_property_name, struct minifi_string_view dynamic_property_value), void*) {
   throw std::runtime_error("Not implemented");
 }
 
-minifi_status minifi_process_context_report_metrics(minifi_process_context*, size_t, const minifi_string_view*, const double*) {
+enum minifi_status minifi_schedule_context_get_controller_service_from_property(struct minifi_schedule_context*,
+    struct minifi_string_view, struct minifi_string_view, struct minifi_controller_service**) {
+  throw std::runtime_error("Not implemented");
+}
+
+enum minifi_status minifi_schedule_context_get_ssl_data_from_property(struct minifi_schedule_context*, struct minifi_string_view,
+    void (*)(void* user_ctx, const struct minifi_ssl_data* ssl_data), void*) {
+  throw std::runtime_error("Not implemented");
+}
+
+enum minifi_status minifi_schedule_context_get_proxy_data_from_property(struct minifi_schedule_context*,
+    struct minifi_string_view, void (*)(void* user_ctx, const struct minifi_proxy_data* proxy_data), void*) {
+  throw std::runtime_error("Not implemented");
+}
+
+enum minifi_status minifi_trigger_context_report_metrics(struct minifi_trigger_context*, size_t, const struct minifi_string_view*,
+    const double*) {
+  throw std::runtime_error("Not implemented");
+}
+
+enum minifi_status minifi_trigger_context_get_property(struct minifi_trigger_context*, struct minifi_string_view,
+    MINIFI_NULLABLE struct minifi_flow_file*, void (*)(void* user_ctx, struct minifi_string_view property_value), void*) {
+  throw std::runtime_error("Not implemented");
+}
+
+void minifi_trigger_context_get_dynamic_properties(struct minifi_trigger_context*, MINIFI_NULLABLE struct minifi_flow_file*,
+    void (*)(void* user_ctx, struct minifi_string_view dynamic_property_name, struct minifi_string_view dynamic_property_value), void*) {
+  throw std::runtime_error("Not implemented");
+}
+
+enum minifi_status minifi_trigger_context_get_controller_service_from_property(struct minifi_trigger_context*,
+    struct minifi_string_view, struct minifi_string_view, struct minifi_controller_service**) {
+  throw std::runtime_error("Not implemented");
+}
+
+MINIFI_OWNED struct minifi_flow_file* minifi_trigger_context_get(struct minifi_trigger_context*) {
+  throw std::runtime_error("Not implemented");
+}
+
+MINIFI_OWNED struct minifi_flow_file* minifi_trigger_context_create(struct minifi_trigger_context*,
+    MINIFI_NULLABLE struct minifi_flow_file*) {
+  throw std::runtime_error("Not implemented");
+}
+
+enum minifi_status minifi_trigger_context_penalize(struct minifi_trigger_context*, struct minifi_flow_file*) {
+  throw std::runtime_error("Not implemented");
+}
+
+enum minifi_status minifi_trigger_context_transfer(struct minifi_trigger_context*, MINIFI_OWNED struct minifi_flow_file*,
+    struct minifi_string_view) {
+  throw std::runtime_error("Not implemented");
+}
+
+enum minifi_status minifi_trigger_context_remove(struct minifi_trigger_context*, MINIFI_OWNED struct minifi_flow_file*) {
+  throw std::runtime_error("Not implemented");
+}
+
+enum minifi_status minifi_trigger_context_read(struct minifi_trigger_context*, struct minifi_flow_file*,
+    int64_t (*)(void* user_ctx, struct minifi_input_stream*), void*) {
+  throw std::runtime_error("Not implemented");
+}
+
+enum minifi_status minifi_trigger_context_write(struct minifi_trigger_context*, struct minifi_flow_file*,
+    int64_t (*)(void* user_ctx, struct minifi_output_stream*), void*) {
+  throw std::runtime_error("Not implemented");
+}
+
+enum minifi_status minifi_trigger_context_set_flow_file_attribute(struct minifi_trigger_context*, struct minifi_flow_file*,
+    struct minifi_string_view, const struct minifi_string_view*) {
+  throw std::runtime_error("Not implemented");
+}
+
+bool minifi_trigger_context_get_flow_file_attribute(struct minifi_trigger_context*, struct minifi_flow_file*,
+    struct minifi_string_view, void (*)(void* user_ctx, struct minifi_string_view attribute_value), void*) {
+  throw std::runtime_error("Not implemented");
+}
+
+void minifi_trigger_context_get_flow_file_attributes(struct minifi_trigger_context*, struct minifi_flow_file*,
+    void (*)(void* user_ctx, struct minifi_string_view attribute_name, struct minifi_string_view attribute_value), void*) {
+  throw std::runtime_error("Not implemented");
+}
+
+uint64_t minifi_trigger_context_get_flow_file_size(struct minifi_trigger_context*, struct minifi_flow_file*) {
+  throw std::runtime_error("Not implemented");
+}
+
+enum minifi_status minifi_trigger_context_get_flow_file_id(struct minifi_trigger_context*, struct minifi_flow_file*,
+    void (*)(void* user_ctx, struct minifi_string_view flow_file_id), void*) {
   throw std::runtime_error("Not implemented");
 }
 

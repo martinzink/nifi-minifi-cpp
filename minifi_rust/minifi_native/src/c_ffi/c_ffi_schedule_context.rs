@@ -14,14 +14,14 @@ use minifi_native_sys::*;
 use std::ffi::c_void;
 use std::num::NonZeroU32;
 
-/// A safe wrapper around a `minifi_process_context` pointer.
+/// A safe wrapper around a `minifi_schedule_context` pointer.
 pub struct CffiScheduleContext<'a> {
-    ptr: *mut minifi_process_context,
+    ptr: *mut minifi_schedule_context,
     _lifetime: std::marker::PhantomData<&'a ()>,
 }
 
 impl<'a> CffiScheduleContext<'a> {
-    pub fn new(ptr: *mut minifi_process_context) -> Self {
+    pub fn new(ptr: *mut minifi_schedule_context) -> Self {
         Self {
             ptr,
             _lifetime: std::marker::PhantomData,
@@ -72,15 +72,7 @@ impl RawContextAccess for CffiScheduleContext<'_> {
         cb: Option<unsafe extern "C" fn(*mut c_void, minifi_string_view)>,
         user_ctx: *mut c_void,
     ) -> minifi_status {
-        unsafe {
-            minifi_process_context_get_property(
-                self.ptr,
-                property_name,
-                std::ptr::null_mut(),
-                cb,
-                user_ctx,
-            )
-        }
+        unsafe { minifi_schedule_context_get_property(self.ptr, property_name, cb, user_ctx) }
     }
 
     unsafe fn raw_get_controller_service_from_property(
@@ -90,7 +82,7 @@ impl RawContextAccess for CffiScheduleContext<'_> {
         controller_service_out: *mut *mut minifi_controller_service,
     ) -> minifi_status {
         unsafe {
-            minifi_process_context_get_controller_service_from_property(
+            minifi_schedule_context_get_controller_service_from_property(
                 self.ptr,
                 property_name,
                 controller_service_type,

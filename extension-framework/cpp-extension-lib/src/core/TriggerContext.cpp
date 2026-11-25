@@ -65,34 +65,34 @@ class MinifiInputStreamWrapper : public io::InputStreamImpl {
 }  // namespace
 
 FlowFile CffiTriggerContext::get() {
-  return FlowFile{minifi_process_session_get(impl_)};
+  return FlowFile{minifi_trigger_context_get(impl_)};
 }
 
 FlowFile CffiTriggerContext::create(const FlowFile* parent) {
-  return FlowFile{minifi_process_session_create(impl_, parent ? parent->get() : nullptr)};
+  return FlowFile{minifi_trigger_context_create(impl_, parent ? parent->get() : nullptr)};
 }
 
 void CffiTriggerContext::penalize(FlowFile& ff) {
-  if (MINIFI_STATUS_SUCCESS != minifi_process_session_penalize(impl_, ff.get())) {
+  if (MINIFI_STATUS_SUCCESS != minifi_trigger_context_penalize(impl_, ff.get())) {
     throw minifi::Exception(minifi::FILE_OPERATION_EXCEPTION, "Failed to penalize flowfile");
   }
 }
 
 void CffiTriggerContext::transfer(FlowFile ff, const minifi::core::Relationship& relationship) {
   const auto rel_name = relationship.getName();
-  if (MINIFI_STATUS_SUCCESS != minifi_process_session_transfer(impl_, ff.release(), utils::minifiStringView(rel_name))) {
+  if (MINIFI_STATUS_SUCCESS != minifi_trigger_context_transfer(impl_, ff.release(), utils::minifiStringView(rel_name))) {
     throw minifi::Exception(minifi::FILE_OPERATION_EXCEPTION, "Failed to transfer flowfile");
   }
 }
 
 void CffiTriggerContext::remove(FlowFile ff) {
-  if (MINIFI_STATUS_SUCCESS != minifi_process_session_remove(impl_, ff.release())) {
+  if (MINIFI_STATUS_SUCCESS != minifi_trigger_context_remove(impl_, ff.release())) {
     throw minifi::Exception(minifi::FILE_OPERATION_EXCEPTION, "Failed to remove flowfile");
   }
 }
 
 void CffiTriggerContext::write(FlowFile& flow_file, const io::OutputStreamCallback& callback) {
-  const auto status = minifi_process_session_write(
+  const auto status = minifi_trigger_context_write(
       impl_,
       flow_file.get(),
       [](void* data, minifi_output_stream* output) -> int64_t {
@@ -105,7 +105,7 @@ void CffiTriggerContext::write(FlowFile& flow_file, const io::OutputStreamCallba
 }
 
 void CffiTriggerContext::read(FlowFile& flow_file, const io::InputStreamCallback& callback) {
-  const auto status = minifi_process_session_read(
+  const auto status = minifi_trigger_context_read(
       impl_,
       flow_file.get(),
       [](void* data, minifi_input_stream* input) -> int64_t {
@@ -119,20 +119,20 @@ void CffiTriggerContext::read(FlowFile& flow_file, const io::InputStreamCallback
 
 void CffiTriggerContext::setAttribute(FlowFile& ff, const std::string_view key, std::string value) {  // NOLINT(performance-unnecessary-value-param)
   const minifi_string_view value_ref = utils::minifiStringView(value);
-  if (MINIFI_STATUS_SUCCESS != minifi_process_session_set_flow_file_attribute(impl_, ff.get(), utils::minifiStringView(key), &value_ref)) {
+  if (MINIFI_STATUS_SUCCESS != minifi_trigger_context_set_flow_file_attribute(impl_, ff.get(), utils::minifiStringView(key), &value_ref)) {
     throw minifi::Exception(minifi::FILE_OPERATION_EXCEPTION, "Failed to set attribute");
   }
 }
 
 void CffiTriggerContext::removeAttribute(FlowFile& ff, const std::string_view key) {
-  if (MINIFI_STATUS_SUCCESS != minifi_process_session_set_flow_file_attribute(impl_, ff.get(), utils::minifiStringView(key), nullptr)) {
+  if (MINIFI_STATUS_SUCCESS != minifi_trigger_context_set_flow_file_attribute(impl_, ff.get(), utils::minifiStringView(key), nullptr)) {
     throw minifi::Exception(minifi::FILE_OPERATION_EXCEPTION, "Failed to remove attribute");
   }
 }
 
 std::optional<std::string> CffiTriggerContext::getAttribute(FlowFile& ff, std::string_view key) {
   std::optional<std::string> result;
-  minifi_process_session_get_flow_file_attribute(impl_, ff.get(), utils::minifiStringView(key), [] (void* user_ctx, minifi_string_view value) {
+  minifi_trigger_context_get_flow_file_attribute(impl_, ff.get(), utils::minifiStringView(key), [] (void* user_ctx, minifi_string_view value) {
     *static_cast<std::optional<std::string>*>(user_ctx) = std::string{value.data, value.length};
   }, &result);
   return result;
@@ -140,7 +140,7 @@ std::optional<std::string> CffiTriggerContext::getAttribute(FlowFile& ff, std::s
 
 std::map<std::string, std::string> CffiTriggerContext::getAttributes(const FlowFile& ff) const {
   std::map<std::string, std::string> result;
-  minifi_process_session_get_flow_file_attributes(impl_, ff.get(), [] (void* user_ctx, const minifi_string_view key, const minifi_string_view value) {
+  minifi_trigger_context_get_flow_file_attributes(impl_, ff.get(), [] (void* user_ctx, const minifi_string_view key, const minifi_string_view value) {
     static_cast<std::map<std::string, std::string>*>(user_ctx)->insert({std::string{key.data, key.length}, std::string{value.data, value.length}});
   }, &result);
   return result;
@@ -148,14 +148,14 @@ std::map<std::string, std::string> CffiTriggerContext::getAttributes(const FlowF
 
 std::string CffiTriggerContext::getFlowFileId(const FlowFile& ff) const {
   std::string result;
-  minifi_process_session_get_flow_file_id(impl_, ff.get(), [](void* user_ctx, const minifi_string_view value) {
+  minifi_trigger_context_get_flow_file_id(impl_, ff.get(), [](void* user_ctx, const minifi_string_view value) {
       *static_cast<std::string*>(user_ctx) = std::string{value.data, value.length};
   }, &result);
   return result;
 }
 
 uint64_t CffiTriggerContext::getFlowFileSize(const FlowFile& ff) const {
-  return minifi_process_session_get_flow_file_size(impl_, ff.get());
+  return minifi_trigger_context_get_flow_file_size(impl_, ff.get());
 }
 
 void TriggerContext::writeBuffer(FlowFile& flow_file, std::span<const char> buffer) {
@@ -181,31 +181,31 @@ std::vector<std::byte> TriggerContext::readBuffer(FlowFile& flow_file) {
 
 std::expected<std::string, std::error_code> CffiTriggerContext::getProperty(const minifi::core::PropertyReference& prop) const {
   return readProperty([&](PropertyCallback cb, void* user_ctx) {
-    return minifi_process_context_get_property(context_, utils::minifiStringView(prop.name), nullptr, cb, user_ctx);
+    return minifi_trigger_context_get_property(impl_, utils::minifiStringView(prop.name), nullptr, cb, user_ctx);
   });
 }
 
 std::expected<std::string, std::error_code> CffiTriggerContext::getProperty(const minifi::core::PropertyReference& prop, const FlowFile& flow_file) const {
   return readProperty([&](PropertyCallback cb, void* user_ctx) {
-    return minifi_process_context_get_property(context_, utils::minifiStringView(prop.name), flow_file.get(), cb, user_ctx);
+    return minifi_trigger_context_get_property(impl_, utils::minifiStringView(prop.name), flow_file.get(), cb, user_ctx);
   });
 }
 
 std::map<std::string, std::string> CffiTriggerContext::getDynamicProperties() const {
   return readDynamicProperties([&](DynamicPropertiesCallback cb, void* user_ctx) {
-    minifi_process_context_get_dynamic_properties(context_, nullptr, cb, user_ctx);
+    minifi_trigger_context_get_dynamic_properties(impl_, nullptr, cb, user_ctx);
   });
 }
 
 std::map<std::string, std::string> CffiTriggerContext::getDynamicProperties(const FlowFile& flow_file) const {
   return readDynamicProperties([&](DynamicPropertiesCallback cb, void* user_ctx) {
-    minifi_process_context_get_dynamic_properties(context_, flow_file.get(), cb, user_ctx);
+    minifi_trigger_context_get_dynamic_properties(impl_, flow_file.get(), cb, user_ctx);
   });
 }
 
 std::expected<minifi_controller_service*, std::error_code> CffiTriggerContext::getControllerService(const minifi::core::PropertyReference& prop) const {
   return readControllerService(prop, [&](auto name, auto type, auto out) {
-    return minifi_process_context_get_controller_service_from_property(context_, name, type, out);
+    return minifi_trigger_context_get_controller_service_from_property(impl_, name, type, out);
   });
 }
 
@@ -222,7 +222,7 @@ std::expected<void, std::error_code> CffiTriggerContext::reportMetrics(const Pub
     values.push_back(value);
   }
 
-  const auto status = minifi_process_context_report_metrics(context_, metrics_size, keys.data(), values.data());
+  const auto status = minifi_trigger_context_report_metrics(impl_, metrics_size, keys.data(), values.data());
   if (status != MINIFI_STATUS_SUCCESS) {
     return std::unexpected{utils::make_error_code(status)};
   }

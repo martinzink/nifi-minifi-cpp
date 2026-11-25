@@ -16,16 +16,16 @@ use crate::{
 use minifi_native_sys::{
     minifi_controller_service, minifi_input_stream, minifi_input_stream_read,
     minifi_input_stream_size, minifi_io_status_MINIFI_IO_CANCEL, minifi_io_status_MINIFI_IO_ERROR,
-    minifi_output_stream, minifi_output_stream_write, minifi_process_context,
-    minifi_process_context_get_controller_service_from_property,
-    minifi_process_context_get_property, minifi_process_context_report_metrics,
-    minifi_process_session, minifi_process_session_create, minifi_process_session_get,
-    minifi_process_session_get_flow_file_attribute,
-    minifi_process_session_get_flow_file_attributes, minifi_process_session_get_flow_file_id,
-    minifi_process_session_read, minifi_process_session_remove,
-    minifi_process_session_set_flow_file_attribute, minifi_process_session_transfer,
-    minifi_process_session_write, minifi_status, minifi_status_MINIFI_STATUS_SUCCESS,
-    minifi_string_view,
+    minifi_output_stream, minifi_output_stream_write, minifi_status,
+    minifi_status_MINIFI_STATUS_SUCCESS, minifi_string_view, minifi_trigger_context,
+    minifi_trigger_context_create, minifi_trigger_context_get,
+    minifi_trigger_context_get_controller_service_from_property,
+    minifi_trigger_context_get_flow_file_attribute,
+    minifi_trigger_context_get_flow_file_attributes, minifi_trigger_context_get_flow_file_id,
+    minifi_trigger_context_get_property, minifi_trigger_context_read,
+    minifi_trigger_context_remove, minifi_trigger_context_report_metrics,
+    minifi_trigger_context_set_flow_file_attribute, minifi_trigger_context_transfer,
+    minifi_trigger_context_write,
 };
 use std::ffi::{CString, c_void};
 use std::io::Read;
@@ -66,16 +66,14 @@ unsafe fn write_all_to_output_stream(
 }
 
 pub struct CffiTriggerContext<'a> {
-    context_ptr: *mut minifi_process_context,
-    ptr: *mut minifi_process_session,
+    ptr: *mut minifi_trigger_context,
     // The lifetime ensures the trigger context cannot outlive the `trigger` call.
     _lifetime: std::marker::PhantomData<&'a ()>,
 }
 
 impl<'a> CffiTriggerContext<'a> {
-    pub fn new(context_ptr: *mut minifi_process_context, ptr: *mut minifi_process_session) -> Self {
+    pub fn new(ptr: *mut minifi_trigger_context) -> Self {
         Self {
-            context_ptr,
             ptr,
             _lifetime: std::marker::PhantomData,
         }
@@ -136,7 +134,7 @@ impl<'a> CffiTriggerContext<'a> {
                 }
             }
 
-            let status = minifi_process_session_write(
+            let status = minifi_trigger_context_write(
                 self.ptr,
                 flow_file.get_ptr(),
                 Some(cb::<F>),
@@ -151,7 +149,7 @@ impl<'a> CffiTriggerContext<'a> {
                 #[allow(non_upper_case_globals)]
                 minifi_status_MINIFI_STATUS_SUCCESS => Ok(()),
                 error_code => Err(MinifiError::StatusError((
-                    "minifi_process_session_write".into(),
+                    "minifi_trigger_context_write".into(),
                     NonZeroU32::new_unchecked(error_code), // SAFETY we checked against 0 (minifi_status_MINIFI_STATUS_SUCCESS)
                 ))),
             }
@@ -167,8 +165,8 @@ impl RawContextAccess for CffiTriggerContext<'_> {
         user_ctx: *mut c_void,
     ) -> minifi_status {
         unsafe {
-            minifi_process_context_get_property(
-                self.context_ptr,
+            minifi_trigger_context_get_property(
+                self.ptr,
                 property_name,
                 std::ptr::null_mut(),
                 cb,
@@ -184,8 +182,8 @@ impl RawContextAccess for CffiTriggerContext<'_> {
         controller_service_out: *mut *mut minifi_controller_service,
     ) -> minifi_status {
         unsafe {
-            minifi_process_context_get_controller_service_from_property(
-                self.context_ptr,
+            minifi_trigger_context_get_controller_service_from_property(
+                self.ptr,
                 property_name,
                 controller_service_type,
                 controller_service_out,
@@ -242,13 +240,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
         flow_file: &Self::FlowFile,
     ) -> Result<Option<String>, MinifiError> {
         c_ffi_schedule_context::read_property(property, |name, cb, user_ctx| unsafe {
-            minifi_process_context_get_property(
-                self.context_ptr,
-                name,
-                flow_file.get_ptr(),
-                cb,
-                user_ctx,
-            )
+            minifi_trigger_context_get_property(self.ptr, name, flow_file.get_ptr(), cb, user_ctx)
         })
     }
 
@@ -259,8 +251,8 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
             .collect();
         let values: Vec<f64> = metrics.iter().map(|(_, value)| *value).collect();
         unsafe {
-            match minifi_process_context_report_metrics(
-                self.context_ptr,
+            match minifi_trigger_context_report_metrics(
+                self.ptr,
                 names.len(),
                 names.as_ptr() as *const minifi_string_view,
                 values.as_ptr(),
@@ -268,7 +260,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
                 #[allow(non_upper_case_globals)]
                 minifi_status_MINIFI_STATUS_SUCCESS => Ok(()),
                 err_code => Err(MinifiError::StatusError((
-                    "minifi_process_context_report_metrics".into(),
+                    "minifi_trigger_context_report_metrics".into(),
                     NonZeroU32::new_unchecked(err_code), // SAFETY we checked against 0 (minifi_status_MINIFI_STATUS_SUCCESS)
                 ))),
             }
@@ -276,7 +268,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
     }
 
     fn create(&self) -> Result<Self::FlowFile, MinifiError> {
-        let ff_ptr = unsafe { minifi_process_session_create(self.ptr, std::ptr::null_mut()) };
+        let ff_ptr = unsafe { minifi_trigger_context_create(self.ptr, std::ptr::null_mut()) };
         if ff_ptr.is_null() {
             Err(MinifiError::UnknownError)
         } else {
@@ -285,7 +277,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
     }
 
     fn get(&self) -> Option<Self::FlowFile> {
-        let ff_ptr = unsafe { minifi_process_session_get(self.ptr) };
+        let ff_ptr = unsafe { minifi_trigger_context_get(self.ptr) };
         if ff_ptr.is_null() {
             None
         } else {
@@ -296,7 +288,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
     fn transfer(&self, flow_file: Self::FlowFile, relationship: &str) -> Result<(), MinifiError> {
         let c_relationship = CString::new(relationship)?;
         unsafe {
-            match minifi_process_session_transfer(
+            match minifi_trigger_context_transfer(
                 self.ptr,
                 flow_file.get_ptr(),
                 minifi_string_view {
@@ -307,7 +299,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
                 #[allow(non_upper_case_globals)]
                 minifi_status_MINIFI_STATUS_SUCCESS => Ok(()),
                 err_code => Err(MinifiError::StatusError((
-                    "minifi_process_session_transfer".into(),
+                    "minifi_trigger_context_transfer".into(),
                     NonZeroU32::new_unchecked(err_code), // SAFETY we checked against 0 (minifi_status_MINIFI_STATUS_SUCCESS)
                 ))),
             }
@@ -316,11 +308,11 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
 
     fn remove(&self, flow_file: Self::FlowFile) -> Result<(), MinifiError> {
         unsafe {
-            match minifi_process_session_remove(self.ptr, flow_file.get_ptr()) {
+            match minifi_trigger_context_remove(self.ptr, flow_file.get_ptr()) {
                 #[allow(non_upper_case_globals)]
                 minifi_status_MINIFI_STATUS_SUCCESS => Ok(()),
                 err_code => Err(MinifiError::StatusError((
-                    "minifi_process_session_remove".into(),
+                    "minifi_trigger_context_remove".into(),
                     NonZeroU32::new_unchecked(err_code), // SAFETY we checked against 0 (minifi_status_MINIFI_STATUS_SUCCESS)
                 ))),
             }
@@ -336,7 +328,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
         unsafe {
             let attr_key_string_view = StringView::new(attr_key);
             let attr_value_string_view = StringView::new(attr_value);
-            match minifi_process_session_set_flow_file_attribute(
+            match minifi_trigger_context_set_flow_file_attribute(
                 self.ptr,
                 flow_file.get_ptr(),
                 attr_key_string_view.as_raw(),
@@ -346,7 +338,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
                 minifi_status_MINIFI_STATUS_SUCCESS => Ok(()),
                 err_code => Err(MinifiError::StatusError((
                     format!(
-                        "minifi_process_session_set_flow_file_attribute({}, {})",
+                        "minifi_trigger_context_set_flow_file_attribute({}, {})",
                         attr_key, attr_value
                     )
                     .into(),
@@ -370,7 +362,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
             }
 
             let attr_key_string_view = StringView::new(attr_key);
-            minifi_process_session_get_flow_file_attribute(
+            minifi_trigger_context_get_flow_file_attribute(
                 self.ptr,
                 flow_file.get_ptr(),
                 attr_key_string_view.as_raw(),
@@ -414,7 +406,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
         }
 
         unsafe {
-            minifi_process_session_get_flow_file_attributes(
+            minifi_trigger_context_get_flow_file_attributes(
                 self.ptr,
                 flow_file.get_ptr(),
                 Some(get_attributes_callback::<F>),
@@ -441,7 +433,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
                 }
             }
 
-            match minifi_process_session_write(
+            match minifi_trigger_context_write(
                 self.ptr,
                 flow_file.get_ptr(),
                 Some(cb),
@@ -450,7 +442,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
                 #[allow(non_upper_case_globals)]
                 minifi_status_MINIFI_STATUS_SUCCESS => Ok(()),
                 err_code => Err(MinifiError::StatusError((
-                    "minifi_process_session_write".into(),
+                    "minifi_trigger_context_write".into(),
                     NonZeroU32::new_unchecked(err_code), // SAFETY we checked against 0 (minifi_status_MINIFI_STATUS_SUCCESS)
                 ))),
             }
@@ -515,7 +507,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
         }
 
         let write_status = unsafe {
-            minifi_process_session_write(
+            minifi_trigger_context_write(
                 self.ptr,
                 flow_file.get_ptr(),
                 Some(write_cb::<F, R>),
@@ -534,7 +526,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
         // Callback never ran, surface the raw C status.
         if write_status != minifi_status_MINIFI_STATUS_SUCCESS {
             return Err(MinifiError::StatusError((
-                "minifi_process_session_write".into(),
+                "minifi_trigger_context_write".into(),
                 unsafe { NonZeroU32::new_unchecked(write_status) }, // SAFETY we checked against 0 (minifi_status_MINIFI_STATUS_SUCCESS)
             )));
         }
@@ -587,7 +579,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
                 }
             }
 
-            let status = minifi_process_session_read(
+            let status = minifi_trigger_context_read(
                 self.ptr,
                 flow_file.get_ptr(),
                 Some(cb),
@@ -645,7 +637,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
                 }
             }
 
-            let status = minifi_process_session_read(
+            let status = minifi_trigger_context_read(
                 self.ptr,
                 flow_file.get_ptr(),
                 Some(read_cb::<F, R>),
@@ -654,7 +646,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
 
             if status != minifi_status_MINIFI_STATUS_SUCCESS {
                 return Err(MinifiError::StatusError((
-                    "minifi_process_session_read".into(),
+                    "minifi_trigger_context_read".into(),
                     NonZeroU32::new_unchecked(status), // SAFETY we checked against 0 (minifi_status_MINIFI_STATUS_SUCCESS)
                 )));
             }
@@ -680,7 +672,7 @@ impl<'a> TriggerContext for CffiTriggerContext<'a> {
                 }
             }
 
-            minifi_process_session_get_flow_file_id(
+            minifi_trigger_context_get_flow_file_id(
                 self.ptr,
                 flow_file.get_ptr(),
                 Some(cb),

@@ -50,6 +50,10 @@ class Extension {
     return info_;
   }
 
+  uint32_t getApiVersion() const {
+    return api_version_;
+  }
+
   void addClass(std::string class_name) {
     classes_.push_back(std::move(class_name));
   }

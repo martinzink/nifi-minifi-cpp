@@ -17,26 +17,26 @@ using detail::readProperty;
 
 std::expected<std::string, std::error_code> CffiScheduleContext::getProperty(const minifi::core::PropertyReference& prop) const {
   return readProperty([&](PropertyCallback cb, void* user_ctx) {
-    return minifi_process_context_get_property(impl_, utils::minifiStringView(prop.name), nullptr, cb, user_ctx);
+    return minifi_schedule_context_get_property(impl_, utils::minifiStringView(prop.name), cb, user_ctx);
   });
 }
 
 std::map<std::string, std::string> CffiScheduleContext::getDynamicProperties() const {
   return readDynamicProperties([&](DynamicPropertiesCallback cb, void* user_ctx) {
-    minifi_process_context_get_dynamic_properties(impl_, nullptr, cb, user_ctx);
+    minifi_schedule_context_get_dynamic_properties(impl_, cb, user_ctx);
   });
 }
 
 std::expected<minifi_controller_service*, std::error_code> CffiScheduleContext::getControllerService(const minifi::core::PropertyReference& prop) const {
   return readControllerService(prop, [&](auto name, auto type, auto out) {
-    return minifi_process_context_get_controller_service_from_property(impl_, name, type, out);
+    return minifi_schedule_context_get_controller_service_from_property(impl_, name, type, out);
   });
 }
 
 std::expected<std::optional<utils::net::SslData>, std::error_code> CffiScheduleContext::getSslData(const minifi::core::PropertyReference& prop) const {
   auto ssl_data = utils::net::SslData{};
 
-  if (const auto status = minifi_process_context_get_ssl_data_from_property(
+  if (const auto status = minifi_schedule_context_get_ssl_data_from_property(
           impl_,
           utils::minifiStringView(prop.name),
           [](void* data, const minifi_ssl_data* minifi_ssl_data) {
@@ -59,7 +59,7 @@ std::expected<std::optional<utils::net::SslData>, std::error_code> CffiScheduleC
 
 std::expected<std::optional<utils::ProxyData>, std::error_code> CffiScheduleContext::getProxyData(const minifi::core::PropertyReference& prop) const {
   auto proxy_data = utils::ProxyData{};
-  const auto status = minifi_process_context_get_proxy_data_from_property(
+  const auto status = minifi_schedule_context_get_proxy_data_from_property(
       impl_,
       utils::minifiStringView(prop.name),
       [](void* data, const minifi_proxy_data* minifi_proxy_data) {
@@ -85,7 +85,7 @@ std::expected<std::optional<utils::ProxyData>, std::error_code> CffiScheduleCont
 }
 
 std::expected<void, std::error_code> CffiScheduleContext::setTriggerWhenEmpty(bool trigger_when_empty) {
-  const auto status = minifi_process_context_set_trigger_when_empty(impl_, trigger_when_empty);
+  const auto status = minifi_schedule_context_set_trigger_when_empty(impl_, trigger_when_empty);
   if (status != MINIFI_STATUS_SUCCESS) {
     return std::unexpected{utils::make_error_code(status)};
   }

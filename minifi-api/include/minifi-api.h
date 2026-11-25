@@ -30,7 +30,7 @@ extern "C" {
 #define MINIFI_PROXY_CONFIGURATION_SERVICE_INTERFACE_PROPERTY_TYPE "org.apache.nifi.minifi.controllers.ProxyConfigurationServiceInterface"
 
 enum : uint32_t {
-  MINIFI_API_VERSION = 2
+  MINIFI_API_VERSION = 3
 };
 
 enum minifi_io_status : int64_t {
@@ -78,8 +78,8 @@ struct minifi_dynamic_property_definition {
 
 struct minifi_flow_file;
 struct minifi_logger;
-struct minifi_process_context;
-struct minifi_process_session;
+struct minifi_schedule_context;
+struct minifi_trigger_context;
 struct minifi_controller_service;
 struct minifi_controller_service_context;
 struct minifi_input_stream;
@@ -150,8 +150,8 @@ struct minifi_controller_service_metadata {
 struct minifi_processor_callbacks {
   MINIFI_OWNED void* (*create)(struct minifi_processor_metadata);
   void (*destroy)(MINIFI_OWNED void*);
-  enum minifi_status (*trigger)(void*, struct minifi_process_context*, struct minifi_process_session*);
-  enum minifi_status (*schedule)(void*, struct minifi_process_context*);
+  enum minifi_status (*trigger)(void*, struct minifi_trigger_context*);
+  enum minifi_status (*schedule)(void*, struct minifi_schedule_context*);
   void (*unschedule)(void*);
 };
 
@@ -211,35 +211,8 @@ enum minifi_status minifi_register_processor(struct minifi_extension* extension,
 enum minifi_status minifi_register_controller_service(struct minifi_extension* extension,
     const struct minifi_controller_service_definition* controller_service);
 
-enum minifi_status minifi_process_context_set_trigger_when_empty(struct minifi_process_context*, bool trigger_when_empty);
-enum minifi_status minifi_process_context_report_metrics(struct minifi_process_context*, size_t count, const struct minifi_string_view* metric_names,
-    const double* metric_values);
-
-enum minifi_status minifi_process_context_get_property(struct minifi_process_context* context, struct minifi_string_view property_name,
-    MINIFI_NULLABLE struct minifi_flow_file* flowfile, void (*cb)(void* user_ctx, struct minifi_string_view property_value), void* user_ctx);
-
-enum minifi_status minifi_process_context_get_controller_service_from_property(struct minifi_process_context* process_context,
-    struct minifi_string_view property_name, struct minifi_string_view controller_service_type,
-    struct minifi_controller_service** controller_service_out);
-void minifi_process_context_get_dynamic_properties(struct minifi_process_context* context, MINIFI_NULLABLE struct minifi_flow_file* minifi_flow_file,
-    void (*cb)(void* user_ctx, struct minifi_string_view dynamic_property_name, struct minifi_string_view dynamic_property_value), void* user_ctx);
-
 void minifi_logger_log_string(struct minifi_logger*, enum minifi_log_level, struct minifi_string_view message);
 bool minifi_logger_should_log(struct minifi_logger*, enum minifi_log_level);
-
-MINIFI_OWNED struct minifi_flow_file* minifi_process_session_get(struct minifi_process_session*);
-MINIFI_OWNED struct minifi_flow_file* minifi_process_session_create(struct minifi_process_session* session,
-    MINIFI_NULLABLE struct minifi_flow_file* parent_flowfile);
-
-enum minifi_status minifi_process_session_penalize(struct minifi_process_session* session, struct minifi_flow_file* flowfile);
-enum minifi_status minifi_process_session_transfer(struct minifi_process_session* session, MINIFI_OWNED struct minifi_flow_file* flowfile,
-    struct minifi_string_view relationship_name);
-enum minifi_status minifi_process_session_remove(struct minifi_process_session* session, MINIFI_OWNED struct minifi_flow_file* flowfile);
-
-enum minifi_status minifi_process_session_read(struct minifi_process_session*, struct minifi_flow_file*,
-    int64_t (*cb)(void* user_ctx, struct minifi_input_stream*), void* user_ctx);
-enum minifi_status minifi_process_session_write(struct minifi_process_session*, struct minifi_flow_file*,
-    int64_t (*cb)(void* user_ctx, struct minifi_output_stream*), void* user_ctx);
 
 void minifi_config_get(struct minifi_extension_context* extension_context, struct minifi_string_view config_key,
     void (*cb)(void* user_ctx, struct minifi_string_view config_value), void* user_ctx);
@@ -248,16 +221,6 @@ size_t minifi_input_stream_size(struct minifi_input_stream*);
 
 int64_t minifi_input_stream_read(struct minifi_input_stream* stream, char* buffer, size_t buffer_size);
 int64_t minifi_output_stream_write(struct minifi_output_stream* stream, const char* data, size_t data_size);
-
-enum minifi_status minifi_process_session_set_flow_file_attribute(struct minifi_process_session* session, struct minifi_flow_file* flowfile,
-    struct minifi_string_view attribute_name, const struct minifi_string_view* attribute_value);
-bool minifi_process_session_get_flow_file_attribute(struct minifi_process_session* session, struct minifi_flow_file* flowfile,
-    struct minifi_string_view attribute_name, void (*cb)(void* user_ctx, struct minifi_string_view attribute_value), void* user_ctx);
-void minifi_process_session_get_flow_file_attributes(struct minifi_process_session* session, struct minifi_flow_file* flowfile,
-    void (*cb)(void* user_ctx, struct minifi_string_view attribute_name, struct minifi_string_view attribute_value), void* user_ctx);
-uint64_t minifi_process_session_get_flow_file_size(struct minifi_process_session* session, struct minifi_flow_file* flowfile);
-enum minifi_status minifi_process_session_get_flow_file_id(struct minifi_process_session* session, struct minifi_flow_file* flowfile,
-    void (*cb)(void* user_ctx, struct minifi_string_view flow_file_id), void* user_ctx);
 
 enum minifi_status minifi_controller_service_context_get_property(struct minifi_controller_service_context* context,
     struct minifi_string_view property_name, void (*cb)(void* user_ctx, struct minifi_string_view property_value), void* user_ctx);
@@ -268,9 +231,6 @@ struct minifi_ssl_data {
   struct minifi_string_view private_key_file;
   struct minifi_string_view passphrase;
 };
-
-enum minifi_status minifi_process_context_get_ssl_data_from_property(struct minifi_process_context* process_context,
-    struct minifi_string_view property_name, void (*cb)(void* user_ctx, const struct minifi_ssl_data* ssl_data), void* user_ctx);
 
 enum minifi_proxy_type : uint8_t {
   MINIFI_PROXY_TYPE_DIRECT,
@@ -285,8 +245,61 @@ struct minifi_proxy_data {
   struct minifi_string_view* password;
 };
 
-enum minifi_status minifi_process_context_get_proxy_data_from_property(struct minifi_process_context* process_context,
+/// Schedule context: only valid during the schedule callback.
+
+enum minifi_status minifi_schedule_context_set_trigger_when_empty(struct minifi_schedule_context*, bool trigger_when_empty);
+
+enum minifi_status minifi_schedule_context_get_property(struct minifi_schedule_context* context, struct minifi_string_view property_name,
+    void (*cb)(void* user_ctx, struct minifi_string_view property_value), void* user_ctx);
+void minifi_schedule_context_get_dynamic_properties(struct minifi_schedule_context* context,
+    void (*cb)(void* user_ctx, struct minifi_string_view dynamic_property_name, struct minifi_string_view dynamic_property_value), void* user_ctx);
+
+/// The returned controller service stays valid until the processor is unscheduled, so it can be kept for the triggers.
+enum minifi_status minifi_schedule_context_get_controller_service_from_property(struct minifi_schedule_context* context,
+    struct minifi_string_view property_name, struct minifi_string_view controller_service_type,
+    struct minifi_controller_service** controller_service_out);
+
+enum minifi_status minifi_schedule_context_get_ssl_data_from_property(struct minifi_schedule_context* context,
+    struct minifi_string_view property_name, void (*cb)(void* user_ctx, const struct minifi_ssl_data* ssl_data), void* user_ctx);
+enum minifi_status minifi_schedule_context_get_proxy_data_from_property(struct minifi_schedule_context* context,
     struct minifi_string_view property_name, void (*cb)(void* user_ctx, const struct minifi_proxy_data* proxy_data), void* user_ctx);
+
+/// Trigger context: only valid during the trigger callback.
+
+enum minifi_status minifi_trigger_context_report_metrics(struct minifi_trigger_context*, size_t count, const struct minifi_string_view* metric_names,
+    const double* metric_values);
+
+enum minifi_status minifi_trigger_context_get_property(struct minifi_trigger_context* context, struct minifi_string_view property_name,
+    MINIFI_NULLABLE struct minifi_flow_file* flowfile, void (*cb)(void* user_ctx, struct minifi_string_view property_value), void* user_ctx);
+void minifi_trigger_context_get_dynamic_properties(struct minifi_trigger_context* context, MINIFI_NULLABLE struct minifi_flow_file* flowfile,
+    void (*cb)(void* user_ctx, struct minifi_string_view dynamic_property_name, struct minifi_string_view dynamic_property_value), void* user_ctx);
+enum minifi_status minifi_trigger_context_get_controller_service_from_property(struct minifi_trigger_context* context,
+    struct minifi_string_view property_name, struct minifi_string_view controller_service_type,
+    struct minifi_controller_service** controller_service_out);
+
+MINIFI_OWNED struct minifi_flow_file* minifi_trigger_context_get(struct minifi_trigger_context*);
+MINIFI_OWNED struct minifi_flow_file* minifi_trigger_context_create(struct minifi_trigger_context* context,
+    MINIFI_NULLABLE struct minifi_flow_file* parent_flowfile);
+
+enum minifi_status minifi_trigger_context_penalize(struct minifi_trigger_context* context, struct minifi_flow_file* flowfile);
+enum minifi_status minifi_trigger_context_transfer(struct minifi_trigger_context* context, MINIFI_OWNED struct minifi_flow_file* flowfile,
+    struct minifi_string_view relationship_name);
+enum minifi_status minifi_trigger_context_remove(struct minifi_trigger_context* context, MINIFI_OWNED struct minifi_flow_file* flowfile);
+
+enum minifi_status minifi_trigger_context_read(struct minifi_trigger_context*, struct minifi_flow_file*,
+    int64_t (*cb)(void* user_ctx, struct minifi_input_stream*), void* user_ctx);
+enum minifi_status minifi_trigger_context_write(struct minifi_trigger_context*, struct minifi_flow_file*,
+    int64_t (*cb)(void* user_ctx, struct minifi_output_stream*), void* user_ctx);
+
+enum minifi_status minifi_trigger_context_set_flow_file_attribute(struct minifi_trigger_context* context, struct minifi_flow_file* flowfile,
+    struct minifi_string_view attribute_name, const struct minifi_string_view* attribute_value);
+bool minifi_trigger_context_get_flow_file_attribute(struct minifi_trigger_context* context, struct minifi_flow_file* flowfile,
+    struct minifi_string_view attribute_name, void (*cb)(void* user_ctx, struct minifi_string_view attribute_value), void* user_ctx);
+void minifi_trigger_context_get_flow_file_attributes(struct minifi_trigger_context* context, struct minifi_flow_file* flowfile,
+    void (*cb)(void* user_ctx, struct minifi_string_view attribute_name, struct minifi_string_view attribute_value), void* user_ctx);
+uint64_t minifi_trigger_context_get_flow_file_size(struct minifi_trigger_context* context, struct minifi_flow_file* flowfile);
+enum minifi_status minifi_trigger_context_get_flow_file_id(struct minifi_trigger_context* context, struct minifi_flow_file* flowfile,
+    void (*cb)(void* user_ctx, struct minifi_string_view flow_file_id), void* user_ctx);
 
 #ifdef __cplusplus
 }  // extern "C"

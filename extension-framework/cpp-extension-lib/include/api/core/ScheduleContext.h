@@ -24,7 +24,7 @@ class ScheduleContext : public PropertyContext {
 
 class CffiScheduleContext : public ScheduleContext {
  public:
-  explicit CffiScheduleContext(minifi_process_context* impl) : impl_(impl) {}
+  explicit CffiScheduleContext(minifi_schedule_context* impl) : impl_(impl) {}
 
   [[nodiscard]] std::expected<std::string, std::error_code> getProperty(const minifi::core::PropertyReference& prop) const override;
   [[nodiscard]] std::map<std::string, std::string> getDynamicProperties() const override;
@@ -35,7 +35,7 @@ class CffiScheduleContext : public ScheduleContext {
   [[nodiscard]] std::expected<void, std::error_code> setTriggerWhenEmpty(bool) override;
 
  private:
-  minifi_process_context* impl_;
+  minifi_schedule_context* impl_;
 };
 
 }  // namespace org::apache::nifi::minifi::api::core

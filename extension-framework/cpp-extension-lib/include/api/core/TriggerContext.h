@@ -57,7 +57,7 @@ class TriggerContext : public PropertyContext {
 
 class CffiTriggerContext : public TriggerContext {
  public:
-  CffiTriggerContext(minifi_process_context* context, minifi_process_session* impl) : context_(context), impl_(impl) {}
+  explicit CffiTriggerContext(minifi_trigger_context* impl) : impl_(impl) {}
 
   [[nodiscard]] std::expected<std::string, std::error_code> getProperty(const minifi::core::PropertyReference& prop) const override;
   [[nodiscard]] std::expected<std::string, std::error_code> getProperty(const minifi::core::PropertyReference& prop,
@@ -83,8 +83,7 @@ class CffiTriggerContext : public TriggerContext {
   [[nodiscard]] uint64_t getFlowFileSize(const FlowFile& ff) const override;
 
  private:
-  minifi_process_context* context_;
-  minifi_process_session* impl_;
+  minifi_trigger_context* impl_;
 };
 
 }  // namespace org::apache::nifi::minifi::api::core

@@ -23,6 +23,7 @@ class Fixture {
   explicit Fixture(TestController::PlanConfig config = {}): plan_config_(std::move(config)) {}
 
   [[nodiscard]] minifi::core::ProcessSession& processSession() const { return *process_session_; }
+  [[nodiscard]] minifi::core::ProcessContext& processContext() const { return *context_; }
 
  private:
   TestController test_controller_;
@@ -129,7 +130,8 @@ TEST_CASE("Test ProcessSession::write's possible outcomes") {
 TEST_CASE("Stable C API does not leak the flow file handle", "[minifi-api][flowfilehandle]") {
   Fixture fixture;
   auto& process_session = fixture.processSession();
-  auto* c_session = minifi::utils::toC(&process_session);
+  minifi::utils::CProcessorContext c_context{.context = fixture.processContext(), .session = &process_session};
+  auto* c_session = minifi::utils::toCTriggerContext(&c_context);
 
   auto created = process_session.create();
   process_session.transfer(created, Success);
@@ -141,11 +143,11 @@ TEST_CASE("Stable C API does not leak the flow file handle", "[minifi-api][flowf
 
   // Pull the flow file out through the stable C API. This does `new std::shared_ptr<FlowFile>`
   // behind the returned handle, so the handle owns one strong reference to the FlowFile.
-  auto* handle = minifi_process_session_get(c_session);
+  auto* handle = minifi_trigger_context_get(c_session);
   REQUIRE(handle != nullptr);
 
   // Hand the (MINIFI_OWNED) handle back to minifi and drop the flow file for good.
-  REQUIRE(minifi_process_session_remove(c_session, handle) == MINIFI_STATUS_SUCCESS);
+  REQUIRE(minifi_trigger_context_remove(c_session, handle) == MINIFI_STATUS_SUCCESS);
   process_session.commit();
 
   // After remove+commit no legitimate owner remains. If the C API failed to free the heap

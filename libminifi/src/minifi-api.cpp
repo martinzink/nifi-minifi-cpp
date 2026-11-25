@@ -34,6 +34,11 @@ using minifi::utils::toString;
 using minifi::utils::toStringView;
 using minifi::utils::minifiStringView;
 using minifi::utils::toRawFlowFile;
+using minifi::utils::processContextOf;
+using minifi::utils::processSessionOf;
+using minifi::utils::toCProcessorContext;
+using minifi::utils::toCScheduleContext;
+using minifi::utils::toCTriggerContext;
 
 namespace {
 
@@ -284,6 +289,23 @@ void useCControllerServiceClassDescription(const std::string_view artifact_name,
 }
 }  // namespace org::apache::nifi::minifi::utils
 
+namespace {
+
+// API v2: the context and session handles point to the same CProcessorContext as the current handles
+minifi_schedule_context* asScheduleContext(minifi_process_context* context) {
+  return minifi::utils::toCScheduleContext(&minifi::utils::toCProcessorContext(context));
+}
+
+minifi_trigger_context* asTriggerContext(minifi_process_context* context) {
+  return minifi::utils::toCTriggerContext(&minifi::utils::toCProcessorContext(context));
+}
+
+minifi_trigger_context* asTriggerContext(minifi_process_session* session) {
+  return minifi::utils::toCTriggerContext(&minifi::utils::toCProcessorContext(session));
+}
+
+}  // namespace
+
 extern "C" {
 
 using minifi::utils::toC;
@@ -319,7 +341,10 @@ minifi_status minifi_register_processor(minifi_extension* extension, const minif
     .version = extension_info->version
   };
   auto& bundle_components = minifi::ClassDescriptionRegistry::getMutableComponents(bundle);
-  minifi::utils::useCProcessorClassDescription(*processor, [&] (const auto& description, const auto& c_class_description) {
+  minifi::utils::useCProcessorClassDescription(*processor, [&] (const auto& description, auto c_class_description) {
+    if (const auto api_version = extension_->getApiVersion(); api_version != 0) {
+      c_class_description.api_version = api_version;
+    }
     minifi::core::ClassLoader::getDefaultClassLoader().getClassLoader(extension_info->name).registerClass(
       c_class_description.name,
       std::make_unique<CProcessorFactory>(extension_info->name, toString(processor->full_name), c_class_description));
@@ -356,20 +381,20 @@ minifi_extension* MINIFI_REGISTER_EXTENSION_FN(minifi_extension_context* extensi
   return minifi_register_extension(extension_context, extension_definition);
 }
 
-minifi_status minifi_process_context_set_trigger_when_empty(minifi_process_context* context, bool trigger_when_empty) {
+minifi_status minifi_schedule_context_set_trigger_when_empty(minifi_schedule_context* context, bool trigger_when_empty) {
   gsl_Assert(context);
-  toCpp(context)->getProcessor().setTriggerWhenEmpty(trigger_when_empty);
+  processContextOf(context).getProcessor().setTriggerWhenEmpty(trigger_when_empty);
   return MINIFI_STATUS_SUCCESS;
 }
 
-minifi_status minifi_process_context_report_metrics(minifi_process_context* context, const size_t count, const minifi_string_view* metric_names, const double* metric_values) {
+minifi_status minifi_trigger_context_report_metrics(minifi_trigger_context* context, const size_t count, const minifi_string_view* metric_names, const double* metric_values) {
   gsl_Assert(context);
   std::vector<minifi::state::PublishedMetric> metrics;
   metrics.reserve(count);
   for (size_t i = 0; i < count; i++) {
     metrics.emplace_back(minifi::state::PublishedMetric{toString(metric_names[i]), metric_values[i], {}});
   }
-  auto& processor = toCpp(context)->getProcessor();
+  auto& processor = processContextOf(context).getProcessor();
   auto& impl = processor.getImpl();
   if (const auto c_processor = dynamic_cast<minifi::utils::CProcessor*>(&impl)) {
     c_processor->reportMetrics(std::move(metrics));
@@ -378,10 +403,10 @@ minifi_status minifi_process_context_report_metrics(minifi_process_context* cont
   return MINIFI_STATUS_UNKNOWN_ERROR;
 }
 
-minifi_status minifi_process_context_get_property(minifi_process_context* context, minifi_string_view property_name, minifi_flow_file* flowfile,
+static minifi_status getPropertyFromContext(minifi::core::ProcessContext* context, minifi_string_view property_name, minifi_flow_file* flowfile,
     void (*result_cb)(void* user_ctx, minifi_string_view result), void* user_ctx) {
   gsl_Assert(context);
-  auto result = toCpp(context)->getProperty(toStringView(property_name), toRawFlowFile(flowfile));
+  auto result = context->getProperty(toStringView(property_name), toRawFlowFile(flowfile));
   if (result) {
     result_cb(user_ctx, minifiStringView(result.value()));
     return MINIFI_STATUS_SUCCESS;
@@ -413,64 +438,64 @@ bool minifi_logger_should_log(minifi_logger* logger, minifi_log_level level) {
   return (*toCpp(logger))->should_log(toLogLevel(level));
 }
 
-MINIFI_OWNED minifi_flow_file* minifi_process_session_get(minifi_process_session* session) {
+MINIFI_OWNED minifi_flow_file* minifi_trigger_context_get(minifi_trigger_context* session) {
   gsl_Assert(session);
-  if (const auto ff = toCpp(session)->get()) {
+  if (const auto ff = processSessionOf(session).get()) {
     return toC(new std::shared_ptr<minifi::core::FlowFile>(ff));  // NOLINT(cppcoreguidelines-owning-memory)
   }
   return nullptr;
 }
 
-MINIFI_OWNED minifi_flow_file* minifi_process_session_create(minifi_process_session* session, minifi_flow_file* parent) {
+MINIFI_OWNED minifi_flow_file* minifi_trigger_context_create(minifi_trigger_context* session, minifi_flow_file* parent) {
   gsl_Assert(session);
-  if (const auto ff = toCpp(session)->create(toRawFlowFile(parent))) {
+  if (const auto ff = processSessionOf(session).create(toRawFlowFile(parent))) {
     return toC(new std::shared_ptr<minifi::core::FlowFile>(ff));  // NOLINT(cppcoreguidelines-owning-memory)
   }
   return nullptr;
 }
 
-minifi_status minifi_process_session_penalize(minifi_process_session* session, minifi_flow_file* flowfile) {
+minifi_status minifi_trigger_context_penalize(minifi_trigger_context* session, minifi_flow_file* flowfile) {
   gsl_Assert(session);
   gsl_Assert(flowfile);
   try {
-    toCpp(session)->penalize(*toCpp(flowfile));
+    processSessionOf(session).penalize(*toCpp(flowfile));
     return MINIFI_STATUS_SUCCESS;
   } catch (...) {
     return MINIFI_STATUS_UNKNOWN_ERROR;
   }
 }
 
-minifi_status minifi_process_session_transfer(minifi_process_session* session, MINIFI_OWNED minifi_flow_file* flowfile, minifi_string_view relationship_name) {
+minifi_status minifi_trigger_context_transfer(minifi_trigger_context* session, MINIFI_OWNED minifi_flow_file* flowfile, minifi_string_view relationship_name) {
   gsl_Assert(session);
   gsl_Assert(flowfile);
   // Adopt the MINIFI_OWNED handle: minifi takes ownership, so free the heap std::shared_ptr<FlowFile> when this call returns.
   const std::unique_ptr<std::shared_ptr<minifi::core::FlowFile>> owned{toCpp(flowfile)};
   try {
-    toCpp(session)->transfer(*owned, minifi::core::Relationship{toString(relationship_name), ""});
+    processSessionOf(session).transfer(*owned, minifi::core::Relationship{toString(relationship_name), ""});
     return MINIFI_STATUS_SUCCESS;
   } catch (...) {
     return MINIFI_STATUS_UNKNOWN_ERROR;
   }
 }
 
-minifi_status minifi_process_session_remove(minifi_process_session* session, MINIFI_OWNED minifi_flow_file* flowfile) {
+minifi_status minifi_trigger_context_remove(minifi_trigger_context* session, MINIFI_OWNED minifi_flow_file* flowfile) {
   gsl_Assert(session);
   gsl_Assert(flowfile);
   // Adopt the MINIFI_OWNED handle: minifi takes ownership, so free the heap std::shared_ptr<FlowFile> when this call returns.
   const std::unique_ptr<std::shared_ptr<minifi::core::FlowFile>> owned{toCpp(flowfile)};
   try {
-    toCpp(session)->remove(*owned);
+    processSessionOf(session).remove(*owned);
     return MINIFI_STATUS_SUCCESS;
   } catch (...) {
     return MINIFI_STATUS_UNKNOWN_ERROR;
   }
 }
 
-minifi_status minifi_process_session_read(minifi_process_session* session, minifi_flow_file* flowfile, int64_t(*cb)(void* user_ctx, minifi_input_stream*), void* user_ctx) {
+minifi_status minifi_trigger_context_read(minifi_trigger_context* session, minifi_flow_file* flowfile, int64_t(*cb)(void* user_ctx, minifi_input_stream*), void* user_ctx) {
   gsl_Assert(session);
   gsl_Assert(flowfile);
   try {
-    toCpp(session)->read(*toCpp(flowfile), [&] (auto& input_stream) -> minifi::io::IoResult {
+    processSessionOf(session).read(*toCpp(flowfile), [&] (auto& input_stream) -> minifi::io::IoResult {
       const int64_t cb_result = cb(user_ctx, toC(input_stream.get()));
       return minifi::io::IoResult::from(cb_result);
     });
@@ -480,11 +505,11 @@ minifi_status minifi_process_session_read(minifi_process_session* session, minif
   }
 }
 
-minifi_status minifi_process_session_write(minifi_process_session* session, minifi_flow_file* ff, int64_t(*cb)(void* user_ctx, minifi_output_stream*), void* user_ctx) {
+minifi_status minifi_trigger_context_write(minifi_trigger_context* session, minifi_flow_file* ff, int64_t(*cb)(void* user_ctx, minifi_output_stream*), void* user_ctx) {
   gsl_Assert(session);
   gsl_Assert(ff);
   try {
-    toCpp(session)->write(*toCpp(ff), [&] (auto& output_stream) -> minifi::io::IoResult {
+    processSessionOf(session).write(*toCpp(ff), [&] (auto& output_stream) -> minifi::io::IoResult {
       const int64_t cb_result = cb(user_ctx, toC(output_stream.get()));
       return minifi::io::IoResult::from(cb_result);
     });
@@ -509,21 +534,21 @@ int64_t minifi_output_stream_write(minifi_output_stream* stream, const char* dat
   return gsl::narrow<int64_t>(toCpp(stream)->write(as_bytes(std::span(data, size))));
 }
 
-minifi_status minifi_process_session_set_flow_file_attribute(minifi_process_session* session, minifi_flow_file* flowfile,
+minifi_status minifi_trigger_context_set_flow_file_attribute(minifi_trigger_context* session, minifi_flow_file* flowfile,
     minifi_string_view attribute_name, const minifi_string_view* attribute_value) {
   gsl_Assert(session);
   gsl_Assert(flowfile);
   if (attribute_value == nullptr) {
-    toCpp(session)->removeAttribute(*toRawFlowFile(flowfile), toString(attribute_name));
+    processSessionOf(session).removeAttribute(*toRawFlowFile(flowfile), toString(attribute_name));
   } else {
-    toCpp(session)->putAttribute(*toRawFlowFile(flowfile),
+    processSessionOf(session).putAttribute(*toRawFlowFile(flowfile),
         toString(attribute_name),
         toString(*attribute_value));
   }
   return MINIFI_STATUS_SUCCESS;
 }
 
-bool minifi_process_session_get_flow_file_attribute(minifi_process_session* session, minifi_flow_file* flowfile, minifi_string_view attribute_name,
+bool minifi_trigger_context_get_flow_file_attribute(minifi_trigger_context* session, minifi_flow_file* flowfile, minifi_string_view attribute_name,
                                       void(*cb)(void* user_ctx, minifi_string_view attribute_value), void* user_ctx) {
   gsl_Assert(session);
   gsl_Assert(flowfile);
@@ -535,7 +560,7 @@ bool minifi_process_session_get_flow_file_attribute(minifi_process_session* sess
   return true;
 }
 
-void minifi_process_session_get_flow_file_attributes(minifi_process_session* session, minifi_flow_file* flowfile,
+void minifi_trigger_context_get_flow_file_attributes(minifi_trigger_context* session, minifi_flow_file* flowfile,
                                  void(*cb)(void* user_ctx, minifi_string_view attribute_name, minifi_string_view attribute_value), void* user_ctx) {
   gsl_Assert(session);
   gsl_Assert(flowfile);
@@ -544,13 +569,13 @@ void minifi_process_session_get_flow_file_attributes(minifi_process_session* ses
   }
 }
 
-uint64_t minifi_process_session_get_flow_file_size(minifi_process_session* session, minifi_flow_file* flowfile) {
+uint64_t minifi_trigger_context_get_flow_file_size(minifi_trigger_context* session, minifi_flow_file* flowfile) {
   gsl_Assert(session);
   gsl_Assert(flowfile);
   return toRawFlowFile(flowfile)->getSize();
 }
 
-minifi_status minifi_process_session_get_flow_file_id(minifi_process_session* session, minifi_flow_file* flowfile, void(*cb)(void* user_ctx, minifi_string_view flow_file_id), void* user_ctx) {
+minifi_status minifi_trigger_context_get_flow_file_id(minifi_trigger_context* session, minifi_flow_file* flowfile, void(*cb)(void* user_ctx, minifi_string_view flow_file_id), void* user_ctx) {
   gsl_Assert(session);
   gsl_Assert(flowfile);
   const auto uuid_small_str = toRawFlowFile(flowfile)->getUUIDStr();
@@ -575,8 +600,8 @@ minifi_status minifi_controller_service_context_get_property(minifi_controller_s
   }
 }
 
-minifi_status minifi_process_context_get_controller_service_from_property(
-    minifi_process_context* process_context,
+static minifi_status getControllerServiceFromContext(
+    minifi::core::ProcessContext* process_context,
     const minifi_string_view property_name,
     const minifi_string_view controller_service_type,
     minifi_controller_service** controller_service_out) {
@@ -585,7 +610,7 @@ minifi_status minifi_process_context_get_controller_service_from_property(
   }
 
   gsl_Assert(process_context);
-  const auto context = toCpp(process_context);
+  const auto context = process_context;
   const auto property_name_str = std::string{toStringView(property_name)};
   const auto name_str = context->getProperty(property_name_str, nullptr);
   if (!name_str) { return MINIFI_STATUS_PROPERTY_NOT_SET; }
@@ -611,20 +636,20 @@ minifi_status minifi_process_context_get_controller_service_from_property(
   return MINIFI_STATUS_VALIDATION_FAILED;
 }
 
-void minifi_process_context_get_dynamic_properties(minifi_process_context* context, minifi_flow_file* minifi_flow_file,
+static void getDynamicPropertiesFromContext(minifi::core::ProcessContext* context, minifi_flow_file* minifi_flow_file,
     void (*cb)(void* user_ctx, minifi_string_view dynamic_property_name, minifi_string_view dynamic_property_value), void* user_ctx) {
   gsl_Assert(context);
   auto flow_file = toRawFlowFile(minifi_flow_file);
-  for (auto& [key, value] : toCpp(context)->getDynamicProperties(flow_file)) {
+  for (auto& [key, value] : context->getDynamicProperties(flow_file)) {
     cb(user_ctx, minifiStringView(key), minifiStringView(value));
   }
 }
 
-enum minifi_status minifi_process_context_get_ssl_data_from_property(struct minifi_process_context* process_context, struct minifi_string_view property_name,
+enum minifi_status minifi_schedule_context_get_ssl_data_from_property(minifi_schedule_context* process_context, struct minifi_string_view property_name,
     void (*cb)(void* user_ctx, const struct minifi_ssl_data* ssl_data), void* user_ctx) {
   gsl_Assert(process_context);
   try {
-    const auto context = toCpp(process_context);
+    const auto context = (&processContextOf(process_context));
     const auto property_name_str = std::string{toStringView(property_name)};
     const auto name_str = context->getProperty(property_name_str, nullptr);
     if (!name_str) { return MINIFI_STATUS_PROPERTY_NOT_SET; }
@@ -652,10 +677,10 @@ enum minifi_status minifi_process_context_get_ssl_data_from_property(struct mini
 }
 
 
-minifi_status minifi_process_context_get_proxy_data_from_property(minifi_process_context* process_context, minifi_string_view property_name,
+minifi_status minifi_schedule_context_get_proxy_data_from_property(minifi_schedule_context* process_context, minifi_string_view property_name,
     void (*cb)(void* user_ctx, const minifi_proxy_data* proxy_data), void* user_ctx) {
   gsl_Assert(process_context);
-  const auto context = toCpp(process_context);
+  const auto context = (&processContextOf(process_context));
   const auto property_name_str = std::string{toStringView(property_name)};
   const auto name_str = context->getProperty(property_name_str, nullptr);
   if (!name_str) { return MINIFI_STATUS_PROPERTY_NOT_SET; }
@@ -678,6 +703,124 @@ minifi_status minifi_process_context_get_proxy_data_from_property(minifi_process
     return MINIFI_STATUS_SUCCESS;
   }
   return MINIFI_STATUS_VALIDATION_FAILED;
+}
+
+minifi_status minifi_schedule_context_get_property(minifi_schedule_context* context, minifi_string_view property_name,
+    void (*cb)(void* user_ctx, minifi_string_view property_value), void* user_ctx) {
+  return getPropertyFromContext(&processContextOf(context), property_name, nullptr, cb, user_ctx);
+}
+
+void minifi_schedule_context_get_dynamic_properties(minifi_schedule_context* context,
+    void (*cb)(void* user_ctx, minifi_string_view dynamic_property_name, minifi_string_view dynamic_property_value), void* user_ctx) {
+  getDynamicPropertiesFromContext(&processContextOf(context), nullptr, cb, user_ctx);
+}
+
+minifi_status minifi_schedule_context_get_controller_service_from_property(minifi_schedule_context* context, minifi_string_view property_name,
+    minifi_string_view controller_service_type, minifi_controller_service** controller_service_out) {
+  return getControllerServiceFromContext(&processContextOf(context), property_name, controller_service_type, controller_service_out);
+}
+
+minifi_status minifi_trigger_context_get_property(minifi_trigger_context* context, minifi_string_view property_name, minifi_flow_file* flowfile,
+    void (*cb)(void* user_ctx, minifi_string_view property_value), void* user_ctx) {
+  return getPropertyFromContext(&processContextOf(context), property_name, flowfile, cb, user_ctx);
+}
+
+void minifi_trigger_context_get_dynamic_properties(minifi_trigger_context* context, minifi_flow_file* flowfile,
+    void (*cb)(void* user_ctx, minifi_string_view dynamic_property_name, minifi_string_view dynamic_property_value), void* user_ctx) {
+  getDynamicPropertiesFromContext(&processContextOf(context), flowfile, cb, user_ctx);
+}
+
+minifi_status minifi_trigger_context_get_controller_service_from_property(minifi_trigger_context* context, minifi_string_view property_name,
+    minifi_string_view controller_service_type, minifi_controller_service** controller_service_out) {
+  return getControllerServiceFromContext(&processContextOf(context), property_name, controller_service_type, controller_service_out);
+}
+
+minifi_status minifi_process_context_set_trigger_when_empty(minifi_process_context* context, bool trigger_when_empty) {
+  return minifi_schedule_context_set_trigger_when_empty(asScheduleContext(context), trigger_when_empty);
+}
+
+minifi_status minifi_process_context_report_metrics(minifi_process_context* context, size_t count, const minifi_string_view* metric_names,
+    const double* metric_values) {
+  return minifi_trigger_context_report_metrics(asTriggerContext(context), count, metric_names, metric_values);
+}
+
+minifi_status minifi_process_context_get_property(minifi_process_context* context, minifi_string_view property_name, minifi_flow_file* flowfile,
+    void (*cb)(void* user_ctx, minifi_string_view property_value), void* user_ctx) {
+  return getPropertyFromContext(&processContextOf(context), property_name, flowfile, cb, user_ctx);
+}
+
+minifi_status minifi_process_context_get_controller_service_from_property(minifi_process_context* context, minifi_string_view property_name,
+    minifi_string_view controller_service_type, minifi_controller_service** controller_service_out) {
+  return getControllerServiceFromContext(&processContextOf(context), property_name, controller_service_type, controller_service_out);
+}
+
+void minifi_process_context_get_dynamic_properties(minifi_process_context* context, minifi_flow_file* flowfile,
+    void (*cb)(void* user_ctx, minifi_string_view dynamic_property_name, minifi_string_view dynamic_property_value), void* user_ctx) {
+  getDynamicPropertiesFromContext(&processContextOf(context), flowfile, cb, user_ctx);
+}
+
+minifi_status minifi_process_context_get_ssl_data_from_property(minifi_process_context* context, minifi_string_view property_name,
+    void (*cb)(void* user_ctx, const minifi_ssl_data* ssl_data), void* user_ctx) {
+  return minifi_schedule_context_get_ssl_data_from_property(asScheduleContext(context), property_name, cb, user_ctx);
+}
+
+minifi_status minifi_process_context_get_proxy_data_from_property(minifi_process_context* context, minifi_string_view property_name,
+    void (*cb)(void* user_ctx, const minifi_proxy_data* proxy_data), void* user_ctx) {
+  return minifi_schedule_context_get_proxy_data_from_property(asScheduleContext(context), property_name, cb, user_ctx);
+}
+
+MINIFI_OWNED minifi_flow_file* minifi_process_session_get(minifi_process_session* session) {
+  return minifi_trigger_context_get(asTriggerContext(session));
+}
+
+MINIFI_OWNED minifi_flow_file* minifi_process_session_create(minifi_process_session* session, minifi_flow_file* parent_flowfile) {
+  return minifi_trigger_context_create(asTriggerContext(session), parent_flowfile);
+}
+
+minifi_status minifi_process_session_penalize(minifi_process_session* session, minifi_flow_file* flowfile) {
+  return minifi_trigger_context_penalize(asTriggerContext(session), flowfile);
+}
+
+minifi_status minifi_process_session_transfer(minifi_process_session* session, MINIFI_OWNED minifi_flow_file* flowfile, minifi_string_view relationship_name) {
+  return minifi_trigger_context_transfer(asTriggerContext(session), flowfile, relationship_name);
+}
+
+minifi_status minifi_process_session_remove(minifi_process_session* session, MINIFI_OWNED minifi_flow_file* flowfile) {
+  return minifi_trigger_context_remove(asTriggerContext(session), flowfile);
+}
+
+minifi_status minifi_process_session_read(minifi_process_session* session, minifi_flow_file* flowfile,
+    int64_t (*cb)(void* user_ctx, minifi_input_stream*), void* user_ctx) {
+  return minifi_trigger_context_read(asTriggerContext(session), flowfile, cb, user_ctx);
+}
+
+minifi_status minifi_process_session_write(minifi_process_session* session, minifi_flow_file* flowfile,
+    int64_t (*cb)(void* user_ctx, minifi_output_stream*), void* user_ctx) {
+  return minifi_trigger_context_write(asTriggerContext(session), flowfile, cb, user_ctx);
+}
+
+minifi_status minifi_process_session_set_flow_file_attribute(minifi_process_session* session, minifi_flow_file* flowfile,
+    minifi_string_view attribute_name, const minifi_string_view* attribute_value) {
+  return minifi_trigger_context_set_flow_file_attribute(asTriggerContext(session), flowfile, attribute_name, attribute_value);
+}
+
+bool minifi_process_session_get_flow_file_attribute(minifi_process_session* session, minifi_flow_file* flowfile, minifi_string_view attribute_name,
+    void (*cb)(void* user_ctx, minifi_string_view attribute_value), void* user_ctx) {
+  return minifi_trigger_context_get_flow_file_attribute(asTriggerContext(session), flowfile, attribute_name, cb, user_ctx);
+}
+
+void minifi_process_session_get_flow_file_attributes(minifi_process_session* session, minifi_flow_file* flowfile,
+    void (*cb)(void* user_ctx, minifi_string_view attribute_name, minifi_string_view attribute_value), void* user_ctx) {
+  minifi_trigger_context_get_flow_file_attributes(asTriggerContext(session), flowfile, cb, user_ctx);
+}
+
+uint64_t minifi_process_session_get_flow_file_size(minifi_process_session* session, minifi_flow_file* flowfile) {
+  return minifi_trigger_context_get_flow_file_size(asTriggerContext(session), flowfile);
+}
+
+minifi_status minifi_process_session_get_flow_file_id(minifi_process_session* session, minifi_flow_file* flowfile,
+    void (*cb)(void* user_ctx, minifi_string_view flow_file_id), void* user_ctx) {
+  return minifi_trigger_context_get_flow_file_id(asTriggerContext(session), flowfile, cb, user_ctx);
 }
 
 }  // extern "C"

@@ -21,7 +21,7 @@ Unless otherwise specified, the following lifetime rules apply to all functions 
 
 * Arguments: The lifetime of any resource provided as a function argument is limited to the duration of that function call.
 
-* Created Resources: The lifetime of resources created within these functions (e.g., a handle returned by `minifi_process_session_get` inside `minifi_processor_callbacks::trigger`)
+* Created Resources: The lifetime of resources created within these functions (e.g., a handle returned by `minifi_trigger_context_get` inside `minifi_processor_callbacks::trigger`)
 is limited to the scope of the innermost callback.
 (the return value of `minifi_register_extension` is only valid during the execution of `minifi_init_extension`).
 
