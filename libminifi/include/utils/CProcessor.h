@@ -45,6 +45,7 @@ struct CProcessorClassDescription {
   bool is_single_threaded;
 
   minifi_processor_callbacks callbacks;
+  uint32_t api_version{MINIFI_API_VERSION};
 };
 
 class CProcessor : public minifi::core::ProcessorApi {
@@ -99,8 +100,8 @@ class CProcessor : public minifi::core::ProcessorApi {
   }
 
   void onTrigger(minifi::core::ProcessContext& process_context, minifi::core::ProcessSession& process_session) override {
-    std::optional<std::string> error;
-    auto status = class_description_.callbacks.trigger(impl_, toC(&process_context), toC(&process_session));
+    CProcessorContext c_context{.context = process_context, .session = &process_session};
+    auto status = callTrigger(c_context);
     if (status == MINIFI_STATUS_PROCESSOR_YIELD) {
       process_context.yield();
       return;
@@ -111,8 +112,8 @@ class CProcessor : public minifi::core::ProcessorApi {
   }
 
   void onSchedule(minifi::core::ProcessContext& process_context, minifi::core::ProcessSessionFactory& /*process_session_factory*/) override {
-    std::optional<std::string> error;
-    auto status = class_description_.callbacks.schedule(impl_, toC(&process_context));
+    CProcessorContext c_context{.context = process_context, .session = nullptr};
+    auto status = callSchedule(c_context);
     if (status != MINIFI_STATUS_SUCCESS) {
       throw minifi::Exception(minifi::ExceptionType::PROCESS_SCHEDULE_EXCEPTION, "Error while scheduling processor");
     }
@@ -152,6 +153,24 @@ class CProcessor : public minifi::core::ProcessorApi {
   }
 
  private:
+  minifi_status callSchedule(CProcessorContext& c_context) {
+    if (class_description_.api_version < 3) {
+      using V2Schedule = minifi_status (*)(void*, minifi_process_context*);
+      const auto v2_schedule = reinterpret_cast<V2Schedule>(class_description_.callbacks.schedule);
+      return v2_schedule(impl_, toCLegacyContext(&c_context));
+    }
+    return class_description_.callbacks.schedule(impl_, toCScheduleContext(&c_context));
+  }
+
+  minifi_status callTrigger(CProcessorContext& c_context) {
+    if (class_description_.api_version < 3) {
+      using V2Trigger = minifi_status (*)(void*, minifi_process_context*, minifi_process_session*);
+      const auto v2_trigger = reinterpret_cast<V2Trigger>(class_description_.callbacks.trigger);
+      return v2_trigger(impl_, toCLegacyContext(&c_context), toCLegacySession(&c_context));
+    }
+    return class_description_.callbacks.trigger(impl_, toCTriggerContext(&c_context));
+  }
+
   CProcessorClassDescription class_description_;
   gsl::owner<void*> impl_;
   minifi::core::ProcessorMetadata metadata_;

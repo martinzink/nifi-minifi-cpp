@@ -33,3 +33,25 @@ EXPORTS
     minifi_register_controller_service
     minifi_register_extension
     minifi_register_processor
+    minifi_schedule_context_get_controller_service_from_property
+    minifi_schedule_context_get_dynamic_properties
+    minifi_schedule_context_get_property
+    minifi_schedule_context_get_proxy_data_from_property
+    minifi_schedule_context_get_ssl_data_from_property
+    minifi_schedule_context_set_trigger_when_empty
+    minifi_trigger_context_create
+    minifi_trigger_context_get
+    minifi_trigger_context_get_controller_service_from_property
+    minifi_trigger_context_get_dynamic_properties
+    minifi_trigger_context_get_flow_file_attribute
+    minifi_trigger_context_get_flow_file_attributes
+    minifi_trigger_context_get_flow_file_id
+    minifi_trigger_context_get_flow_file_size
+    minifi_trigger_context_get_property
+    minifi_trigger_context_penalize
+    minifi_trigger_context_read
+    minifi_trigger_context_remove
+    minifi_trigger_context_report_metrics
+    minifi_trigger_context_set_flow_file_attribute
+    minifi_trigger_context_transfer
+    minifi_trigger_context_write

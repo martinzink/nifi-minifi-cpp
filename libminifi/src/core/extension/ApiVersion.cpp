@@ -9,7 +9,8 @@
 namespace org::apache::nifi::minifi::core::extension {
 
 static uint32_t agent_api_version{MINIFI_API_VERSION};
-static uint32_t min_supported_api_version{MINIFI_API_VERSION};
+// v3 merged the context into the trigger session, v2 triggers are adapted in CProcessor
+static uint32_t min_supported_api_version{2};
 
 uint32_t getAgentApiVersion() {
   return agent_api_version;

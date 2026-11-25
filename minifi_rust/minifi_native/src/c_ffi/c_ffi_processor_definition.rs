@@ -6,8 +6,8 @@ use std::ffi::c_void;
 use std::ptr;
 
 use super::c_ffi_primitives::StaticStrAsMinifiCStr;
-use super::c_ffi_process_context::CffiProcessContext;
-use super::c_ffi_process_session::CffiProcessSession;
+use super::c_ffi_schedule_context::CffiScheduleContext;
+use super::c_ffi_trigger_context::CffiTriggerContext;
 use crate::api::raw_processor::{MultiThreadedTrigger, SingleThreadedTrigger};
 use crate::api::{ProcessorInputRequirement, RawProcessor, ThreadingModel};
 use crate::c_ffi::CffiLogger;
@@ -43,8 +43,7 @@ pub trait DispatchOnTrigger<M: ThreadingModel> {
     /// This function calls C functions
     unsafe fn dispatch_on_trigger(
         processor: *mut c_void,
-        context: *mut minifi_process_context,
-        session: *mut minifi_process_session,
+        context: *mut minifi_trigger_context,
     ) -> minifi_status;
 }
 
@@ -54,14 +53,12 @@ where
 {
     unsafe fn dispatch_on_trigger(
         processor_ptr: *mut c_void,
-        context_ptr: *mut minifi_process_context,
-        session_ptr: *mut minifi_process_session,
+        context_ptr: *mut minifi_trigger_context,
     ) -> minifi_status {
         unsafe {
             let processor = &*(processor_ptr as *const T);
-            let mut context = CffiProcessContext::new(context_ptr);
-            let mut session = CffiProcessSession::new(session_ptr);
-            process_error_to_status(processor, processor.trigger(&mut context, &mut session))
+            let mut context = CffiTriggerContext::new(context_ptr);
+            process_error_to_status(processor, processor.trigger(&mut context))
         }
     }
 }
@@ -72,14 +69,12 @@ where
 {
     unsafe fn dispatch_on_trigger(
         processor_ptr: *mut c_void,
-        context_ptr: *mut minifi_process_context,
-        session_ptr: *mut minifi_process_session,
+        context_ptr: *mut minifi_trigger_context,
     ) -> minifi_status {
         unsafe {
             let processor = &mut *(processor_ptr as *mut T);
-            let mut context = CffiProcessContext::new(context_ptr);
-            let mut session = CffiProcessSession::new(session_ptr);
-            let result = processor.trigger(&mut context, &mut session);
+            let mut context = CffiTriggerContext::new(context_ptr);
+            let result = processor.trigger(&mut context);
             process_error_to_status(&*processor, result)
         }
     }
@@ -150,25 +145,20 @@ where
 
     unsafe extern "C" fn trigger_processor(
         processor_ptr: *mut c_void,
-        context_ptr: *mut minifi_process_context,
-        session_ptr: *mut minifi_process_session,
+        context_ptr: *mut minifi_trigger_context,
     ) -> minifi_status {
         unsafe {
-            <T as DispatchOnTrigger<T::Threading>>::dispatch_on_trigger(
-                processor_ptr,
-                context_ptr,
-                session_ptr,
-            )
+            <T as DispatchOnTrigger<T::Threading>>::dispatch_on_trigger(processor_ptr, context_ptr)
         }
     }
 
     unsafe extern "C" fn schedule_processor(
         processor_ptr: *mut c_void,
-        context_ptr: *mut minifi_process_context,
+        context_ptr: *mut minifi_schedule_context,
     ) -> minifi_status {
         unsafe {
             let processor = &mut *(processor_ptr as *mut T);
-            let context = CffiProcessContext::new(context_ptr);
+            let context = CffiScheduleContext::new(context_ptr);
             match processor.schedule(&context) {
                 Ok(_) => 0,
                 Err(error_code) => {
